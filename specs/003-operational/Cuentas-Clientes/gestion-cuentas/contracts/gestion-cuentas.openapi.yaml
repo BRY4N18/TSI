@@ -1,0 +1,649 @@
+openapi: 3.0.3
+info:
+  title: TSI Gestión de Cuenta de Cliente API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O03 (perfil y preferencias), CU-O10 (transferencia
+    de propiedad) y CU-O11 (baja de cuenta). Sigue api-standards.md del proyecto.
+servers:
+  - url: /api/v1
+tags:
+  - name: Perfil
+  - name: Preferencias
+  - name: Transferencia
+  - name: Baja
+  - name: Logo
+paths:
+  /cuentas-clientes/{idcliente}/perfil:
+    get:
+      tags: [Perfil]
+      summary: Obtener perfil corporativo de la cuenta
+      operationId: getCuentaPerfil
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      responses:
+        '200':
+          description: Perfil obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Perfil]
+      summary: Actualizar perfil corporativo (campos editables)
+      operationId: patchCuentaPerfil
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerfilPatchRequest'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilUpdatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/preferencias:
+    get:
+      tags: [Preferencias]
+      summary: Obtener preferencias operativas de la cuenta
+      operationId: getCuentaPreferencias
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      responses:
+        '200':
+          description: Preferencias obtenidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenciasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Preferencias]
+      summary: Actualizar preferencias operativas
+      operationId: patchCuentaPreferencias
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenciasPatchRequest'
+      responses:
+        '200':
+          description: Preferencias actualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenciasUpdatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cuentas-clientes/{idcliente}/usuarios-elegibles:
+    get:
+      tags: [Transferencia]
+      summary: Listar usuarios activos de la cuenta elegibles como nuevo admin local
+      operationId: listUsuariosElegibles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      responses:
+        '200':
+          description: Lista de usuarios elegibles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuariosElegiblesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cuentas-clientes/{idcliente}/transferencia-propiedad:
+    post:
+      tags: [Transferencia]
+      summary: Transferir administración local a otro usuario de la cuenta (inmediata)
+      operationId: transferirPropiedad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferenciaPropiedadRequest'
+      responses:
+        '200':
+          description: Propiedad transferida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferenciaPropiedadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/baja:
+    post:
+      tags: [Baja]
+      summary: Dar de baja lógica la cuenta (solo Administrador)
+      operationId: darBajaCuenta
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BajaCuentaRequest'
+      responses:
+        '200':
+          description: Cuenta dada de baja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BajaCuentaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/logo/upload-url:
+    post:
+      tags: [Logo]
+      summary: Obtener URL firmada para subir logo a Azure Blob Storage
+      operationId: createLogoUploadUrl
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadUrlRequest'
+      responses:
+        '200':
+          description: URL firmada generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoUploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdCliente:
+      name: idcliente
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Clave de idempotencia para operaciones de escritura
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    PerfilData:
+      type: object
+      required:
+        - idcliente
+        - razon_social
+        - nombre
+        - tipo
+        - nit_identificacion
+        - estado
+        - admin_local_id
+      properties:
+        idcliente:
+          type: integer
+        razon_social:
+          type: string
+        nombre:
+          type: string
+        tipo:
+          type: string
+          readOnly: true
+        nit_identificacion:
+          type: string
+          readOnly: true
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+        estado:
+          type: string
+          enum: [Activo, Dado de baja]
+        admin_local_id:
+          type: integer
+
+    PerfilPatchRequest:
+      type: object
+      properties:
+        razon_social:
+          type: string
+          minLength: 2
+        nombre:
+          type: string
+        logo_url:
+          type: string
+          format: uri
+      minProperties: 1
+
+    PerfilUpdatedData:
+      type: object
+      required: [message, campos_modificados, perfil]
+      properties:
+        message:
+          type: string
+          example: Perfil actualizado
+        campos_modificados:
+          type: array
+          items:
+            type: string
+        perfil:
+          $ref: '#/components/schemas/PerfilData'
+
+    PerfilResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PerfilData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PerfilUpdatedResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PerfilUpdatedData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PreferenciasData:
+      type: object
+      required:
+        - id_preferencia
+        - id_cliente
+        - umbrales_alerta
+        - canales_notificacion
+        - zonas_geograficas
+        - destinatarios_reportes
+        - frecuencia_reportes
+        - formato_reportes
+      properties:
+        id_preferencia:
+          type: integer
+        id_cliente:
+          type: integer
+        umbrales_alerta:
+          type: string
+        canales_notificacion:
+          type: string
+          enum: [email, sms, ambos]
+        telefono_sms:
+          type: string
+          nullable: true
+        zonas_geograficas:
+          type: string
+        destinatarios_reportes:
+          type: string
+        frecuencia_reportes:
+          type: string
+        formato_reportes:
+          type: string
+          example: PDF
+
+    PreferenciasPatchRequest:
+      type: object
+      properties:
+        umbrales_alerta:
+          type: string
+        canales_notificacion:
+          type: string
+          enum: [email, sms, ambos]
+        telefono_sms:
+          type: string
+        zonas_geograficas:
+          type: string
+        destinatarios_reportes:
+          type: string
+        frecuencia_reportes:
+          type: string
+        formato_reportes:
+          type: string
+      minProperties: 1
+
+    PreferenciasUpdatedData:
+      type: object
+      required: [message, preferencias]
+      properties:
+        message:
+          type: string
+          example: Preferencias actualizadas
+        preferencias:
+          $ref: '#/components/schemas/PreferenciasData'
+
+    PreferenciasResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PreferenciasData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PreferenciasUpdatedResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PreferenciasUpdatedData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    UsuarioElegible:
+      type: object
+      required: [idusuario, gmail, nombres, apellidos, activo]
+      properties:
+        idusuario:
+          type: integer
+        gmail:
+          type: string
+          format: email
+        nombres:
+          type: string
+        apellidos:
+          type: string
+        activo:
+          type: boolean
+        es_admin_local_actual:
+          type: boolean
+
+    UsuariosElegiblesData:
+      type: object
+      required: [usuarios]
+      properties:
+        usuarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsuarioElegible'
+
+    UsuariosElegiblesResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/UsuariosElegiblesData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    TransferenciaPropiedadRequest:
+      type: object
+      required: [id_nuevo_responsable]
+      properties:
+        id_nuevo_responsable:
+          type: integer
+          minimum: 1
+
+    TransferenciaPropiedadData:
+      type: object
+      required:
+        - message
+        - nuevo_admin_local_id
+        - nombre
+        - admin_local_anterior_id
+      properties:
+        message:
+          type: string
+          example: Propiedad transferida
+        nuevo_admin_local_id:
+          type: integer
+        nombre:
+          type: string
+          description: Nombre completo del nuevo responsable
+        admin_local_anterior_id:
+          type: integer
+
+    TransferenciaPropiedadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/TransferenciaPropiedadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    BajaCuentaRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          maxLength: 500
+          description: Opcional; persistido solo en logs de auditoría
+
+    BajaCuentaData:
+      type: object
+      required: [message, estado, sesiones_expulsadas]
+      properties:
+        message:
+          type: string
+          example: Cuenta dada de baja
+        estado:
+          type: string
+          enum: [Dado de baja]
+        sesiones_expulsadas:
+          type: integer
+          minimum: 0
+
+    BajaCuentaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/BajaCuentaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    LogoUploadUrlRequest:
+      type: object
+      required: [content_type]
+      properties:
+        content_type:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+        file_name:
+          type: string
+          maxLength: 255
+
+    LogoUploadUrlData:
+      type: object
+      required: [upload_url, logo_url, expires_at]
+      properties:
+        upload_url:
+          type: string
+          format: uri
+          description: URL firmada PUT hacia Azure Blob
+        logo_url:
+          type: string
+          format: uri
+          description: URL final a persistir en Dim_Cliente.logo_url tras upload
+        expires_at:
+          type: string
+          format: date-time
+
+    LogoUploadUrlResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/LogoUploadUrlData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            badRequest:
+              value:
+                error: bad_request
+                detail: Campos inválidos
+                code: "400"
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error: unauthorized
+                detail: Token inválido o sesión expirada
+                code: "401"
+    Forbidden:
+      description: Permisos insuficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error: forbidden
+                detail: No es administrador local de esta cuenta
+                code: "403"
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              value:
+                error: not_found
+                detail: Cuenta de cliente no encontrada
+                code: "404"
+    Conflict:
+      description: Conflicto de estado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflict:
+              value:
+                error: conflict
+                detail: La cuenta ya está dada de baja
+                code: "409"

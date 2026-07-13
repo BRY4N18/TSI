@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+!backend/.env.example
+
+# Django
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+backend/blob_storage/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Angular
+node_modules/
+dist/
+build/
+.angular/
+coverage/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
+.vscode/
+
+# JWT keys (generated locally for dev)
+backend/config/keys/*.pem
+
+# Tooling / local-only folders (not published to GitHub)
+.agents/
+.claude/
+.cursor/
+.specify/
+database/
+e2e/
+
+# Root config files (not published to GitHub)
+/accidentes.yml
+/docker-compose.infraestructura.yml
+/skills-lock.json
+frontend/chrome/

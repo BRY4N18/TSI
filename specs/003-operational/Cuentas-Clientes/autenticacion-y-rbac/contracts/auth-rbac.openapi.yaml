@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: TSI Auth & RBAC API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para autenticacion y RBAC de Cuentas-Clientes.
+    Sigue API standards del proyecto (path versionado, envelope de respuesta y errores).
+servers:
+  - url: /api/v1
+tags:
+  - name: Auth
+  - name: Session
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesion con credenciales
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /auth/logout:
+    post:
+      tags: [Session]
+      summary: Cerrar sesion activa
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cierre de sesion exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionClosedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/revoke-session:
+    post:
+      tags: [Session]
+      summary: Revocar sesion activa de un usuario
+      operationId: revokeSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeSessionRequest'
+      responses:
+        '200':
+          description: Sesion revocada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionRevokedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /auth/password-reset:
+    post:
+      tags: [Auth]
+      summary: Recuperar y restablecer contraseña temporal
+      operationId: passwordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Contraseña temporal enviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [gmail, password]
+      properties:
+        gmail:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    Profile:
+      type: object
+      required: [idusuario, gmail, roles]
+      properties:
+        idusuario:
+          type: integer
+        gmail:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+
+    LoginData:
+      type: object
+      required: [accessToken, refreshToken, tokenType, expiresInSeconds, profile, requiresPasswordChange]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresInSeconds:
+          type: integer
+          example: 3600
+        profile:
+          $ref: '#/components/schemas/Profile'
+        requiresPasswordChange:
+          type: boolean
+
+    LoginSuccessResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/LoginData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    SessionCloseData:
+      type: object
+      required: [sessionId, status, closedAt]
+      properties:
+        sessionId:
+          type: integer
+        status:
+          type: string
+          enum: [Cierre sesion]
+        closedAt:
+          type: string
+          format: date-time
+
+    SessionClosedResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SessionCloseData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RevokeSessionRequest:
+      type: object
+      required: [idsession]
+      properties:
+        idsession:
+          type: integer
+
+    SessionRevokeData:
+      type: object
+      required: [sessionId, status, revokedAt]
+      properties:
+        sessionId:
+          type: integer
+        status:
+          type: string
+          enum: [Expulsado]
+        revokedAt:
+          type: string
+          format: date-time
+
+    SessionRevokedResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SessionRevokeData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PasswordResetRequest:
+      type: object
+      required: [gmail]
+      properties:
+        gmail:
+          type: string
+          format: email
+
+    PasswordResetData:
+      type: object
+      required: [message, credentialStatus]
+      properties:
+        message:
+          type: string
+          example: Password reset email sent
+        credentialStatus:
+          type: string
+          enum: [Cambio contraseña]
+
+    PasswordResetResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PasswordResetData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+  responses:
+    BadRequest:
+      description: Solicitud invalida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            badRequest:
+              value:
+                error: bad_request
+                detail: Campos invalidos
+                code: "400"
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error: unauthorized
+                detail: Token invalido o credenciales invalidas
+                code: "401"
+    Forbidden:
+      description: Permisos insuficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error: forbidden
+                detail: Privilegios insuficientes
+                code: "403"
+    Conflict:
+      description: Conflicto de datos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflict:
+              value:
+                error: conflict
+                detail: Recurso en conflicto
+                code: "409"

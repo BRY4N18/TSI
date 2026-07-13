@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/* TSI design tokens — light mode baseline (dark mode: tarea aparte) */
+:root {
+  --bg-page: #f5f7fb;
+  --bg-surface: #ffffff;
+  --border-default: #e1e5ee;
+  --text-primary: #1a1d29;
+  --text-secondary: #5a5e70;
+  --accent-primary: #2e6ff2;
+  --accent-hover: #245bc7;
+
+  /* Tokens semánticos de alerta — design-system.md §3, valores de modo claro */
+  --alert-critical: #a32d2d;
+  --alert-critical-bg: #fcebeb;
+  --alert-urgent: #854f0b;
+  --alert-urgent-bg: #faeeda;
+  --alert-warning: #92730a;
+  --alert-warning-bg: #fef9e7;
+  --alert-success: #3b6d11;
+  --alert-success-bg: #eaf3de;
+  --alert-info: #3d4e68;
+  --alert-info-bg: #eef2f8;
+}
+
+@theme {
+  --color-bg-page: var(--bg-page);
+  --color-bg-surface: var(--bg-surface);
+  --color-border-default: var(--border-default);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-alert-critical: var(--alert-critical);
+  --color-alert-critical-bg: var(--alert-critical-bg);
+  --color-alert-urgent: var(--alert-urgent);
+  --color-alert-urgent-bg: var(--alert-urgent-bg);
+  --color-alert-warning: var(--alert-warning);
+  --color-alert-warning-bg: var(--alert-warning-bg);
+  --color-alert-success: var(--alert-success);
+  --color-alert-success-bg: var(--alert-success-bg);
+  --color-alert-info: var(--alert-info);
+  --color-alert-info-bg: var(--alert-info-bg);
+
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--bg-page);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--accent-primary);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}

@@ -1,0 +1,1068 @@
+openapi: 3.0.3
+info:
+  title: TSI Registro de Accidentes API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O21 (registro), CU-O32 (descarte), CU-O40 (escalamiento),
+    CU-O41 (fusión) y RF-REG-010 (confirmar reporte desde BORRADOR).
+    Sigue api-standards.md y spec registro-accidente.
+servers:
+  - url: /api/v1
+tags:
+  - name: Accidentes
+  - name: Geocodificacion
+  - name: Acciones
+  - name: Catalogos
+paths:
+  /accidentes/paises:
+    get:
+      tags: [Catalogos]
+      summary: Listar países activos (selección manual en cascada, RF-REG-006 punto 3)
+      operationId: listarPaises
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de países
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/estados:
+    get:
+      tags: [Catalogos]
+      summary: Listar estados/regiones activos de un país (RF-REG-006 punto 3)
+      operationId: listarEstados
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idpais
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de estados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/condados:
+    get:
+      tags: [Catalogos]
+      summary: Listar condados activos de un estado (RF-REG-006 punto 3)
+      operationId: listarCondados
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idestado
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de condados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/ciudades:
+    get:
+      tags: [Catalogos]
+      summary: Listar ciudades activas de un condado (RF-REG-006 punto 3)
+      operationId: listarCiudades
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idcondado
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de ciudades
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/calles:
+    get:
+      tags: [Catalogos]
+      summary: Listar calles activas de una ciudad — fallback manual si la geocodificación no encuentra resultado (Escenario 5)
+      operationId: listarCalles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idciudad
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de calles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/geocodificacion-inversa:
+    get:
+      tags: [Geocodificacion]
+      summary: Geocodificación inversa GPS → idcalle y jerarquía (RF-REG-006)
+      operationId: geocodificacionInversa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: latitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: longitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+      responses:
+        '200':
+          description: Sugerencia de ubicación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeocodificacionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes:
+    get:
+      tags: [Accidentes]
+      summary: Listar accidentes activos con paginación por cursor (RF-REG-005)
+      operationId: listarAccidentesActivos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: idseveridad
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4]
+        - name: idciudad
+          in: query
+          schema:
+            type: integer
+        - name: idestadoregion
+          in: query
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          schema:
+            $ref: '#/components/schemas/EstadoAccidente'
+        - name: activo
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: fecha_desde
+          in: query
+          schema:
+            type: integer
+            format: int64
+            description: epoch ms
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: integer
+            format: int64
+            description: epoch ms
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccidenteListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Accidentes]
+      summary: Registrar accidente en tiempo real (CU-O21)
+      operationId: registrarAccidente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: forzarAdvertencias
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Si true, persiste pese a advertencias RF-REG-003 quedando en BORRADOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarAccidenteRequest'
+      responses:
+        '201':
+          description: Accidente registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrarAccidenteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Posible duplicado u otro conflicto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicadoConflictResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}:
+    get:
+      tags: [Accidentes]
+      summary: Detalle de accidente con historial de estados
+      operationId: obtenerAccidente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccidenteDetalleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Accidentes]
+      summary: Editar datos complementarios o críticos con confirmación (RF-REG-005)
+      operationId: actualizarAccidente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarAccidenteRequest'
+      responses:
+        '200':
+          description: Accidente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActualizarAccidenteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}/confirmar-reporte:
+    post:
+      tags: [Acciones]
+      summary: Confirmar BORRADOR → REPORTADO (RF-REG-010)
+      operationId: confirmarReporte
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmacionRequest'
+      responses:
+        '200':
+          description: Caso reportado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmarReporteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /accidentes/{idaccidente}/descartar:
+    post:
+      tags: [Acciones]
+      summary: Descartar caso en BORRADOR (CU-O32)
+      operationId: descartarCaso
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DescartarCasoRequest'
+      responses:
+        '200':
+          description: Caso descartado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescartarCasoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /accidentes/{idaccidente}/escalar-severidad:
+    post:
+      tags: [Acciones]
+      summary: Escalar severidad en sitio (CU-O40)
+      operationId: escalarSeveridad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalarSeveridadRequest'
+      responses:
+        '200':
+          description: Severidad escalada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalarSeveridadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}/fusionar:
+    post:
+      tags: [Acciones]
+      summary: Fusionar reporte duplicado con caso padre (CU-O41)
+      operationId: fusionarReportes
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FusionarReportesRequest'
+      responses:
+        '200':
+          description: Reportes fusionados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FusionarReportesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdAccidente:
+      name: idaccidente
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ACC-\d+-\d{4}$'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+          properties:
+            next_cursor:
+              type: string
+              nullable: true
+            limit:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    EstadoAccidente:
+      type: string
+      enum:
+        - BORRADOR
+        - REPORTADO
+        - BUSCANDO_UNIDAD
+        - ASIGNADO
+        - EN_ATENCIÓN
+        - CERRADO
+        - DESCARTADO
+        - FUSIONADO
+
+    AdvertenciaValidacion:
+      type: object
+      required: [code, detail]
+      properties:
+        code:
+          type: string
+          enum:
+            - fuera_cobertura
+            - duplicado_posible
+            - discrepancia_geografica
+            - fecha_retrospectiva
+        detail:
+          type: string
+
+    UbicacionJerarquia:
+      type: object
+      properties:
+        idcalle:
+          type: integer
+        calle:
+          type: string
+        idciudad:
+          type: integer
+        ciudad:
+          type: string
+        idcondado:
+          type: integer
+        idestadoregion:
+          type: integer
+        estado:
+          type: string
+        idpais:
+          type: integer
+
+    HistorialEstadoItem:
+      type: object
+      required: [estado, fechahoramodificado, idusuario]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoAccidente'
+        fechahoramodificado:
+          type: integer
+          format: int64
+        idusuario:
+          type: integer
+
+    AccidenteBase:
+      type: object
+      required:
+        - idaccidente
+        - latitudinicio
+        - longitudinicio
+        - fechahoraaccidente
+        - idseveridad
+        - descripcion
+        - idcalle
+        - estado_actual
+        - activo
+      properties:
+        idaccidente:
+          type: string
+        latitudinicio:
+          type: number
+          format: double
+        longitudinicio:
+          type: number
+          format: double
+        fechahoraaccidente:
+          type: integer
+          format: int64
+        idseveridad:
+          type: integer
+          enum: [1, 2, 3, 4]
+        descripcion:
+          type: string
+        idcalle:
+          type: integer
+        codigopostal:
+          type: string
+        horainicio:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+        numvehiculos:
+          type: integer
+          minimum: 0
+        numvictimas:
+          type: integer
+          minimum: 0
+        numheridos:
+          type: integer
+          minimum: 0
+        numfallecidos:
+          type: integer
+          minimum: 0
+        distanciamillas:
+          type: number
+          format: double
+        duracionminutos:
+          type: integer
+        estado_actual:
+          $ref: '#/components/schemas/EstadoAccidente'
+        activo:
+          type: boolean
+        idaccidenteorigen:
+          type: string
+          nullable: true
+
+    RegistrarAccidenteRequest:
+      type: object
+      required:
+        - latitudinicio
+        - longitudinicio
+        - fechahoraaccidente
+        - idseveridad
+        - descripcion
+        - idcalle
+      properties:
+        latitudinicio:
+          type: number
+          format: double
+        longitudinicio:
+          type: number
+          format: double
+        fechahoraaccidente:
+          type: integer
+          format: int64
+        registroRetrospectivo:
+          type: boolean
+          default: false
+        justificacionRetrospectiva:
+          type: string
+        idseveridad:
+          type: integer
+          enum: [1, 2, 3, 4]
+        descripcion:
+          type: string
+          minLength: 1
+        idcalle:
+          type: integer
+        codigopostal:
+          type: string
+        horainicio:
+          type: string
+        idperiododia:
+          type: integer
+        idestadoclima:
+          type: integer
+        idelementofisico:
+          type: integer
+        idtiporeportado:
+          type: integer
+        numvehiculos:
+          type: integer
+        numvictimas:
+          type: integer
+        numheridos:
+          type: integer
+        numfallecidos:
+          type: integer
+        distanciamillas:
+          type: number
+        duracionminutos:
+          type: integer
+
+    RegistrarAccidenteData:
+      type: object
+      required: [message, idaccidente, estado, fechahoramodificado]
+      properties:
+        message:
+          type: string
+          example: Accidente registrado exitosamente
+        idaccidente:
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoAccidente'
+        advertencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdvertenciaValidacion'
+        fechahoramodificado:
+          type: integer
+          format: int64
+
+    RegistrarAccidenteResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RegistrarAccidenteData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DuplicadoConflictData:
+      type: object
+      required:
+        - error
+        - detail
+        - code
+        - idaccidente_similar
+        - idaccidente_principal_sugerido
+        - idaccidente_duplicado_sugerido
+      properties:
+        error:
+          type: string
+          example: duplicado_posible
+        detail:
+          type: string
+        code:
+          type: string
+          example: '409'
+        idaccidente_similar:
+          type: string
+        idaccidente_principal_sugerido:
+          type: string
+          description: Registro más antiguo (RN-REG-010b)
+        idaccidente_duplicado_sugerido:
+          type: string
+
+    DuplicadoConflictResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/DuplicadoConflictData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    AccidenteListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccidenteBase'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    AccidenteDetalleData:
+      allOf:
+        - $ref: '#/components/schemas/AccidenteBase'
+        - type: object
+          required: [historial_estados, ubicacion]
+          properties:
+            ubicacion:
+              $ref: '#/components/schemas/UbicacionJerarquia'
+            historial_estados:
+              type: array
+              items:
+                $ref: '#/components/schemas/HistorialEstadoItem'
+
+    AccidenteDetalleResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/AccidenteDetalleData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ActualizarAccidenteRequest:
+      type: object
+      properties:
+        confirmacion_campos_criticos:
+          type: boolean
+          default: false
+          description: Obligatorio true si se modifican latitud, longitud, fechahoraaccidente o idseveridad
+        latitudinicio:
+          type: number
+          format: double
+        longitudinicio:
+          type: number
+          format: double
+        fechahoraaccidente:
+          type: integer
+          format: int64
+        idseveridad:
+          type: integer
+        descripcion:
+          type: string
+        numvehiculos:
+          type: integer
+        numvictimas:
+          type: integer
+        numheridos:
+          type: integer
+        numfallecidos:
+          type: integer
+        idperiododia:
+          type: integer
+        idestadoclima:
+          type: integer
+
+    ActualizarAccidenteData:
+      type: object
+      required: [message, idaccidente, campos_modificados]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        campos_modificados:
+          type: array
+          items:
+            type: string
+
+    ActualizarAccidenteResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ActualizarAccidenteData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ConfirmacionRequest:
+      type: object
+      required: [confirmacion]
+      properties:
+        confirmacion:
+          type: boolean
+
+    ConfirmarReporteData:
+      type: object
+      required: [message, idaccidente, estado]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        estado:
+          type: string
+          enum: [REPORTADO]
+
+    ConfirmarReporteResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConfirmarReporteData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DescartarCasoRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+
+    DescartarCasoData:
+      type: object
+      required: [message, idaccidente, estado]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        estado:
+          type: string
+          enum: [DESCARTADO]
+
+    DescartarCasoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/DescartarCasoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    EscalarSeveridadRequest:
+      type: object
+      required: [idseveridad, nota]
+      properties:
+        idseveridad:
+          type: integer
+          enum: [1, 2, 3, 4]
+        numheridos:
+          type: integer
+        numfallecidos:
+          type: integer
+        descripcion:
+          type: string
+        nota:
+          type: string
+          minLength: 1
+
+    EscalarSeveridadData:
+      type: object
+      required: [message, idaccidente, idseveridad, estado]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        idseveridad:
+          type: integer
+        estado:
+          type: string
+          enum: [ASIGNADO, EN_ATENCIÓN]
+
+    EscalarSeveridadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EscalarSeveridadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    FusionarReportesRequest:
+      type: object
+      required: [idaccidenteprincipal, confirmacion]
+      properties:
+        idaccidenteprincipal:
+          type: string
+        confirmacion:
+          type: boolean
+
+    FusionarReportesData:
+      type: object
+      required:
+        - message
+        - idaccidente_duplicado
+        - idaccidente_principal
+        - estado_duplicado
+      properties:
+        message:
+          type: string
+        idaccidente_duplicado:
+          type: string
+        idaccidente_principal:
+          type: string
+        estado_duplicado:
+          type: string
+          enum: [FUSIONADO]
+
+    FusionarReportesResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/FusionarReportesData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    GeocodificacionData:
+      type: object
+      properties:
+        idcalle:
+          type: integer
+        ubicacion:
+          $ref: '#/components/schemas/UbicacionJerarquia'
+        precision_metros:
+          type: number
+        en_cobertura_operativa:
+          type: boolean
+
+    GeocodificacionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/GeocodificacionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    CatalogoItem:
+      type: object
+      description: >
+        Item genérico de catálogo geográfico (Dim_Pais/Dim_Estado/Dim_Condado/
+        Dim_Ciudad/Dim_Calle) usado por la selección manual en cascada.
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+
+    CatalogoListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogoItem'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol insuficiente
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Accidente no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflicto de estado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Regla de negocio no satisfecha
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

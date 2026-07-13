@@ -1,0 +1,953 @@
+openapi: 3.0.3
+info:
+  title: TSI Seguimiento y Cierre de Casos API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O25 (GPS), CU-O26 (llegada), CU-O28 (cierre),
+    CU-O29 (historial/expedientes), CU-O39 (abortar), CU-O42 (cancelar), CU-O44 (forzar retiro)
+    y RF-SEG-005–007 (historial, expediente cliente, mapa + SSE).
+    Flujos O37 (job señal GPS), geofencing O26 y depuración GPS son internos — ver plan.md.
+    Clarificaciones Session 2026-07-09 integradas. Sigue api-standards.md.
+servers:
+  - url: /api/v1
+tags:
+  - name: SeguimientoMapa
+  - name: MiSeguimiento
+  - name: CierreCaso
+  - name: HistorialEmergencias
+  - name: ClienteExpedientes
+paths:
+  /seguimiento/mapa:
+    get:
+      tags: [SeguimientoMapa]
+      summary: Snapshot del mapa de seguimiento — accidentes activos y unidades (RF-SEG-007)
+      operationId: obtenerMapaSeguimiento
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estado actual del mapa operador
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapaSeguimientoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /seguimiento/stream:
+    get:
+      tags: [SeguimientoMapa]
+      summary: Stream SSE de seguimiento en tiempo real (RF-SEG-007, RNF-SEG-001)
+      operationId: streamSeguimiento
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Eventos SSE (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: seguimiento.posicion
+                  data: {"idunidademergencia":5,"latitud":4.65,"longitud":-74.08,"idaccidente":"ACC-001"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accidentes/{idaccidente}/seguimiento:
+    get:
+      tags: [SeguimientoMapa]
+      summary: Detalle de seguimiento de un caso activo (ruta GPS, ETAs, despachos)
+      operationId: obtenerSeguimientoAccidente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Detalle seguimiento del caso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeguimientoAccidenteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /mi-seguimiento/posicion:
+    post:
+      tags: [MiSeguimiento]
+      summary: Registrar posición GPS de la unidad en camino (CU-O25)
+      operationId: registrarPosicionGps
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarPosicionRequest'
+      responses:
+        '202':
+          description: Posición aceptada para procesamiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosicionAceptadaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Unidad no en despacho Confirmado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mi-seguimiento/despachos/{iddespacho}/llegada:
+    post:
+      tags: [MiSeguimiento]
+      summary: Registrar llegada manual al sitio (CU-O26)
+      operationId: registrarLlegadaManual
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdDespacho'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Llegada registrada; caso → EN_ATENCION
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LlegadaRegistradaResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Llegada ya registrada o estado inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mi-seguimiento/despachos/{iddespacho}/abortar:
+    post:
+      tags: [MiSeguimiento]
+      summary: Abortar misión en tránsito (CU-O39)
+      operationId: abortarMision
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdDespacho'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbortarMisionRequest'
+      responses:
+        '200':
+          description: Misión abortada; unidad Activa; evento O36 disparado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbortarMisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /accidentes/{idaccidente}/cerrar:
+    post:
+      tags: [CierreCaso]
+      summary: Cerrar caso de emergencia (CU-O28)
+      operationId: cerrarCaso
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CerrarCasoRequest'
+      responses:
+        '200':
+          description: Caso cerrado; todos los despachos Retirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CierreCasoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Caso ya cerrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /accidentes/{idaccidente}/cancelar:
+    post:
+      tags: [CierreCaso]
+      summary: Cancelar caso con unidad despachada — falsa alarma (CU-O42)
+      operationId: cancelarCaso
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelarCasoRequest'
+      responses:
+        '200':
+          description: Caso cancelado y cerrado; solo motivo + tiempos SLA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CierreCasoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /despachos/{iddespacho}/forzar-retiro:
+    post:
+      tags: [CierreCaso]
+      summary: Forzar retiro de despacho desde central (CU-O44)
+      operationId: forzarRetiroDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdDespacho'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Despacho marcado Retirado; reevalúa cierre O28
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForzarRetiroResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /emergencias/historial:
+    get:
+      tags: [HistorialEmergencias]
+      summary: Historial de emergencias — operador (CU-O29, RF-SEG-005)
+      operationId: listarHistorialEmergencias
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: fecha_desde
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: estado
+          in: query
+          schema:
+            $ref: '#/components/schemas/EstadoCasoSeguimiento'
+        - name: idseveridad
+          in: query
+          schema:
+            type: integer
+        - name: idunidademergencia
+          in: query
+          schema:
+            type: integer
+        - name: ciudad
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista paginada de casos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialEmergenciasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /emergencias/historial/{idaccidente}/expediente:
+    get:
+      tags: [HistorialEmergencias]
+      summary: Expediente completo de un caso (operador)
+      operationId: obtenerExpedienteOperador
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Expediente completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpedienteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cliente/expedientes:
+    get:
+      tags: [ClienteExpedientes]
+      summary: Expedientes de casos cerrados en condados del cliente (CU-O29, RF-SEG-006)
+      operationId: listarExpedientesCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: fecha_desde
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Solo casos CERRADOS en condados de Dim_Preferencias_Cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialEmergenciasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /cliente/expedientes/{idaccidente}:
+    get:
+      tags: [ClienteExpedientes]
+      summary: Detalle expediente cliente (solo cerrados, filtro condado)
+      operationId: obtenerExpedienteCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Expediente completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpedienteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cliente/expedientes/{idaccidente}/pdf:
+    get:
+      tags: [ClienteExpedientes]
+      summary: Exportar expediente en PDF (RF-SEG-006)
+      operationId: descargarExpedientePdf
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: PDF del expediente
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdAccidente:
+      name: idaccidente
+      in: path
+      required: true
+      schema:
+        type: string
+    IdDespacho:
+      name: iddespacho
+      in: path
+      required: true
+      schema:
+        type: integer
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    Unauthorized:
+      description: No autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol no autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflicto de estado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Validación de negocio fallida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      additionalProperties: true
+      properties:
+        pagination:
+          type: object
+          properties:
+            next_cursor:
+              type: string
+              nullable: true
+            limit:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    EstadoCasoSeguimiento:
+      type: string
+      enum: [ASIGNADO, EN_ATENCION, CERRADO]
+
+    EstadoDespacho:
+      type: string
+      enum: [Confirmado, En_sitio, Retirado, Abortado]
+
+    Coordenada:
+      type: object
+      required: [latitud, longitud]
+      properties:
+        latitud:
+          type: number
+          format: double
+        longitud:
+          type: number
+          format: double
+
+    MarcadorAccidente:
+      type: object
+      required: [idaccidente, severidad, coordenadas, estado]
+      properties:
+        idaccidente:
+          type: string
+        severidad:
+          type: string
+          enum: [Leve, Moderado, Grave, Fatal]
+        coordenadas:
+          $ref: '#/components/schemas/Coordenada'
+        estado:
+          $ref: '#/components/schemas/EstadoCasoSeguimiento'
+
+    UnidadEnMapa:
+      type: object
+      required: [idunidademergencia, unidademergencia, estado_unidad, coordenadas]
+      properties:
+        idunidademergencia:
+          type: integer
+        unidademergencia:
+          type: string
+        estado_unidad:
+          type: string
+          enum: [Activa, Ocupada, Fuera_de_servicio]
+        coordenadas:
+          $ref: '#/components/schemas/Coordenada'
+        idaccidente:
+          type: string
+          nullable: true
+        eta_minutos:
+          type: integer
+          nullable: true
+        distancia_restante_km:
+          type: number
+          format: double
+          nullable: true
+
+    MapaSeguimientoData:
+      type: object
+      required: [accidentes_activos, unidades]
+      properties:
+        accidentes_activos:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarcadorAccidente'
+        unidades:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadEnMapa'
+
+    MapaSeguimientoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/MapaSeguimientoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PuntoGps:
+      type: object
+      required: [latitud, longitud, fechahora]
+      properties:
+        latitud:
+          type: number
+          format: double
+        longitud:
+          type: number
+          format: double
+        fechahora:
+          type: integer
+          format: int64
+          description: epoch ms
+
+    DespachoSeguimiento:
+      type: object
+      required: [iddespacho, idunidademergencia, estado, fechahoradespacho]
+      properties:
+        iddespacho:
+          type: integer
+        idunidademergencia:
+          type: integer
+        unidademergencia:
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoDespacho'
+        fechahoradespacho:
+          type: integer
+          format: int64
+        fechahorallegada:
+          type: integer
+          format: int64
+          nullable: true
+        fechahoraretiro:
+          type: integer
+          format: int64
+          nullable: true
+        eta_minutos:
+          type: integer
+          nullable: true
+        ruta_recorrida:
+          type: array
+          items:
+            $ref: '#/components/schemas/PuntoGps'
+
+    SeguimientoAccidenteData:
+      type: object
+      required: [idaccidente, estado_caso, coordenadas_accidente, despachos]
+      properties:
+        idaccidente:
+          type: string
+        estado_caso:
+          $ref: '#/components/schemas/EstadoCasoSeguimiento'
+        coordenadas_accidente:
+          $ref: '#/components/schemas/Coordenada'
+        despachos:
+          type: array
+          items:
+            $ref: '#/components/schemas/DespachoSeguimiento'
+
+    SeguimientoAccidenteResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SeguimientoAccidenteData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RegistrarPosicionRequest:
+      type: object
+      required: [idunidademergencia, idaccidente, latitud, longitud, fechahora]
+      properties:
+        idunidademergencia:
+          type: integer
+        idaccidente:
+          type: string
+        latitud:
+          type: number
+          format: double
+        longitud:
+          type: number
+          format: double
+        fechahora:
+          type: integer
+          format: int64
+
+    PosicionAceptadaData:
+      type: object
+      required: [aceptado]
+      properties:
+        aceptado:
+          type: boolean
+        llegada_automatica:
+          type: boolean
+          description: true si geofencing registró En_sitio en este ciclo
+
+    PosicionAceptadaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PosicionAceptadaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    LlegadaRegistradaData:
+      type: object
+      required: [iddespacho, fechahorallegada, estado_caso]
+      properties:
+        iddespacho:
+          type: integer
+        fechahorallegada:
+          type: integer
+          format: int64
+        estado_caso:
+          type: string
+          example: EN_ATENCION
+
+    LlegadaRegistradaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/LlegadaRegistradaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    AbortarMisionRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+
+    AbortarMisionData:
+      type: object
+      required: [iddespacho, estado_despacho, estado_unidad]
+      properties:
+        iddespacho:
+          type: integer
+        estado_despacho:
+          type: string
+          example: Abortado
+        estado_unidad:
+          type: string
+          example: Activa
+        reasignacion_disparada:
+          type: boolean
+
+    AbortarMisionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/AbortarMisionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    CerrarCasoRequest:
+      type: object
+      required: [resultado_atencion]
+      properties:
+        resultado_atencion:
+          type: string
+        numvehiculos:
+          type: integer
+          minimum: 0
+        numvictimas:
+          type: integer
+          minimum: 0
+        numheridos:
+          type: integer
+          minimum: 0
+        numfallecidos:
+          type: integer
+          minimum: 0
+        calificacion:
+          type: integer
+          minimum: 1
+          maximum: 5
+        observaciones_finales:
+          type: string
+
+    CancelarCasoRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+
+    TiemposCaso:
+      type: object
+      properties:
+        tiempo_respuesta_seg:
+          type: integer
+        tiempo_transito_seg:
+          type: integer
+        tiempo_en_sitio_seg:
+          type: integer
+        duracionminutos:
+          type: integer
+
+    CierreCasoData:
+      type: object
+      required: [idaccidente, estado_caso, horafin]
+      properties:
+        idaccidente:
+          type: string
+        estado_caso:
+          type: string
+          example: CERRADO
+        horafin:
+          type: integer
+          format: int64
+        duracionminutos:
+          type: integer
+        tiempos:
+          $ref: '#/components/schemas/TiemposCaso'
+        despachos_retirados:
+          type: array
+          items:
+            type: integer
+          description: iddespacho auto-retirados en O28
+
+    CierreCasoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/CierreCasoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ForzarRetiroData:
+      type: object
+      required: [iddespacho, fechahoraretiro, caso_cerrado]
+      properties:
+        iddespacho:
+          type: integer
+        fechahoraretiro:
+          type: integer
+          format: int64
+        idusuario_operador:
+          type: string
+        caso_cerrado:
+          type: boolean
+        estado_caso:
+          $ref: '#/components/schemas/EstadoCasoSeguimiento'
+
+    ForzarRetiroResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ForzarRetiroData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ResumenCasoHistorial:
+      type: object
+      required: [idaccidente, fecha, estado, severidad, ubicacion]
+      properties:
+        idaccidente:
+          type: string
+        fecha:
+          type: integer
+          format: int64
+        estado:
+          $ref: '#/components/schemas/EstadoCasoSeguimiento'
+        severidad:
+          type: string
+        ubicacion:
+          type: string
+        tiempos:
+          $ref: '#/components/schemas/TiemposCaso'
+        unidad_principal:
+          type: string
+          nullable: true
+
+    HistorialEmergenciasData:
+      type: object
+      required: [casos]
+      properties:
+        casos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResumenCasoHistorial'
+
+    HistorialEmergenciasResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/HistorialEmergenciasData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ExpedienteData:
+      type: object
+      required: [idaccidente, accidente, despachos, tiempos]
+      properties:
+        idaccidente:
+          type: string
+        accidente:
+          type: object
+          additionalProperties: true
+        tiempos:
+          $ref: '#/components/schemas/TiemposCaso'
+        despachos:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        notificaciones:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        trayectoria_gps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PuntoGps'
+        evidencias:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        notas:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    ExpedienteResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ExpedienteData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'

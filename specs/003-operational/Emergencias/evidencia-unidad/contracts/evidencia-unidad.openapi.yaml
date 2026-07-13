@@ -1,0 +1,832 @@
+openapi: 3.0.3
+info:
+  title: TSI Evidencia en Sitio y Disponibilidad de Unidad API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O27 (adjuntar evidencias), CU-O30 (gestionar disponibilidad)
+    y CU-O43 (sincronizar evidencia en diferido). Sigue api-standards.md y spec evidencia-unidad.
+servers:
+  - url: /api/v1
+tags:
+  - name: Evidencias
+  - name: UnidadesEmergencia
+  - name: MiUnidadEmergencia
+paths:
+  /accidentes/{idaccidente}/evidencias:
+    get:
+      tags: [Evidencias]
+      summary: Galería de evidencias sincronizadas por caso (RF-EVI-005)
+      operationId: listarEvidenciasPorAccidente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - name: tipo
+          in: query
+          description: Filtrar notas por tipo (fotos siempre incluidas)
+          schema:
+            $ref: '#/components/schemas/TipoNotaCampo'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Galería paginada (solo registros sincronizados en backend)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenciaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accidentes/{idaccidente}/evidencias/fotos:
+    post:
+      tags: [Evidencias]
+      summary: Subir evidencia fotográfica en línea (RF-EVI-002)
+      operationId: subirEvidenciaFoto
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                  description: JPEG o PNG, máximo 10 MB
+                fechahora:
+                  type: integer
+                  format: int64
+                  description: epoch ms de captura; si omitido, servidor usa now
+      responses:
+        '201':
+          description: Foto registrada y sincronizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenciaFotoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: Archivo excede 10 MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}/evidencias/notas:
+    post:
+      tags: [Evidencias]
+      summary: Registrar nota de campo en línea (RF-EVI-003)
+      operationId: registrarNotaCampo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarNotaCampoRequest'
+      responses:
+        '201':
+          description: Nota registrada y sincronizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenciaNotaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}/evidencias/sincronizar:
+    post:
+      tags: [Evidencias]
+      summary: Sincronización diferida de evidencia offline (CU-O43 / RF-EVI-006)
+      operationId: sincronizarEvidenciaDiferida
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                notas:
+                  type: string
+                  description: JSON array de notas pendientes (ver SincronizarNotasRequest)
+                fotos_metadata:
+                  type: string
+                  description: JSON array alineado con archivos fotos[] por índice
+                fotos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Resultado parcial o total de sincronización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SincronizarEvidenciaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /unidades-emergencia:
+    get:
+      tags: [UnidadesEmergencia]
+      summary: Listar unidades con estado actual (RF-EVI-004)
+      operationId: listarUnidadesEmergencia
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        - name: idtipounidad
+          in: query
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Lista de unidades con estado derivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadEmergenciaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /unidades-emergencia/{idunidademergencia}/disponibilidad:
+    get:
+      tags: [UnidadesEmergencia]
+      summary: Consultar estado actual de una unidad (RF-EVI-004 / CA-EVI-002)
+      operationId: consultarDisponibilidadUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidadEmergencia'
+      responses:
+        '200':
+          description: Estado actual derivado del historial
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisponibilidadUnidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /unidades-emergencia/{idunidademergencia}/historial-estado:
+    get:
+      tags: [UnidadesEmergencia]
+      summary: Historial de cambios de disponibilidad (RF-EVI-004 / CA-EVI-009)
+      operationId: consultarHistorialEstadoUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidadEmergencia'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Historial ordenado por fechahora descendente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialEstadoUnidadListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [UnidadesEmergencia]
+      summary: Declarar nuevo estado de disponibilidad (CU-O30 / RF-EVI-001)
+      operationId: declararEstadoDisponibilidadUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidadEmergencia'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclararEstadoDisponibilidadRequest'
+      responses:
+        '201':
+          description: Cambio registrado en historial inmutable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialEstadoUnidadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /mi-unidad-emergencia/disponibilidad:
+    get:
+      tags: [MiUnidadEmergencia]
+      summary: Consultar estado de la unidad autenticada (RF-EVI-004)
+      operationId: consultarMiDisponibilidad
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estado propio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisponibilidadUnidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [MiUnidadEmergencia]
+      summary: Cambiar disponibilidad de la unidad autenticada (CU-O30)
+      operationId: declararMiEstadoDisponibilidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclararEstadoDisponibilidadRequest'
+      responses:
+        '201':
+          description: Cambio registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialEstadoUnidadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdAccidente:
+      name: idaccidente
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ACC-\d+-\d{4}$'
+    IdUnidadEmergencia:
+      name: idunidademergencia
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+          properties:
+            next_cursor:
+              type: string
+              nullable: true
+            limit:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    EstadoDisponibilidadUnidad:
+      type: string
+      enum:
+        - Activa
+        - Ocupada
+        - Fuera de servicio
+
+    TipoNotaCampo:
+      type: string
+      enum:
+        - Observación general
+        - Declaración de testigo
+        - Daños materiales
+        - Condiciones del sitio
+
+    AutorEvidencia:
+      type: object
+      required: [idusuario, nombre]
+      properties:
+        idusuario:
+          type: integer
+        nombre:
+          type: string
+
+    EvidenciaFotoItem:
+      type: object
+      required:
+        - tipo
+        - idevidenciafoto
+        - idaccidente
+        - urlevidenciafoto
+        - sincronizado
+        - fechahora
+        - autor
+      properties:
+        tipo:
+          type: string
+          enum: [foto]
+        idevidenciafoto:
+          type: integer
+        idaccidente:
+          type: string
+        urlevidenciafoto:
+          type: string
+          format: uri
+        sincronizado:
+          type: boolean
+          enum: [true]
+        fechahora:
+          type: integer
+          format: int64
+        autor:
+          $ref: '#/components/schemas/AutorEvidencia'
+
+    EvidenciaNotaItem:
+      type: object
+      required:
+        - tipo_evidencia
+        - idnotaaccidentes
+        - idaccidente
+        - nota
+        - tipo
+        - sincronizado
+        - fechahora
+        - autor
+      properties:
+        tipo_evidencia:
+          type: string
+          enum: [nota]
+        idnotaaccidentes:
+          type: integer
+        idaccidente:
+          type: string
+        nota:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoNotaCampo'
+        sincronizado:
+          type: boolean
+          enum: [true]
+        fechahora:
+          type: integer
+          format: int64
+        autor:
+          $ref: '#/components/schemas/AutorEvidencia'
+
+    EvidenciaListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/EvidenciaFotoItem'
+              - $ref: '#/components/schemas/EvidenciaNotaItem'
+
+    EvidenciaListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EvidenciaListData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    EvidenciaFotoData:
+      type: object
+      required:
+        - idevidenciafoto
+        - idaccidente
+        - urlevidenciafoto
+        - sincronizado
+        - fechahora
+      properties:
+        idevidenciafoto:
+          type: integer
+        idaccidente:
+          type: string
+        urlevidenciafoto:
+          type: string
+          format: uri
+        sincronizado:
+          type: boolean
+          enum: [true]
+        fechahora:
+          type: integer
+          format: int64
+
+    EvidenciaFotoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EvidenciaFotoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RegistrarNotaCampoRequest:
+      type: object
+      required: [nota, tipo]
+      properties:
+        nota:
+          type: string
+          minLength: 1
+        tipo:
+          $ref: '#/components/schemas/TipoNotaCampo'
+        fechahora:
+          type: integer
+          format: int64
+          description: epoch ms de captura; si omitido, servidor usa now
+
+    EvidenciaNotaData:
+      type: object
+      required:
+        - idnotaaccidentes
+        - idaccidente
+        - nota
+        - tipo
+        - sincronizado
+        - fechahora
+      properties:
+        idnotaaccidentes:
+          type: integer
+        idaccidente:
+          type: string
+        nota:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoNotaCampo'
+        sincronizado:
+          type: boolean
+          enum: [true]
+        fechahora:
+          type: integer
+          format: int64
+
+    EvidenciaNotaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EvidenciaNotaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    SincronizarNotaPendiente:
+      type: object
+      required: [local_id, nota, tipo, fechahora]
+      properties:
+        local_id:
+          type: string
+          format: uuid
+        nota:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoNotaCampo'
+        fechahora:
+          type: integer
+          format: int64
+
+    SincronizarFotoMetadata:
+      type: object
+      required: [local_id, fechahora]
+      properties:
+        local_id:
+          type: string
+          format: uuid
+        fechahora:
+          type: integer
+          format: int64
+
+    SincronizarEvidenciaResultado:
+      type: object
+      required: [local_id, sincronizado, error]
+      properties:
+        local_id:
+          type: string
+          format: uuid
+        sincronizado:
+          type: boolean
+        idevidenciafoto:
+          type: integer
+          nullable: true
+        idnotaaccidentes:
+          type: integer
+          nullable: true
+        urlevidenciafoto:
+          type: string
+          format: uri
+          nullable: true
+        error:
+          type: string
+          nullable: true
+
+    SincronizarEvidenciaData:
+      type: object
+      required: [sincronizados, pendientes, resultados]
+      properties:
+        sincronizados:
+          type: integer
+        pendientes:
+          type: integer
+        resultados:
+          type: array
+          items:
+            $ref: '#/components/schemas/SincronizarEvidenciaResultado'
+
+    SincronizarEvidenciaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SincronizarEvidenciaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DisponibilidadUnidadData:
+      type: object
+      required:
+        - idunidademergencia
+        - estado_actual
+        - incluido_en_despacho
+        - fechahora_ultimo_cambio
+      properties:
+        idunidademergencia:
+          type: integer
+        estado_actual:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        incluido_en_despacho:
+          type: boolean
+        fechahora_ultimo_cambio:
+          type: integer
+          format: int64
+          nullable: true
+          description: null si no hay historial (estado por defecto Fuera de servicio)
+
+    DisponibilidadUnidadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/DisponibilidadUnidadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    HistorialEstadoUnidadItem:
+      type: object
+      required:
+        - idhistorialestadosunidadesemergencias
+        - idunidademergencia
+        - estadoanterior
+        - estadonuevo
+        - fechahora
+        - idusuario
+      properties:
+        idhistorialestadosunidadesemergencias:
+          type: integer
+        idunidademergencia:
+          type: integer
+        idestadounidademergencia:
+          type: integer
+        estadoanterior:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        estadonuevo:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        fechahora:
+          type: integer
+          format: int64
+        idusuario:
+          type: integer
+
+    HistorialEstadoUnidadData:
+      type: object
+      required:
+        - idhistorialestadosunidadesemergencias
+        - idunidademergencia
+        - estadoanterior
+        - estadonuevo
+        - fechahora
+      properties:
+        idhistorialestadosunidadesemergencias:
+          type: integer
+        idunidademergencia:
+          type: integer
+        estadoanterior:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        estadonuevo:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        fechahora:
+          type: integer
+          format: int64
+
+    HistorialEstadoUnidadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/HistorialEstadoUnidadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    HistorialEstadoUnidadListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorialEstadoUnidadItem'
+
+    HistorialEstadoUnidadListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/HistorialEstadoUnidadListData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    UnidadEmergenciaResumen:
+      type: object
+      required:
+        - idunidademergencia
+        - estado_actual
+        - incluido_en_despacho
+      properties:
+        idunidademergencia:
+          type: integer
+        nombre:
+          type: string
+        idtipounidad:
+          type: integer
+        estado_actual:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        incluido_en_despacho:
+          type: boolean
+
+    UnidadEmergenciaListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadEmergenciaResumen'
+
+    UnidadEmergenciaListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/UnidadEmergenciaListData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DeclararEstadoDisponibilidadRequest:
+      type: object
+      required: [estadonuevo]
+      properties:
+        estadonuevo:
+          $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol insuficiente o acceso a recurso ajeno
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Regla de negocio no satisfecha (caso inactivo, transición inválida)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

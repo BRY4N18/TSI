@@ -1,0 +1,555 @@
+openapi: 3.0.3
+info:
+  title: TSI Incorporación de Clientes API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O01 (registro), CU-O12 (configuración),
+    CU-O02/O09 (onboarding digital), CU-O08 (reenviar invitación).
+    Sigue api-standards.md del proyecto.
+servers:
+  - url: /api/v1
+tags:
+  - name: Registro
+  - name: Configuracion
+  - name: Onboarding
+  - name: Invitacion
+  - name: Logo
+paths:
+  /cuentas-clientes:
+    post:
+      tags: [Registro]
+      summary: Registrar cuenta de nuevo cliente y admin local (CU-O01)
+      operationId: registrarCuentaCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroCuentaRequest'
+      responses:
+        '201':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroCuentaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/configuracion:
+    patch:
+      tags: [Configuracion]
+      summary: Configurar plan y logo; establece estado_onboarding Pendiente (CU-O12)
+      operationId: configurarCuentaCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfiguracionCuentaRequest'
+      responses:
+        '200':
+          description: Cuenta configurada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionCuentaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/logo/upload-url:
+    post:
+      tags: [Logo]
+      summary: URL firmada para subir logo durante configuración (CU-O12)
+      operationId: createOnboardingLogoUploadUrl
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadUrlRequest'
+      responses:
+        '200':
+          description: URL firmada generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoUploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cuentas-clientes/{idcliente}/onboarding/progreso:
+    get:
+      tags: [Onboarding]
+      summary: Consultar progreso y etapa actual del onboarding (CU-O09)
+      operationId: getOnboardingProgreso
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      responses:
+        '200':
+          description: Progreso actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingProgresoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cuentas-clientes/{idcliente}/onboarding/etapas:
+    post:
+      tags: [Onboarding]
+      summary: Completar una etapa del onboarding digital (CU-O02)
+      operationId: completarOnboardingEtapa
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletarEtapaRequest'
+      responses:
+        '200':
+          description: Etapa completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletarEtapaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/{idcliente}/invitacion/reenviar:
+    post:
+      tags: [Invitacion]
+      summary: Reenviar invitación con contraseña temporal (CU-O08)
+      operationId: reenviarInvitacion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReenviarInvitacionRequest'
+      responses:
+        '200':
+          description: Invitación reenviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReenviarInvitacionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdCliente:
+      name: idcliente
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Clave de idempotencia para operaciones de escritura
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    TipoCliente:
+      type: string
+      enum: [Aseguradora, Municipio, Smart City]
+
+    EstadoOnboarding:
+      type: string
+      enum: [Pendiente, En progreso, Completado]
+
+    EtapaOnboarding:
+      type: string
+      enum: [cambio_password, perfil_corporativo, preferencias]
+
+    AdminLocalInput:
+      type: object
+      required: [nombres, apellidos, gmail]
+      properties:
+        nombres:
+          type: string
+          minLength: 1
+        apellidos:
+          type: string
+          minLength: 1
+        gmail:
+          type: string
+          format: email
+
+    RegistroCuentaRequest:
+      type: object
+      required:
+        - razon_social
+        - nombre
+        - tipo
+        - nit_identificacion
+        - fecha_inicio_contrato
+        - admin_local
+      properties:
+        razon_social:
+          type: string
+          minLength: 2
+        nombre:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoCliente'
+        nit_identificacion:
+          type: string
+        fecha_inicio_contrato:
+          type: integer
+          format: int64
+          description: Epoch milliseconds
+        admin_local:
+          $ref: '#/components/schemas/AdminLocalInput'
+
+    RegistroCuentaData:
+      type: object
+      required:
+        - idcliente
+        - estado
+        - admin_local_id
+        - admin_local_gmail
+      properties:
+        idcliente:
+          type: integer
+        estado:
+          type: string
+          enum: [Activo]
+        admin_local_id:
+          type: integer
+        admin_local_gmail:
+          type: string
+          format: email
+        message:
+          type: string
+          example: Cuenta creada
+
+    RegistroCuentaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RegistroCuentaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ConfiguracionCuentaRequest:
+      type: object
+      required: [plan_suscripcion]
+      properties:
+        plan_suscripcion:
+          type: string
+        logo_url:
+          type: string
+          format: uri
+
+    ConfiguracionCuentaData:
+      type: object
+      required:
+        - idcliente
+        - plan_suscripcion
+        - estado_onboarding
+      properties:
+        idcliente:
+          type: integer
+        plan_suscripcion:
+          type: string
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+        estado_onboarding:
+          $ref: '#/components/schemas/EstadoOnboarding'
+
+    ConfiguracionCuentaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConfiguracionCuentaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    OnboardingProgresoData:
+      type: object
+      required:
+        - idcliente
+        - estado_onboarding
+        - etapas_completadas
+        - etapa_actual
+      properties:
+        idcliente:
+          type: integer
+        estado_onboarding:
+          $ref: '#/components/schemas/EstadoOnboarding'
+        etapas_completadas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EtapaOnboarding'
+        etapa_actual:
+          allOf:
+            - $ref: '#/components/schemas/EtapaOnboarding'
+          nullable: true
+          description: null si onboarding Completado
+
+    OnboardingProgresoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/OnboardingProgresoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DatosEtapaPerfil:
+      type: object
+      properties:
+        razon_social:
+          type: string
+          minLength: 2
+        nombre:
+          type: string
+        logo_url:
+          type: string
+          format: uri
+      minProperties: 1
+
+    DatosEtapaPreferencias:
+      type: object
+      properties:
+        umbrales_alerta:
+          type: string
+        canales_notificacion:
+          type: string
+          enum: [email, sms, ambos]
+        telefono_sms:
+          type: string
+        zonas_geograficas:
+          type: string
+        destinatarios_reportes:
+          type: string
+        frecuencia_reportes:
+          type: string
+        formato_reportes:
+          type: string
+      minProperties: 1
+
+    CompletarEtapaRequest:
+      type: object
+      required: [etapa]
+      properties:
+        etapa:
+          $ref: '#/components/schemas/EtapaOnboarding'
+        datos_etapa:
+          description: >
+            Requerido para perfil_corporativo y preferencias.
+            Para cambio_password puede omitirse si la credencial ya está en estadocredencial Activo.
+          oneOf:
+            - $ref: '#/components/schemas/DatosEtapaPerfil'
+            - $ref: '#/components/schemas/DatosEtapaPreferencias'
+
+    CompletarEtapaData:
+      type: object
+      required:
+        - etapa
+        - progreso
+      properties:
+        etapa:
+          $ref: '#/components/schemas/EtapaOnboarding'
+        progreso:
+          $ref: '#/components/schemas/OnboardingProgresoData'
+
+    CompletarEtapaResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/CompletarEtapaData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ReenviarInvitacionRequest:
+      type: object
+      properties:
+        id_usuario:
+          type: integer
+          minimum: 1
+          description: Default admin_local_id si omitido (Cliente)
+
+    ReenviarInvitacionData:
+      type: object
+      required: [message, id_usuario]
+      properties:
+        message:
+          type: string
+          example: Invitación reenviada
+        id_usuario:
+          type: integer
+
+    ReenviarInvitacionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ReenviarInvitacionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    LogoUploadUrlRequest:
+      type: object
+      required: [content_type]
+      properties:
+        content_type:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+        file_name:
+          type: string
+          maxLength: 255
+
+    LogoUploadUrlData:
+      type: object
+      required: [upload_url, logo_url, expires_at]
+      properties:
+        upload_url:
+          type: string
+          format: uri
+        logo_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+
+    LogoUploadUrlResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/LogoUploadUrlData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Permisos insuficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflicto de estado o duplicado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,840 @@
+openapi: 3.0.3
+info:
+  title: TSI Despacho Inteligente API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O24 (confirmar), CU-O33 (asignar manual),
+    CU-O34 (escalar zona), CU-O38 (coordinar múltiple), CU-O45 (rechazar),
+    RF-DES-010 (parámetros) y RF-DES-011 (monitoreo + SSE).
+    Flujos O22/O23/O35/O36 son orquestación interna (Kafka/jobs) — ver plan.md.
+    Sigue api-standards.md y spec despacho-inteligente (clarificaciones 2026-07-09).
+servers:
+  - url: /api/v1
+tags:
+  - name: DespachoMonitoreo
+  - name: DespachoAsignacion
+  - name: MiDespacho
+  - name: DespachoParametros
+paths:
+  /accidentes/{idaccidente}/despacho:
+    get:
+      tags: [DespachoMonitoreo]
+      summary: Estado del proceso de despacho para un accidente (RF-DES-011)
+      operationId: obtenerEstadoDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Estado actual, historial de intentos y unidades asignadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDespachoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accidentes/{idaccidente}/despacho/stream:
+    get:
+      tags: [DespachoMonitoreo]
+      summary: Stream SSE de actualizaciones de despacho (RF-DES-011)
+      operationId: streamDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+      responses:
+        '200':
+          description: Eventos SSE (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: despacho.actualizado
+                  data: {"idaccidente":"ACC-123","estado_caso":"BUSCANDO_UNIDAD"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accidentes/{idaccidente}/despacho/unidades-candidatas:
+    get:
+      tags: [DespachoAsignacion]
+      summary: Listar unidades candidatas para asignación manual (O33)
+      operationId: listarUnidadesCandidatas
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - name: incluir_vecinos
+          in: query
+          description: Si true, incluye condados vecinos (post-O34)
+          schema:
+            type: boolean
+            default: false
+        - name: tipounidademergencia
+          in: query
+          schema:
+            type: string
+            enum: [Ambulancia, Grua, Patrulla]
+      responses:
+        '200':
+          description: Candidatas ordenadas por puntuación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadesCandidatasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Caso no elegible para despacho
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /accidentes/{idaccidente}/despacho/asignar-manual:
+    post:
+      tags: [DespachoAsignacion]
+      summary: Asignar unidad manualmente (CU-O33)
+      operationId: asignarUnidadManual
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignarManualRequest'
+      responses:
+        '201':
+          description: Despacho creado con origen Manual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DespachoCreadoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Unidad no disponible o ya asignada al caso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /accidentes/{idaccidente}/despacho/escalar-zona:
+    post:
+      tags: [DespachoAsignacion]
+      summary: Escalar búsqueda a condados vecinos (CU-O34)
+      operationId: escalarZonaVecina
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Unidad encontrada en condado vecino y despachada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DespachoCreadoResponse'
+        '202':
+          description: Escalamiento procesado; sin unidades — alerta registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalamientoSinUnidadesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accidentes/{idaccidente}/despacho/coordinar:
+    post:
+      tags: [DespachoAsignacion]
+      summary: Coordinar despacho múltiple — nueva unidad al mismo caso (CU-O38)
+      operationId: coordinarDespachoMultiple
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdAccidente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoordinarDespachoRequest'
+      responses:
+        '201':
+          description: Segundo despacho activo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DespachoCreadoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Unidad ya tiene despacho activo para este caso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mi-despacho/pendientes:
+    get:
+      tags: [MiDespacho]
+      summary: Notificaciones de despacho pendientes de la unidad autenticada
+      operationId: listarDespachosPendientes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de despachos Pendiente/Notificada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendientesListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /mi-despacho/{idnotificaciondespacho}:
+    get:
+      tags: [MiDespacho]
+      summary: Detalle de notificación de despacho para la unidad
+      operationId: obtenerDetalleDespachoUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdNotificacionDespacho'
+      responses:
+        '200':
+          description: Detalle con datos del accidente y ETA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetalleDespachoUnidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /mi-despacho/{idnotificaciondespacho}/confirmar:
+    post:
+      tags: [MiDespacho]
+      summary: Confirmar despacho (CU-O24)
+      operationId: confirmarDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdNotificacionDespacho'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Despacho confirmado; unidad pasa a Ocupada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmarDespachoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Notificación ya respondida o expirada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mi-despacho/{idnotificaciondespacho}/rechazar:
+    post:
+      tags: [MiDespacho]
+      summary: Rechazar despacho con motivo (CU-O45)
+      operationId: rechazarDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdNotificacionDespacho'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RechazarDespachoRequest'
+      responses:
+        '200':
+          description: Despacho rechazado; re-asignación O36 disparada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RechazarDespachoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Notificación ya respondida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /despacho/parametros:
+    get:
+      tags: [DespachoParametros]
+      summary: Obtener parámetros del algoritmo (RF-DES-010)
+      operationId: obtenerParametrosDespacho
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Parámetros actuales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametrosDespachoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    patch:
+      tags: [DespachoParametros]
+      summary: Actualizar parámetros del algoritmo (RF-DES-010)
+      operationId: actualizarParametrosDespacho
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarParametrosRequest'
+      responses:
+        '200':
+          description: Parámetros actualizados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametrosDespachoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdAccidente:
+      name: idaccidente
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ACC-'
+    IdNotificacionDespacho:
+      name: idnotificaciondespacho
+      in: path
+      required: true
+      schema:
+        type: integer
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    EstadoCaso:
+      type: string
+      enum: [BUSCANDO_UNIDAD, ASIGNADO]
+
+    EstadoDespacho:
+      type: string
+      enum: [Pendiente, Confirmado, Rechazado, Timeout, Abortado, En_sitio, Retirado]
+
+    EstadoNotificacion:
+      type: string
+      enum: [Pendiente, Notificada, Confirmada, Rechazada, No_entregada]
+
+    OrigenDespacho:
+      type: string
+      enum: [Automatico, Manual, Escalado_zona]
+
+    IntentoDespacho:
+      type: object
+      required: [iddespacho, idunidademergencia, unidademergencia, estado, origen, fechahoradespacho, activo]
+      properties:
+        iddespacho:
+          type: integer
+        idunidademergencia:
+          type: integer
+        unidademergencia:
+          type: string
+        tipounidademergencia:
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoDespacho'
+        estadonotificacion:
+          $ref: '#/components/schemas/EstadoNotificacion'
+        motivo:
+          type: string
+          nullable: true
+        origen:
+          $ref: '#/components/schemas/OrigenDespacho'
+        fechahoradespacho:
+          type: integer
+          format: int64
+          description: epoch ms
+        activo:
+          type: boolean
+
+    EstadoDespachoData:
+      type: object
+      required: [idaccidente, estado_caso, tiempo_transcurrido_seg, intentos, unidades_activas]
+      properties:
+        idaccidente:
+          type: string
+        estado_caso:
+          $ref: '#/components/schemas/EstadoCaso'
+        tiempo_transcurrido_seg:
+          type: integer
+        intentos:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntentoDespacho'
+        unidades_activas:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntentoDespacho'
+        mensaje:
+          type: string
+          example: Buscando unidad...
+
+    EstadoDespachoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EstadoDespachoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    UnidadCandidata:
+      type: object
+      required: [idunidademergencia, unidademergencia, tipounidademergencia, distancia_km, puntuacion, estado_unidad]
+      properties:
+        idunidademergencia:
+          type: integer
+        unidademergencia:
+          type: string
+        tipounidademergencia:
+          type: string
+        distancia_km:
+          type: number
+          format: double
+        puntuacion:
+          type: number
+          format: double
+        estado_unidad:
+          type: string
+          enum: [Activa]
+        eta_minutos:
+          type: integer
+
+    UnidadesCandidatasData:
+      type: object
+      required: [idaccidente, candidatas]
+      properties:
+        idaccidente:
+          type: string
+        condado_filtro:
+          type: string
+        incluye_vecinos:
+          type: boolean
+        candidatas:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadCandidata'
+
+    UnidadesCandidatasResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/UnidadesCandidatasData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    AsignarManualRequest:
+      type: object
+      required: [idunidademergencia]
+      properties:
+        idunidademergencia:
+          type: integer
+
+    CoordinarDespachoRequest:
+      type: object
+      required: [idunidademergencia]
+      properties:
+        idunidademergencia:
+          type: integer
+
+    DespachoCreadoData:
+      type: object
+      required:
+        - message
+        - idaccidente
+        - iddespacho
+        - idnotificaciondespacho
+        - idunidademergencia
+        - origen
+        - estado_caso
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        iddespacho:
+          type: integer
+        idnotificaciondespacho:
+          type: integer
+        idunidademergencia:
+          type: integer
+        unidademergencia:
+          type: string
+        origen:
+          $ref: '#/components/schemas/OrigenDespacho'
+        estado_caso:
+          $ref: '#/components/schemas/EstadoCaso'
+
+    DespachoCreadoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/DespachoCreadoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    EscalamientoSinUnidadesData:
+      type: object
+      required: [message, idaccidente, alerta_registrada]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        alerta_registrada:
+          type: boolean
+        nota:
+          type: string
+
+    EscalamientoSinUnidadesResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/EscalamientoSinUnidadesData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PendienteDespacho:
+      type: object
+      required: [idnotificaciondespacho, idaccidente, idseveridad, estadonotificacion, fechahora]
+      properties:
+        idnotificaciondespacho:
+          type: integer
+        idaccidente:
+          type: string
+        idseveridad:
+          type: integer
+        severidad:
+          type: string
+        estadonotificacion:
+          $ref: '#/components/schemas/EstadoNotificacion'
+        descripcion:
+          type: string
+        direccion_aproximada:
+          type: string
+        latitud:
+          type: number
+        longitud:
+          type: number
+        eta_minutos:
+          type: integer
+        fechahora:
+          type: integer
+          format: int64
+
+    PendientesListData:
+      type: object
+      required: [pendientes]
+      properties:
+        pendientes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendienteDespacho'
+
+    PendientesListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/PendientesListData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    DetalleDespachoUnidadData:
+      allOf:
+        - $ref: '#/components/schemas/PendienteDespacho'
+        - type: object
+          properties:
+            ruta_sugerida_geojson:
+              type: object
+              description: LineString GeoJSON simplificado
+
+    DetalleDespachoUnidadResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/DetalleDespachoUnidadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ConfirmarDespachoData:
+      type: object
+      required: [message, idaccidente, iddespacho, estado_caso, estado_unidad]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        iddespacho:
+          type: integer
+        estado_caso:
+          $ref: '#/components/schemas/EstadoCaso'
+        estado_unidad:
+          type: string
+          enum: [Ocupada]
+
+    ConfirmarDespachoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConfirmarDespachoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RechazarDespachoRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    RechazarDespachoData:
+      type: object
+      required: [message, idaccidente, iddespacho, reasignacion_iniciada]
+      properties:
+        message:
+          type: string
+        idaccidente:
+          type: string
+        iddespacho:
+          type: integer
+        reasignacion_iniciada:
+          type: boolean
+
+    RechazarDespachoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RechazarDespachoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    PrioridadSeveridad:
+      type: object
+      required: [idseveridad, orden_tipos]
+      properties:
+        idseveridad:
+          type: integer
+          enum: [1, 2, 3, 4]
+        orden_tipos:
+          type: array
+          items:
+            type: string
+            enum: [Ambulancia, Grua, Patrulla]
+
+    ParametrosDespachoData:
+      type: object
+      required:
+        - timeout_respuesta_seg
+        - peso_distancia_pct
+        - peso_concordancia_pct
+        - peso_disponibilidad_pct
+        - prioridades_por_severidad
+      properties:
+        timeout_respuesta_seg:
+          type: integer
+          minimum: 30
+          maximum: 300
+        peso_distancia_pct:
+          type: integer
+          minimum: 40
+          maximum: 80
+        peso_concordancia_pct:
+          type: integer
+        peso_disponibilidad_pct:
+          type: integer
+        prioridades_por_severidad:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrioridadSeveridad'
+        keywords_severidad_moderada:
+          type: array
+          items:
+            type: string
+
+    ParametrosDespachoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ParametrosDespachoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ActualizarParametrosRequest:
+      type: object
+      properties:
+        timeout_respuesta_seg:
+          type: integer
+          minimum: 30
+          maximum: 300
+        peso_distancia_pct:
+          type: integer
+          minimum: 40
+          maximum: 80
+        peso_concordancia_pct:
+          type: integer
+        peso_disponibilidad_pct:
+          type: integer
+        prioridades_por_severidad:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrioridadSeveridad'
+        keywords_severidad_moderada:
+          type: array
+          items:
+            type: string
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol insuficiente
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Validación de dominio fallida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
