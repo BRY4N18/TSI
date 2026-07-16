@@ -52,7 +52,6 @@ database/
 e2e/
 
 # Root config files (not published to GitHub)
-/accidentes.yml
-/docker-compose.infraestructura.yml
+/docker/
 /skills-lock.json
 frontend/chrome/

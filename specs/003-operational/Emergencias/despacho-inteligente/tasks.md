@@ -253,6 +253,7 @@
 - [X] T093 [US6] Implementar página monitoreo en `frontend/src/app/modules/despacho/pages/monitoreo-despacho/monitoreo-despacho.page.ts`
 - [X] T094 [US6] Implementar página asignación manual en `frontend/src/app/modules/despacho/pages/asignacion-manual/asignacion-manual.page.ts`
 - [X] T095 [US6] Implementar página mi-despacho unidad en `frontend/src/app/modules/despacho/pages/mi-despacho/mi-despacho.page.ts`
+- [X] T095b [US6] Rediseño dashboard mi-despacho (single-incident): header con severidad/código/countdown de respuesta, mapa de solo-lectura con ruta real (`shared/ui/map/read-only-route-map.component.ts`, `shared/services/ruta.service.ts` — movido desde `seguimiento/` por ser transversal), sidebar "Estado de unidad" (`idunidademergencia`/`unidademergencia` agregados a `PendienteDespacho`/`DetalleDespachoUnidadData`), cola compacta para pendientes adicionales, botones Confirmar/Rechazar con estado de carga completo (gerundio+spinner, revert a 15s) per `design-system.md §5`. Completa CU-O24 (`spec.md:312`, mapa+ruta ya especificado, no implementado hasta ahora). Personal asignado/equipamiento crítico quedan fuera de alcance — no existen en el modelo de datos (`Dim_UnidadEmergencia`); requerirían un `/speckit-specify` previo antes de implementarse.
 - [X] T096 [US6] Implementar página parámetros algoritmo en `frontend/src/app/modules/despacho/pages/parametros-algoritmo/parametros-algoritmo.page.ts`
 - [X] T097 [US6] Registrar entradas sidebar por rol en `frontend/src/app/core/sidebar/despacho-menu.config.ts`
 

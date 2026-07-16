@@ -82,11 +82,13 @@ export interface PendienteDespacho {
   longitud?: number;
   eta_minutos?: number;
   fechahora: number;
+  idunidademergencia: number;
+  unidademergencia: string;
+  unidad_latitud?: number | null;
+  unidad_longitud?: number | null;
 }
 
-export interface DetalleDespachoUnidadData extends PendienteDespacho {
-  ruta_sugerida_geojson?: Record<string, unknown>;
-}
+export interface DetalleDespachoUnidadData extends PendienteDespacho {}
 
 export interface ConfirmarDespachoData {
   message: string;

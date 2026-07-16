@@ -25,3 +25,4 @@ class TestDetalleDespachoUnidadContract:
         body = response.json()
         assert body["data"]["idnotificaciondespacho"] == idnotif
         assert body["data"]["idaccidente"] == accidente_activo
+        assert body["data"]["unidademergencia"] == "Ambulancia 01"

@@ -20,7 +20,12 @@ class TestListarPendientesContract:
         # Assert
         assert response.status_code == 200
         body = response.json()
-        assert len(body["data"]["pendientes"]) >= 1
+        pendientes = body["data"]["pendientes"]
+        assert len(pendientes) >= 1
+        assert pendientes[0]["idunidademergencia"] == 1
+        assert pendientes[0]["unidademergencia"] == "Ambulancia 01"
+        assert pendientes[0]["unidad_latitud"] == 19.43
+        assert pendientes[0]["unidad_longitud"] == -99.13
 
     def test_listar_when_tecnico_returns_403(self, api_client, tecnico_auth_headers):
         # Act

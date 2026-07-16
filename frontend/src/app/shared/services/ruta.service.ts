@@ -3,18 +3,21 @@ import { Injectable, inject } from '@angular/core';
 import * as L from 'leaflet';
 import { Observable, catchError, map, of, timeout } from 'rxjs';
 
-import { ApiEnvelope } from '../models/seguimiento.types';
-
 interface RutaData {
   puntos: { latitud: number; longitud: number }[];
 }
 
+interface RutaEnvelope {
+  data: RutaData;
+}
+
 /**
- * Calcula la ruta por calles reales entre dos puntos (unidad → accidente) vía
- * el proxy de Django hacia OSRM. Si el motor de ruteo falla, no responde a
- * tiempo, o no encuentra ruta, degrada a la línea recta [origen, destino] —
- * esta vista es de monitoreo/visualización, nunca debe romperse ni bloquear
- * por un fallo de un servicio auxiliar de ruteo.
+ * Calcula la ruta por calles reales entre dos puntos vía el proxy de Django
+ * hacia OSRM. Si el motor de ruteo falla, no responde a tiempo, o no
+ * encuentra ruta, degrada a la línea recta [origen, destino] — usado por
+ * cualquier vista de monitoreo/visualización (mapa de seguimiento, mi
+ * despacho), nunca debe romperse ni bloquear por un fallo de un servicio
+ * auxiliar de ruteo. Vive en shared/ porque no es específico de un dominio.
  */
 @Injectable({ providedIn: 'root' })
 export class RutaService {
@@ -26,7 +29,7 @@ export class RutaService {
     const recta: L.LatLngExpression[] = [origen, destino];
 
     return this.http
-      .get<ApiEnvelope<RutaData>>(`${this.baseUrl}/seguimiento/ruta`, {
+      .get<RutaEnvelope>(`${this.baseUrl}/seguimiento/ruta`, {
         params: {
           origen: `${origen.lat},${origen.lng}`,
           destino: `${destino.lat},${destino.lng}`,

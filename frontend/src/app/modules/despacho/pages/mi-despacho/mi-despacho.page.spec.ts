@@ -21,7 +21,15 @@ describe('MiDespachoPage', () => {
       of<any>({
         data: {
           pendientes: [
-            { idnotificaciondespacho: 1, idaccidente: 'ACC-1', idseveridad: 3, estadonotificacion: 'Pendiente' },
+            {
+              idnotificaciondespacho: 1,
+              idaccidente: 'ACC-1',
+              idseveridad: 3,
+              estadonotificacion: 'Pendiente',
+              idunidademergencia: 1,
+              unidademergencia: 'Ambulancia 01',
+              fechahora: Date.now(),
+            },
           ],
         },
         meta: {},
@@ -39,6 +47,10 @@ describe('MiDespachoPage', () => {
 
     fixture = TestBed.createComponent(MiDespachoPage);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy(); // detiene el setInterval del countdown
   });
 
   it('ngOnInit_loads_pendientes', () => {
@@ -140,5 +152,69 @@ describe('MiDespachoPage', () => {
 
     // Assert
     expect(fixture.componentInstance.error()).toBeTruthy();
+  });
+
+  it('incidenteActivo_returns_first_pendiente_and_colaPendientes_the_rest', () => {
+    // Arrange
+    api.listarPendientes.and.returnValue(
+      of<any>({
+        data: {
+          pendientes: [
+            { idnotificaciondespacho: 1, idaccidente: 'ACC-1', idseveridad: 3, estadonotificacion: 'Pendiente', idunidademergencia: 1, unidademergencia: 'Ambulancia 01', fechahora: Date.now() },
+            { idnotificaciondespacho: 2, idaccidente: 'ACC-2', idseveridad: 2, estadonotificacion: 'Pendiente', idunidademergencia: 1, unidademergencia: 'Ambulancia 01', fechahora: Date.now() },
+          ],
+        },
+        meta: {},
+      }),
+    );
+
+    // Act
+    fixture.componentInstance.cargar();
+
+    // Assert
+    expect(fixture.componentInstance.incidenteActivo()?.idnotificaciondespacho).toBe(1);
+    expect(fixture.componentInstance.colaPendientes().map((p) => p.idnotificaciondespacho)).toEqual([2]);
+  });
+
+  it('promoverAlFrente_moves_item_from_cola_to_incidenteActivo', () => {
+    // Arrange
+    api.listarPendientes.and.returnValue(
+      of<any>({
+        data: {
+          pendientes: [
+            { idnotificaciondespacho: 1, idaccidente: 'ACC-1', idseveridad: 3, estadonotificacion: 'Pendiente', idunidademergencia: 1, unidademergencia: 'Ambulancia 01', fechahora: Date.now() },
+            { idnotificaciondespacho: 2, idaccidente: 'ACC-2', idseveridad: 2, estadonotificacion: 'Pendiente', idunidademergencia: 1, unidademergencia: 'Ambulancia 01', fechahora: Date.now() },
+          ],
+        },
+        meta: {},
+      }),
+    );
+    fixture.componentInstance.cargar();
+
+    // Act
+    fixture.componentInstance.promoverAlFrente(2);
+
+    // Assert
+    expect(fixture.componentInstance.incidenteActivo()?.idnotificaciondespacho).toBe(2);
+    expect(fixture.componentInstance.colaPendientes().map((p) => p.idnotificaciondespacho)).toEqual([1]);
+  });
+
+  it('restanteMs_starts_near_default_timeout_for_a_freshly_notified_incidente', () => {
+    // Assert — arranca cerca de 90s (timeout default) para un incidente recién notificado
+    const inicial = fixture.componentInstance.restanteMs();
+    expect(inicial).not.toBeNull();
+    expect(inicial!).toBeGreaterThan(85_000);
+    expect(inicial!).toBeLessThanOrEqual(90_000);
+  });
+
+  it('restanteMs_is_null_when_no_hay_incidente_activo', () => {
+    // Arrange
+    api.listarPendientes.and.returnValue(of<any>({ data: { pendientes: [] }, meta: {} }));
+
+    // Act
+    fixture.componentInstance.cargar();
+
+    // Assert
+    expect(fixture.componentInstance.restanteMs()).toBeNull();
   });
 });

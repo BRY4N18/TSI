@@ -13,7 +13,7 @@ import * as L from 'leaflet';
 
 import { TablerIconComponent, TablerIconName, tablerIconPaths } from '../../../../shared/ui/icon/tabler-icon.component';
 import { SEVERIDAD_INFO } from '../../../accidentes/severidad.constants';
-import { RutaService } from '../../services/ruta.service';
+import { RutaService } from '../../../../shared/services/ruta.service';
 import { SeguimientoApiService } from '../../services/seguimiento-api.service';
 import { SeguimientoSseService } from '../../services/seguimiento-sse.service';
 import { MapaSeguimientoData, MarcadorAccidente, UnidadEnMapa } from '../../models/seguimiento.types';

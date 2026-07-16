@@ -42,7 +42,7 @@ class MiDespachoService:
             estado = notif.get("estadonotificaciondespacho")
             if estado not in PENDIENTES:
                 continue
-            item = self._map_pendiente(notif, idunidad)
+            item = self._map_pendiente(notif, unidad)
             if item:
                 pendientes.append(item)
         return pendientes
@@ -55,21 +55,16 @@ class MiDespachoService:
             raise LookupError("Notificación no encontrada")
         if int(notif["idunidaddemergencia"]) != idunidademergencia:
             raise PermissionError("Notificación no pertenece a la unidad")
-        item = self._map_pendiente(notif, idunidademergencia)
+        unidad = self.unidades.find_by_id(idunidademergencia)
+        item = self._map_pendiente(notif, unidad or {"idunidademergencia": idunidademergencia})
         if not item:
             raise LookupError("Notificación no encontrada")
-        item["ruta_sugerida_geojson"] = {
-            "type": "LineString",
-            "coordinates": [
-                [item["longitud"], item["latitud"]],
-                [item["longitud"], item["latitud"]],
-            ],
-        }
         return item
 
     def _map_pendiente(
-        self, notif: dict[str, Any], idunidad: int
+        self, notif: dict[str, Any], unidad: dict[str, Any]
     ) -> dict[str, Any] | None:
+        idunidad = int(unidad["idunidademergencia"])
         idaccidente = notif["idaccidente"]
         accidente = self.accidentes.find_by_id(idaccidente)
         if not accidente:
@@ -88,6 +83,10 @@ class MiDespachoService:
             "longitud": float(accidente["longitudinicio"]),
             "eta_minutos": eta,
             "fechahora": notif.get("fecha_actualizacion", accidente.get("fechahoraaccidente")),
+            "idunidademergencia": idunidad,
+            "unidademergencia": unidad.get("unidademergencia", ""),
+            "unidad_latitud": float(unidad["latitud"]) if unidad.get("latitud") is not None else None,
+            "unidad_longitud": float(unidad["longitud"]) if unidad.get("longitud") is not None else None,
         }
 
     def _eta_minutos(self, idaccidente: str, idunidad: int) -> int:

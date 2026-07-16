@@ -1,12 +1,5 @@
-<div class="mx-auto max-w-4xl p-8">
-  <div class="mb-6 flex items-center justify-between">
-    <h1 class="m-0 text-2xl font-bold text-text-primary">Mi despacho</h1>
-    @if (!loading() && !error() && pendientes().length) {
-      <span class="rounded-md bg-bg-page px-2.5 py-1 text-xs font-medium text-text-secondary">
-        {{ pendientes().length }} pendiente(s)
-      </span>
-    }
-  </div>
+<div class="mx-auto max-w-6xl p-8">
+  <h1 class="m-0 mb-6 text-2xl font-bold text-text-primary">Mi despacho</h1>
 
   @if (loading()) {
     <div class="grid gap-2" data-testid="loading-skeleton">
@@ -30,7 +23,7 @@
         Reintentar
       </button>
     </div>
-  } @else if (!pendientes().length) {
+  } @else if (!incidenteActivo()) {
     <div
       class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
       data-testid="empty-state"
@@ -39,49 +32,65 @@
       <p class="m-0 text-sm text-text-secondary">Sin despachos pendientes</p>
     </div>
   } @else {
-    <div class="grid gap-4">
-      @for (p of pendientes(); track p.idnotificaciondespacho) {
-        <article class="rounded-lg border border-border-default bg-bg-surface p-6">
-          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    @let p = incidenteActivo()!;
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <!-- Columna principal: header de incidente + mapa -->
+      <div class="grid gap-4">
+        <article
+          class="grid gap-4 rounded-xl border-l-4 border-border-default bg-bg-surface p-6"
+          [class.border-l-alert-success]="severidad(p.idseveridad).tone === 'success'"
+          [class.border-l-alert-warning]="severidad(p.idseveridad).tone === 'warning'"
+          [class.border-l-alert-urgent]="severidad(p.idseveridad).tone === 'urgent'"
+          [class.border-l-alert-critical]="severidad(p.idseveridad).tone === 'critical'"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex items-center gap-3">
-              <h2 class="m-0 text-base font-semibold text-text-primary">{{ p.idaccidente }}</h2>
               <span
-                class="inline-flex items-center gap-1.5 text-sm font-medium"
+                class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-semibold"
+                [class.bg-alert-success-bg]="severidad(p.idseveridad).tone === 'success'"
                 [class.text-alert-success]="severidad(p.idseveridad).tone === 'success'"
+                [class.bg-alert-warning-bg]="severidad(p.idseveridad).tone === 'warning'"
                 [class.text-alert-warning]="severidad(p.idseveridad).tone === 'warning'"
+                [class.bg-alert-urgent-bg]="severidad(p.idseveridad).tone === 'urgent'"
                 [class.text-alert-urgent]="severidad(p.idseveridad).tone === 'urgent'"
+                [class.bg-alert-critical-bg]="severidad(p.idseveridad).tone === 'critical'"
                 [class.text-alert-critical]="severidad(p.idseveridad).tone === 'critical'"
               >
-                <app-tabler-icon [name]="severidad(p.idseveridad).icon" [size]="16" />
+                <app-tabler-icon [name]="severidad(p.idseveridad).icon" [size]="18" />
                 {{ severidad(p.idseveridad).label }}
               </span>
+              <div>
+                <h2 class="m-0 text-lg font-bold text-text-primary">{{ p.idaccidente }}</h2>
+                @if (p.descripcion) {
+                  <p class="m-0 text-sm text-text-secondary">{{ p.descripcion }}</p>
+                }
+              </div>
             </div>
-            <span
-              class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold"
-              [class.bg-alert-success-bg]="estadoTono(p.estadonotificacion) === 'success'"
-              [class.text-alert-success]="estadoTono(p.estadonotificacion) === 'success'"
-              [class.bg-alert-warning-bg]="estadoTono(p.estadonotificacion) === 'warning'"
-              [class.text-alert-warning]="estadoTono(p.estadonotificacion) === 'warning'"
-              [class.bg-alert-critical-bg]="estadoTono(p.estadonotificacion) === 'critical'"
-              [class.text-alert-critical]="estadoTono(p.estadonotificacion) === 'critical'"
-              [class.bg-alert-info-bg]="estadoTono(p.estadonotificacion) === 'info'"
-              [class.text-alert-info]="estadoTono(p.estadonotificacion) === 'info'"
-            >
-              {{ p.estadonotificacion }}
-            </span>
+
+            @if (restanteLabel()) {
+              <div class="text-right">
+                <div class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Tiempo para responder
+                </div>
+                <div
+                  class="font-mono text-2xl font-bold tabular-nums"
+                  [class.text-alert-warning]="(restanteMs() ?? 0) > 0"
+                  [class.text-alert-critical]="(restanteMs() ?? 1) <= 0"
+                >
+                  {{ restanteLabel() }}
+                </div>
+              </div>
+            }
           </div>
 
           <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            @if (p.descripcion) {
-              <div class="sm:col-span-2">
-                <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Descripción</dt>
-                <dd class="mt-1 text-sm text-text-primary">{{ p.descripcion }}</dd>
-              </div>
-            }
             @if (p.direccion_aproximada) {
               <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Dirección aproximada</dt>
-                <dd class="mt-1 text-sm text-text-primary">{{ p.direccion_aproximada }}</dd>
+                <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Ubicación</dt>
+                <dd class="mt-1 flex items-center gap-1.5 text-sm text-text-primary">
+                  <app-tabler-icon name="map-pin" [size]="16" />
+                  {{ p.direccion_aproximada }}
+                </dd>
               </div>
             }
             @if (p.eta_minutos !== undefined && p.eta_minutos !== null) {
@@ -93,20 +102,28 @@
           </dl>
 
           @if (rechazandoId() !== p.idnotificaciondespacho) {
-            <div class="mt-4 flex gap-2">
+            <div class="flex gap-2">
               <button
                 type="button"
                 [disabled]="enviandoId() === p.idnotificaciondespacho"
-                class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-5 text-sm font-semibold text-white disabled:opacity-50 [&:hover:not(:disabled)]:bg-accent-hover"
+                class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-5 text-sm font-semibold text-white [&:not(:disabled)]:hover:bg-accent-hover disabled:opacity-80"
                 (click)="confirmar(p.idnotificaciondespacho)"
               >
-                <app-tabler-icon name="circle-check" [size]="18" />
-                Confirmar
+                @if (enviandoId() === p.idnotificaciondespacho) {
+                  <span
+                    class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    aria-hidden="true"
+                  ></span>
+                  Confirmando…
+                } @else {
+                  <app-tabler-icon name="circle-check" [size]="18" />
+                  Confirmar despacho
+                }
               </button>
               <button
                 type="button"
                 [disabled]="enviandoId() === p.idnotificaciondespacho"
-                class="inline-flex h-11 items-center gap-2 rounded-md border border-alert-warning px-5 text-sm font-medium text-alert-warning disabled:opacity-50 hover:bg-alert-warning-bg"
+                class="inline-flex h-11 items-center gap-2 rounded-md border border-alert-warning px-5 text-sm font-medium text-alert-warning hover:bg-alert-warning-bg disabled:opacity-80"
                 (click)="iniciarRechazo(p.idnotificaciondespacho)"
               >
                 <app-tabler-icon name="x" [size]="18" />
@@ -114,7 +131,7 @@
               </button>
             </div>
           } @else {
-            <div class="mt-4 grid gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4">
+            <div class="grid gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4">
               <label for="motivoRechazo-{{ p.idnotificaciondespacho }}" class="text-sm font-medium text-text-secondary">
                 Motivo del rechazo (obligatorio)
               </label>
@@ -130,10 +147,18 @@
                 <button
                   type="button"
                   [disabled]="!motivoRechazo.trim() || enviandoId() === p.idnotificaciondespacho"
-                  class="inline-flex h-11 items-center gap-2 rounded-md bg-alert-warning px-5 text-sm font-semibold text-white disabled:opacity-50"
+                  class="inline-flex h-11 items-center gap-2 rounded-md bg-alert-warning px-5 text-sm font-semibold text-white disabled:opacity-80"
                   (click)="confirmarRechazo(p.idnotificaciondespacho)"
                 >
-                  Confirmar rechazo
+                  @if (enviandoId() === p.idnotificaciondespacho) {
+                    <span
+                      class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                      aria-hidden="true"
+                    ></span>
+                    Rechazando…
+                  } @else {
+                    Confirmar rechazo
+                  }
                 </button>
                 <button
                   type="button"
@@ -147,7 +172,59 @@
             </div>
           }
         </article>
-      }
+
+        @if (p.latitud !== undefined && p.longitud !== undefined) {
+          <div class="h-96">
+            <app-read-only-route-map
+              [destinoLat]="p.latitud"
+              [destinoLng]="p.longitud"
+              [destinoIcono]="severidad(p.idseveridad).icon"
+              [destinoTono]="severidad(p.idseveridad).tone"
+              [origenLat]="p.unidad_latitud ?? null"
+              [origenLng]="p.unidad_longitud ?? null"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Sidebar: estado de unidad + cola -->
+      <div class="grid content-start gap-4">
+        <div class="rounded-xl border border-border-default bg-bg-surface p-5">
+          <h3 class="m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">Estado de unidad</h3>
+          <div class="flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-md bg-accent-primary/15 text-accent-primary">
+              <app-tabler-icon name="radio" [size]="22" />
+            </span>
+            <div>
+              <div class="text-sm font-semibold text-text-primary">{{ p.unidademergencia }}</div>
+              <div class="text-xs text-text-secondary">#{{ p.idunidademergencia }} · Notificada de este despacho</div>
+            </div>
+          </div>
+        </div>
+
+        @if (colaPendientes().length) {
+          <div class="rounded-xl border border-border-default bg-bg-surface p-5">
+            <h3 class="m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+              También pendientes ({{ colaPendientes().length }})
+            </h3>
+            <div class="grid gap-2">
+              @for (item of colaPendientes(); track item.idnotificaciondespacho) {
+                <button
+                  type="button"
+                  class="flex items-center justify-between gap-2 rounded-md border border-border-default px-3 py-2.5 text-left text-sm hover:bg-bg-page"
+                  (click)="promoverAlFrente(item.idnotificaciondespacho)"
+                >
+                  <span class="flex items-center gap-2">
+                    <app-tabler-icon [name]="severidad(item.idseveridad).icon" [size]="16" />
+                    {{ item.idaccidente }}
+                  </span>
+                  <app-tabler-icon name="chevron-right" [size]="16" />
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
     </div>
   }
 </div>

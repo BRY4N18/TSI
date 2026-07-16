@@ -25,7 +25,7 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 |-------|----------------|-------|
 | CU-O22 | `asignacion_inteligente_service`, `accidente_reportado_consumer` | T030, T032, T033 |
 | CU-O23 | `notificacion_despacho_service` | T031 |
-| CU-O24 | `confirmar_despacho_service`, `mi_despacho_views` | T042, T044 |
+| CU-O24 | `confirmar_despacho_service`, `mi_despacho_views`, `mi_despacho_service` (mapa+ruta+countdown en dashboard, T095b) | T042, T044, T095b |
 | CU-O33 | `asignacion_manual_service`, `asignacion_views` | T062, T065 |
 | CU-O34 | `escalamiento_zona_service` | T063, T066 |
 | CU-O35 | `timeout_despacho_service`, `timeout_despacho_job` | T050, T053 |
@@ -58,6 +58,8 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | Guards | `.../guards/*.guard.ts` |
 | Páginas | `.../pages/*` |
 | Menú sidebar | `frontend/src/app/core/sidebar/despacho-menu.config.ts` |
+| ReadOnlyRouteMapComponent | `frontend/src/app/shared/ui/map/read-only-route-map.component.ts` (T095b) |
+| RutaService | `frontend/src/app/shared/services/ruta.service.ts` (movido desde `seguimiento/`, T095b) |
 
 ## Cambios fuera de ciclo
 

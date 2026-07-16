@@ -638,6 +638,18 @@ components:
         fechahora:
           type: integer
           format: int64
+        idunidademergencia:
+          type: integer
+          description: Unidad autenticada que recibió la notificación (resuelta server-side desde el usuario)
+        unidademergencia:
+          type: string
+          description: "Nombre/código de la unidad, ej. 'Ambulancia 01'"
+        unidad_latitud:
+          type: number
+          nullable: true
+        unidad_longitud:
+          type: number
+          nullable: true
 
     PendientesListData:
       type: object
@@ -660,11 +672,6 @@ components:
     DetalleDespachoUnidadData:
       allOf:
         - $ref: '#/components/schemas/PendienteDespacho'
-        - type: object
-          properties:
-            ruta_sugerida_geojson:
-              type: object
-              description: LineString GeoJSON simplificado
 
     DetalleDespachoUnidadResponse:
       type: object
