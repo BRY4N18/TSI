@@ -9,7 +9,11 @@ from rest_framework.views import APIView
 
 from apps.accidentes.views.response_envelope import error_response, success_response
 from apps.cuentas_clientes.permissions import IsAuthenticated401
+from apps.seguimiento.idempotency import get_cached_response, store_response
 from apps.seguimiento.permissions import IsUnidadSeguimiento
+from apps.seguimiento.services.obtener_mi_seguimiento_actual_service import (
+    ObtenerMiSeguimientoActualService,
+)
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 from apps.seguimiento.services.registrar_posicion_gps_service import RegistrarPosicionGpsService
 from apps.seguimiento.services.abortar_mision_service import AbortarMisionService
@@ -17,11 +21,27 @@ from apps.despacho.consumers.despacho_abortado_consumer import handle_despacho_a
 from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
 
 
+class MiSeguimientoActualView(APIView):
+    permission_classes = [IsAuthenticated401, IsUnidadSeguimiento]
+
+    def get(self, request: Request) -> Response:
+        unidad = UnidadEmergenciaRepository().find_by_usuario(request.user.idusuario)
+        if not unidad:
+            return error_response("forbidden", "Unidad no vinculada", "403", status_code=403)
+        despacho = ObtenerMiSeguimientoActualService().obtener(
+            idunidademergencia=int(unidad["idunidademergencia"]),
+        )
+        return success_response({"despacho": despacho})
+
+
 class RegistrarPosicionGpsView(APIView):
     permission_classes = [IsAuthenticated401, IsUnidadSeguimiento]
     parser_classes = [JSONParser]
 
     def post(self, request: Request) -> Response:
+        cached = get_cached_response(request, "registrar_posicion")
+        if cached is not None:
+            return cached
         data = request.data
         required = ("idunidademergencia", "idaccidente", "latitud", "longitud", "fechahora")
         if not all(k in data for k in required):
@@ -40,13 +60,18 @@ class RegistrarPosicionGpsView(APIView):
             )
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(result, status_code=202)
+        response = success_response(result, status_code=202)
+        store_response(request, "registrar_posicion", response)
+        return response
 
 
 class RegistrarLlegadaView(APIView):
     permission_classes = [IsAuthenticated401, IsUnidadSeguimiento]
 
     def post(self, request: Request, iddespacho: int) -> Response:
+        cached = get_cached_response(request, "registrar_llegada")
+        if cached is not None:
+            return cached
         unidad = UnidadEmergenciaRepository().find_by_usuario(request.user.idusuario)
         if not unidad:
             return error_response("forbidden", "Unidad no vinculada", "403", status_code=403)
@@ -62,7 +87,9 @@ class RegistrarLlegadaView(APIView):
             return error_response("not_found", "Despacho no encontrado", "404", status_code=404)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(data)
+        response = success_response(data)
+        store_response(request, "registrar_llegada", response)
+        return response
 
 
 class AbortarMisionView(APIView):
@@ -70,6 +97,9 @@ class AbortarMisionView(APIView):
     parser_classes = [JSONParser]
 
     def post(self, request: Request, iddespacho: int) -> Response:
+        cached = get_cached_response(request, "abortar_mision")
+        if cached is not None:
+            return cached
         unidad = UnidadEmergenciaRepository().find_by_usuario(request.user.idusuario)
         if not unidad:
             return error_response("forbidden", "Unidad no vinculada", "403", status_code=403)
@@ -93,4 +123,6 @@ class AbortarMisionView(APIView):
             return error_response("not_found", "Despacho no encontrado", "404", status_code=404)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(result)
+        response = success_response(result)
+        store_response(request, "abortar_mision", response)
+        return response

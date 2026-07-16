@@ -71,12 +71,14 @@ class AccidenteListCreateView(APIView):
             )
         except DuplicateConflictError as exc:
             dup_id = exc.candidates[0]["idaccidente"] if exc.candidates else None
+            primera_advertencia = exc.advertencias[0] if exc.advertencias else {}
             return Response(
                 {
                     "data": {
-                        "error": "duplicado_posible",
-                        "detail": "Posible duplicado detectado",
+                        "error": primera_advertencia.get("code", "duplicado_posible"),
+                        "detail": primera_advertencia.get("detail", "Posible duplicado detectado"),
                         "code": "409",
+                        "advertencias": exc.advertencias,
                         "idaccidente_similar": dup_id,
                         "idaccidente_principal_sugerido": exc.parent_suggested,
                         "idaccidente_duplicado_sugerido": None,

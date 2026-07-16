@@ -1,0 +1,155 @@
+<div class="mx-auto max-w-2xl p-8">
+  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Mi seguimiento</h1>
+
+  @if (cargando()) {
+    <div class="h-24 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+  } @else if (apiError() && !despacho()) {
+    <div
+      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      data-testid="error-state"
+    >
+      <app-tabler-icon name="alert-triangle" [size]="32" />
+      <p class="m-0 text-sm text-alert-critical">{{ apiError() }}</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        (click)="cargarActual()"
+      >
+        <app-tabler-icon name="refresh" [size]="16" />
+        Reintentar
+      </button>
+    </div>
+  } @else if (!despacho()) {
+    <div
+      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+      data-testid="empty-state"
+    >
+      <app-tabler-icon name="map-pin" [size]="32" />
+      <p class="m-0 text-sm text-text-secondary">
+        No tienes un despacho en camino activo. Cuando confirmes un despacho desde "Mi Despacho", verás aquí tu seguimiento.
+      </p>
+    </div>
+  } @else {
+    <p class="m-0 mb-6 text-sm text-text-secondary">
+      @if (estado() === 'en_camino') {
+        Unidad en camino — enviando tu posición GPS cada 10 segundos.
+      } @else if (estado() === 'en_sitio') {
+        Llegada registrada en el sitio del accidente.
+      } @else {
+        Misión abortada.
+      }
+    </p>
+
+    @if (gpsError()) {
+      <div
+        class="mb-4 flex items-center gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4 text-sm text-alert-warning"
+        data-testid="gps-error"
+      >
+        <app-tabler-icon name="alert-triangle" [size]="20" />
+        <span class="flex-1">{{ gpsError() }}</span>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-md border border-alert-warning px-3 py-1.5 text-xs font-medium hover:bg-alert-warning-bg"
+          (click)="reintentarGps()"
+        >
+          <app-tabler-icon name="refresh" [size]="14" />
+          Reintentar
+        </button>
+      </div>
+    }
+
+    @if (apiError()) {
+      <div
+        class="mb-4 flex items-center gap-2 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
+        data-testid="api-error"
+      >
+        <app-tabler-icon name="alert-triangle" [size]="18" />
+        {{ apiError() }}
+      </div>
+    }
+
+    <div class="mb-6 flex items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-6">
+      <app-tabler-icon name="map-pin" [size]="28" />
+      <div>
+        <p class="m-0 text-sm font-semibold text-text-primary">Despacho #{{ despacho()!.iddespacho }}</p>
+        <p class="m-0 text-xs text-text-secondary">Accidente {{ despacho()!.idaccidente }}</p>
+      </div>
+    </div>
+
+    @if (estado() === 'en_camino') {
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          [disabled]="registrandoLlegada()"
+          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          (click)="registrarLlegada()"
+        >
+          <app-tabler-icon name="circle-check" [size]="16" />
+          @if (registrandoLlegada()) {
+            Registrando…
+          } @else {
+            Registrar llegada
+          }
+        </button>
+
+        @if (!confirmandoAbortar()) {
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2.5 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+            (click)="iniciarAbortar()"
+          >
+            <app-tabler-icon name="x" [size]="16" />
+            Abortar misión
+          </button>
+        }
+      </div>
+
+      @if (confirmandoAbortar()) {
+        <div class="mt-4 grid gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-4" data-testid="abortar-panel">
+          <label for="motivoAbortar" class="text-sm font-medium text-text-primary">
+            ¿Por qué deseas abortar la misión? (opcional)
+          </label>
+          <textarea
+            id="motivoAbortar"
+            rows="2"
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+            [(ngModel)]="motivoAbortar"
+            name="motivoAbortar"
+          ></textarea>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              [disabled]="abortando()"
+              class="inline-flex items-center gap-2 rounded-md bg-alert-critical px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              (click)="confirmarAbortar()"
+            >
+              @if (abortando()) {
+                Abortando…
+              } @else {
+                Confirmar abortar
+              }
+            </button>
+            <button
+              type="button"
+              [disabled]="abortando()"
+              class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page"
+              (click)="cancelarAbortar()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
+    } @else if (estado() === 'en_sitio') {
+      <div class="flex items-center gap-2 rounded-lg border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success">
+        <app-tabler-icon name="circle-check" [size]="18" />
+        Ya registraste tu llegada. Continúa la atención del caso desde el mapa/expediente correspondiente.
+      </div>
+    } @else {
+      <div class="flex items-center gap-2 rounded-lg border border-border-default bg-bg-surface p-4 text-sm text-text-secondary">
+        <app-tabler-icon name="info-circle" [size]="18" />
+        Esta misión fue abortada. Volviendo a Mi Despacho…
+      </div>
+    }
+  }
+</div>

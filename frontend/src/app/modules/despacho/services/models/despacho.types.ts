@@ -92,6 +92,7 @@ export interface ConfirmarDespachoData {
   message: string;
   idaccidente: string;
   iddespacho: number;
+  idunidademergencia: number;
   estado_caso: EstadoCaso;
   estado_unidad: 'Ocupada';
 }

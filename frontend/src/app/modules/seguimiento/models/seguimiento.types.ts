@@ -19,6 +19,17 @@ export interface Coordenada {
   longitud: number;
 }
 
+export interface DespachoActualData {
+  iddespacho: number;
+  idaccidente: string;
+  idunidademergencia: number;
+  estado_despacho: 'Confirmado' | 'En_sitio';
+}
+
+export interface MiSeguimientoActualData {
+  despacho: DespachoActualData | null;
+}
+
 export interface RegistrarPosicionRequest {
   idunidademergencia: number;
   idaccidente: string;

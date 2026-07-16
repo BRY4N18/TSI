@@ -1,0 +1,66 @@
+<div class="mx-auto max-w-2xl p-8">
+  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Disponibilidad de unidad</h1>
+  <p class="m-0 mb-6 text-sm text-text-secondary">
+    Declara tu estado actual para que el sistema te incluya o excluya del despacho automático.
+  </p>
+
+  @if (loading()) {
+    <div class="h-24 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+  } @else if (error()) {
+    <div
+      class="mb-4 grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      data-testid="error"
+    >
+      <app-tabler-icon name="alert-triangle" [size]="32" />
+      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        (click)="cargar()"
+      >
+        <app-tabler-icon name="refresh" [size]="16" />
+        Reintentar
+      </button>
+    </div>
+  } @else if (disponibilidad()) {
+    <div class="mb-6 flex items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-6">
+      <app-tabler-icon name="radio" [size]="28" />
+      <div>
+        <p class="m-0 text-sm font-semibold text-text-primary" data-testid="estado-actual">
+          Estado actual: {{ disponibilidad()!.estado_actual }}
+        </p>
+        <p class="m-0 text-xs text-text-secondary" data-testid="incluido-despacho">
+          Incluido en despacho: {{ disponibilidad()!.incluido_en_despacho ? 'Sí' : 'No' }}
+        </p>
+      </div>
+    </div>
+  }
+
+  <form class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end" (ngSubmit)="declararEstado()">
+    <div class="grid gap-1.5">
+      <label for="estadoSeleccionado" class="text-sm font-medium text-text-secondary">Nuevo estado</label>
+      <select
+        id="estadoSeleccionado"
+        name="estado"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        [(ngModel)]="estadoSeleccionado"
+        required
+      >
+        @for (estado of estados; track estado) {
+          <option [value]="estado">{{ estado }}</option>
+        }
+      </select>
+    </div>
+    <button
+      type="submit"
+      [disabled]="cargando()"
+      class="inline-flex items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+    >
+      @if (cargando()) {
+        Actualizando…
+      } @else {
+        Actualizar disponibilidad
+      }
+    </button>
+  </form>
+</div>

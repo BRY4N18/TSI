@@ -21,6 +21,31 @@ describe('MiSeguimientoApiService', () => {
     http.verify();
   });
 
+  it('obtenerActual_when_ok_returns_despacho', () => {
+    // Arrange
+    const mock = {
+      data: {
+        despacho: {
+          iddespacho: 1,
+          idaccidente: 'ACC-1',
+          idunidademergencia: 1,
+          estado_despacho: 'Confirmado',
+        },
+      },
+      meta: { timestamp: '2026-07-09T00:00:00Z' },
+    };
+
+    // Act
+    service.obtenerActual().subscribe((res) => {
+      // Assert
+      expect(res.data.despacho?.iddespacho).toBe(1);
+    });
+
+    const req = http.expectOne('/api/v1/mi-seguimiento/actual');
+    expect(req.request.method).toBe('GET');
+    req.flush(mock);
+  });
+
   it('registrarPosicion_when_ok_returns_aceptado', () => {
     // Arrange
     const payload = {

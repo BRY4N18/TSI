@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+
+import { EvidenciaSyncSchedulerService } from './modules/evidencia-unidad/services/evidencia-sync-scheduler.service';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +9,10 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet],
   template: `<router-outlet />`,
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly evidenciaSyncScheduler = inject(EvidenciaSyncSchedulerService);
+
+  constructor() {
+    this.evidenciaSyncScheduler.iniciarAutoSync();
+  }
+}

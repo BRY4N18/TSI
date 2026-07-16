@@ -16,6 +16,7 @@ from core.repositories.despacho.historial_despacho_repository import (
 )
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
+    ESTADO_FUERA_SERVICIO,
     HistorialEstadoUnidadRepository,
 )
 
@@ -58,9 +59,15 @@ class AbortarMisionService:
             idusuario=idusuario,
         )
         self.despachos.publish_update(iddespacho, {"activo": False})
+        estado_unidad_actual, _ = self.historial_unidad.get_current_estado(idunidademergencia)
+        estado_unidad_destino = (
+            ESTADO_FUERA_SERVICIO
+            if estado_unidad_actual == ESTADO_FUERA_SERVICIO
+            else ESTADO_ACTIVA
+        )
         self.historial_unidad.append_estado(
             idunidademergencia=idunidademergencia,
-            estadonuevo=ESTADO_ACTIVA,
+            estadonuevo=estado_unidad_destino,
             idusuario=idusuario,
         )
         event = {
@@ -77,6 +84,6 @@ class AbortarMisionService:
             "iddespacho": iddespacho,
             "idaccidente": despacho["idaccidente"],
             "estado_despacho": ESTADO_ABORTADO,
-            "estado_unidad": ESTADO_ACTIVA,
+            "estado_unidad": estado_unidad_destino,
             "reasignacion_disparada": True,
         }

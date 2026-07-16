@@ -30,5 +30,6 @@ class TestConfirmarDespachoService:
         # Assert
         assert result["estado_unidad"] == "Ocupada"
         assert result["estado_caso"] == "ASIGNADO"
+        assert result["idunidademergencia"] == 1
         notif = NotificacionDespachoRepository().find_by_id(created["idnotificaciondespacho"])
         assert notif["estadonotificaciondespacho"] == ESTADO_CONFIRMADA

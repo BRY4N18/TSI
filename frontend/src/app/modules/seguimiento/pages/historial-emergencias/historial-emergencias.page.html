@@ -1,0 +1,214 @@
+<div class="mx-auto max-w-6xl p-8">
+  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Historial de emergencias</h1>
+  <p class="m-0 mb-6 text-sm text-text-secondary">Casos atendidos, con tiempos de respuesta y cierre.</p>
+
+  <form [formGroup]="filtros" class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+    <div class="grid gap-1.5">
+      <label for="filtroPais" class="text-sm font-medium text-text-secondary">País</label>
+      <select
+        id="filtroPais"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="idpais"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (p of paises(); track p.id) {
+          <option [ngValue]="p.id">{{ p.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroEstadoRegion" class="text-sm font-medium text-text-secondary">Estado/Región</label>
+      <select
+        id="filtroEstadoRegion"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="idestadoregion"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (e of estadosRegion(); track e.id) {
+          <option [ngValue]="e.id">{{ e.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroSeveridad" class="text-sm font-medium text-text-secondary">Severidad</label>
+      <select
+        id="filtroSeveridad"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="idseveridad"
+      >
+        <option [ngValue]="null">Todas</option>
+        @for (s of severidadOptions; track s.value) {
+          <option [ngValue]="s.value">{{ s.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroEstado" class="text-sm font-medium text-text-secondary">Estado del caso</label>
+      <select
+        id="filtroEstado"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="estado"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (e of estados; track e) {
+          <option [ngValue]="e">{{ estado(e).label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroUnidad" class="text-sm font-medium text-text-secondary">Unidad</label>
+      <select
+        id="filtroUnidad"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="idunidademergencia"
+      >
+        <option [ngValue]="null">Todas</option>
+        @for (u of unidades(); track u.idunidademergencia) {
+          <option [ngValue]="u.idunidademergencia">{{ u.nombre ?? ('Unidad #' + u.idunidademergencia) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroFechaDesde" class="text-sm font-medium text-text-secondary">Desde</label>
+      <input
+        id="filtroFechaDesde"
+        type="date"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="fechaDesde"
+      />
+    </div>
+
+    <div class="grid gap-1.5">
+      <label for="filtroFechaHasta" class="text-sm font-medium text-text-secondary">Hasta</label>
+      <input
+        id="filtroFechaHasta"
+        type="date"
+        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        formControlName="fechaHasta"
+      />
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="grid gap-2" data-testid="loading-skeleton">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="h-14 animate-pulse rounded-md bg-bg-surface"></div>
+      }
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      data-testid="error-state"
+    >
+      <app-tabler-icon name="alert-triangle" [size]="32" />
+      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        (click)="cargar()"
+      >
+        <app-tabler-icon name="refresh" [size]="16" />
+        Reintentar
+      </button>
+    </div>
+  } @else if (!items().length) {
+    <div
+      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+      data-testid="empty-state"
+    >
+      <app-tabler-icon name="history" [size]="32" />
+      <p class="m-0 text-sm text-text-secondary">No hay casos que coincidan con estos filtros.</p>
+    </div>
+  } @else {
+    <table class="w-full border-collapse overflow-hidden rounded-lg border border-border-default">
+      <thead>
+        <tr class="bg-bg-surface">
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">ID</th>
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Fecha</th>
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Ubicación</th>
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Severidad</th>
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Estado</th>
+          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Unidad</th>
+          <th
+            class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary"
+            title="R = Respuesta, T = Tránsito, A = Atención, Total = duración completa del caso, en minutos"
+          >
+            Tiempos (min)
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (h of items(); track h.idaccidente) {
+          <tr class="border-b border-border-default last:border-b-0">
+            <td class="px-4 py-3 text-sm font-medium text-text-primary">{{ h.idaccidente }}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-sm text-text-secondary">
+              {{ h.fecha | date: 'dd/MM/yyyy HH:mm' }}
+            </td>
+            <td class="max-w-[12rem] truncate px-4 py-3 text-sm text-text-secondary">
+              {{ h.ubicacion || '—' }}
+            </td>
+            <td class="px-4 py-3">
+              <span
+                class="inline-flex items-center gap-1.5 text-sm font-medium"
+                [class.text-alert-success]="severidad(h.severidad).tone === 'success'"
+                [class.text-alert-warning]="severidad(h.severidad).tone === 'warning'"
+                [class.text-alert-urgent]="severidad(h.severidad).tone === 'urgent'"
+                [class.text-alert-critical]="severidad(h.severidad).tone === 'critical'"
+              >
+                <app-tabler-icon [name]="severidad(h.severidad).icon" [size]="14" />
+                {{ severidad(h.severidad).label }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <span
+                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold"
+                [class.bg-alert-success-bg]="estado(asEstado(h.estado)).tone === 'success'"
+                [class.text-alert-success]="estado(asEstado(h.estado)).tone === 'success'"
+                [class.bg-alert-warning-bg]="estado(asEstado(h.estado)).tone === 'warning'"
+                [class.text-alert-warning]="estado(asEstado(h.estado)).tone === 'warning'"
+                [class.bg-alert-urgent-bg]="estado(asEstado(h.estado)).tone === 'urgent'"
+                [class.text-alert-urgent]="estado(asEstado(h.estado)).tone === 'urgent'"
+                [class.bg-alert-info-bg]="estado(asEstado(h.estado)).tone === 'info'"
+                [class.text-alert-info]="estado(asEstado(h.estado)).tone === 'info'"
+              >
+                {{ estado(asEstado(h.estado)).label }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-sm text-text-secondary">{{ h.unidad_principal ?? '—' }}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-xs text-text-secondary">
+              <span title="Respuesta">R {{ h.tiempos.respuesta_min ?? '—' }}</span>
+              ·
+              <span title="Tránsito">T {{ h.tiempos.transito_min ?? '—' }}</span>
+              ·
+              <span title="Atención">A {{ h.tiempos.atencion_min ?? '—' }}</span>
+              ·
+              <span title="Duración total del caso">Total {{ h.tiempos.duracion_total_min ?? '—' }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (truncado()) {
+      <div class="mt-4 flex items-center justify-center">
+        <button
+          type="button"
+          [disabled]="loadingMas()"
+          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+          (click)="cargarMas()"
+        >
+          @if (loadingMas()) {
+            Cargando…
+          } @else {
+            Cargar más
+          }
+        </button>
+      </div>
+    }
+  }
+</div>

@@ -1,5 +1,6 @@
 /** @marker unit */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { NotificationService } from '../../../../shared/notifications/notification.service';
@@ -10,10 +11,12 @@ describe('MiDespachoPage', () => {
   let fixture: ComponentFixture<MiDespachoPage>;
   let api: jasmine.SpyObj<MiDespachoApiService>;
   let notifications: jasmine.SpyObj<NotificationService>;
+  let router: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
     api = jasmine.createSpyObj('MiDespachoApiService', ['listarPendientes', 'confirmar', 'rechazar']);
     notifications = jasmine.createSpyObj('NotificationService', ['toast', 'alert']);
+    router = jasmine.createSpyObj('Router', ['navigate']);
     api.listarPendientes.and.returnValue(
       of<any>({
         data: {
@@ -30,6 +33,7 @@ describe('MiDespachoPage', () => {
       providers: [
         { provide: MiDespachoApiService, useValue: api },
         { provide: NotificationService, useValue: notifications },
+        { provide: Router, useValue: router },
       ],
     }).compileComponents();
 
@@ -43,9 +47,19 @@ describe('MiDespachoPage', () => {
     expect(fixture.componentInstance.pendientes().length).toBe(1);
   });
 
-  it('confirmar_when_success_shows_toast_and_reloads', () => {
+  it('confirmar_when_success_shows_toast_and_navigates_to_mi_seguimiento', () => {
     // Arrange
-    api.confirmar.and.returnValue(of<any>({ data: { message: 'Confirmado' }, meta: {} }));
+    api.confirmar.and.returnValue(
+      of<any>({
+        data: {
+          message: 'Confirmado',
+          idaccidente: 'ACC-1',
+          iddespacho: 42,
+          idunidademergencia: 1,
+        },
+        meta: {},
+      }),
+    );
 
     // Act
     fixture.componentInstance.confirmar(1);
@@ -53,7 +67,7 @@ describe('MiDespachoPage', () => {
     // Assert
     expect(api.confirmar).toHaveBeenCalledWith(1);
     expect(notifications.toast).toHaveBeenCalledWith('Confirmado', 'success');
-    expect(api.listarPendientes).toHaveBeenCalledTimes(2);
+    expect(router.navigate).toHaveBeenCalledWith(['/seguimiento/mi-seguimiento']);
   });
 
   it('confirmar_when_error_shows_alert', () => {

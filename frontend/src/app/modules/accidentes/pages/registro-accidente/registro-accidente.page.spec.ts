@@ -150,15 +150,15 @@ describe('RegistroAccidentePage', () => {
     // Arrange
     fillRequiredFields(component);
     const conflictBody = {
-      error: 'conflict',
-      detail: 'Posible duplicado',
-      code: 'duplicado_posible',
-      idaccidente_similar: 'ACC-9',
+      error: 'duplicado_posible',
+      detail: 'Posible duplicado detectado',
+      code: '409',
+      idaccidente_similar: 'ACC-10',
       idaccidente_principal_sugerido: 'ACC-9',
-      idaccidente_duplicado_sugerido: 'ACC-10',
+      idaccidente_duplicado_sugerido: null,
     };
     accidenteApi.registrar.and.returnValue(
-      throwError(() => new HttpErrorResponse({ status: 409, error: conflictBody })),
+      throwError(() => new HttpErrorResponse({ status: 409, error: { data: conflictBody, meta: {} } })),
     );
 
     // Act
@@ -166,6 +166,31 @@ describe('RegistroAccidentePage', () => {
 
     // Assert
     expect(component.duplicadoConflicto()).toEqual(conflictBody as any);
+  });
+
+  it('registrar_when_fuera_cobertura_shows_coverage_alert', () => {
+    // Arrange
+    fillRequiredFields(component);
+    const conflictBody = {
+      error: 'fuera_cobertura',
+      detail: 'Fuera de cobertura operativa',
+      code: '409',
+      idaccidente_similar: null,
+      idaccidente_principal_sugerido: null,
+      idaccidente_duplicado_sugerido: null,
+    };
+    accidenteApi.registrar.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { data: conflictBody, meta: {} } })),
+    );
+
+    // Act
+    component.registrar(false);
+
+    // Assert
+    expect(component.duplicadoConflicto()).toBeNull();
+    expect(notifications.activeAlert()).toEqual(
+      jasmine.objectContaining({ title: 'Fuera de cobertura', message: 'Fuera de cobertura operativa' }),
+    );
   });
 
   it('registrar_when_api_error_shows_error_message', () => {
@@ -187,12 +212,12 @@ describe('RegistroAccidentePage', () => {
   it('confirmarFusion_calls_fusionar_with_selected_principal', () => {
     // Arrange
     component.duplicadoConflicto.set({
-      error: 'conflict',
-      detail: 'Posible duplicado',
-      code: 'duplicado_posible',
-      idaccidente_similar: 'ACC-9',
+      error: 'duplicado_posible',
+      detail: 'Posible duplicado detectado',
+      code: '409',
+      idaccidente_similar: 'ACC-10',
       idaccidente_principal_sugerido: 'ACC-9',
-      idaccidente_duplicado_sugerido: 'ACC-10',
+      idaccidente_duplicado_sugerido: null,
     });
     accidenteApi.fusionar.and.returnValue(
       of<any>({

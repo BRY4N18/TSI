@@ -85,6 +85,7 @@ class ConfirmarDespachoService:
             "message": "Despacho confirmado",
             "idaccidente": notif["idaccidente"],
             "iddespacho": despacho["iddespacho"],
+            "idunidademergencia": idunidademergencia,
             "estado_caso": "ASIGNADO" if estado_caso else "BUSCANDO_UNIDAD",
             "estado_unidad": ESTADO_OCUPADA,
         }

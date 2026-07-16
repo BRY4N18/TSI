@@ -14,6 +14,7 @@ from apps.seguimiento.views.mapa_views import (
 )
 from apps.seguimiento.views.mi_seguimiento_views import (
     AbortarMisionView,
+    MiSeguimientoActualView,
     RegistrarLlegadaView,
     RegistrarPosicionGpsView,
 )
@@ -22,6 +23,7 @@ urlpatterns = [
     path("seguimiento/mapa", MapaSeguimientoView.as_view()),
     path("seguimiento/stream", SeguimientoStreamView.as_view()),
     path("accidentes/<str:idaccidente>/seguimiento", SeguimientoAccidenteView.as_view()),
+    path("mi-seguimiento/actual", MiSeguimientoActualView.as_view()),
     path("mi-seguimiento/posicion", RegistrarPosicionGpsView.as_view()),
     path(
         "mi-seguimiento/despachos/<int:iddespacho>/llegada",

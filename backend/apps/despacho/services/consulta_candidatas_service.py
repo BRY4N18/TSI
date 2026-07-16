@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
+
+DISPONIBILIDAD_MAX_MINUTOS = 30
 
 from apps.despacho.services.concordancia_tipo_service import ConcordanciaTipoService
 from apps.despacho.services.despacho_math import haversine_km
@@ -75,7 +78,7 @@ class ConsultaCandidatasService:
             uid = int(unidad["idunidademergencia"])
             if uid in excluir:
                 continue
-            estado, _ = self.historial_unidad.get_current_estado(uid)
+            estado, desde_ms = self.historial_unidad.get_current_estado(uid)
             if estado != ESTADO_ACTIVA:
                 continue
             if self.despachos.has_active_for_unidad(uid):
@@ -90,7 +93,7 @@ class ConsultaCandidatasService:
                 tipounidademergencia=str(unidad.get("tipounidademergencia", "")),
                 descripcion=accidente.get("descripcion"),
             )
-            disp_score = 0.5
+            disp_score = self._disponibilidad_reciente_score(desde_ms)
             peso_d = params["peso_distancia_pct"] / 100.0
             peso_c = params["peso_concordancia_pct"] / 100.0
             peso_a = params["peso_disponibilidad_pct"] / 100.0
@@ -108,6 +111,15 @@ class ConsultaCandidatasService:
             )
         resultados.sort(key=lambda r: r["puntuacion"], reverse=True)
         return resultados
+
+    @staticmethod
+    def _disponibilidad_reciente_score(desde_ms: int | None) -> float:
+        """RN-DES-008: mayor puntuación a unidades con más tiempo continuo en estado Activa."""
+        if not desde_ms:
+            return 0.0
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        minutos_activa = max(0.0, (now_ms - desde_ms) / 60000.0)
+        return min(minutos_activa / DISPONIBILIDAD_MAX_MINUTOS, 1.0)
 
     def _unidades_rechazaron(self, idaccidente: str) -> set[int]:
         rechazadas: set[int] = set()

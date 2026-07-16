@@ -677,13 +677,15 @@ components:
 
     ConfirmarDespachoData:
       type: object
-      required: [message, idaccidente, iddespacho, estado_caso, estado_unidad]
+      required: [message, idaccidente, iddespacho, idunidademergencia, estado_caso, estado_unidad]
       properties:
         message:
           type: string
         idaccidente:
           type: string
         iddespacho:
+          type: integer
+        idunidademergencia:
           type: integer
         estado_caso:
           $ref: '#/components/schemas/EstadoCaso'

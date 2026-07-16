@@ -58,3 +58,29 @@ class TestRegistrarPosicionContract:
 
         # Assert
         assert response.status_code == 403
+
+    def test_post_posicion_replays_cached_response_for_same_idempotency_key(
+        self,
+        api_client,
+        unidad_seguimiento_auth_headers,
+        accidente_activo,
+        despacho_confirmado_unidad,
+    ):
+        # Arrange
+        payload = {
+            "idunidademergencia": 1,
+            "idaccidente": accidente_activo,
+            "latitud": 19.4326,
+            "longitud": -99.1332,
+            "fechahora": 1_700_000_000_000,
+        }
+        headers = {**unidad_seguimiento_auth_headers, "HTTP_IDEMPOTENCY_KEY": "gps-key-1"}
+
+        # Act
+        first = api_client.post("/api/v1/mi-seguimiento/posicion", payload, format="json", **headers)
+        second = api_client.post("/api/v1/mi-seguimiento/posicion", payload, format="json", **headers)
+
+        # Assert
+        assert first.status_code == 202
+        assert second.status_code == 202
+        assert first.json() == second.json()

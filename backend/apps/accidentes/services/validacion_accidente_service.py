@@ -10,6 +10,7 @@ from apps.accidentes.domain_constants import (
     RETROSPECTIVE_WINDOW_MS,
 )
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
 from core.repositories.accidentes.region_operativa_repository import RegionOperativaRepository
 
 
@@ -33,9 +34,11 @@ class ValidacionAccidenteService:
         self,
         accidente_repo: AccidenteRepository | None = None,
         region_repo: RegionOperativaRepository | None = None,
+        estado_repo: EstadoAccidenteRepository | None = None,
     ):
         self.accidente_repo = accidente_repo or AccidenteRepository()
         self.region_repo = region_repo or RegionOperativaRepository()
+        self.estado_repo = estado_repo or EstadoAccidenteRepository()
 
     def validate_registro(self, data: dict[str, Any], *, now_ms: int | None = None) -> ValidationResult:
         import time
@@ -85,4 +88,12 @@ class ValidacionAccidenteService:
     def suggest_parent_id(self, candidates: list[dict[str, Any]]) -> str | None:
         if not candidates:
             return None
-        return min(candidates, key=lambda c: c.get("fechahoraaccidente", 0)).get("idaccidente")
+
+        def primer_borrador_reportado_ts(candidate: dict[str, Any]) -> int:
+            idaccidente = candidate.get("idaccidente")
+            for entry in self.estado_repo.get_history(idaccidente):
+                if entry.get("estado") in ("BORRADOR", "REPORTADO"):
+                    return int(entry.get("fechahoramodificado", 0))
+            return int(candidate.get("fechahoraaccidente", 0))
+
+        return min(candidates, key=primer_borrador_reportado_ts).get("idaccidente")

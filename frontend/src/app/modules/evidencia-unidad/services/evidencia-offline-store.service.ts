@@ -80,6 +80,18 @@ export class EvidenciaOfflineStoreService {
     return fotos.length + notas.length;
   }
 
+  async listarIdsAccidentesPendientes(): Promise<string[]> {
+    const [fotos, notas] = await Promise.all([
+      this.listAll<OfflineFotoRecord>(FOTOS_STORE),
+      this.listAll<OfflineNotaRecord>(NOTAS_STORE),
+    ]);
+    const ids = new Set<string>();
+    for (const row of [...fotos, ...notas]) {
+      ids.add(row.idaccidente);
+    }
+    return Array.from(ids);
+  }
+
   private openDb(): Promise<IDBDatabase> {
     if (this.dbPromise) {
       return this.dbPromise;
@@ -137,14 +149,16 @@ export class EvidenciaOfflineStoreService {
     storeName: string,
     idaccidente: string,
   ): Promise<T[]> {
+    const rows = await this.listAll<T>(storeName);
+    return rows.filter((row) => row.idaccidente === idaccidente);
+  }
+
+  private async listAll<T>(storeName: string): Promise<T[]> {
     const db = await this.openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
       const request = tx.objectStore(storeName).getAll();
-      request.onsuccess = () => {
-        const rows = (request.result as T[]).filter((row) => row.idaccidente === idaccidente);
-        resolve(rows);
-      };
+      request.onsuccess = () => resolve(request.result as T[]);
       request.onerror = () => reject(request.error ?? new Error('IndexedDB list failed'));
     });
   }

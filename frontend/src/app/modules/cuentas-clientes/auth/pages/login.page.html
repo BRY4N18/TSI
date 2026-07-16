@@ -1,0 +1,130 @@
+<main class="grid min-h-screen bg-bg-page lg:grid-cols-[65%_35%]">
+  <section
+    class="relative hidden overflow-hidden bg-[#14161f] p-12 lg:flex lg:flex-col lg:justify-between"
+    aria-hidden="true"
+  >
+    <svg
+      class="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
+      viewBox="0 0 400 500"
+      fill="none"
+    >
+      <path d="M-10 430 L150 430 L190 350 L410 350" stroke="#ffffff" stroke-width="2" />
+      <path d="M70 510 L70 270 L270 270 L270 -10" stroke="#ffffff" stroke-width="2" />
+      <circle cx="190" cy="350" r="5" fill="#ffffff" />
+      <circle cx="270" cy="270" r="4" fill="#ffffff" />
+      <circle cx="70" cy="270" r="4" fill="#ffffff" />
+    </svg>
+
+    <div class="relative flex items-center gap-3">
+      <span
+        class="grid h-10 w-10 place-items-center rounded-md bg-white text-sm font-bold text-accent-primary"
+        >TSI</span
+      >
+      <span class="text-base font-semibold text-white">Tráfico Seguro Integral</span>
+    </div>
+
+    <div class="relative grid max-w-sm gap-4">
+      <p class="m-0 text-xs font-medium uppercase tracking-wide text-white/60">
+        Centro de operaciones
+      </p>
+      <p class="m-0 text-[28px] font-bold leading-tight text-white">
+        Un caso reportado, una unidad en camino.
+      </p>
+      <p class="m-0 text-sm leading-relaxed text-white/70">
+        Registro, despacho y seguimiento de accidentes de tránsito, coordinados desde un solo
+        sistema.
+      </p>
+    </div>
+
+    <div class="relative flex items-center gap-2 text-xs text-white/70">
+      <span class="h-2 w-2 rounded-full bg-alert-success motion-safe:animate-pulse"></span>
+      Monitoreo en vivo
+    </div>
+  </section>
+
+  <section class="relative grid place-items-center p-6 lg:p-12" aria-labelledby="login-title">
+    <div
+      class="relative z-10 grid w-full max-w-sm gap-6 rounded-md border border-border-default bg-bg-surface p-8 shadow-[0_4px_24px_rgba(26,29,41,0.06)] lg:-ml-12"
+    >
+      <div class="flex items-center gap-3 lg:hidden">
+        <span
+          class="grid h-8 w-8 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
+          >TSI</span
+        >
+        <span class="text-sm font-semibold text-text-primary">Tráfico Seguro Integral</span>
+      </div>
+
+      <div class="grid gap-1">
+        <h1 id="login-title" class="m-0 text-2xl font-bold text-text-primary">
+          Iniciar sesión
+        </h1>
+        <p class="m-0 text-sm text-text-secondary">
+          Ingresa con tu correo institucional para continuar.
+        </p>
+      </div>
+
+      <form class="grid gap-4" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="grid gap-1.5">
+          <label for="gmail" class="text-sm font-medium text-text-secondary"
+            >Correo electrónico</label
+          >
+          <input
+            id="gmail"
+            type="email"
+            class="rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary outline-none focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)]"
+            formControlName="gmail"
+            autocomplete="username"
+            [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
+          />
+        </div>
+
+        <div class="grid gap-1.5">
+          <label for="password" class="text-sm font-medium text-text-secondary"
+            >Contraseña</label
+          >
+          <input
+            id="password"
+            type="password"
+            class="rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary outline-none focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)]"
+            formControlName="password"
+            autocomplete="current-password"
+            [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
+          />
+        </div>
+
+        @if (errorMessage()) {
+          <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button
+          type="submit"
+          class="mt-1 inline-flex items-center justify-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white transition-opacity [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed"
+          [class.opacity-80]="loading()"
+          [class.opacity-50]="!loading() && form.invalid"
+          [disabled]="form.invalid || loading()"
+        >
+          @if (loading()) {
+            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="3"
+              ></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8 -8V2.5"></path>
+            </svg>
+          }
+          {{ loading() ? 'Ingresando…' : 'Ingresar' }}
+        </button>
+      </form>
+
+      <a
+        class="text-sm text-accent-primary no-underline hover:underline"
+        routerLink="/cuentas-clientes/auth/password-reset"
+        >¿Olvidaste tu contraseña?</a
+      >
+    </div>
+  </section>
+</main>

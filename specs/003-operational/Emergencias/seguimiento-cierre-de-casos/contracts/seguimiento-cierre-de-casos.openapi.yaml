@@ -81,6 +81,29 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /mi-seguimiento/actual:
+    get:
+      tags: [MiSeguimiento]
+      summary: Despacho activo en curso de la unidad autenticada (CU-O25/O26/O39)
+      description: >
+        Resuelve el despacho Confirmado o En_sitio de la unidad, si existe, para que el
+        frontend no dependa de recibir iddespacho/idaccidente por navegación (funciona
+        tras refrescar la página o entrar directo desde el sidebar).
+      operationId: obtenerMiSeguimientoActual
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Despacho activo de la unidad, o null si no tiene ninguno en curso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiSeguimientoActualResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /mi-seguimiento/posicion:
     post:
       tags: [MiSeguimiento]
@@ -695,6 +718,38 @@ components:
         fechahora:
           type: integer
           format: int64
+
+    DespachoActualData:
+      type: object
+      required: [iddespacho, idaccidente, idunidademergencia, estado_despacho]
+      properties:
+        iddespacho:
+          type: integer
+        idaccidente:
+          type: string
+        idunidademergencia:
+          type: integer
+        estado_despacho:
+          type: string
+          enum: [Confirmado, En_sitio]
+
+    MiSeguimientoActualData:
+      type: object
+      required: [despacho]
+      properties:
+        despacho:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/DespachoActualData'
+
+    MiSeguimientoActualResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/MiSeguimientoActualData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
 
     PosicionAceptadaData:
       type: object
