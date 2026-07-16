@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accidentes.views.response_envelope import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.seguimiento.permissions import IsOperadorSeguimiento
 from apps.seguimiento.services.cancelar_caso_service import CancelarCasoService

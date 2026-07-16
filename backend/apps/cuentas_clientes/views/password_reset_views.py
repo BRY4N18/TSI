@@ -11,7 +11,7 @@ from apps.cuentas_clientes.services.password_reset_service import (
     PasswordResetError,
     PasswordResetService,
 )
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 
 
 class PasswordResetView(APIView):

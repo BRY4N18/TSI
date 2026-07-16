@@ -31,7 +31,10 @@ export type TablerIconName =
   | 'upload'
   | 'x'
   | 'chevron-left'
-  | 'chevron-right';
+  | 'chevron-right'
+  | 'sun'
+  | 'moon'
+  | 'focus-2';
 
 const ICON_PATHS: Record<TablerIconName, string[]> = {
   dashboard: [
@@ -110,6 +113,19 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
   x: ['M18 6l-12 12', 'M6 6l12 12'],
   'chevron-left': ['M15 6l-6 6l6 6'],
   'chevron-right': ['M9 6l6 6l-6 6'],
+  sun: [
+    'M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
+    'M3 12h1m8 -9v1m8 8h1m-9 8v1',
+    'M5.6 5.6l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7',
+  ],
+  moon: ['M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z'],
+  'focus-2': [
+    'M4 8v-2a2 2 0 0 1 2 -2h2',
+    'M4 16v2a2 2 0 0 0 2 2h2',
+    'M16 4h2a2 2 0 0 1 2 2v2',
+    'M16 20h2a2 2 0 0 0 2 -2v-2',
+    'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0 -6',
+  ],
 };
 
 /** Paths crudos de un ícono — para reutilizar el mismo lenguaje visual fuera de Angular (ej. marcadores de Leaflet). */

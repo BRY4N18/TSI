@@ -122,6 +122,7 @@
 - [X] T040 [US2] Implementar `mapa_seguimiento_service.py` (marcadores severidad, unidades, rutas) en `backend/apps/seguimiento/services/mapa_seguimiento_service.py`
 - [X] T041 [US2] Implementar vistas mapa + SSE en `backend/apps/seguimiento/views/mapa_views.py` y completar `backend/apps/seguimiento/views/urls.py`
 - [X] T042 [US2] Integrar emisión SSE desde `registrar_posicion_gps_service.py` en `backend/apps/seguimiento/services/registrar_posicion_gps_service.py`
+- [X] T042b [US2] Implementar proxy `GET /api/v1/seguimiento/ruta` hacia OSRM auto-hospedado (`backend/apps/seguimiento/views/ruta_views.py`, `core/osrm/client.py`) con fallback fail-open (`puntos: []`) si OSRM falla; contrato en `contracts/seguimiento-cierre-de-casos.openapi.yaml`. Nota: implementado el 2026-07-15 fuera del ciclo normal plan→tasks (ver ex `CAMBIOS-EMERGENCIAS-2026-07-15.md`); esta entrada regulariza la trazabilidad.
 
 **Checkpoint**: US2 operativa — operador monitorea mapa en tiempo real.
 

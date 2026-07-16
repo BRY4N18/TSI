@@ -21,7 +21,7 @@ from apps.cuentas_clientes.services.registro_cuenta_service import (
     RegistroCuentaService,
 )
 from apps.cuentas_clientes.views.cuenta_views import _client_ip, _require_auth
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 
 
 class _OnboardingAuthenticatedView(APIView):

@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthApiService } from '../../modules/cuentas-clientes/auth/services/auth-api.service';
 import { AlertHostComponent } from '../notifications/alert-host.component';
 import { ToastHostComponent } from '../notifications/toast-host.component';
+import { ThemeService } from '../theme/theme.service';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { NAV_LINKS, NavLink } from './nav-links';
 
@@ -83,6 +84,16 @@ interface NavGroup {
         </div>
 
         <div class="flex shrink-0 items-center gap-3 text-sm">
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
+            (click)="themeService.toggle()"
+            [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+            [attr.aria-pressed]="themeService.isDark()"
+          >
+            <app-tabler-icon [name]="themeService.isDark() ? 'sun' : 'moon'" [size]="20" />
+          </button>
+
           <!-- Selector de región: única opción fija; no hay endpoint de regiones
                disponible para el usuario autenticado todavía. -->
           <button
@@ -194,6 +205,7 @@ interface NavGroup {
 export class AppShellComponent {
   private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
+  readonly themeService = inject(ThemeService);
 
   readonly profile = this.authApi.getProfile();
   readonly sidebarOpen = signal(false);

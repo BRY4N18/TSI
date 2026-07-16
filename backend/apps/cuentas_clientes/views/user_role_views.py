@@ -19,7 +19,7 @@ from apps.cuentas_clientes.services.user_management_service import (
     UserManagementError,
     UserManagementService,
 )
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 
 
 class UserListCreateView(APIView):

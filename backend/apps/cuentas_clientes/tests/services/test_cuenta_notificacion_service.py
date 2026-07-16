@@ -6,7 +6,7 @@ from apps.cuentas_clientes.services.cuenta_notificacion_service import CuentaNot
 
 @pytest.mark.service
 class TestCuentaNotificacionService:
-    @patch("apps.cuentas_clientes.services.cuenta_notificacion_service.send_mail")
+    @patch("core.notificaciones.email_sender.send_mail")
     def test_notify_transferencia_does_not_raise(self, mock_send, mock_pinot, mock_kafka):
         # Arrange
         service = CuentaNotificacionService()

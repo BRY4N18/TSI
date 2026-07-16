@@ -4,6 +4,7 @@
 |----|-----------|--------|--------|
 | CA-SEG-001 | GPS cada 10s persiste Kafka + snapshot | T025–T032 | ✓ Validado (77 tests) |
 | CA-SEG-002 | Mapa operador + SSE tiempo real | T034–T043 | ✓ Validado |
+| CA-SEG-002b | Proxy ruta por calles OSRM (fail-open) | T042b | ✓ Validado — regularizado 2026-07-16, ver `contracts/seguimiento-cierre-de-casos.openapi.yaml` `/seguimiento/ruta` |
 | CA-SEG-003 | Llegada manual En_sitio + EN_ATENCION | T026, T028, T030, T032 | ✓ Validado |
 | CA-SEG-004 | Geofencing automático O26 | T029, T031 | ✓ Validado |
 | CA-SEG-005 | Cierre valida todos Retirado | T044–T049 | ✓ Validado |

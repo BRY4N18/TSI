@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-import logging
-
-from django.conf import settings
-from django.core.mail import send_mail
-
 from apps.cuentas_clientes.services.audit_service import AuditService
+from core.notificaciones.email_sender import EmailNotificationSender, EmailSendError
 from core.repositories.cuentas_clientes.user_repository import UserRepository
-
-logger = logging.getLogger("tsi.notificaciones.onboarding")
 
 
 class OnboardingNotificacionService:
@@ -20,9 +14,11 @@ class OnboardingNotificacionService:
         self,
         user_repo: UserRepository | None = None,
         audit: AuditService | None = None,
+        sender: EmailNotificationSender | None = None,
     ):
         self.user_repo = user_repo or UserRepository()
         self.audit = audit or AuditService()
+        self.sender = sender or EmailNotificationSender()
 
     def notify_invitacion(
         self,
@@ -91,29 +87,15 @@ class OnboardingNotificacionService:
         subject: str,
         body: str,
     ) -> None:
-        if not settings.EMAIL_HOST_USER:
-            logger.warning(
-                "smtp_skipped_not_configured",
-                extra={"event": event, "idcliente": cliente_id},
-            )
-            return
         try:
-            send_mail(
+            self.sender.send(
+                event=event,
+                cliente_id=cliente_id,
+                gmail=gmail,
                 subject=subject,
-                message=body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[gmail],
-                fail_silently=False,
+                body=body,
             )
-            logger.info(
-                "smtp_send",
-                extra={"event": event, "to": gmail, "idcliente": cliente_id},
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.exception(
-                "smtp_failure",
-                extra={"event": event, "to": gmail, "idcliente": cliente_id},
-            )
+        except EmailSendError as exc:
             self.audit.log_smtp_failure(
                 user_id=actor_id,
                 cliente_id=cliente_id,

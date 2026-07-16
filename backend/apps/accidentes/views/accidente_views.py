@@ -15,7 +15,7 @@ from apps.accidentes.services.registro_accidente_service import (
     DuplicateConflictError,
     RegistroAccidenteService,
 )
-from apps.accidentes.views.response_envelope import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 from apps.cuentas_clientes.permissions import IsAuthenticated401
 
 
@@ -72,6 +72,11 @@ class AccidenteListCreateView(APIView):
         except DuplicateConflictError as exc:
             dup_id = exc.candidates[0]["idaccidente"] if exc.candidates else None
             primera_advertencia = exc.advertencias[0] if exc.advertencias else {}
+            # No usa error_response(): el frontend (registro-accidente.page.ts)
+            # depende del detalle del conflicto anidado en `data` (advertencias,
+            # idaccidente_similar) para abrir el diálogo de fusión — un shape
+            # distinto al envelope error/detail/code de nivel raíz. Ver fix G4/G6
+            # en .specify/docs/changelog.md.
             return Response(
                 {
                     "data": {

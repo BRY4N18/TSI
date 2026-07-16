@@ -125,6 +125,9 @@ JWT_ISSUER = "tsi-auth"
 PINOT_BROKER_URL = os.environ.get("PINOT_BROKER_URL", "http://localhost:8099")
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
+# --- OSRM (ruteo por calles, self-hosted, ver infrastructure.md §6.1) ---
+OSRM_URL = os.environ.get("OSRM_URL", "http://localhost:5000")
+
 KAFKA_TOPICS = {
     "session": "Fact_Session_topic",
     "credential": "Dim_Credencial_topic",
@@ -201,5 +204,5 @@ REST_FRAMEWORK = {
         "apps.cuentas_clientes.permissions.IsAuthenticated401",
     ],
     "UNAUTHENTICATED_USER": None,
-    "EXCEPTION_HANDLER": "apps.cuentas_clientes.views.error_response.custom_exception_handler",
+    "EXCEPTION_HANDLER": "core.api.response_envelope.custom_exception_handler",
 }

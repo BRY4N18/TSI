@@ -58,6 +58,48 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /seguimiento/ruta:
+    get:
+      tags: [SeguimientoMapa]
+      summary: Ruta por calles entre dos puntos, vía proxy interno a OSRM (RF-SEG-007)
+      description: >
+        Proxy delgado hacia el motor de ruteo OSRM auto-hospedado (ver infrastructure.md
+        §6.1) — nunca expone OSRM directo a internet. Es un servicio auxiliar de
+        visualización, no bloqueante: si OSRM falla, no responde a tiempo, o no
+        encuentra ruta, responde 200 con `puntos: []`, y el frontend interpreta la
+        lista vacía como "usar línea recta" en vez de fallar.
+      operationId: obtenerRutaSeguimiento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: origen
+          in: query
+          required: true
+          description: "Coordenada de origen, formato 'lat,lon'"
+          schema:
+            type: string
+            example: "4.65,-74.08"
+        - name: destino
+          in: query
+          required: true
+          description: "Coordenada de destino, formato 'lat,lon'"
+          schema:
+            type: string
+            example: "4.60,-74.07"
+      responses:
+        '200':
+          description: Puntos de la ruta por calles (vacío si OSRM no está disponible)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RutaSeguimientoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /accidentes/{idaccidente}/seguimiento:
     get:
       tags: [SeguimientoMapa]
@@ -628,6 +670,36 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/MapaSeguimientoData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RutaPunto:
+      type: object
+      required: [latitud, longitud]
+      properties:
+        latitud:
+          type: number
+          format: double
+        longitud:
+          type: number
+          format: double
+
+    RutaSeguimientoData:
+      type: object
+      required: [puntos]
+      properties:
+        puntos:
+          type: array
+          description: Vacío si OSRM no está disponible; el frontend usa línea recta
+          items:
+            $ref: '#/components/schemas/RutaPunto'
+
+    RutaSeguimientoResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RutaSeguimientoData'
         meta:
           $ref: '#/components/schemas/EnvelopeMeta'
 

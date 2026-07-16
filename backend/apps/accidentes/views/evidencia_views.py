@@ -18,7 +18,7 @@ from apps.accidentes.services.consulta_evidencia_service import ConsultaEvidenci
 from apps.accidentes.services.evidencia_foto_service import EvidenciaFotoService
 from apps.accidentes.services.nota_campo_service import NotaCampoService
 from apps.accidentes.services.sincronizar_evidencia_service import SincronizarEvidenciaService
-from apps.accidentes.views.response_envelope import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 from apps.cuentas_clientes.permissions import IsAuthenticated401
 from core.storage.blob_storage_service import BlobTooLargeError
 

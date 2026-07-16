@@ -58,3 +58,11 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | Guards | `.../guards/*.guard.ts` |
 | Páginas | `.../pages/*` |
 | Menú sidebar | `frontend/src/app/core/sidebar/despacho-menu.config.ts` |
+
+## Cambios fuera de ciclo
+
+Ver `.specify/docs/changelog.md` § 2026-07-15 — fixes G1 (jobs periódicos sin agendar:
+`run_timeout_despacho_job`, RN-SEG relacionadas) y G5 (scoring "disponibilidad reciente"
+hardcodeado en `consulta_candidatas_service.py`, RN-DES-008) aplicados fuera del ciclo
+plan→tasks. G7 (stubs push/SMS) y G8 (payload alerta crítica RF-DES-008) quedan
+pendientes/fuera de alcance — ver changelog.

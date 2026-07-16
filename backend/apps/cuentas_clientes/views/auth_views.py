@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
@@ -16,7 +18,9 @@ from apps.cuentas_clientes.services.revoke_session_service import (
     RevokeSessionError,
     RevokeSessionService,
 )
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
+
+logger = logging.getLogger("tsi.security.auth")
 
 
 def _client_ip(request: Request) -> str | None:
@@ -85,7 +89,8 @@ class LogoutView(APIView):
         auth = JWTSessionAuthentication()
         try:
             user_auth = auth.authenticate(request)
-        except Exception:
+        except Exception as exc:
+            logger.debug("Fallo autenticación en revoke-session: %s", exc)
             return error_response(
                 "unauthorized",
                 "Token invalido o credenciales invalidas",

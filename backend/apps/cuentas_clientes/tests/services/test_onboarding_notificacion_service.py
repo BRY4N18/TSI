@@ -8,7 +8,7 @@ from apps.cuentas_clientes.services.onboarding_notificacion_service import (
 
 @pytest.mark.service
 class TestOnboardingNotificacionService:
-    @patch("apps.cuentas_clientes.services.onboarding_notificacion_service.send_mail")
+    @patch("core.notificaciones.email_sender.send_mail")
     def test_notify_invitacion_does_not_raise(self, mock_send, mock_pinot, mock_kafka):
         # Arrange
         service = OnboardingNotificacionService()
@@ -21,7 +21,7 @@ class TestOnboardingNotificacionService:
             actor_id=1,
         )
 
-    @patch("apps.cuentas_clientes.services.onboarding_notificacion_service.send_mail")
+    @patch("core.notificaciones.email_sender.send_mail")
     def test_notify_reminder_does_not_raise(self, mock_send, mock_pinot, mock_kafka):
         # Arrange
         service = OnboardingNotificacionService()

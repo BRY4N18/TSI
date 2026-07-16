@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from apps.accidentes.permissions import AccidentesLecturaPermission
 from apps.accidentes.services.ubicacion_catalogo_service import UbicacionCatalogoService
-from apps.accidentes.views.response_envelope import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 from apps.cuentas_clientes.permissions import IsAuthenticated401
 
 

@@ -6,7 +6,7 @@ from apps.cuentas_clientes.services.invitacion_service import InvitacionService
 
 @pytest.mark.service
 class TestInvitacionService:
-    @patch("apps.cuentas_clientes.services.onboarding_notificacion_service.send_mail")
+    @patch("core.notificaciones.email_sender.send_mail")
     def test_reenviar_when_admin_updates_credential(self, mock_send, mock_pinot, mock_kafka):
         # Arrange
         service = InvitacionService()

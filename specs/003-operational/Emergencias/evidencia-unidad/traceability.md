@@ -63,3 +63,10 @@ Ejecutado: `pytest apps/accidentes/tests/ apps/despacho/tests/ --cov=...`
 | Guards + rutas lazy | `evidencia-unidad.routes.ts` | ✓ |
 | Páginas | galería, captura, panel disponibilidad | ✓ |
 | Build Angular | `ng build` | ✓ PASS |
+
+## Cambios fuera de ciclo
+
+Ver `.specify/docs/changelog.md` § 2026-07-15 — fix G3 (auto-sync de evidencias nunca se
+activaba: `EvidenciaSyncSchedulerService.iniciarAutoSync()` era código muerto; ahora se
+invoca desde `app.component.ts` y `listarIdsAccidentesPendientes()` recorre IndexedDB
+completa) aplicado fuera del ciclo plan→tasks.

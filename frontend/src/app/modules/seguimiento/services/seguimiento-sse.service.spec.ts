@@ -1,6 +1,7 @@
 /** @marker unit */
 import { provideHttpClient } from '@angular/common/http';
-import { TestBed } from '@angular/core/testing';
+import { DestroyRef } from '@angular/core';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { SeguimientoSseService } from './seguimiento-sse.service';
 
@@ -41,4 +42,34 @@ describe('SeguimientoSseService', () => {
       done();
     });
   });
+
+  it('connectResiliente_when_stream_falla_reintenta_con_backoff_fijo', fakeAsync(() => {
+    // Arrange
+    const destroyRef = TestBed.inject(DestroyRef);
+    let intentos = 0;
+    window.fetch = jasmine.createSpy('fetch').and.callFake(() => {
+      intentos++;
+      return Promise.reject(new Error('network down'));
+    });
+    const estados: string[] = [];
+
+    // Act
+    const sub = service.connectResiliente(destroyRef).subscribe((update) => estados.push(update.estado));
+    tick(0); // deja resolver el rechazo del primer intento
+
+    // Assert — primer intento falló, sin reintento inmediato
+    expect(estados).toEqual(['reconnecting', 'offline']);
+    expect(intentos).toBe(1);
+
+    // Act — pasa el backoff fijo (5s)
+    tick(5000);
+    tick(0);
+
+    // Assert — reintentó una segunda vez
+    expect(estados).toEqual(['reconnecting', 'offline', 'reconnecting', 'offline']);
+    expect(intentos).toBe(2);
+
+    sub.unsubscribe();
+    tick(5000); // drena cualquier retry pendiente para que fakeAsync no falle
+  }));
 });

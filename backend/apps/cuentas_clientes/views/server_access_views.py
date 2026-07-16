@@ -12,7 +12,7 @@ from apps.cuentas_clientes.services.server_access_service import (
     ServerAccessError,
     ServerAccessService,
 )
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
 
 
 class ServerUserListCreateView(APIView):

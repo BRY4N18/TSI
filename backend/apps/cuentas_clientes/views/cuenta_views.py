@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -21,7 +23,9 @@ from apps.cuentas_clientes.services.transferencia_propiedad_service import (
     TransferenciaPropiedadError,
     TransferenciaPropiedadService,
 )
-from apps.cuentas_clientes.views.error_response import error_response, success_response
+from core.api.response_envelope import error_response, success_response
+
+logger = logging.getLogger("tsi.security.cuenta")
 
 
 def _client_ip(request: Request) -> str | None:
@@ -41,7 +45,8 @@ def _require_auth(request: Request) -> tuple[AuthenticatedUser | None, Response 
 
     try:
         result = JWTSessionAuthentication().authenticate(request)
-    except Exception:
+    except Exception as exc:
+        logger.debug("Fallo autenticación en cuenta_views: %s", exc)
         return None, error_response(
             "unauthorized",
             "Token invalido o credenciales invalidas",

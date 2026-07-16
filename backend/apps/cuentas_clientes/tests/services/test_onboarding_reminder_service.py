@@ -34,7 +34,7 @@ class TestOnboardingReminderService:
         ids = [c["idcliente"] for c in eligible]
         assert 99 in ids
 
-    @patch("apps.cuentas_clientes.services.onboarding_notificacion_service.send_mail")
+    @patch("core.notificaciones.email_sender.send_mail")
     def test_send_reminders_returns_count(self, mock_send, mock_pinot, mock_kafka):
         # Arrange
         PINOT_STORE = __import__("conftest", fromlist=["PINOT_STORE"]).PINOT_STORE

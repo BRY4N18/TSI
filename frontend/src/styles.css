@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* TSI design tokens — light mode baseline (dark mode: tarea aparte) */
+/* TSI design tokens — modo claro (default). Modo oscuro: ver bloque html[data-theme='dark'] abajo */
 :root {
   --bg-page: #f5f7fb;
   --bg-surface: #ffffff;
@@ -21,6 +21,28 @@
   --alert-success-bg: #eaf3de;
   --alert-info: #3d4e68;
   --alert-info-bg: #eef2f8;
+}
+
+/* TSI design tokens — modo oscuro, design-system.md §3 */
+html[data-theme='dark'] {
+  --bg-page: #14161f;
+  --bg-surface: #1c1f2b;
+  --border-default: #2a2d3a;
+  --text-primary: #e8e9ef;
+  --text-secondary: #8a8da0;
+  --accent-primary: #2e6ff2;
+  --accent-hover: #245bc7;
+
+  --alert-critical: #f09595;
+  --alert-critical-bg: #4a1b0c;
+  --alert-urgent: #fac775;
+  --alert-urgent-bg: #412402;
+  --alert-warning: #f0d889;
+  --alert-warning-bg: #3b2e05;
+  --alert-success: #97c459;
+  --alert-success-bg: #173404;
+  --alert-info: #9db1cc;
+  --alert-info-bg: #1c2430;
 }
 
 @theme {
@@ -67,6 +89,7 @@
     color: var(--text-primary);
     background: var(--bg-page);
     -webkit-font-smoothing: antialiased;
+    transition: background-color 150ms ease, color 150ms ease;
   }
 
   a {

@@ -1,8 +1,16 @@
-import { Injectable, NgZone, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { DestroyRef, Injectable, NgZone, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, Subscription } from 'rxjs';
 
 import { AuthApiService } from '../../cuentas-clientes/auth/services/auth-api.service';
 import { SeguimientoSseEvent, SeguimientoSseEventType } from '../models/seguimiento.types';
+
+export type SeguimientoConexionEstado = 'live' | 'reconnecting' | 'offline';
+
+export interface SeguimientoStreamUpdate {
+  estado: SeguimientoConexionEstado;
+  evento?: SeguimientoSseEvent;
+}
 
 /**
  * El `EventSource` nativo no puede mandar el header `Authorization`, y este
@@ -16,6 +24,49 @@ import { SeguimientoSseEvent, SeguimientoSseEventType } from '../models/seguimie
 export class SeguimientoSseService {
   private readonly zone = inject(NgZone);
   private readonly authApi = inject(AuthApiService);
+  private readonly RECONEXION_MS = 5000;
+
+  /**
+   * Igual que `connect()`, pero se reconecta sola con backoff fijo mientras
+   * el consumidor siga vivo (`destroyRef`). El stream termina ante cualquier
+   * falla (red, backend, etc.) y sin reintento la pantalla se queda
+   * mostrando datos congelados sin avisar — inaceptable en una vista de
+   * monitoreo en vivo (RNF-SEG-001). Emite `{estado}` en cada transición de
+   * conexión y `{estado: 'live', evento}` por cada evento recibido.
+   */
+  connectResiliente(destroyRef: DestroyRef): Observable<SeguimientoStreamUpdate> {
+    return new Observable<SeguimientoStreamUpdate>((subscriber) => {
+      let detenido = false;
+      let retryHandle: ReturnType<typeof setTimeout> | undefined;
+      let currentSub: Subscription | null = null;
+
+      const intentar = () => {
+        if (detenido) {
+          return;
+        }
+        subscriber.next({ estado: 'reconnecting' });
+        currentSub = this.connect().subscribe({
+          next: (evento) => subscriber.next({ estado: 'live', evento }),
+          error: () => {
+            subscriber.next({ estado: 'offline' });
+            if (!detenido) {
+              retryHandle = setTimeout(intentar, this.RECONEXION_MS);
+            }
+          },
+        });
+      };
+
+      intentar();
+
+      return () => {
+        detenido = true;
+        currentSub?.unsubscribe();
+        if (retryHandle !== undefined) {
+          clearTimeout(retryHandle);
+        }
+      };
+    }).pipe(takeUntilDestroyed(destroyRef));
+  }
 
   connect(): Observable<SeguimientoSseEvent> {
     return new Observable((subscriber) => {
