@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import patch
 
-from apps.cuentas_clientes.services.cuenta_notificacion_service import CuentaNotificacionService
+import pytest
+
+from apps.cuentas_clientes.services.cuenta_notificacion_service import (
+    CuentaNotificacionService,
+)
 
 
 @pytest.mark.service

@@ -49,7 +49,7 @@ Convenciones (`api-standards.md`):
 1. Login como `Unidad` con unidad vinculada.
 2. `GET /mi-despacho/pendientes` → copiar `idnotificaciondespacho`.
 3. `POST .../confirmar` con `Idempotency-Key`.
-4. **Esperado:** HTTP 200, `estado_caso=ASIGNADO` (primer confirmado), unidad `Ocupada`, `Fact_Despacho.activo=true`.
+4. **Esperado:** HTTP 200, `estado_caso=ASIGNADO` (primer confirmado), unidad `En Misión`, `Fact_Despacho.activo=true`.
 
 ### Escenario C — Rechazo y re-asignación O45 + O36
 

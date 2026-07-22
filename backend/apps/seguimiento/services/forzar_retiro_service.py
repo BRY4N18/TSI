@@ -7,7 +7,9 @@ from typing import Any
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_EN_ATENCION
 from apps.seguimiento.services.cerrar_caso_service import CerrarCasoService
 from apps.seguimiento.services.retiro_despacho_service import RetiroDespachoService
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 
 

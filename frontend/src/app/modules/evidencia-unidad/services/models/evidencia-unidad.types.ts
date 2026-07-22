@@ -1,4 +1,7 @@
-export type EstadoDisponibilidadUnidad = 'Activa' | 'Ocupada' | 'Fuera de servicio';
+export type EstadoDisponibilidadUnidad = 'Activa' | 'Ocupada' | 'En Misión' | 'Fuera de servicio';
+
+/** "En Misión" es de asignación exclusiva del sistema (despacho-inteligente); no es declarable manualmente. */
+export type EstadoDisponibilidadUnidadSeleccionable = 'Activa' | 'Ocupada' | 'Fuera de servicio';
 
 export type TipoNotaCampo =
   | 'Observación general'
@@ -127,6 +130,10 @@ export interface DisponibilidadUnidadData {
   estado_actual: EstadoDisponibilidadUnidad;
   incluido_en_despacho: boolean;
   fechahora_ultimo_cambio: number | null;
+  placa: string | null;
+  tipounidademergencia: string | null;
+  capacidad: string | null;
+  idcondado: number | null;
 }
 
 export interface HistorialEstadoUnidadData {
@@ -151,7 +158,7 @@ export interface UnidadEmergenciaResumen {
 }
 
 export interface DeclararEstadoDisponibilidadRequest {
-  estadonuevo: EstadoDisponibilidadUnidad;
+  estadonuevo: EstadoDisponibilidadUnidadSeleccionable;
 }
 
 export interface OfflineFotoRecord {

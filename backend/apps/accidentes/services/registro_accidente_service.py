@@ -6,11 +6,19 @@ from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_BORRADOR, ESTADO_REPORTADO
 from apps.accidentes.services.audit_accidente_service import AuditAccidenteService
-from apps.accidentes.services.validacion_accidente_service import ValidacionAccidenteService
+from apps.accidentes.services.validacion_accidente_service import (
+    ValidacionAccidenteService,
+)
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.elemento_climatico_repository import ElementoClimaticoRepository
-from core.repositories.accidentes.elemento_fisico_repository import ElementoFisicoRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.elemento_climatico_repository import (
+    ElementoClimaticoRepository,
+)
+from core.repositories.accidentes.elemento_fisico_repository import (
+    ElementoFisicoRepository,
+)
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 class RegistroAccidenteService:

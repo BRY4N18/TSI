@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+from rest_framework import status
 from rest_framework.parsers import JSONParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.despacho.permissions import IsOperadorDespacho
 from apps.despacho.services.asignacion_manual_service import AsignacionManualService
 from apps.despacho.services.consulta_candidatas_service import ConsultaCandidatasService
-from apps.despacho.services.coordinacion_multiple_service import CoordinacionMultipleService
+from apps.despacho.services.coordinacion_multiple_service import (
+    CoordinacionMultipleService,
+)
 from apps.despacho.services.escalamiento_zona_service import EscalamientoZonaService
-from rest_framework import status
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class UnidadesCandidatasView(APIView):

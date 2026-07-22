@@ -20,9 +20,15 @@ from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_RECHAZADA,
     NotificacionDespachoRepository,
 )
-from core.repositories.despacho.parametros_despacho_repository import ParametrosDespachoRepository
-from core.repositories.despacho.ubicacion_unidad_repository import UbicacionUnidadRepository
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from core.repositories.despacho.parametros_despacho_repository import (
+    ParametrosDespachoRepository,
+)
+from core.repositories.despacho.ubicacion_unidad_repository import (
+    UbicacionUnidadRepository,
+)
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 
 class ConsultaCandidatasService:

@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 
 
 @pytest.mark.repository

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from core.repositories.despacho.parametros_despacho_repository import ParametrosDespachoRepository
+from core.repositories.despacho.parametros_despacho_repository import (
+    ParametrosDespachoRepository,
+)
 
 TIPO_AMBULANCIA = "Ambulancia"
 TIPO_GRUA = "Grua"

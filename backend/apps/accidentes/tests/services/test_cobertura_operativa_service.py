@@ -1,6 +1,8 @@
 import pytest
 
-from apps.accidentes.services.cobertura_operativa_service import CoberturaOperativaService
+from apps.accidentes.services.cobertura_operativa_service import (
+    CoberturaOperativaService,
+)
 
 
 @pytest.mark.service

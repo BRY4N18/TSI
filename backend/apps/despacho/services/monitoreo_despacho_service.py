@@ -10,15 +10,23 @@ from datetime import datetime, timezone
 from typing import Any, Iterator
 
 from apps.accidentes.domain_constants import ESTADO_ASIGNADO, ESTADO_BUSCANDO_UNIDAD
-from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
 from apps.despacho.services.asignacion_inteligente_service import ORIGEN_IDS
+from core.repositories.accidentes.accidente_repository import AccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 
 ORIGEN_NAMES: dict[int, str] = {v: k for k, v in ORIGEN_IDS.items()}
-from core.repositories.despacho.historial_despacho_repository import HistorialDespachoRepository
-from core.repositories.despacho.notificacion_despacho_repository import NotificacionDespachoRepository
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from core.repositories.despacho.historial_despacho_repository import (
+    HistorialDespachoRepository,
+)
+from core.repositories.despacho.notificacion_despacho_repository import (
+    NotificacionDespachoRepository,
+)
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 
 class DespachoSseBroker:

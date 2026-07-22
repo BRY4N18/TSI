@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from apps.accidentes.permissions import AccidentesLecturaPermission
 from apps.accidentes.services.ubicacion_catalogo_service import UbicacionCatalogoService
 from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
+from core.auth.permissions import IsAuthenticated401
 
 
 def _parse_required_int(request: Request, param: str) -> int | None:

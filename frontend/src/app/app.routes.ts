@@ -61,6 +61,27 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/despacho/despacho.routes').then((m) => m.DESPACHO_ROUTES),
       },
+      {
+        path: 'soporte-cliente',
+        loadChildren: () =>
+          import('./modules/soporte-cliente/soporte-cliente.routes').then(
+            (m) => m.SOPORTE_CLIENTE_ROUTES,
+          ),
+      },
+      {
+        path: 'red-operativa/alta-unidades',
+        loadChildren: () =>
+          import('./modules/red-operativa/alta-unidades/alta-unidades.routes').then(
+            (m) => m.ALTA_UNIDADES_ROUTES,
+          ),
+      },
+      {
+        path: 'red-operativa/incorporacion-regional',
+        loadChildren: () =>
+          import(
+            './modules/red-operativa/incorporacion-regional/incorporacion-regional.routes'
+          ).then((m) => m.INCORPORACION_REGIONAL_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: 'cuentas-clientes/auth/login' },

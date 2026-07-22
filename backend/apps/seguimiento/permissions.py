@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from rest_framework.permissions import BasePermission
 
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 ROLE_UNIDAD = "Unidad"
 ROLE_ADMIN = "Administrador"

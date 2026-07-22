@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import time
 import random
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -11,7 +11,9 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.accidentes.kafka_writer import KafkaWriter
-from core.repositories.accidentes.ubicacion_catalogo_repository import UbicacionCatalogoRepository
+from core.repositories.accidentes.ubicacion_catalogo_repository import (
+    UbicacionCatalogoRepository,
+)
 
 
 class AccidenteRepository:

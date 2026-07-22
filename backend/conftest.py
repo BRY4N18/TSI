@@ -258,6 +258,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Fact_AccidenteTipoEstadoAccidente": [],
     "Fact_Despacho": [],
     "Fact_NotificacionDespacho": [],
+    "Fact_BajaUnidad": [],
     "Fact_HistorialDespachoUnidad": [],
     "Dim_HistorialUbicacionUnidadEmergencia": [],
     "Dim_ParametrosSeguimiento": [],
@@ -297,6 +298,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
         {"idestadounidademergencia": 1, "estado": "Activa", "activo": True},
         {"idestadounidademergencia": 2, "estado": "Ocupada", "activo": True},
         {"idestadounidademergencia": 3, "estado": "Fuera de servicio", "activo": True},
+        {"idestadounidademergencia": 4, "estado": "En Misión", "activo": True},
     ],
     "Dim_Calle": [
         {"idcalle": 1, "idciudad": 1, "nombre": "Av. Reforma", "calle": "Av. Reforma", "activo": True},
@@ -351,6 +353,94 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Dim_RegionOperativaEstadoRegion": [
         {"idregionoperativa": 1, "idestadoregion": 1},
     ],
+    "Dim_ValidacionRegion": [],
+    "Dim_Plan": [
+        {
+            "idplan": 1,
+            "nombre": "Premium",
+            "nivel": "premium",
+            "limites": "{}",
+            "activo": True,
+            "precio": 999.0,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+    ],
+    "Fact_Suscripcion": [
+        {
+            "id_suscripcion": 1,
+            "idcliente": 1,
+            "idplan": 1,
+            "estado": "activa",
+            "activo": True,
+            "renovacionautomatica": True,
+            "motivocancelacion": None,
+            "precio": 999.0,
+            "fecha_inicio": 1704067200000,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+    ],
+    "Dim_Estado_Soporte": [
+        {"id_estado_soporte": 1, "nombre": "Abierto", "descripcion": "Ticket registrado", "activo": True},
+        {"id_estado_soporte": 2, "nombre": "Pendiente_de_clasificacion", "descripcion": "Sin clasificar", "activo": True},
+        {"id_estado_soporte": 3, "nombre": "En_progreso", "descripcion": "En atención", "activo": True},
+        {"id_estado_soporte": 4, "nombre": "Escalado", "descripcion": "Escalado", "activo": True},
+        {"id_estado_soporte": 5, "nombre": "Resuelto", "descripcion": "Resuelto", "activo": True},
+        {"id_estado_soporte": 6, "nombre": "Cerrado", "descripcion": "Cerrado", "activo": True},
+        {"id_estado_soporte": 7, "nombre": "Reabierto", "descripcion": "Reabierto", "activo": True},
+    ],
+    "Dim_SLAConfig": [
+        {
+            "idslaconfig": 1,
+            "idplan": 1,
+            "tipoincidencia": "tecnica",
+            "prioridad": "alta",
+            "activo": True,
+            "tiemporespuestamax": 3600,
+            "tiemporesolucionmax": 86400,
+            "fechavigenciadesde": 1704067200000,
+            "fechavigenciahasta": None,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idslaconfig": 2,
+            "idplan": 1,
+            "tipoincidencia": "emergencia_activa",
+            "prioridad": "crítico",
+            "activo": True,
+            "tiemporespuestamax": 60,
+            "tiemporesolucionmax": 3600,
+            "fechavigenciadesde": 1704067200000,
+            "fechavigenciahasta": None,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idslaconfig": 3,
+            "idplan": 1,
+            "tipoincidencia": "acceso",
+            "prioridad": "media",
+            "activo": True,
+            "tiemporespuestamax": 7200,
+            "tiemporesolucionmax": 172800,
+            "fechavigenciadesde": 1704067200000,
+            "fechavigenciahasta": None,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idslaconfig": 4,
+            "idplan": 1,
+            "tipoincidencia": "consulta_funcional",
+            "prioridad": "baja",
+            "activo": True,
+            "tiemporespuestamax": 14400,
+            "tiemporesolucionmax": 259200,
+            "fechavigenciadesde": 1704067200000,
+            "fechavigenciahasta": None,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+    ],
+    "Fact_Reclamo": [],
+    "Fact_Historial_Ticket": [],
+    "Fact_ArchivosAdjuntosReclamos": [],
 }
 
 # Pre-compute bcrypt hash for "password123" at import (rounds=4 for test speed)
@@ -439,12 +529,81 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             for r in PINOT_STORE["Fact_HistorialDespachoUnidad"]
         ]
         return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDUNIDADEMERGENCIA)" in sql_upper:
+        ids = [r["idunidademergencia"] for r in PINOT_STORE["Dim_UnidadEmergencia"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDBAJAUNIDAD)" in sql_upper:
+        ids = [r["idbajaunidad"] for r in PINOT_STORE["Fact_BajaUnidad"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDREGIONOPERATIVA)" in sql_upper:
+        ids = [r["idregionoperativa"] for r in PINOT_STORE["Dim_RegionOperativa"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDVALIDACIONREGION)" in sql_upper:
+        ids = [r["idvalidacionregion"] for r in PINOT_STORE["Dim_ValidacionRegion"]]
+        return [{"max_id": max(ids) if ids else 0}]
     if "MAX(IDHISTORIALUBICACION)" in sql_upper:
         ids = [
             r["idhistorialubicacion"]
             for r in PINOT_STORE["Dim_HistorialUbicacionUnidadEmergencia"]
         ]
         return [{"max_id": max(ids) if ids else 0}]
+
+    # --- incorporacion-regional: Dim_RegionOperativa / Dim_ValidacionRegion ---
+    # (deben ir antes de los bloques de catálogo geográfico en cascada más abajo,
+    # porque estos usan variantes "IN" que son superset-substring de los "=" existentes)
+    if "FROM DIM_REGIONOPERATIVA " in sql_upper and "WHERE IDREGIONOPERATIVA >" in sql_upper:
+        cursor = int(params.get("cursor", 0))
+        return [
+            r for r in PINOT_STORE["Dim_RegionOperativa"] if r["idregionoperativa"] > cursor
+        ]
+    if "FROM DIM_REGIONOPERATIVA " in sql_upper and "WHERE IDREGIONOPERATIVA =" in sql_upper:
+        rid = params.get("idregionoperativa")
+        return [r for r in PINOT_STORE["Dim_RegionOperativa"] if r["idregionoperativa"] == rid]
+
+    if "FROM DIM_VALIDACIONREGION" in sql_upper and "WHERE IDREGIONOPERATIVA" in sql_upper:
+        rid = params.get("idregionoperativa")
+        return [
+            r for r in PINOT_STORE["Dim_ValidacionRegion"] if r["idregionoperativa"] == rid
+        ]
+
+    if "FROM DIM_REGIONOPERATIVAESTADOREGION" in sql_upper and "WHERE IDREGIONOPERATIVA" in sql_upper:
+        rid = params.get("idregionoperativa")
+        return [
+            {"idestadoregion": link["idestadoregion"]}
+            for link in PINOT_STORE["Dim_RegionOperativaEstadoRegion"]
+            if link["idregionoperativa"] == rid
+        ]
+
+    if "FROM DIM_CONDADO" in sql_upper and "WHERE IDESTADO IN" in sql_upper:
+        idsestado = params.get("idsestado") or []
+        return [
+            {"idcondado": c["idcondado"]}
+            for c in PINOT_STORE["Dim_Condado"]
+            if c["idestado"] in idsestado
+        ]
+
+    if "FROM DIM_CIUDAD" in sql_upper and "WHERE IDCONDADO IN" in sql_upper:
+        idscondado = params.get("idscondado") or []
+        return [
+            {"idciudad": c["idciudad"]}
+            for c in PINOT_STORE["Dim_Ciudad"]
+            if c["idcondado"] in idscondado
+        ]
+
+    if "FROM DIM_CALLE" in sql_upper and "WHERE IDCIUDAD IN" in sql_upper:
+        idsciudad = params.get("idsciudad") or []
+        return [
+            {"idcalle": c["idcalle"]}
+            for c in PINOT_STORE["Dim_Calle"]
+            if c["idciudad"] in idsciudad
+        ]
+
+    if "FROM FACT_ACCIDENTE" in sql_upper and "WHERE IDCALLE IN" in sql_upper:
+        idscalle = params.get("idscalle") or []
+        return [
+            a for a in PINOT_STORE["Fact_Accidente"]
+            if a.get("idcalle") in idscalle and a.get("activo") is True
+        ]
 
     # --- Dim_Cliente ---
     if "FROM DIM_CLIENTE" in sql_upper and "WHERE NIT_IDENTIFICACION" in sql_upper:
@@ -794,6 +953,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         return rows
 
     if "FROM DIM_UNIDADEMERGENCIA" in sql_upper:
+        if "WHERE PLACA" in sql_upper:
+            placa = params.get("placa")
+            return [
+                u for u in PINOT_STORE["Dim_UnidadEmergencia"]
+                if u.get("placa") == placa and u.get("activo")
+            ]
         if "WHERE IDUSUARIO" in sql_upper:
             user_id = params.get("idusuario")
             return [
@@ -817,6 +982,54 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
 
     if "FROM DIM_ESTADOUNIDADEMERGENCIA" in sql_upper:
         return list(PINOT_STORE["Dim_EstadoUnidadEmergencia"])
+
+    if "FROM FACT_BAJAUNIDAD" in sql_upper:
+        uid = params.get("idunidademergencia")
+        if "WHERE IDUNIDADEMERGENCIA" in sql_upper:
+            return [r for r in PINOT_STORE["Fact_BajaUnidad"] if r["idunidademergencia"] == uid]
+        return list(PINOT_STORE["Fact_BajaUnidad"])
+
+    # --- Soporte al cliente (gestion-tickets-soporte) ---
+    if "MAX(ID_RECLAMO)" in sql_upper:
+        ids = [r["id_reclamo"] for r in PINOT_STORE["Fact_Reclamo"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(ID_HISTORIAL)" in sql_upper:
+        ids = [r["id_historial"] for r in PINOT_STORE["Fact_Historial_Ticket"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDSLACONFIG)" in sql_upper:
+        ids = [r["idslaconfig"] for r in PINOT_STORE["Dim_SLAConfig"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDARCHIVOADJUNTORECLAMO)" in sql_upper:
+        ids = [r["idarchivoadjuntoreclamo"] for r in PINOT_STORE["Fact_ArchivosAdjuntosReclamos"]]
+        return [{"max_id": max(ids) if ids else 0}]
+
+    if "FROM FACT_RECLAMO" in sql_upper:
+        if "WHERE ID_RECLAMO" in sql_upper:
+            rid = params.get("id_reclamo")
+            return [r for r in PINOT_STORE["Fact_Reclamo"] if r["id_reclamo"] == rid]
+        return list(PINOT_STORE["Fact_Reclamo"])
+
+    if "FROM FACT_HISTORIAL_TICKET" in sql_upper:
+        rid = params.get("id_reclamo")
+        return [r for r in PINOT_STORE["Fact_Historial_Ticket"] if r["id_reclamo"] == rid]
+
+    if "FROM DIM_SLACONFIG" in sql_upper:
+        if "WHERE IDSLACONFIG" in sql_upper:
+            cid = params.get("idslaconfig")
+            return [r for r in PINOT_STORE["Dim_SLAConfig"] if r["idslaconfig"] == cid]
+        return list(PINOT_STORE["Dim_SLAConfig"])
+
+    if "FROM FACT_ARCHIVOSADJUNTOSRECLAMOS" in sql_upper:
+        rid = params.get("id_reclamo")
+        return [r for r in PINOT_STORE["Fact_ArchivosAdjuntosReclamos"] if r["id_reclamo"] == rid]
+
+    if "FROM DIM_ESTADO_SOPORTE" in sql_upper:
+        nombre = params.get("nombre")
+        return [r for r in PINOT_STORE["Dim_Estado_Soporte"] if r["nombre"] == nombre]
+
+    if "FROM FACT_SUSCRIPCION" in sql_upper:
+        cid = params.get("idcliente")
+        return [r for r in PINOT_STORE["Fact_Suscripcion"] if r["idcliente"] == cid]
 
     return []
 
@@ -1066,6 +1279,50 @@ def mock_kafka():
                 rows[existing_idx] = payload
             else:
                 rows.append(payload)
+        elif topic.endswith("Fact_Reclamo_topic") or topic == "Fact_Reclamo_topic":
+            rows = PINOT_STORE["Fact_Reclamo"]
+            existing_idx = next(
+                (i for i, r in enumerate(rows) if r["id_reclamo"] == payload["id_reclamo"]),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Fact_Historial_Ticket_topic") or topic == "Fact_Historial_Ticket_topic":
+            PINOT_STORE["Fact_Historial_Ticket"].append(payload)
+        elif topic.endswith("Dim_SLAConfig_topic") or topic == "Dim_SLAConfig_topic":
+            rows = PINOT_STORE["Dim_SLAConfig"]
+            existing_idx = next(
+                (i for i, r in enumerate(rows) if r["idslaconfig"] == payload["idslaconfig"]),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif (
+            topic.endswith("Fact_ArchivosAdjuntosReclamos_topic")
+            or topic == "Fact_ArchivosAdjuntosReclamos_topic"
+        ):
+            PINOT_STORE["Fact_ArchivosAdjuntosReclamos"].append(payload)
+        elif topic.endswith("Fact_BajaUnidad_topic") or topic == "Fact_BajaUnidad_topic":
+            PINOT_STORE["Fact_BajaUnidad"].append(payload)
+        elif topic.endswith("Dim_RegionOperativa_topic") or topic == "Dim_RegionOperativa_topic":
+            regiones = PINOT_STORE["Dim_RegionOperativa"]
+            existing_idx = next(
+                (
+                    i for i, r in enumerate(regiones)
+                    if r["idregionoperativa"] == payload["idregionoperativa"]
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                regiones[existing_idx] = {**regiones[existing_idx], **payload}
+            else:
+                regiones.append(payload)
+        elif topic.endswith("Dim_ValidacionRegion_topic") or topic == "Dim_ValidacionRegion_topic":
+            PINOT_STORE["Dim_ValidacionRegion"].append(payload)
 
     with patch.object(KafkaWriter, "publish", _publish):
         yield published
@@ -1404,3 +1661,104 @@ def despacho_pendiente_unidad(mock_pinot, mock_kafka, accidente_activo, unidad_c
     result = AsignacionInteligenteService().ejecutar(idaccidente=accidente_activo, idusuario=2)
     assert result is not None
     return result
+
+
+# --- Soporte al cliente (gestion-tickets-soporte) ---
+
+
+@pytest.fixture
+def agente_soporte_auth_headers(mock_pinot, mock_kafka):
+    """JWT for Soporte al cliente (agente) role with active session."""
+    PINOT_STORE["Fact_Session"].append(
+        {
+            "idsession": 10,
+            "idusuario": 10,
+            "token": "session-token-10",
+            "refresh_token": "refresh-token-10",
+            "navegador": "pytest",
+            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahoracierresesion": None,
+            "estadosession": "Inicio sesion",
+        }
+    )
+    token = create_access_token(user_id=10, roles=["Soporte"], session_id=10)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def desarrollador_apis_auth_headers(mock_pinot, mock_kafka):
+    """JWT for Desarrollador de APIs role with active session."""
+    PINOT_STORE["Fact_Session"].append(
+        {
+            "idsession": 11,
+            "idusuario": 11,
+            "token": "session-token-11",
+            "refresh_token": "refresh-token-11",
+            "navegador": "pytest",
+            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahoracierresesion": None,
+            "estadosession": "Inicio sesion",
+        }
+    )
+    token = create_access_token(user_id=11, roles=["DesarrolladorAPIs"], session_id=11)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def cliente_soporte_auth_headers(cliente_auth_headers):
+    """Alias for cliente_auth_headers (spec naming: soporte-cliente module)."""
+    return cliente_auth_headers
+
+
+@pytest.fixture
+def director_tecnologico_soporte_auth_headers(director_tecnologico_auth_headers):
+    """Alias for director_tecnologico_auth_headers (soporte-cliente escalado)."""
+    return director_tecnologico_auth_headers
+
+
+@pytest.fixture
+def administrador_auth_headers(admin_auth_headers):
+    """Alias for admin_auth_headers (spec naming: red_operativa module)."""
+    return admin_auth_headers
+
+
+@pytest.fixture
+def operador_auth_headers_red_operativa(operador_auth_headers):
+    """Alias for operador_auth_headers (spec naming: red_operativa module)."""
+    return operador_auth_headers
+
+
+@pytest.fixture
+def mock_unidad_emergencia(mock_pinot, mock_kafka):
+    """Seed an active Dim_UnidadEmergencia row for red_operativa tests."""
+    unidad = {
+        "idunidademergencia": 500,
+        "idcliente": 1,
+        "idcondado": 1,
+        "tipopropiedad": "Externa",
+        "placa": "RED-OP-500",
+        "capacidad": "4",
+        "contactoproveedor": "5555555555",
+        "unidademergencia": "Grúa Red Operativa Test",
+        "tipounidademergencia": "Grúa",
+        "activo": True,
+        "latitud": 19.4326,
+        "longitud": -99.1332,
+        "fecha_actualizacion": "2026-07-21T00:00:00+00:00",
+    }
+    PINOT_STORE["Dim_UnidadEmergencia"].append(unidad)
+    return unidad
+
+
+@pytest.fixture
+def mock_despacho_activo(mock_pinot, mock_kafka, mock_unidad_emergencia):
+    """Seed an active Fact_Despacho row for the seeded unidad (no fechahoraretiro)."""
+    despacho = {
+        "iddespacho": 900,
+        "idaccidente": "ACC-RED-OP-TEST-1",
+        "idunidademergencia": mock_unidad_emergencia["idunidademergencia"],
+        "activo": True,
+        "fechahoraretiro": None,
+    }
+    PINOT_STORE["Fact_Despacho"].append(despacho)
+    return despacho

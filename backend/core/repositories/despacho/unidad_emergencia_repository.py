@@ -66,13 +66,7 @@ class UnidadEmergenciaRepository:
         )
         candidatas = []
         for row in rows:
-            row_condado = row.get("idcondado")
-            if row_condado is None and row.get("zonacobertura") is not None:
-                try:
-                    row_condado = int(row["zonacobertura"])
-                except (TypeError, ValueError):
-                    row_condado = None
-            if row_condado in condados:
+            if row.get("idcondado") in condados:
                 candidatas.append(row)
         candidatas.sort(key=lambda r: r.get("idunidademergencia", 0))
         return candidatas

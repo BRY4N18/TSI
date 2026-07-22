@@ -6,7 +6,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.repositories.despacho.despacho_repository import DespachoRepository
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 from core.repositories.seguimiento.parametros_seguimiento_repository import (
     ParametrosSeguimientoRepository,
 )

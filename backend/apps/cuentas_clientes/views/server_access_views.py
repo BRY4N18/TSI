@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from rest_framework import status
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -13,6 +12,7 @@ from apps.cuentas_clientes.services.server_access_service import (
     ServerAccessService,
 )
 from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class ServerUserListCreateView(APIView):

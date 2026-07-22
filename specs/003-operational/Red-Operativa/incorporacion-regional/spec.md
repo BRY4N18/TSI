@@ -4,6 +4,13 @@
 
 Asegurar que una nueva región operativa cumpla los requisitos de operatividad antes de recibir accidentes reales en producción, mediante un protocolo de validación ejecutado por el Administrador y el Director Tecnológico, con capacidad de re-evaluación, despublicación manual y despublicación automática por pérdida total de cobertura.
 
+## Clarifications
+
+### Session 2026-07-21
+- Q: RF-REGON-001 dice que el Administrador "corre las validaciones automáticas" en CU-O55, pero la Sección 13 dice que no existe checklist técnico automatizado. ¿Qué significa "ejecutar el protocolo de validación"? → A: Revisión manual, sin checklist — el Administrador/Director Tecnológico evalúan criterios fuera del sistema; solo el resultado final (`'Aprobada'`/`'Rechazada'` + `motivo`) se registra en `Dim_ValidacionRegion`. No hay validaciones automáticas del sistema en este spec.
+- Q: ¿Puede una región en `En_Alerta` o `Despublicada` volver a entrar al protocolo `CU-O55` para reactivarse? → A: Sí, puede reingresar — si el resultado es `Aprobada`, `estadoregion` vuelve a `Producción`. `CU-O55` es el único camino documentado hacia `Producción`, sin importar el estado previo (salvo `activo=false`).
+- Q: Si dos ejecuciones de `CU-O55` ocurren casi simultáneamente para la misma región, ¿cómo debe comportarse `Dim_RegionOperativa.estadoregion`? → A: Último `INSERT` gana — ambas filas se insertan en `Dim_ValidacionRegion` (auditoría completa); `estadoregion` refleja el resultado de la última escritura procesada, sin bloqueo especial.
+
 ## 2. Contexto
 
 Antes de que TSI pueda operar en una nueva zona geográfica, esa región debe pasar por un protocolo de validación de operatividad. Una vez en producción, la región puede degradarse (alerta) o despublicarse — manualmente por el Director Tecnológico, o automáticamente por el sistema si pierde toda cobertura de unidades activas. El modelo real es deliberadamente simple: el estado de la región vive en un campo directo (`Dim_RegionOperativa.estadoregion`), sin tabla de historial de transiciones — a diferencia del patrón usado para unidades de emergencia (`Fact_HistorialEstadoUnidad`), aquí no existe esa tabla equivalente.
@@ -39,9 +46,11 @@ El Administrador y el Director Tecnológico deben poder validar una región:
 
 1. Si la región aún no existe en el sistema: insertar en `Dim_RegionOperativa` (`idestado`, `nombreregion`, `activo=true`), con `estadoregion = 'En_Validación'` desde el primer momento.
 2. Insertar en `Dim_ValidacionRegion`: `idregionoperativa`, `idusuario` (quien ejecuta), `resultado` (`'Aprobada'` o `'Rechazada'`), `motivo` (obligatorio solo si `Rechazada`), `fechahora`.
-3. **Si el resultado es `Aprobada`:** actualizar `Dim_RegionOperativa.estadoregion = 'Producción'`.
+3. **Si el resultado es `Aprobada`:** actualizar `Dim_RegionOperativa.estadoregion = 'Producción'`. Esto aplica sin importar el `estadoregion` previo de la región (`En_Validación`, `En_Alerta` o `Despublicada`) — `CU-O55` es el único camino documentado hacia `Producción`, incluyendo reactivación de regiones degradadas o despublicadas.
 4. **Si el resultado es `Rechazada`:** `Dim_RegionOperativa.estadoregion` permanece en `'En_Validación'`; el flujo continúa en `CU-O60`.
-5. **Actores duales, secuencial no indistinto:** el Administrador ejecuta el protocolo (recolecta y corre las validaciones automáticas); el Director Tecnológico es quien queda registrado como `idusuario` en `Dim_ValidacionRegion` cuando la aprobación requiere validación final. No existe un estado "pendiente de aprobación" separado — la región permanece en `En_Validación` hasta que se inserta la fila con `resultado='Aprobada'`.
+5. **Actores duales, secuencial no indistinto:** el Administrador ejecuta el protocolo (recolecta los criterios y coordina la revisión); el Director Tecnológico es quien queda registrado como `idusuario` en `Dim_ValidacionRegion` cuando la aprobación requiere validación final. No existe un estado "pendiente de aprobación" separado — la región permanece en `En_Validación` hasta que se inserta la fila con `resultado='Aprobada'`.
+6. **Naturaleza de la validación:** el protocolo es una revisión manual — el Administrador/Director Tecnológico evalúan los criterios de operatividad fuera del sistema (no hay checklist técnico automatizado de conectividad/healthcheck respaldado por tabla, ver Sección 13). El sistema únicamente registra el resultado final (`resultado`, `motivo`) en `Dim_ValidacionRegion`; no ejecuta validaciones automáticas propias.
+7. **Concurrencia:** si dos ejecuciones de `CU-O55` ocurren casi simultáneamente para la misma región, ambas filas se insertan en `Dim_ValidacionRegion` (auditoría completa, sin pérdida de intentos) y `Dim_RegionOperativa.estadoregion` refleja el resultado de la última escritura procesada (último `INSERT` gana), sin bloqueo optimista ni mecanismo de versionado.
 
 ### RF-REGON-002: Gestionar resultado fallido y remediación (CU-O60)
 
@@ -73,7 +82,7 @@ El Sistema debe despublicar automáticamente una región sin intervención human
 Cada ejecución del protocolo de validación (`CU-O55`) debe quedar registrada de forma inmutable en `Dim_ValidacionRegion` — no se sobrescriben intentos previos, cada intento es una fila nueva.
 
 ### RNF-REGON-002: Consistencia de continuidad operativa
-La despublicación de una región (`CU-O61`, `CU-O62`) no debe interrumpir casos de emergencia en curso — la validación contra `Fact_Accidente` debe ejecutarse en tiempo real, sin demora perceptible.
+La despublicación de una región (`CU-O61`, `CU-O62`) no debe interrumpir casos de emergencia en curso — la validación contra `Fact_Accidente` debe ejecutarse en tiempo real, con latencia ≤100ms (p95), consistente con el umbral de "Consulta Pinot simple" de `.specify/docs/architecture/testing.md`.
 
 ## 6. Reglas de negocio
 
@@ -84,7 +93,7 @@ El estado de la región (`Dim_RegionOperativa.estadoregion`) es un campo **direc
 `Dim_ValidacionRegion.resultado` es un `STRING` libre (`'Aprobada'` / `'Rechazada'`), no una FK a un catálogo de estados de implementación — dicho catálogo no existe en el esquema real.
 
 ### RN-REGON-003
-Una región solo pasa a `Producción` cuando existe al menos una fila en `Dim_ValidacionRegion` con `resultado='Aprobada'` para esa `idregionoperativa`.
+Una región solo pasa a `Producción` cuando existe al menos una fila en `Dim_ValidacionRegion` con `resultado='Aprobada'` para esa `idregionoperativa`. Esta regla se cumple **por construcción**: `Producción` nunca se escribe salvo como efecto atómico de insertar una fila con `resultado='Aprobada'` (RF-REGON-001.3) — no existe un paso de "activación" independiente que pueda intentarse sin validación previa, por lo que no hay un caso de conflicto (409) asociado a esta regla.
 
 ### RN-REGON-004
 La despublicación (`CU-O61`, `CU-O62`) nunca cancela casos de emergencia activos en la región — solo bloquea la creación de casos nuevos.
@@ -112,7 +121,7 @@ Disparado por evento del sistema (conteo de unidades activas) — sin entrada de
 - **200 OK — Región activada:** `{ idregionoperativa, estadoregion: 'Producción' }`.
 - **200 OK — Región rechazada definitivamente:** `{ idregionoperativa, activo: false }`.
 - **200 OK — Región degradada/despublicada:** `{ idregionoperativa, estadoregion }`.
-- **409 Conflict** — Intento de activar una región sin ninguna validación `Aprobada`.
+- **409 Conflict** — Transición de `estadoregion` no permitida en `CU-O60` (rechazo definitivo sobre región que no está en `En_Validación`) o en `CU-O61`/`CU-O62` (estado origen distinto de `Producción`/`En_Alerta`). *(Nota de análisis 2026-07-21: el 409 "activar sin validación Aprobada" documentado en una versión previa de esta sección es estructuralmente inalcanzable — `Producción` solo se alcanza atómicamente al insertar `resultado='Aprobada'` en `CU-O55`, nunca como un paso de "activación" separado; RN-REGON-003 queda garantizada por construcción, no por una validación adicional.)*
 
 ## 9. Estados posibles
 
@@ -131,6 +140,8 @@ En_Validación → [activo=false]  (CU-O60, rechazo definitivo — no es un esta
 Producción → En_Alerta          (CU-O61)
 Producción → Despublicada       (CU-O61 o CU-O62)
 En_Alerta → Despublicada        (CU-O61 o CU-O62)
+En_Alerta → Producción          (CU-O55, resultado='Aprobada' — reactivación)
+Despublicada → Producción       (CU-O55, resultado='Aprobada' — reactivación)
 ```
 
 ## 10. Escenarios

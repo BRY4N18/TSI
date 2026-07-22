@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from apps.despacho.services.disponibilidad_unidad_service import DisponibilidadUnidadService
+from apps.despacho.services.disponibilidad_unidad_service import (
+    DisponibilidadUnidadService,
+)
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
     HistorialEstadoUnidadRepository,
 )
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 
 class ConsultaFlotaService:

@@ -25,6 +25,6 @@ class TestConfirmarDespachoContract:
         # Assert
         assert response.status_code == 200
         body = response.json()
-        assert body["data"]["estado_unidad"] == "Ocupada"
+        assert body["data"]["estado_unidad"] == "En Misión"
         assert body["data"]["estado_caso"] == "ASIGNADO"
         assert body["data"]["idunidademergencia"] == 1

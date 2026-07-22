@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.accidentes.region_operativa_repository import RegionOperativaRepository
+from core.repositories.accidentes.region_operativa_repository import (
+    RegionOperativaRepository,
+)
 
 
 @pytest.mark.repository

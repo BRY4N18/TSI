@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
+from core.repositories.cuentas_clientes.credential_repository import (
+    CredentialRepository,
+)
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 

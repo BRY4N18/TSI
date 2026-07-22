@@ -4,10 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.accidentes.domain_constants import ESTADO_ASIGNADO, ESTADO_BUSCANDO_UNIDAD, ESTADO_REPORTADO
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
+from apps.accidentes.domain_constants import (
+    ESTADO_ASIGNADO,
+    ESTADO_BUSCANDO_UNIDAD,
+    ESTADO_REPORTADO,
+)
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,

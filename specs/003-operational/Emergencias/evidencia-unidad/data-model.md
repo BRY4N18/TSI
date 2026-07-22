@@ -37,7 +37,8 @@
 
 ### 4) `Dim_EstadoUnidadEmergencia` (catálogo lectura)
 
-- Valores: Activa, Ocupada, Fuera de servicio
+- Valores: Activa, Ocupada, En Misión, Fuera de servicio
+- "En Misión" es de asignación exclusiva del sistema (no declarable vía POST manual, HTTP 422 si se intenta)
 - Mapeo `estadonuevo` API ↔ `idestadounidademergencia`
 
 ### 5) `Dim_UnidadEmergencia` (catálogo lectura)
@@ -55,17 +56,18 @@
 ## Transiciones de disponibilidad
 
 ```text
-Activa ←→ Ocupada
-Activa ←→ Fuera de servicio
-Ocupada → Activa        (cierre caso / retiro — seguimiento-cierre-de-casos)
-Ocupada → Fuera de servicio  (avería en atención)
-Fuera de servicio → Activa
+Activa ←→ Ocupada            (manual)
+Activa ←→ Fuera de servicio  (manual)
+Activa → En Misión           (automático — despacho-inteligente)
+En Misión → Activa           (automático — cierre caso / retiro, seguimiento-cierre-de-casos)
+En Misión → Fuera de servicio  (automático, avería en atención)
+Fuera de servicio → Activa   (manual)
 (sin historial) → Fuera de servicio  (default derivado)
 ```
 
 Transiciones automáticas por otros módulos (fuera de implementación directa de este plan, pero mismo topic):
 
-- `despacho-inteligente` → Ocupada al confirmar despacho
+- `despacho-inteligente` → En Misión al confirmar despacho
 - `seguimiento-cierre-de-casos` → Activa al cerrar caso
 
 ## Transiciones de sincronización evidencia

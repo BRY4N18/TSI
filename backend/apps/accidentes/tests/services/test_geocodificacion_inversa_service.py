@@ -1,6 +1,8 @@
 import pytest
 
-from apps.accidentes.services.geocodificacion_inversa_service import GeocodificacionInversaService
+from apps.accidentes.services.geocodificacion_inversa_service import (
+    GeocodificacionInversaService,
+)
 
 
 @pytest.mark.service

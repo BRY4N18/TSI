@@ -1,13 +1,17 @@
 import pytest
 
-from apps.cuentas_clientes.services.configuracion_cuenta_service import ConfiguracionCuentaService
+from apps.cuentas_clientes.services.configuracion_cuenta_service import (
+    ConfiguracionCuentaService,
+)
 
 
 @pytest.mark.service
 class TestConfiguracionCuentaService:
     def test_configurar_when_valid_sets_pendiente(self, mock_pinot, mock_kafka):
         # Arrange
-        from apps.cuentas_clientes.services.registro_cuenta_service import RegistroCuentaService
+        from apps.cuentas_clientes.services.registro_cuenta_service import (
+            RegistroCuentaService,
+        )
 
         registro = RegistroCuentaService()
         created = registro.registrar(

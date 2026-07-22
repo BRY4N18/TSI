@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from apps.accidentes.services.ubicacion_catalogo_service import UbicacionCatalogoService
 

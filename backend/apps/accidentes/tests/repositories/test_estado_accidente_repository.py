@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 @pytest.mark.repository

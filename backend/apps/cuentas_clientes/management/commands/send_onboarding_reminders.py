@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand
 
-from apps.cuentas_clientes.services.onboarding_reminder_service import OnboardingReminderService
+from apps.cuentas_clientes.services.onboarding_reminder_service import (
+    OnboardingReminderService,
+)
 
 
 class Command(BaseCommand):

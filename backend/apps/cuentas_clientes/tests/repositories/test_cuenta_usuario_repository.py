@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.cuentas_clientes.cuenta_usuario_repository import CuentaUsuarioRepository
+from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+    CuentaUsuarioRepository,
+)
 
 
 @pytest.mark.repository

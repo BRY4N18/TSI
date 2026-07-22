@@ -9,8 +9,8 @@ from apps.despacho.views.asignacion_views import (
 from apps.despacho.views.disponibilidad_views import (
     MiDisponibilidadView,
     UnidadDisponibilidadView,
-    UnidadHistorialEstadoView,
     UnidadesEmergenciaListView,
+    UnidadHistorialEstadoView,
 )
 from apps.despacho.views.mi_despacho_views import (
     MiDespachoConfirmarView,

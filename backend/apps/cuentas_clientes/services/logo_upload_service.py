@@ -5,8 +5,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from apps.cuentas_clientes.services.cuenta_access_service import CuentaAccessService
 from django.conf import settings
+
+from apps.cuentas_clientes.services.cuenta_access_service import CuentaAccessService
 
 
 class LogoUploadError(Exception):

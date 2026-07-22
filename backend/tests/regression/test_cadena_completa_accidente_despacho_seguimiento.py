@@ -78,7 +78,7 @@ class TestCadenaCompletaAccidenteDespachoSeguimiento:
             idusuario=6,
         )
         assert confirmacion["estado_caso"] == "ASIGNADO"
-        assert confirmacion["estado_unidad"] == "Ocupada"
+        assert confirmacion["estado_unidad"] == "En Misión"
 
         # --- 3. Posición GPS y llegada de la unidad (seguimiento) ---
         pos_payload = {

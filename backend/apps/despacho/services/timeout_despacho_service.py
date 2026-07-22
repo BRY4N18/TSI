@@ -20,7 +20,9 @@ from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_RECHAZADA,
     NotificacionDespachoRepository,
 )
-from core.repositories.despacho.parametros_despacho_repository import ParametrosDespachoRepository
+from core.repositories.despacho.parametros_despacho_repository import (
+    ParametrosDespachoRepository,
+)
 
 logger = logging.getLogger("tsi.despacho.timeout")
 

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from apps.accidentes.services.cobertura_operativa_service import CoberturaOperativaService
+from apps.accidentes.services.cobertura_operativa_service import (
+    CoberturaOperativaService,
+)
 
 
 class GeocoderClient(Protocol):

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from apps.accidentes.domain_constants import ESTADO_BORRADOR, ESTADO_REPORTADO
 from apps.accidentes.services.audit_accidente_service import AuditAccidenteService
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 class ConfirmarReporteService:

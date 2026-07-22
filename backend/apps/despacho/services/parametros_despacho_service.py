@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from core.repositories.despacho.parametros_despacho_repository import ParametrosDespachoRepository
+from core.repositories.despacho.parametros_despacho_repository import (
+    ParametrosDespachoRepository,
+)
 
 logger = logging.getLogger("tsi.despacho.parametros")
 

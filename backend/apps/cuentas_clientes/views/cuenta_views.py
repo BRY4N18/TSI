@@ -10,15 +10,27 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.cuentas_clientes.authentication import AuthenticatedUser, JWTSessionAuthentication
-from apps.cuentas_clientes.services.baja_cuenta_service import BajaCuentaError, BajaCuentaService
+from apps.cuentas_clientes.authentication import (
+    AuthenticatedUser,
+    JWTSessionAuthentication,
+)
+from apps.cuentas_clientes.services.baja_cuenta_service import (
+    BajaCuentaError,
+    BajaCuentaService,
+)
 from apps.cuentas_clientes.services.cuenta_access_service import CuentaAccessError
-from apps.cuentas_clientes.services.cuenta_perfil_service import CuentaPerfilError, CuentaPerfilService
+from apps.cuentas_clientes.services.cuenta_perfil_service import (
+    CuentaPerfilError,
+    CuentaPerfilService,
+)
 from apps.cuentas_clientes.services.cuenta_preferencias_service import (
     CuentaPreferenciasError,
     CuentaPreferenciasService,
 )
-from apps.cuentas_clientes.services.logo_upload_service import LogoUploadError, LogoUploadService
+from apps.cuentas_clientes.services.logo_upload_service import (
+    LogoUploadError,
+    LogoUploadService,
+)
 from apps.cuentas_clientes.services.transferencia_propiedad_service import (
     TransferenciaPropiedadError,
     TransferenciaPropiedadService,

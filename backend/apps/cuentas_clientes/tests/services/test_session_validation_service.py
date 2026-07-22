@@ -23,7 +23,9 @@ class TestSessionValidationService:
 
     def test_validate_when_session_closed_raises_error(self, mock_pinot, mock_kafka):
         # Arrange
-        from core.repositories.cuentas_clientes.session_repository import SessionRepository
+        from core.repositories.cuentas_clientes.session_repository import (
+            SessionRepository,
+        )
 
         SessionRepository().close_session(1)
         service = SessionValidationService()

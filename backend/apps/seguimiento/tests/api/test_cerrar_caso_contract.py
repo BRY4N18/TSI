@@ -2,7 +2,9 @@ import pytest
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_EN_ATENCION
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 @pytest.mark.api

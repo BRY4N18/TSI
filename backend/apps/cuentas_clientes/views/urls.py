@@ -2,7 +2,11 @@
 
 from django.urls import path
 
-from apps.cuentas_clientes.views.auth_views import LoginView, LogoutView, RevokeSessionView
+from apps.cuentas_clientes.views.auth_views import (
+    LoginView,
+    LogoutView,
+    RevokeSessionView,
+)
 from apps.cuentas_clientes.views.cuenta_views import (
     BajaCuentaView,
     CuentaPerfilView,

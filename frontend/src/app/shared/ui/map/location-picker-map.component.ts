@@ -4,14 +4,20 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  Injector,
   Input,
   OnDestroy,
   OnChanges,
   Output,
   SimpleChanges,
   ViewChild,
+  effect,
+  inject,
 } from '@angular/core';
 import * as L from 'leaflet';
+
+import { ThemeService } from '../../theme/theme.service';
+import { crearTileLayer } from './map-tile';
 
 export interface LatLng {
   lat: number;
@@ -59,7 +65,10 @@ export class LocationPickerMapComponent implements AfterViewInit, OnChanges, OnD
 
   @ViewChild('mapContainer', { static: true }) private readonly mapContainer!: ElementRef<HTMLDivElement>;
 
+  private readonly themeService = inject(ThemeService);
+  private readonly injector = inject(Injector);
   private map: L.Map | null = null;
+  private tileLayer: L.TileLayer | null = null;
   private marker: L.Marker | null = null;
 
   ngAfterViewInit(): void {
@@ -67,10 +76,19 @@ export class LocationPickerMapComponent implements AfterViewInit, OnChanges, OnD
 
     this.map = L.map(this.mapContainer.nativeElement).setView([start.lat, start.lng], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(this.map);
+    this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
+
+    effect(
+      () => {
+        const isDark = this.themeService.isDark();
+        if (!this.map) {
+          return;
+        }
+        this.tileLayer?.remove();
+        this.tileLayer = crearTileLayer(isDark).addTo(this.map);
+      },
+      { injector: this.injector },
+    );
 
     this.marker = L.marker([start.lat, start.lng], { draggable: true, icon: PIN_ICON }).addTo(this.map);
     this.marker.on('dragend', () => this.emitFromMarker());

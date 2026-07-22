@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from apps.accidentes.services.audit_evidencia_service import AuditEvidenciaService
 from apps.accidentes.services.evidencia_foto_service import EvidenciaFotoService
 from apps.accidentes.services.nota_campo_service import NotaCampoService
+from core.audit.evidencia_service import AuditEvidenciaService
 from core.storage.blob_storage_service import BlobTooLargeError, BlobUploadError
 
 

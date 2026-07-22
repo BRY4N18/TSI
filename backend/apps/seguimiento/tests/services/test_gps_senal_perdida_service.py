@@ -32,7 +32,9 @@ class TestGpsSenalPerdidaService:
         # Arrange
         from datetime import datetime, timezone
 
-        from apps.seguimiento.services.registrar_posicion_gps_service import RegistrarPosicionGpsService
+        from apps.seguimiento.services.registrar_posicion_gps_service import (
+            RegistrarPosicionGpsService,
+        )
 
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         RegistrarPosicionGpsService().registrar(

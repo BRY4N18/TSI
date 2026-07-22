@@ -1,7 +1,9 @@
 import pytest
 
 from conftest import PINOT_STORE
-from core.repositories.despacho.ubicacion_unidad_repository import UbicacionUnidadRepository
+from core.repositories.despacho.ubicacion_unidad_repository import (
+    UbicacionUnidadRepository,
+)
 
 
 @pytest.mark.repository

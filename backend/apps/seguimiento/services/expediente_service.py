@@ -5,13 +5,19 @@ from __future__ import annotations
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO
-from apps.seguimiento.services.historial_emergencias_service import HistorialEmergenciasService
+from apps.seguimiento.services.historial_emergencias_service import (
+    HistorialEmergenciasService,
+)
+from core.pinot.client import PinotClient
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.geografia_repository import GeografiaRepository
-from core.repositories.despacho.historial_despacho_repository import HistorialDespachoRepository
-from core.pinot.client import PinotClient
+from core.repositories.despacho.historial_despacho_repository import (
+    HistorialDespachoRepository,
+)
 
 
 class ExpedienteService:

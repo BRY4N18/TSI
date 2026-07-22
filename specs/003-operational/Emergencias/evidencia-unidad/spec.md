@@ -20,7 +20,7 @@ El Técnico de campo documenta cada accidente con evidencia objetiva que enrique
 
 **Casos de uso incluidos:**
 - **CU-O27 — Adjuntar evidencias**: El Técnico de campo o Unidad de emergencia captura y sube evidencia fotográfica y notas de campo asociadas a un accidente. Soporta captura offline (marca `sincronizado=false`). La evidencia se vincula solo por `idaccidente`, sin FK directa a `Fact_Despacho`, permitiendo que múltiples unidades adjunten evidencia al mismo caso de forma independiente.
-- **CU-O30 — Gestionar disponibilidad**: La Unidad de emergencia declara su estado de disponibilidad (Activa, Ocupada, Fuera de servicio). Cada cambio se registra como una nueva fila en `Fact_HistorialEstadoUnidad`. El estado actual se deriva consultando la fila con `fechahora` más reciente para esa unidad.
+- **CU-O30 — Gestionar disponibilidad**: La Unidad de emergencia declara su estado de disponibilidad (Activa, Ocupada, Fuera de servicio). El cuarto estado, **En Misión**, no es declarable manualmente — lo asigna el sistema automáticamente al confirmar un despacho (`despacho-inteligente`, CU-O24) y se abandona automáticamente al cerrar/abortar el caso (`seguimiento-cierre-de-casos`). Cada cambio se registra como una nueva fila en `Fact_HistorialEstadoUnidad`. El estado actual se deriva consultando la fila con `fechahora` más reciente para esa unidad.
 - **CU-O43 — Sincronizar evidencia en diferido**: Un proceso automatizado (comando de gestión o servicio en segundo plano) persiste en backend los registros capturados offline desde el almacenamiento local del dispositivo, con `sincronizado=true` en `Dim_EvidenciaFoto` y `Dim_NotaAccidente`. La `fechahora` original de captura se conserva inalterada.
 
 **Tablas de base de datos utilizadas** (verificadas contra `tablas.json`/`esquemas.json`, ver `data-model.md`):
@@ -45,13 +45,16 @@ El Técnico de campo documenta cada accidente con evidencia objetiva que enrique
 
 ### RF-EVI-001: Gestión de disponibilidad de unidad (CU-O30)
 
-La Unidad de emergencia debe poder cambiar su estado de disponibilidad en cualquier momento:
+La Unidad de emergencia debe poder cambiar manualmente su estado de disponibilidad entre 3 de los 4 estados posibles, en cualquier momento:
 
-| Estado | Significado |
-|---|---|
-| **Activa** | Disponible para recibir despachos. |
-| **Ocupada** | Atendiendo un caso, no recibe nuevos despachos. |
-| **Fuera de servicio** | No operativa (mantenimiento, fin de turno, avería). |
+| Estado | Significado | Declarable manualmente |
+|---|---|---|
+| **Activa** | Disponible para recibir despachos. | Sí |
+| **Ocupada** | No disponible por otra razón operativa (trámites, reabastecimiento, en base) — no ligada a un despacho activo. | Sí |
+| **En Misión** | Atendiendo un caso despachado; no recibe nuevos despachos. | No — solo el sistema la asigna al confirmar un despacho (CU-O24) y la retira al cerrar/abortar el caso. |
+| **Fuera de servicio** | No operativa (mantenimiento, fin de turno, avería). | Sí |
+
+Un POST de declaración manual con `estadonuevo = En Misión` debe ser rechazado con HTTP 422.
 
 Cada cambio debe:
 1. Insertar un nuevo registro en `Fact_HistorialEstadoUnidad` con `idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `idusuario`, `fechahora`. **`idusuario`** identifica quién declaró el cambio — la propia unidad (autodeclarado, caso de este CU) o un operador declarando a nombre de una unidad sin login (caso cubierto por `CU-O59` en el módulo Red-Operativa, que comparte esta misma tabla).
@@ -117,7 +120,7 @@ El sistema debe proveer un mecanismo para sincronizar evidencia capturada sin co
 ## 6. Reglas de negocio
 
 - **RN-EVI-001:** Solo el Administrador puede registrar unidades. Las unidades solo cambian su propia disponibilidad.
-- **RN-EVI-002:** Estado "Ocupada" o "Fuera de servicio" excluye la unidad del algoritmo de despacho.
+- **RN-EVI-002:** Solo el estado "Activa" incluye la unidad en el algoritmo de despacho; "Ocupada", "En Misión" y "Fuera de servicio" la excluyen.
 - **RN-EVI-003:** Cada cambio de estado queda en historial inmutable con `fechahora`. No se permite UPDATE ni DELETE sobre `Fact_HistorialEstadoUnidad`.
 - **RN-EVI-004:** Evidencia foto y notas se vinculan a un `idaccidente` existente en `Fact_Accidente`. No requieren FK a `Fact_Despacho`.
 - **RN-EVI-005:** Notas de campo son solo lectura una vez registradas en backend (INSERT-only en `Dim_NotaAccidente`). Los registros locales pendientes se persisten en backend al sincronizar (INSERT con `sincronizado=true`).
@@ -138,7 +141,7 @@ El sistema debe proveer un mecanismo para sincronizar evidencia capturada sin co
 - Archivo(s) de imagen (JPEG/PNG, ≤10 MB c/u) — para evidencia fotográfica.
 - `nota` (STRING, requerido si se registra observación), `tipo` (STRING: Observación general / Declaración de testigo / Daños materiales / Condiciones del sitio).
 - `idunidademergencia` (INT, requerido para cambio de disponibilidad) — implícito por sesión autenticada de la unidad.
-- `estadonuevo` (ENUM: Activa / Ocupada / Fuera de servicio) — estado destino del cambio de disponibilidad.
+- `estadonuevo` (ENUM: Activa / Ocupada / Fuera de servicio — "En Misión" no es aceptado en declaración manual, HTTP 422) — estado destino del cambio de disponibilidad.
 - Señal de reconexión del dispositivo (evento de sistema, no ingresado por el usuario) — dispara la sincronización diferida.
 
 ## 8. Salidas
@@ -157,16 +160,18 @@ El sistema debe proveer un mecanismo para sincronizar evidencia capturada sin co
 | Estado | Significado | Incluido en despacho |
 |---|---|---|
 | **Activa** | Disponible para recibir despachos. | Sí |
-| **Ocupada** | Atendiendo un caso, no recibe nuevos despachos. | No |
+| **Ocupada** | No disponible por otra razón operativa (trámites, reabastecimiento, en base), no ligada a un despacho activo. | No |
+| **En Misión** | Atendiendo un caso despachado, no recibe nuevos despachos. Asignado automáticamente por el sistema. | No |
 | **Fuera de servicio** | No operativa (mantenimiento, fin de turno, avería). | No |
 
 ### Diagrama de transiciones
 ```
-Activa ←→ Ocupada
-Activa ←→ Fuera de servicio
-Ocupada → Activa  (al cerrar caso o retirarse)
-Ocupada → Fuera de servicio  (excepción: avería durante atención)
-Fuera de servicio → Activa  (al volver a estar operativa)
+Activa ←→ Ocupada            (manual, ambas direcciones)
+Activa ←→ Fuera de servicio  (manual, ambas direcciones)
+Activa → En Misión           (automático, al confirmar despacho — CU-O24)
+En Misión → Activa           (automático, al cerrar caso o retirarse)
+En Misión → Fuera de servicio  (automático, excepción: avería durante atención)
+Fuera de servicio → Activa   (manual, al volver a estar operativa)
 ```
 
 ### Estados de sincronización de evidencia

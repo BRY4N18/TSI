@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.despacho.services.reasignacion_despacho_service import ReasignacionDespachoService
+from apps.despacho.services.reasignacion_despacho_service import (
+    ReasignacionDespachoService,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_PENDIENTE,

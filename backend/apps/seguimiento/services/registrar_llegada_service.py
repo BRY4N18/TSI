@@ -6,7 +6,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_EN_ATENCION
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_CONFIRMADO,

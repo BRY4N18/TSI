@@ -1,10 +1,14 @@
 import pytest
 
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 from apps.despacho.services.asignacion_manual_service import AsignacionManualService
+from apps.despacho.services.coordinacion_multiple_service import (
+    CoordinacionMultipleService,
+)
 from apps.despacho.services.escalamiento_zona_service import EscalamientoZonaService
-from apps.despacho.services.coordinacion_multiple_service import CoordinacionMultipleService
 from apps.despacho.services.monitoreo_despacho_service import MonitoreoDespachoService
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
 
 
 @pytest.mark.service

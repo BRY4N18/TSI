@@ -1,7 +1,9 @@
 import pytest
 
 from apps.accidentes.services.consulta_evidencia_service import ConsultaEvidenciaService
-from core.repositories.evidencia.evidencia_foto_repository import EvidenciaFotoRepository
+from core.repositories.evidencia.evidencia_foto_repository import (
+    EvidenciaFotoRepository,
+)
 from core.repositories.evidencia.nota_campo_repository import NotaCampoRepository
 
 

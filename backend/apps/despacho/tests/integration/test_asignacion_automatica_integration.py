@@ -1,9 +1,13 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_REPORTADO
-from apps.despacho.consumers.accidente_reportado_consumer import AccidenteReportadoConsumer
+from apps.despacho.consumers.accidente_reportado_consumer import (
+    AccidenteReportadoConsumer,
+)
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
 
 
 @pytest.mark.critical_path

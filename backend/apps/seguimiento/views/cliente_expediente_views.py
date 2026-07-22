@@ -7,12 +7,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.seguimiento.permissions import IsClienteExpediente
 from apps.seguimiento.services.expediente_pdf_service import ExpedientePdfService
 from apps.seguimiento.services.expediente_service import ExpedienteService
-from apps.seguimiento.services.historial_emergencias_service import HistorialEmergenciasService
+from apps.seguimiento.services.historial_emergencias_service import (
+    HistorialEmergenciasService,
+)
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 from core.pinot.client import PinotClient
 
 

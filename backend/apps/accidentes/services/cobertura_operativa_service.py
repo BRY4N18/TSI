@@ -1,6 +1,8 @@
 """Cobertura operativa service wrapper."""
 
-from core.repositories.accidentes.region_operativa_repository import RegionOperativaRepository
+from core.repositories.accidentes.region_operativa_repository import (
+    RegionOperativaRepository,
+)
 
 
 class CoberturaOperativaService:

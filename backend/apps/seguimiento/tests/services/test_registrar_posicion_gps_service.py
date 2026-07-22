@@ -1,7 +1,11 @@
 import pytest
 
-from apps.seguimiento.services.registrar_posicion_gps_service import RegistrarPosicionGpsService
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from apps.seguimiento.services.registrar_posicion_gps_service import (
+    RegistrarPosicionGpsService,
+)
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 
 
 @pytest.mark.service

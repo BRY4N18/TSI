@@ -6,7 +6,9 @@ import logging
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_REPORTADO
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 
 logger = logging.getLogger("tsi.despacho.consumer.accidente_reportado")
 

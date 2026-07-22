@@ -1,7 +1,9 @@
 import pytest
 
 from apps.despacho.consumers.despacho_timeout_consumer import DespachoTimeoutConsumer
-from apps.despacho.services.reasignacion_despacho_service import ReasignacionDespachoService
+from apps.despacho.services.reasignacion_despacho_service import (
+    ReasignacionDespachoService,
+)
 
 
 @pytest.mark.service

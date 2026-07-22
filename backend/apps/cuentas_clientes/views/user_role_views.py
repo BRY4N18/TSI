@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -20,6 +18,7 @@ from apps.cuentas_clientes.services.user_management_service import (
     UserManagementService,
 )
 from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class UserListCreateView(APIView):

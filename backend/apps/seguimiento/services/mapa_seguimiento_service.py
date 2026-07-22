@@ -13,16 +13,22 @@ from apps.accidentes.domain_constants import (
     ESTADO_FUSIONADO,
 )
 from apps.seguimiento.services.eta_calculo_service import EtaCalculoService
+from core.pinot.client import PinotClient
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_CONFIRMADO,
     HistorialDespachoRepository,
 )
-from core.repositories.despacho.historial_estado_unidad_repository import HistorialEstadoUnidadRepository
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
-from core.pinot.client import PinotClient
+from core.repositories.despacho.historial_estado_unidad_repository import (
+    HistorialEstadoUnidadRepository,
+)
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 ESTADOS_ACTIVOS = {
     ESTADO_ASIGNADO,

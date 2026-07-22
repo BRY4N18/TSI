@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.cuentas_clientes.server_access_repository import ServerAccessRepository
+from core.repositories.cuentas_clientes.server_access_repository import (
+    ServerAccessRepository,
+)
 
 
 @pytest.mark.repository

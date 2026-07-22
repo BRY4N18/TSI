@@ -1,12 +1,19 @@
 from django.urls import path
 
-from apps.seguimiento.views.cierre_views import CancelarCasoView, CerrarCasoView, ForzarRetiroView
+from apps.seguimiento.views.cierre_views import (
+    CancelarCasoView,
+    CerrarCasoView,
+    ForzarRetiroView,
+)
 from apps.seguimiento.views.cliente_expediente_views import (
     ClienteExpedienteDetalleView,
     ClienteExpedientePdfView,
     ClienteExpedientesView,
 )
-from apps.seguimiento.views.historial_views import ExpedienteOperadorView, HistorialEmergenciasView
+from apps.seguimiento.views.historial_views import (
+    ExpedienteOperadorView,
+    HistorialEmergenciasView,
+)
 from apps.seguimiento.views.mapa_views import (
     MapaSeguimientoView,
     SeguimientoAccidenteView,

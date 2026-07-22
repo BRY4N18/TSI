@@ -267,7 +267,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
-          description: Despacho confirmado; unidad pasa a Ocupada
+          description: Despacho confirmado; unidad pasa a En Misión
           content:
             application/json:
               schema:
@@ -698,7 +698,7 @@ components:
           $ref: '#/components/schemas/EstadoCaso'
         estado_unidad:
           type: string
-          enum: [Ocupada]
+          enum: [En Misión]
 
     ConfirmarDespachoResponse:
       type: object

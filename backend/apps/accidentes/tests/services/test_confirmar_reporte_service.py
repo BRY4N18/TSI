@@ -1,7 +1,12 @@
 import pytest
 
-from apps.accidentes.services.confirmar_reporte_service import ConfirmarReporteService, ConflictError
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from apps.accidentes.services.confirmar_reporte_service import (
+    ConfirmarReporteService,
+    ConflictError,
+)
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 @pytest.mark.service

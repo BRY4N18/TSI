@@ -1,8 +1,12 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_REPORTADO
-from apps.despacho.consumers.accidente_reportado_consumer import AccidenteReportadoConsumer
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
+from apps.despacho.consumers.accidente_reportado_consumer import (
+    AccidenteReportadoConsumer,
+)
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 
 
 @pytest.mark.service

@@ -5,8 +5,14 @@ from __future__ import annotations
 from django.conf import settings
 
 from apps.cuentas_clientes.services.audit_service import AuditService
-from core.jwt_utils import create_access_token, create_refresh_token, create_session_token
-from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
+from core.jwt_utils import (
+    create_access_token,
+    create_refresh_token,
+    create_session_token,
+)
+from core.repositories.cuentas_clientes.credential_repository import (
+    CredentialRepository,
+)
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.session_repository import SessionRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository

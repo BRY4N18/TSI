@@ -13,7 +13,9 @@ from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_RECHAZADA,
     NotificacionDespachoRepository,
 )
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 PENDIENTES = {ESTADO_PENDIENTE, ESTADO_NOTIFICADA}
 SEVERIDAD_LABELS = {1: "Leve", 2: "Moderada", 3: "Grave", 4: "Crítica"}

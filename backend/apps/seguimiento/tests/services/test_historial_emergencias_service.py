@@ -1,7 +1,9 @@
 import pytest
 
 from apps.seguimiento.services.cerrar_caso_service import CerrarCasoService
-from apps.seguimiento.services.historial_emergencias_service import HistorialEmergenciasService
+from apps.seguimiento.services.historial_emergencias_service import (
+    HistorialEmergenciasService,
+)
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 
 

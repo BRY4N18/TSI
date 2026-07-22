@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from core.repositories.cuentas_clientes.server_access_repository import ServerAccessRepository
+from core.repositories.cuentas_clientes.server_access_repository import (
+    ServerAccessRepository,
+)
 
 
 class ServerAccessError(Exception):

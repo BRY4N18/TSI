@@ -6,13 +6,19 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accidentes.permissions import OperadorEmergenciasPermission, UnidadEmergenciaPermission
-from apps.accidentes.services.confirmar_reporte_service import ConfirmarReporteService, ConflictError
+from apps.accidentes.permissions import (
+    OperadorEmergenciasPermission,
+    UnidadEmergenciaPermission,
+)
+from apps.accidentes.services.confirmar_reporte_service import (
+    ConfirmarReporteService,
+    ConflictError,
+)
 from apps.accidentes.services.descartar_caso_service import DescartarCasoService
 from apps.accidentes.services.escalar_severidad_service import EscalarSeveridadService
 from apps.accidentes.services.fusionar_reportes_service import FusionarReportesService
 from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
+from core.auth.permissions import IsAuthenticated401
 
 
 class ConfirmarReporteView(APIView):

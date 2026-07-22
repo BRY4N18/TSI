@@ -1,6 +1,8 @@
 import pytest
 
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 from apps.despacho.services.rechazar_despacho_service import RechazarDespachoService
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.notificacion_despacho_repository import (

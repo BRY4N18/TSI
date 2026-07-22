@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from apps.despacho.services.reasignacion_despacho_service import ReasignacionDespachoService
+from apps.despacho.services.reasignacion_despacho_service import (
+    ReasignacionDespachoService,
+)
 
 logger = logging.getLogger("tsi.despacho.consumer.despacho_abortado")
 

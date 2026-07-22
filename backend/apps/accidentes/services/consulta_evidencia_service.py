@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from core.pinot.client import PinotClient
-from core.repositories.evidencia.evidencia_foto_repository import EvidenciaFotoRepository
+from core.repositories.evidencia.evidencia_foto_repository import (
+    EvidenciaFotoRepository,
+)
 from core.repositories.evidencia.nota_campo_repository import NotaCampoRepository
 from core.storage.blob_storage_service import BlobStorageService
 

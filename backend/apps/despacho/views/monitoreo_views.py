@@ -7,10 +7,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.despacho.permissions import IsOperadorDespacho
 from apps.despacho.services.monitoreo_despacho_service import MonitoreoDespachoService
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class MonitoreoDespachoView(APIView):

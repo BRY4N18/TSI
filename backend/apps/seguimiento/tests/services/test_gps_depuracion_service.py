@@ -3,7 +3,9 @@ import pytest
 from apps.seguimiento.services.gps_depuracion_service import GpsDepuracionService
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 from apps.seguimiento.services.retiro_despacho_service import RetiroDespachoService
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 
 
 @pytest.mark.service

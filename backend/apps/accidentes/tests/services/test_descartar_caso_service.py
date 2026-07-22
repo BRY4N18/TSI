@@ -1,8 +1,8 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_BORRADOR, ESTADO_DESCARTADO
-from apps.accidentes.services.descartar_caso_service import DescartarCasoService
 from apps.accidentes.services.confirmar_reporte_service import ConflictError
+from apps.accidentes.services.descartar_caso_service import DescartarCasoService
 
 
 @pytest.mark.service

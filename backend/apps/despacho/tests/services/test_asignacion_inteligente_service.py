@@ -1,6 +1,8 @@
 import pytest
 
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 
 
 @pytest.mark.service

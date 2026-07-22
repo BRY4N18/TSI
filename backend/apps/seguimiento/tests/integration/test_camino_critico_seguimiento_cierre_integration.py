@@ -1,7 +1,9 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_EN_ATENCION
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_EN_SITIO,
     HistorialDespachoRepository,

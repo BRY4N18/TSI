@@ -127,7 +127,7 @@ El Cliente (aseguradora o municipio) debe poder consultar expedientes de casos c
 El Operador de emergencias debe disponer de un mapa en tiempo real que muestre:
 
 - Ubicacion de todos los accidentes activos (marcadores por severidad: verde = Leve, amarillo = Moderado, naranja = Grave, rojo = Fatal).
-- Ubicacion de todas las unidades de emergencia activas con su estado (Activa = azul, Ocupada = naranja, Fuera de servicio = gris).
+- Ubicacion de todas las unidades de emergencia activas con su estado (Activa = azul, En Misión = naranja, Ocupada/Fuera de servicio = gris).
 - Para unidades en camino: linea de ruta desde su posicion hasta el sitio del accidente, con ETA.
 - Al hacer clic en un marcador: detalle resumido del caso o de la unidad.
 

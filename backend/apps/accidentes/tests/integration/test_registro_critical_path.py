@@ -1,7 +1,7 @@
 import pytest
 
-from apps.accidentes.services.registro_accidente_service import RegistroAccidenteService
 from apps.accidentes.services.consulta_accidente_service import ConsultaAccidenteService
+from apps.accidentes.services.registro_accidente_service import RegistroAccidenteService
 
 
 @pytest.mark.critical_path

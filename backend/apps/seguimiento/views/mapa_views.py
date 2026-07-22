@@ -7,11 +7,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.seguimiento.permissions import IsOperadorSeguimiento
 from apps.seguimiento.services.mapa_seguimiento_service import MapaSeguimientoService
 from apps.seguimiento.services.seguimiento_sse_service import SeguimientoSseService
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class MapaSeguimientoView(APIView):

@@ -14,14 +14,16 @@ from core.repositories.despacho.historial_despacho_repository import (
     HistorialDespachoRepository,
 )
 from core.repositories.despacho.historial_estado_unidad_repository import (
-    ESTADO_OCUPADA,
+    ESTADO_EN_MISION,
     HistorialEstadoUnidadRepository,
 )
 from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_CONFIRMADA,
     ESTADO_NOTIFICADA,
-    ESTADO_PENDIENTE as NOTIF_PENDIENTE,
     NotificacionDespachoRepository,
+)
+from core.repositories.despacho.notificacion_despacho_repository import (
+    ESTADO_PENDIENTE as NOTIF_PENDIENTE,
 )
 
 
@@ -75,7 +77,7 @@ class ConfirmarDespachoService:
         )
         self.historial_unidad.append_estado(
             idunidademergencia=idunidademergencia,
-            estadonuevo=ESTADO_OCUPADA,
+            estadonuevo=ESTADO_EN_MISION,
             idusuario=idusuario,
         )
         estado_caso = self.estado_accidente.publish_asignado_if_first_confirmed(
@@ -87,5 +89,5 @@ class ConfirmarDespachoService:
             "iddespacho": despacho["iddespacho"],
             "idunidademergencia": idunidademergencia,
             "estado_caso": "ASIGNADO" if estado_caso else "BUSCANDO_UNIDAD",
-            "estado_unidad": ESTADO_OCUPADA,
+            "estado_unidad": ESTADO_EN_MISION,
         }

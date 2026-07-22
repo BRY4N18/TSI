@@ -1,16 +1,18 @@
+import time
+
 import pytest
 
 from apps.despacho.consumers.despacho_timeout_consumer import DespachoTimeoutConsumer
 from apps.despacho.jobs.timeout_despacho_job import run_timeout_despacho_job
 from apps.despacho.services.timeout_despacho_service import TimeoutDespachoService
-import time
-
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_PENDIENTE,
     HistorialDespachoRepository,
 )
-from core.repositories.despacho.notificacion_despacho_repository import NotificacionDespachoRepository
+from core.repositories.despacho.notificacion_despacho_repository import (
+    NotificacionDespachoRepository,
+)
 
 
 @pytest.mark.critical_path

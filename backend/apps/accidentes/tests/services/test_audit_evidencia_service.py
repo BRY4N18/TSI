@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from apps.accidentes.services.audit_evidencia_service import AuditEvidenciaService
+from core.audit.evidencia_service import AuditEvidenciaService
 
 
 @pytest.mark.service

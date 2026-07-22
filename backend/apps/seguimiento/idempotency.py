@@ -8,10 +8,9 @@ misión") replays the cached response instead of reprocessing.
 
 from __future__ import annotations
 
+from django.core.cache import cache
 from rest_framework.request import Request
 from rest_framework.response import Response
-
-from django.core.cache import cache
 
 TTL_SECONDS = 300
 

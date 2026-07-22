@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from apps.cuentas_clientes.services.onboarding_notificacion_service import (
     OnboardingNotificacionService,

@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from apps.cuentas_clientes.services.audit_service import AuditService
-from apps.cuentas_clientes.services.onboarding_access_service import OnboardingAccessService
+from apps.cuentas_clientes.services.onboarding_access_service import (
+    OnboardingAccessService,
+)
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
 
 

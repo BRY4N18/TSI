@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: TSI Onboarding y Validación de Región Operativa API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O55 (validar región), CU-O60 (historial y
+    remediación), CU-O61 (re-evaluar/despublicar) y CU-O62 (despublicación
+    automática, servicio expuesto sin disparador conectado — ver research.md
+    Decision 4). Sigue api-standards.md del proyecto.
+servers:
+  - url: /api/v1
+tags:
+  - name: Regiones
+  - name: Validaciones
+
+paths:
+  /red-operativa/regiones:
+    get:
+      tags: [Regiones]
+      summary: Listar regiones operativas (para catálogo de onboarding)
+      operationId: listRegiones
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: estadoregion
+          in: query
+          schema:
+            type: string
+            enum: [En_Validación, Producción, En_Alerta, Despublicada]
+      responses:
+        '200':
+          description: Regiones obtenidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /red-operativa/regiones/{idregionoperativa}:
+    get:
+      tags: [Regiones]
+      summary: Obtener detalle de una región operativa
+      operationId: getRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdRegion'
+      responses:
+        '200':
+          description: Región obtenida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /red-operativa/regiones/validaciones:
+    post:
+      tags: [Validaciones]
+      summary: Ejecutar el protocolo de validación de operatividad (CU-O55)
+      description: >
+        Si idregionoperativa no viene en el body, crea la región en
+        estadoregion='En_Validación' antes de insertar la validación (alta
+        de región nueva). Válido también como reingreso desde En_Alerta o
+        Despublicada (reactivación, ver Clarifications del spec).
+      operationId: ejecutarValidacionRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidacionRegionRequest'
+      responses:
+        '200':
+          description: Validación registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidacionRegionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /red-operativa/regiones/{idregionoperativa}/validaciones:
+    get:
+      tags: [Validaciones]
+      summary: Consultar historial completo de intentos de validación (CU-O60)
+      operationId: listValidacionesRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdRegion'
+      responses:
+        '200':
+          description: Historial obtenido, ordenado por fechahora ascendente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidacionHistorialResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /red-operativa/regiones/{idregionoperativa}/rechazo-definitivo:
+    post:
+      tags: [Regiones]
+      summary: Marcar rechazo definitivo de una región en validación (CU-O60)
+      operationId: rechazarDefinitivamenteRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdRegion'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Región marcada como inactiva (activo=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RechazoDefinitivoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /red-operativa/regiones/{idregionoperativa}/reevaluacion:
+    post:
+      tags: [Regiones]
+      summary: Degradar (En_Alerta) o despublicar (Despublicada) una región en producción (CU-O61)
+      operationId: reevaluarRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdRegion'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReevaluacionRequest'
+      responses:
+        '200':
+          description: Región degradada o despublicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionEstadoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /red-operativa/regiones/{idregionoperativa}/despublicacion-automatica:
+    post:
+      tags: [Regiones]
+      summary: >
+        Ejecutar despublicación automática por pérdida total de cobertura (CU-O62).
+        Servicio idempotente sin disparador automático conectado — invocable
+        manualmente o por job externo hasta que exista FK Dim_UnidadEmergencia↔Dim_RegionOperativa
+        (RN-REGON-005, ver research.md Decision 4). No requiere idusuario.
+      operationId: despublicarAutomaticamenteRegion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdRegion'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Región despublicada automáticamente (sin idusuario)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionEstadoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdRegion:
+      name: idregionoperativa
+      in: path
+      required: true
+      schema:
+        type: integer
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida (ej. motivo faltante en resultado='Rechazada')
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Token JWT ausente o inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol sin permiso para esta operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Región no encontrada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: >
+        Conflicto de negocio: transición de estadoregion no permitida (ej.
+        rechazo definitivo sobre región que no está en En_Validación, o
+        reevaluación/despublicación sobre región cuyo estado origen no es
+        Producción/En_Alerta)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+
+    RegionData:
+      type: object
+      required:
+        - idregionoperativa
+        - idestado
+        - nombreregion
+        - estadoregion
+        - activo
+      properties:
+        idregionoperativa:
+          type: integer
+          readOnly: true
+        idestado:
+          type: integer
+        nombreregion:
+          type: string
+        estadoregion:
+          type: string
+          enum: [En_Validación, Producción, En_Alerta, Despublicada]
+        activo:
+          type: boolean
+
+    RegionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/RegionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RegionListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    RegionEstadoResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idregionoperativa, estadoregion]
+          properties:
+            idregionoperativa:
+              type: integer
+            estadoregion:
+              type: string
+              enum: [En_Validación, Producción, En_Alerta, Despublicada]
+
+    RechazoDefinitivoResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idregionoperativa, activo]
+          properties:
+            idregionoperativa:
+              type: integer
+            activo:
+              type: boolean
+
+    ValidacionRegionRequest:
+      type: object
+      required: [resultado]
+      properties:
+        idregionoperativa:
+          type: integer
+          description: Omitir si es la primera validación de una región nueva
+        idestado:
+          type: integer
+          description: Requerido si idregionoperativa no viene (alta de región nueva)
+        nombreregion:
+          type: string
+          description: Requerido si idregionoperativa no viene (alta de región nueva)
+        resultado:
+          type: string
+          enum: [Aprobada, Rechazada]
+        motivo:
+          type: string
+          description: Obligatorio si resultado = Rechazada
+
+    ValidacionRegionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idregionoperativa, resultado, estadoregion_actual]
+          properties:
+            idregionoperativa:
+              type: integer
+            idvalidacionregion:
+              type: integer
+            resultado:
+              type: string
+              enum: [Aprobada, Rechazada]
+            estadoregion_actual:
+              type: string
+              enum: [En_Validación, Producción, En_Alerta, Despublicada]
+
+    ValidacionHistorialItem:
+      type: object
+      required: [idvalidacionregion, idregionoperativa, idusuario, resultado, fechahora]
+      properties:
+        idvalidacionregion:
+          type: integer
+        idregionoperativa:
+          type: integer
+        idusuario:
+          type: integer
+        resultado:
+          type: string
+          enum: [Aprobada, Rechazada]
+        motivo:
+          type: string
+          nullable: true
+        fechahora:
+          type: integer
+          format: int64
+          description: epoch ms
+
+    ValidacionHistorialResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidacionHistorialItem'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ReevaluacionRequest:
+      type: object
+      required: [estadoregion, motivo]
+      properties:
+        estadoregion:
+          type: string
+          enum: [En_Alerta, Despublicada]
+        motivo:
+          type: string

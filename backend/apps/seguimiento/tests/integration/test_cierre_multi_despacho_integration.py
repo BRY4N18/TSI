@@ -6,7 +6,9 @@ from apps.despacho.services.confirmar_despacho_service import ConfirmarDespachoS
 from apps.seguimiento.services.cerrar_caso_service import CerrarCasoService
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 from apps.seguimiento.services.retiro_despacho_service import RetiroDespachoService
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_RETIRADO,
     HistorialDespachoRepository,

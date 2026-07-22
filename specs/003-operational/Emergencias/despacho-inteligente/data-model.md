@@ -32,7 +32,7 @@
 
 - **PK:** `idhistorialestadounidad` (INT)
 - **FKs:** `idunidademergencia`, `idestadounidademergencia` → `Dim_EstadoUnidadEmergencia`
-- **Reglas:** Confirmación O24 → Ocupada; rechazo mantiene Activa (RN-DES-006).
+- **Reglas:** Confirmación O24 → En Misión; rechazo mantiene Activa (RN-DES-006).
 
 ### 5) `Fact_AccidenteTipoEstadoAccidente`
 
@@ -47,7 +47,7 @@
 | Entidad | Uso en módulo |
 |---------|---------------|
 | `Fact_Accidente` | Trigger O22, coordenadas, severidad, `idcalle`, `descripcion` |
-| `Dim_UnidadEmergencia` | Candidatas, `latitud`/`longitud`, `zonacobertura`, `tipounidademergencia` |
+| `Dim_UnidadEmergencia` | Candidatas, `latitud`/`longitud`, `idcondado` (reemplaza a `zonacobertura`, ver migración 2026-07-21), `tipounidademergencia` |
 | `Dim_HistorialUbicacionUnidadEmergencia` | GPS más reciente que snapshot (RN-DES-010) |
 | `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` | Filtro condado O22; vecinos O34 |
 | `Dim_Severidad` | Concordancia tipo unidad |

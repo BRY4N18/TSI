@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.seguimiento.unidad_snapshot_repository import UnidadSnapshotRepository
+from core.repositories.seguimiento.unidad_snapshot_repository import (
+    UnidadSnapshotRepository,
+)
 
 
 @pytest.mark.repository

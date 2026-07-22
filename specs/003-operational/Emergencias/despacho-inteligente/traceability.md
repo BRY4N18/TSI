@@ -9,7 +9,7 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | CA-DES-001 | Asignación <5s tras REPORTADO | T033, T038, T098 | `test_asignacion_automatica_integration`, `test_cadena_critica_despacho_integration` |
 | CA-DES-002 | Filtro condado + scoring | T029, T035 | `test_consulta_candidatas_service` |
 | CA-DES-003 | Notificación push/SMS | T031, T037 | `test_notificacion_despacho_service` |
-| CA-DES-004 | Confirmar → ASIGNADO + Ocupada | T042, T046, T098 | `test_confirmar_despacho_contract` |
+| CA-DES-004 | Confirmar → ASIGNADO + En Misión | T042, T046, T098 | `test_confirmar_despacho_contract` |
 | CA-DES-005 | Rechazo → activo=false + O36 | T043, T047 | `test_rechazar_despacho_contract` |
 | CA-DES-006 | Timeout job O35 | T050, T056, T057 | `test_timeout_despacho_service` |
 | CA-DES-007 | Consumer O36 async | T052, T058, T053 | `test_timeout_reasignacion_integration` |

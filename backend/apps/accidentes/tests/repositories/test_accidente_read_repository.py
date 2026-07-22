@@ -2,8 +2,12 @@ import pytest
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_REPORTADO
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
-from core.repositories.evidencia.accidente_read_repository import AccidenteReadRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
+from core.repositories.evidencia.accidente_read_repository import (
+    AccidenteReadRepository,
+)
 
 
 @pytest.mark.repository

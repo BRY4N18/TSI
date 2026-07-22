@@ -4,8 +4,10 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   OnDestroy,
   ViewChild,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -14,6 +16,8 @@ import * as L from 'leaflet';
 import { TablerIconComponent, TablerIconName, tablerIconPaths } from '../../../../shared/ui/icon/tabler-icon.component';
 import { SEVERIDAD_INFO } from '../../../accidentes/severidad.constants';
 import { RutaService } from '../../../../shared/services/ruta.service';
+import { ThemeService } from '../../../../shared/theme/theme.service';
+import { crearTileLayer } from '../../../../shared/ui/map/map-tile';
 import { SeguimientoApiService } from '../../services/seguimiento-api.service';
 import { SeguimientoSseService } from '../../services/seguimiento-sse.service';
 import { MapaSeguimientoData, MarcadorAccidente, UnidadEnMapa } from '../../models/seguimiento.types';
@@ -31,7 +35,8 @@ const TONE_COLOR: Record<string, string> = {
 
 const UNIDAD_COLOR: Record<string, string> = {
   Activa: 'var(--accent-primary)',
-  Ocupada: 'var(--alert-warning)',
+  Ocupada: 'var(--text-secondary)',
+  'En Misión': 'var(--alert-warning)',
   'Fuera de servicio': 'var(--text-secondary)',
 };
 
@@ -121,7 +126,7 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
           <span class="h-2.5 w-2.5 rounded-full bg-accent-primary"></span> Unidad activa
         </span>
         <span class="flex items-center gap-1.5">
-          <span class="h-2.5 w-2.5 rounded-full bg-alert-warning"></span> Unidad ocupada
+          <span class="h-2.5 w-2.5 rounded-full bg-alert-warning"></span> Unidad en misión
         </span>
         <span class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-full bg-text-secondary"></span> Fuera de servicio
@@ -166,6 +171,8 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
   private readonly sse = inject(SeguimientoSseService);
   private readonly rutaService = inject(RutaService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly themeService = inject(ThemeService);
+  private readonly injector = inject(Injector);
 
   @ViewChild('mapContainer', { static: true }) private readonly mapContainer!: ElementRef<HTMLDivElement>;
 
@@ -173,6 +180,7 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
   readonly syncStatus = signal<SyncStatus>('reconnecting');
 
   private map: L.Map | null = null;
+  private tileLayer: L.TileLayer | null = null;
   private accidenteMarkers = new Map<string, L.Marker>();
   private unidadMarkers = new Map<number, L.Marker>();
   private rutaCache = new Map<number, RutaCacheEntry>();
@@ -180,11 +188,20 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapContainer.nativeElement, { zoomControl: false }).setView(DEFAULT_CENTER, 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(this.map);
+    this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+
+    effect(
+      () => {
+        const isDark = this.themeService.isDark();
+        if (!this.map) {
+          return;
+        }
+        this.tileLayer?.remove();
+        this.tileLayer = crearTileLayer(isDark).addTo(this.map);
+      },
+      { injector: this.injector },
+    );
 
     this.cargar();
     this.conectarSse();

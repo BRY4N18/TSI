@@ -7,18 +7,22 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
+from apps.despacho.consumers.despacho_abortado_consumer import handle_despacho_abortado
 from apps.seguimiento.idempotency import get_cached_response, store_response
 from apps.seguimiento.permissions import IsUnidadSeguimiento
+from apps.seguimiento.services.abortar_mision_service import AbortarMisionService
 from apps.seguimiento.services.obtener_mi_seguimiento_actual_service import (
     ObtenerMiSeguimientoActualService,
 )
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
-from apps.seguimiento.services.registrar_posicion_gps_service import RegistrarPosicionGpsService
-from apps.seguimiento.services.abortar_mision_service import AbortarMisionService
-from apps.despacho.consumers.despacho_abortado_consumer import handle_despacho_abortado
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
+from apps.seguimiento.services.registrar_posicion_gps_service import (
+    RegistrarPosicionGpsService,
+)
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 
 class MiSeguimientoActualView(APIView):

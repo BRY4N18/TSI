@@ -1,7 +1,9 @@
 import pytest
 
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 from apps.despacho.services.confirmar_despacho_service import ConfirmarDespachoService
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
 from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_CONFIRMADA,
     NotificacionDespachoRepository,
@@ -28,7 +30,7 @@ class TestConfirmarDespachoService:
         )
 
         # Assert
-        assert result["estado_unidad"] == "Ocupada"
+        assert result["estado_unidad"] == "En Misión"
         assert result["estado_caso"] == "ASIGNADO"
         assert result["idunidademergencia"] == 1
         notif = NotificacionDespachoRepository().find_by_id(created["idnotificaciondespacho"])

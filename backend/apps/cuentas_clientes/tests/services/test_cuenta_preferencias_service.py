@@ -1,6 +1,8 @@
 import pytest
 
-from apps.cuentas_clientes.services.cuenta_preferencias_service import CuentaPreferenciasService
+from apps.cuentas_clientes.services.cuenta_preferencias_service import (
+    CuentaPreferenciasService,
+)
 
 
 @pytest.mark.service

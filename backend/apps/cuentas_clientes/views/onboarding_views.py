@@ -12,10 +12,21 @@ from apps.cuentas_clientes.services.configuracion_cuenta_service import (
     ConfiguracionCuentaError,
     ConfiguracionCuentaService,
 )
-from apps.cuentas_clientes.services.invitacion_service import InvitacionError, InvitacionService
-from apps.cuentas_clientes.services.logo_upload_service import LogoUploadError, LogoUploadService
-from apps.cuentas_clientes.services.onboarding_access_service import OnboardingAccessError
-from apps.cuentas_clientes.services.onboarding_service import OnboardingError, OnboardingService
+from apps.cuentas_clientes.services.invitacion_service import (
+    InvitacionError,
+    InvitacionService,
+)
+from apps.cuentas_clientes.services.logo_upload_service import (
+    LogoUploadError,
+    LogoUploadService,
+)
+from apps.cuentas_clientes.services.onboarding_access_service import (
+    OnboardingAccessError,
+)
+from apps.cuentas_clientes.services.onboarding_service import (
+    OnboardingError,
+    OnboardingService,
+)
 from apps.cuentas_clientes.services.registro_cuenta_service import (
     RegistroCuentaError,
     RegistroCuentaService,

@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.despacho.services.asignacion_inteligente_service import AsignacionInteligenteService
-from core.repositories.accidentes.nota_accidente_repository import NotaAccidenteRepository
+from apps.despacho.services.asignacion_inteligente_service import (
+    AsignacionInteligenteService,
+)
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
+from core.repositories.accidentes.nota_accidente_repository import (
+    NotaAccidenteRepository,
+)
 
 
 class EscalamientoZonaService:
@@ -23,7 +27,9 @@ class EscalamientoZonaService:
     def escalar(self, *, idaccidente: str, idusuario: int) -> dict[str, Any]:
         if not self.accidentes.find_by_id(idaccidente):
             raise LookupError("Accidente no encontrado")
-        from apps.despacho.services.consulta_candidatas_service import ConsultaCandidatasService
+        from apps.despacho.services.consulta_candidatas_service import (
+            ConsultaCandidatasService,
+        )
 
         candidatas = ConsultaCandidatasService().listar_puntuadas(
             idaccidente, incluir_vecinos=True

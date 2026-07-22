@@ -6,7 +6,9 @@ import secrets
 import string
 
 from apps.cuentas_clientes.services.audit_service import AuditService
-from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
+from core.repositories.cuentas_clientes.credential_repository import (
+    CredentialRepository,
+)
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 
 

@@ -6,12 +6,18 @@ import json
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO
-from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
-from core.repositories.accidentes.ubicacion_catalogo_repository import UbicacionCatalogoRepository
-from core.repositories.despacho.geografia_repository import GeografiaRepository
-from core.repositories.despacho.unidad_emergencia_repository import UnidadEmergenciaRepository
 from core.pinot.client import PinotClient
+from core.repositories.accidentes.accidente_repository import AccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
+from core.repositories.accidentes.ubicacion_catalogo_repository import (
+    UbicacionCatalogoRepository,
+)
+from core.repositories.despacho.geografia_repository import GeografiaRepository
+from core.repositories.despacho.unidad_emergencia_repository import (
+    UnidadEmergenciaRepository,
+)
 
 
 class HistorialEmergenciasService:

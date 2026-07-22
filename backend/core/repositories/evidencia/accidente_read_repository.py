@@ -6,7 +6,9 @@ from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_DESCARTADO
 from core.pinot.client import PinotClient
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 ESTADOS_INACTIVOS = frozenset({ESTADO_CERRADO, ESTADO_DESCARTADO})
 

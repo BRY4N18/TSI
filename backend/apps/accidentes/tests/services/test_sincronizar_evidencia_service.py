@@ -3,7 +3,9 @@ import uuid
 
 import pytest
 
-from apps.accidentes.services.sincronizar_evidencia_service import SincronizarEvidenciaService
+from apps.accidentes.services.sincronizar_evidencia_service import (
+    SincronizarEvidenciaService,
+)
 from core.storage.blob_storage_service import BlobStorageService, BlobUploadError
 
 

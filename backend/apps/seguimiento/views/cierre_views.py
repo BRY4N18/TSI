@@ -7,12 +7,12 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from apps.seguimiento.permissions import IsOperadorSeguimiento
 from apps.seguimiento.services.cancelar_caso_service import CancelarCasoService
 from apps.seguimiento.services.cerrar_caso_service import CerrarCasoService
 from apps.seguimiento.services.forzar_retiro_service import ForzarRetiroService
+from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 
 class CerrarCasoView(APIView):

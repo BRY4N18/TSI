@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from apps.cuentas_clientes.services.onboarding_access_service import OnboardingAccessService
+from apps.cuentas_clientes.services.onboarding_access_service import (
+    OnboardingAccessService,
+)
 
 
 class OnboardingPermissions:

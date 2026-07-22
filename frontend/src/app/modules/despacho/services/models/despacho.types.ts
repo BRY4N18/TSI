@@ -96,7 +96,7 @@ export interface ConfirmarDespachoData {
   iddespacho: number;
   idunidademergencia: number;
   estado_caso: EstadoCaso;
-  estado_unidad: 'Ocupada';
+  estado_unidad: 'En Misión';
 }
 
 export interface RechazarDespachoRequest {

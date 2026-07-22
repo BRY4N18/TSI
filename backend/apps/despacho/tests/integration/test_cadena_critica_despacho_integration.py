@@ -1,7 +1,9 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_REPORTADO
-from apps.despacho.consumers.accidente_reportado_consumer import AccidenteReportadoConsumer
+from apps.despacho.consumers.accidente_reportado_consumer import (
+    AccidenteReportadoConsumer,
+)
 from apps.despacho.services.confirmar_despacho_service import ConfirmarDespachoService
 
 
@@ -28,4 +30,4 @@ class TestCadenaCriticaDespachoIntegration:
 
         # Assert
         assert confirmacion["estado_caso"] == "ASIGNADO"
-        assert confirmacion["estado_unidad"] == "Ocupada"
+        assert confirmacion["estado_unidad"] == "En Misión"

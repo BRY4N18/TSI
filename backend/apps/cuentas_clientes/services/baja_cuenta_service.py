@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from apps.cuentas_clientes.services.audit_service import AuditService
 from apps.cuentas_clientes.services.cuenta_access_service import CuentaAccessService
-from apps.cuentas_clientes.services.cuenta_notificacion_service import CuentaNotificacionService
+from apps.cuentas_clientes.services.cuenta_notificacion_service import (
+    CuentaNotificacionService,
+)
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
-from core.repositories.cuentas_clientes.cuenta_usuario_repository import CuentaUsuarioRepository
+from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+    CuentaUsuarioRepository,
+)
 from core.repositories.cuentas_clientes.session_repository import SessionRepository
 
 

@@ -4,22 +4,25 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.seguimiento.services.eta_calculo_service import EtaCalculoService
+from apps.seguimiento.services.geofencing_evaluator import GeofencingEvaluator
+from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
+from apps.seguimiento.services.seguimiento_sse_service import SeguimientoSseService
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_CONFIRMADO,
     HistorialDespachoRepository,
 )
 from core.repositories.seguimiento.expediente_repository import ExpedienteRepository
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 from core.repositories.seguimiento.parametros_seguimiento_repository import (
     ParametrosSeguimientoRepository,
 )
-from core.repositories.seguimiento.unidad_snapshot_repository import UnidadSnapshotRepository
-
-from apps.seguimiento.services.geofencing_evaluator import GeofencingEvaluator
-from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
-from apps.seguimiento.services.seguimiento_sse_service import SeguimientoSseService
-from apps.seguimiento.services.eta_calculo_service import EtaCalculoService
+from core.repositories.seguimiento.unidad_snapshot_repository import (
+    UnidadSnapshotRepository,
+)
 
 
 class RegistrarPosicionGpsService:

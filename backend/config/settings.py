@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "apps.accidentes",
     "apps.despacho",
     "apps.seguimiento",
+    "apps.soporte_cliente",
+    "apps.red_operativa",
 ]
 
 MIDDLEWARE = [
@@ -157,7 +159,19 @@ KAFKA_TOPICS = {
     "unidad_emergencia_snapshot": "Dim_UnidadEmergencia_topic",
     "despacho_abortado": "DespachoAbortado_topic",
     "parametros_seguimiento": "Dim_ParametrosSeguimiento_topic",
+    "reclamo": "Fact_Reclamo_topic",
+    "historial_ticket": "Fact_Historial_Ticket_topic",
+    "sla_config": "Dim_SLAConfig_topic",
+    "archivo_adjunto_reclamo": "Fact_ArchivosAdjuntosReclamos_topic",
+    "baja_unidad": "Fact_BajaUnidad_topic",
+    "region_operativa_snapshot": "Dim_RegionOperativa_topic",
+    "validacion_region_snapshot": "Dim_ValidacionRegion_topic",
 }
+
+# --- Soporte al cliente (Gestión de Tickets) ---
+# RN-TIC-005 (clarificación Session 2026-07-21): rol fijo "Supervisor de Soporte",
+# sin gestión de turnos — un único usuario responsable configurado aquí.
+SOPORTE_SUPERVISOR_USER_ID = int(os.environ.get("SOPORTE_SUPERVISOR_USER_ID", "2"))
 
 # --- SMTP (Gmail / notificaciones cuenta) ---
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -201,7 +215,7 @@ REST_FRAMEWORK = {
         "apps.cuentas_clientes.authentication.JWTSessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "apps.cuentas_clientes.permissions.IsAuthenticated401",
+        "core.auth.permissions.IsAuthenticated401",
     ],
     "UNAUTHENTICATED_USER": None,
     "EXCEPTION_HANDLER": "core.api.response_envelope.custom_exception_handler",

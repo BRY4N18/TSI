@@ -40,10 +40,10 @@ Cuando un accidente es registrado en TSI, el sistema ejecuta un algoritmo de asi
 - `Fact_HistorialDespachoUnidad` (`iddespacho`, `idestadodespacho`, `estadoanterior`, `estadonuevo`, `fechahora`): historial de cambios de estado de cada despacho.
 - `Dim_EstadoDespacho` (Pendiente, Confirmado, Rechazado, Timeout, Abortado, En_sitio, Retirado): catálogo de estados de despacho.
 - `Dim_OrigenDespacho` (Automático, Manual, Escalado_zona): catálogo de orígenes de despacho.
-- `Dim_UnidadEmergencia` (`idunidademergencia`, `tipounidademergencia`, `latitud`, `longitud`, `zonacobertura`): catálogo de unidades de emergencia; `latitud`/`longitud` es el snapshot de última posición conocida.
+- `Dim_UnidadEmergencia` (`idunidademergencia`, `tipounidademergencia`, `latitud`, `longitud`, `idcondado`): catálogo de unidades de emergencia; `latitud`/`longitud` es el snapshot de última posición conocida. `idcondado` (FK real a `Dim_Condado`, gestionado en `alta-unidades`, módulo Red-Operativa) reemplaza al antiguo campo de texto libre `zonacobertura` (migración 2026-07-21, ver `alta-unidades/research.md` Decision 8).
 - `Dim_HistorialUbicacionUnidadEmergencia` (`idunidademergencia`, `latitud`, `longitud`, `fechahora`): trayectoria GPS de la unidad; se usa para distancia Haversine cuando su `fechahora` es más reciente que el snapshot en `Dim_UnidadEmergencia`.
 - `Fact_HistorialEstadoUnidad` (`idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `fechahora`): historial de disponibilidad de cada unidad (estado actual = fila con fechahora más reciente).
-- `Dim_EstadoUnidadEmergencia` (Activa, Ocupada, Fuera_de_servicio): catálogo de estados de unidad.
+- `Dim_EstadoUnidadEmergencia` (Activa, Ocupada, En Misión, Fuera_de_servicio): catálogo de estados de unidad. "En Misión" es el estado que este módulo asigna automáticamente al confirmar un despacho (ver `evidencia-unidad/spec.md` RF-EVI-001).
 - `Dim_Severidad` (`idseveridad`, `severidad`): nivel de gravedad del accidente.
 - `Fact_AccidenteTipoEstadoAccidente` (`idaccidente`, `idtipoestadoincidente`, `idusuario`, `fechahoramodificado`): historial de estados del caso.
 - `Dim_TipoEstadoAccidente` (Borrador, Reportado, Buscando_Unidad, Asignado, En_Atención, Cerrado, Descartado, Fusionado): catálogo de estados del caso.
@@ -71,7 +71,7 @@ El Sistema debe ejecutar automáticamente el siguiente algoritmo cuando se regis
    - `activo = true`.
    - Última fila en `Fact_HistorialEstadoUnidad` tiene `idestadounidademergencia` = "Activa".
    - No tener un despacho activo (`Fact_Despacho.activo=true`) para el mismo accidente.
-   - Pertenecer al mismo `Dim_Condado` del accidente: resolver `Fact_Accidente.idcalle` → `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` y filtrar unidades cuya ubicación (`latitud`, `longitud`) o `zonacobertura` caiga en ese condado.
+   - Pertenecer al mismo `Dim_Condado` del accidente: resolver `Fact_Accidente.idcalle` → `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` y filtrar unidades cuya ubicación (`latitud`, `longitud`) o `idcondado` coincida con ese condado.
 3. **Calcular distancia:** para cada unidad candidata, resolver su posición efectiva:
    - Tomar `Dim_UnidadEmergencia.latitud`, `Dim_UnidadEmergencia.longitud` como base.
    - Si existe fila en `Dim_HistorialUbicacionUnidadEmergencia` con `fechahora` más reciente que `Dim_UnidadEmergencia.fecha_actualizacion`, usar `latitud`/`longitud` de esa fila.
@@ -118,7 +118,7 @@ La Unidad de emergencia debe poder responder a la notificación de despacho con 
 
 - UPDATE `Fact_NotificacionDespacho.estadonotificaciondespacho` = "Confirmada".
 - INSERT en `Fact_HistorialDespachoUnidad`: `iddespacho`, `estadoanterior`="Pendiente", `estadonuevo`="Confirmado", `idestadodespacho` = Confirmado, `fechahora`.
-- INSERT en `Fact_HistorialEstadoUnidad`: unidad pasa a estado Ocupada.
+- INSERT en `Fact_HistorialEstadoUnidad`: unidad pasa a estado En Misión.
 - INSERT en `Fact_AccidenteTipoEstadoAccidente`: estado ASIGNADO (solo si es el primer despacho confirmado del caso; si ya hay otro despacho confirmado previamente, no se repite).
 - Notifica al Operador que la unidad fue asignada y está en camino.
 
@@ -223,7 +223,7 @@ Las notificaciones push a la app móvil de la unidad deben entregarse en menos d
 
 ### RN-DES-001
 
-Solo las unidades con estado "Activa" (última fila en `Fact_HistorialEstadoUnidad`) y `activo = true` en `Dim_UnidadEmergencia` son consideradas candidatas para despacho. Una unidad en estado "Ocupada" o "Fuera_de_servicio" no puede recibir notificaciones de despacho. En el intento inicial (O22), las candidatas deben pertenecer al mismo `Dim_Condado` del accidente; el escalamiento (O34) amplía a condados vecinos.
+Solo las unidades con estado "Activa" (última fila en `Fact_HistorialEstadoUnidad`) y `activo = true` en `Dim_UnidadEmergencia` son consideradas candidatas para despacho. Una unidad en estado "Ocupada", "En Misión" o "Fuera_de_servicio" no puede recibir notificaciones de despacho. En el intento inicial (O22), las candidatas deben pertenecer al mismo `Dim_Condado` del accidente; el escalamiento (O34) amplía a condados vecinos.
 
 ### RN-DES-002
 
@@ -335,7 +335,8 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
 
 ### Estado de la Unidad (Fact_HistorialEstadoUnidad + Dim_EstadoUnidadEmergencia)
 - **Activa:** disponible para recibir despachos.
-- **Ocupada:** asignada a un caso activo.
+- **Ocupada:** no disponible por otra razón operativa, declarado manualmente (no ligada a un caso activo).
+- **En Misión:** asignada a un caso activo — asignación automática de este módulo al confirmar despacho.
 - **Fuera_de_servicio:** no disponible (mantenimiento, descanso, etc.).
 
 ### Transiciones del proceso de despacho
@@ -360,7 +361,7 @@ Y debe priorizar ambulancias por concordancia de tipo (Fatal → Ambulancia)
 Y debe seleccionar la de mayor puntuación ponderada
 Y debe INSERT en Fact_NotificacionDespacho (Pendiente), Fact_Despacho (Automático), Fact_HistorialDespachoUnidad (Pendiente), Fact_AccidenteTipoEstadoAccidente (BUSCANDO_UNIDAD)
 Y debe notificar push y SMS a la unidad seleccionada
-Y si la unidad confirma (O24), debe UPDATE Fact_NotificacionDespacho → Confirmada, INSERT en Fact_HistorialDespachoUnidad → Confirmado, Fact_HistorialEstadoUnidad → Ocupada, Fact_AccidenteTipoEstadoAccidente → ASIGNADO.
+Y si la unidad confirma (O24), debe UPDATE Fact_NotificacionDespacho → Confirmada, INSERT en Fact_HistorialDespachoUnidad → Confirmado, Fact_HistorialEstadoUnidad → En Misión, Fact_AccidenteTipoEstadoAccidente → ASIGNADO.
 
 ### Escenario 2: Primera unidad rechaza, re-asignación a segunda (O45 + O36)
 
@@ -457,7 +458,7 @@ El algoritmo considera tres factores: proximidad geográfica (Haversine), dispon
 La unidad seleccionada recibe notificación push y SMS con datos del accidente, coordenadas, ruta sugerida y botones Aceptar/Rechazar. Si ambos canales fallan tras reintento, se marca No_entregada y se re-asigna de inmediato (CA-DES-013).
 
 ### CA-DES-004
-Si la unidad confirma, se actualiza Fact_NotificacionDespacho a Confirmada, se inserta Fact_HistorialDespachoUnidad con estado Confirmado, la unidad pasa a Ocupada, y el caso pasa a ASIGNADO (si era el primer despacho confirmado).
+Si la unidad confirma, se actualiza Fact_NotificacionDespacho a Confirmada, se inserta Fact_HistorialDespachoUnidad con estado Confirmado, la unidad pasa a En Misión, y el caso pasa a ASIGNADO (si era el primer despacho confirmado).
 
 ### CA-DES-005
 Si la unidad rechaza (con motivo), se actualiza Fact_NotificacionDespacho a Rechazada con motivo, Fact_Despacho.activo pasa a false, se inserta Rechazado en Fact_HistorialDespachoUnidad, y se dispara re-asignación.

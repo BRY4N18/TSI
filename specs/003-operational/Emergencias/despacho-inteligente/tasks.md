@@ -108,7 +108,7 @@
 
 **Goal**: CU-O24 + O45 — unidad confirma o rechaza vía `/mi-despacho/*`; rechazo dispara O36 síncrono.
 
-**Independent Test**: Unidad `GET /mi-despacho/pendientes` → `POST .../confirmar` → caso ASIGNADO, unidad Ocupada; rechazo con motivo → `activo=false` + re-asignación.
+**Independent Test**: Unidad `GET /mi-despacho/pendientes` → `POST .../confirmar` → caso ASIGNADO, unidad En Misión; rechazo con motivo → `activo=false` + re-asignación.
 
 **Measurable Criteria**: CA-DES-004, CA-DES-005; Escenarios 2, 9.
 
@@ -123,7 +123,7 @@
 
 ### Implementation for User Story 2
 
-- [X] T046 [US2] Implementar `confirmar_despacho_service.py` (O24, transición ASIGNADO, Ocupada) en `backend/apps/despacho/services/confirmar_despacho_service.py`
+- [X] T046 [US2] Implementar `confirmar_despacho_service.py` (O24, transición ASIGNADO, En Misión) en `backend/apps/despacho/services/confirmar_despacho_service.py`
 - [X] T047 [US2] Implementar `rechazar_despacho_service.py` (O45, activo=false, dispara O36 síncrono) en `backend/apps/despacho/services/rechazar_despacho_service.py`
 - [X] T048 [US2] Implementar vistas mi-despacho en `backend/apps/despacho/views/mi_despacho_views.py` y registrar en `backend/apps/despacho/views/urls.py`
 

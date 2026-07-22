@@ -1,7 +1,13 @@
 import pytest
 
-from apps.accidentes.domain_constants import ESTADO_ASIGNADO, ESTADO_BUSCANDO_UNIDAD, ESTADO_REPORTADO
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from apps.accidentes.domain_constants import (
+    ESTADO_ASIGNADO,
+    ESTADO_BUSCANDO_UNIDAD,
+    ESTADO_REPORTADO,
+)
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.estado_accidente_despacho_repository import (
     EstadoAccidenteDespachoRepository,
 )

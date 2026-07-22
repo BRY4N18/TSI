@@ -1,0 +1,402 @@
+openapi: 3.0.3
+info:
+  title: Gestión de Tickets de Soporte — TSI
+  version: "1.0.0"
+  description: >
+    Contrato REST para CU-O91 (registro), CU-O92 (ciclo de vida), CU-O95
+    (configuración SLA), CU-O97 (reapertura). CU-O96 (monitoreo/escalado SLA)
+    es un job de fondo sin endpoint público — ver research.md Decision 7.
+servers:
+  - url: /api/v1
+
+paths:
+  /soporte/tickets:
+    get:
+      summary: Listar tickets (dashboard, filtros por rol)
+      operationId: listarTickets
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: idestadosoporte
+          in: query
+          schema: { type: string }
+        - name: prioridad
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Lista de tickets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope"
+    post:
+      summary: Registrar ticket de soporte (CU-O91)
+      operationId: registrarTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/RegistrarTicketRequest"
+      responses:
+        "201":
+          description: Ticket creado (clasificado o pendiente de clasificación)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketCreadoResponse"
+
+  /soporte/tickets/{id_reclamo}:
+    get:
+      summary: Detalle de ticket con historial
+      operationId: obtenerTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+      responses:
+        "200":
+          description: Detalle del ticket (notas internas filtradas si el rol es Cliente, RN-TIC-002)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope"
+
+  /soporte/tickets/{id_reclamo}/clasificar:
+    post:
+      summary: Clasificación manual de ticket Pendiente_de_clasificacion
+      operationId: clasificarTicketManual
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo_incidencia, prioridad]
+              properties:
+                tipo_incidencia: { type: string }
+                prioridad: { type: string }
+      responses:
+        "200":
+          description: Ticket clasificado, SLA asignado, timer arrancado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/tickets/{id_reclamo}/tomar:
+    post:
+      summary: Agente toma el ticket (CU-O92)
+      operationId: tomarTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Ticket asignado a En_progreso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/tickets/{id_reclamo}/comentarios:
+    post:
+      summary: Registrar comentario o nota interna (CU-O92)
+      operationId: comentarTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mensaje]
+              properties:
+                mensaje: { type: string }
+                es_nota_interna: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Comentario registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope"
+
+  /soporte/tickets/{id_reclamo}/escalar:
+    post:
+      summary: Escalado manual a nivel superior (CU-O92)
+      operationId: escalarTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_rol_escalar, id_agente_asignado]
+              properties:
+                id_rol_escalar: { type: string, enum: [desarrollador_apis, director_tecnologico] }
+                id_agente_asignado: { type: integer, description: "Usuario del nivel superior seleccionado por el agente" }
+                mensaje: { type: string }
+      responses:
+        "200":
+          description: Ticket escalado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/tickets/{id_reclamo}/resolver:
+    post:
+      summary: Marcar ticket como resuelto (CU-O92)
+      operationId: resolverTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mensaje: { type: string }
+      responses:
+        "200":
+          description: Ticket resuelto, sla_status recalculado, notifica al cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/tickets/{id_reclamo}/confirmar-cierre:
+    post:
+      summary: Cliente confirma resolución (CU-O92, RF-TIC-006)
+      operationId: confirmarCierreTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Ticket cerrado con cierreconfirmadocliente=true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/tickets/{id_reclamo}/reabrir:
+    post:
+      summary: Cliente reabre ticket cerrado (CU-O97)
+      operationId: reabrirTicket
+      tags: [Tickets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdReclamo"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                motivo: { type: string }
+                adjuntos:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        "200":
+          description: Ticket reabierto, SLA renovado (Decision 8), historial conservado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransicionResponse"
+
+  /soporte/sla-config:
+    get:
+      summary: Listar configuraciones de SLA vigentes e históricas (CU-O95)
+      operationId: listarSLAConfig
+      tags: [SLAConfig]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Lista de configuraciones SLA
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope"
+    post:
+      summary: Alta de nueva regla de SLA (CU-O95)
+      operationId: crearSLAConfig
+      tags: [SLAConfig]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SLAConfigRequest"
+      responses:
+        "201":
+          description: Regla de SLA creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SLAConfigResponse"
+
+  /soporte/sla-config/{idslaconfig}:
+    patch:
+      summary: Modificar regla de SLA existente (cierra vigencia + crea nueva fila, CU-O95)
+      operationId: modificarSLAConfig
+      tags: [SLAConfig]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: idslaconfig
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SLAConfigRequest"
+      responses:
+        "201":
+          description: Nueva fila vigente creada; fila anterior desactivada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SLAConfigResponse"
+
+  /soporte/dashboard:
+    get:
+      summary: Métricas del dashboard de soporte (RF-TIC-007)
+      operationId: dashboardSoporte
+      tags: [Dashboard]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Métricas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdReclamo:
+      name: id_reclamo
+      in: path
+      required: true
+      schema: { type: integer }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        data: {}
+        meta:
+          type: object
+          properties:
+            pagination:
+              type: object
+
+    RegistrarTicketRequest:
+      type: object
+      required: [idcliente, asunto, descripcion, tipo]
+      properties:
+        idcliente: { type: integer }
+        asunto: { type: string }
+        descripcion: { type: string }
+        tipo: { type: string }
+        idaccidente: { type: string, description: "Opcional — vincula a emergencia activa para prioridad crítica" }
+        adjuntos:
+          type: array
+          items: { type: string, format: binary }
+
+    TicketCreadoResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id_reclamo: { type: integer }
+            estado: { type: string }
+            sla_primera_respuesta: { type: string, nullable: true }
+            sla_resolucion: { type: string, nullable: true }
+            sla_status: { type: string, nullable: true }
+
+    TransicionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id_reclamo: { type: integer }
+            estado_anterior: { type: string }
+            estado_nuevo: { type: string }
+            agente_asignado: { type: string, nullable: true }
+
+    SLAConfigRequest:
+      type: object
+      required: [idplan, tipoincidencia, prioridad, tiemporespuestamax, tiemporesolucionmax]
+      properties:
+        idplan: { type: integer }
+        tipoincidencia: { type: string }
+        prioridad: { type: string }
+        tiemporespuestamax: { type: integer, description: "segundos" }
+        tiemporesolucionmax: { type: integer, description: "segundos" }
+
+    SLAConfigResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idslaconfig: { type: integer }
+            fechavigenciadesde: { type: string }
+            activo: { type: boolean }

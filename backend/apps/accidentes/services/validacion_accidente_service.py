@@ -10,8 +10,12 @@ from apps.accidentes.domain_constants import (
     RETROSPECTIVE_WINDOW_MS,
 )
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
-from core.repositories.accidentes.region_operativa_repository import RegionOperativaRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
+from core.repositories.accidentes.region_operativa_repository import (
+    RegionOperativaRepository,
+)
 
 
 @dataclass

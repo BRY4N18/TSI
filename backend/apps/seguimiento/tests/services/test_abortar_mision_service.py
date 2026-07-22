@@ -38,7 +38,9 @@ class TestAbortarMisionService:
         despacho_confirmado_unidad,
     ):
         # Arrange
-        from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
+        from apps.seguimiento.services.registrar_llegada_service import (
+            RegistrarLlegadaService,
+        )
 
         iddespacho = despacho_confirmado_unidad["iddespacho"]
         RegistrarLlegadaService().registrar(iddespacho=iddespacho, idunidademergencia=1, idusuario=6)

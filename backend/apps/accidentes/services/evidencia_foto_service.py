@@ -5,9 +5,13 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from apps.accidentes.services.audit_evidencia_service import AuditEvidenciaService
-from core.repositories.evidencia.accidente_read_repository import AccidenteReadRepository
-from core.repositories.evidencia.evidencia_foto_repository import EvidenciaFotoRepository
+from core.audit.evidencia_service import AuditEvidenciaService
+from core.repositories.evidencia.accidente_read_repository import (
+    AccidenteReadRepository,
+)
+from core.repositories.evidencia.evidencia_foto_repository import (
+    EvidenciaFotoRepository,
+)
 from core.storage.blob_storage_service import (
     BlobStorageService,
     BlobTooLargeError,

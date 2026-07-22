@@ -1,6 +1,7 @@
+from types import SimpleNamespace
+
 import pytest
 from rest_framework.test import APIRequestFactory
-from types import SimpleNamespace
 
 from apps.seguimiento.permissions import (
     IsClienteExpediente,

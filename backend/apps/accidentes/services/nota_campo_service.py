@@ -5,8 +5,10 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from apps.accidentes.services.audit_evidencia_service import AuditEvidenciaService
-from core.repositories.evidencia.accidente_read_repository import AccidenteReadRepository
+from core.audit.evidencia_service import AuditEvidenciaService
+from core.repositories.evidencia.accidente_read_repository import (
+    AccidenteReadRepository,
+)
 from core.repositories.evidencia.nota_campo_repository import NotaCampoRepository
 
 

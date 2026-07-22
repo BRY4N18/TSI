@@ -1,6 +1,6 @@
 import pytest
 
-from apps.cuentas_clientes.services.auth_service import AuthService, AuthenticationError
+from apps.cuentas_clientes.services.auth_service import AuthenticationError, AuthService
 
 
 @pytest.mark.service

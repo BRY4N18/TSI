@@ -1,0 +1,527 @@
+openapi: 3.0.3
+info:
+  title: TSI Alta y Configuración de Unidades de Emergencia API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O54 (alta individual), CU-O56 (alta en lote),
+    CU-O57 (edición), CU-O58 (baja/reactivación) y CU-O59 (disponibilidad externa).
+    Sigue api-standards.md del proyecto.
+servers:
+  - url: /api/v1
+tags:
+  - name: Unidades
+  - name: Disponibilidad
+paths:
+  /red-operativa/unidades:
+    post:
+      tags: [Unidades]
+      summary: Registrar una unidad de emergencia individual (CU-O54)
+      operationId: createUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnidadCreateRequest'
+      responses:
+        '201':
+          description: Unidad registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /red-operativa/unidades/importacion-lote:
+    post:
+      tags: [Unidades]
+      summary: Registrar unidades de emergencia en lote vía CSV/Excel (CU-O56)
+      operationId: importUnidadesLote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Importación procesada (todo-o-nada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportacionLoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /red-operativa/unidades/{idunidademergencia}:
+    get:
+      tags: [Unidades]
+      summary: Obtener detalle de una unidad
+      operationId: getUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+      responses:
+        '200':
+          description: Unidad obtenida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Unidades]
+      summary: Editar campos editables de una unidad existente (CU-O57)
+      operationId: patchUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: confirmar_edicion_critica
+          in: query
+          required: false
+          description: >
+            Requerido en 'true' si la unidad tiene un despacho activo y se edita
+            tipopropiedad o tipounidademergencia (RF-CAM-003).
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnidadPatchRequest'
+      responses:
+        '200':
+          description: Unidad actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadUpdatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /red-operativa/unidades/{idunidademergencia}/baja:
+    post:
+      tags: [Unidades]
+      summary: Dar de baja una unidad (CU-O58)
+      operationId: bajaUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BajaUnidadRequest'
+      responses:
+        '200':
+          description: Unidad dada de baja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BajaUnidadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /red-operativa/unidades/{idunidademergencia}/reactivar:
+    post:
+      tags: [Unidades]
+      summary: Reactivar una unidad previamente dada de baja (CU-O58)
+      operationId: reactivarUnidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Unidad reactivada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ya existe otra unidad activa con la misma placa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /red-operativa/unidades/{idunidademergencia}/disponibilidad:
+    post:
+      tags: [Disponibilidad]
+      summary: Declarar disponibilidad de una unidad externa sin login propio (CU-O59)
+      operationId: declararDisponibilidadExterna
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisponibilidadRequest'
+      responses:
+        '200':
+          description: Disponibilidad actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisponibilidadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Alerta de inconsistencia — despacho activo sin retirar al marcar "Activa"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdUnidad:
+      name: idunidademergencia
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Clave de idempotencia para operaciones de escritura
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: No autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Rol sin permiso para esta operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Unidad no encontrada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflicto de negocio (placa duplicada o despacho activo sin confirmación)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        code:
+          type: string
+
+    UnidadData:
+      type: object
+      required:
+        - idunidademergencia
+        - idcliente
+        - idcondado
+        - tipopropiedad
+        - placa
+        - unidademergencia
+        - tipounidademergencia
+        - activo
+      properties:
+        idunidademergencia:
+          type: integer
+          readOnly: true
+        idcliente:
+          type: integer
+        idcondado:
+          type: integer
+        tipopropiedad:
+          type: string
+          enum: [Propia, Externa]
+        placa:
+          type: string
+        capacidad:
+          type: string
+          nullable: true
+        contactoproveedor:
+          type: string
+          nullable: true
+        unidademergencia:
+          type: string
+        tipounidademergencia:
+          type: string
+          enum: [Ambulancia, Grúa, Patrulla, Bomberos, Defensa Civil]
+        activo:
+          type: boolean
+        latitud:
+          type: number
+          format: float
+          nullable: true
+        longitud:
+          type: number
+          format: float
+          nullable: true
+
+    UnidadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/UnidadData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          nullable: true
+
+    UnidadCreateRequest:
+      type: object
+      required:
+        - idcliente
+        - idcondado
+        - tipopropiedad
+        - placa
+        - unidademergencia
+        - tipounidademergencia
+      properties:
+        idcliente:
+          type: integer
+        idcondado:
+          type: integer
+        tipopropiedad:
+          type: string
+          enum: [Propia, Externa]
+        placa:
+          type: string
+        capacidad:
+          type: string
+        contactoproveedor:
+          type: string
+          description: Requerido si tipopropiedad = Externa
+        unidademergencia:
+          type: string
+        tipounidademergencia:
+          type: string
+          enum: [Ambulancia, Grúa, Patrulla, Bomberos, Defensa Civil]
+        activo:
+          type: boolean
+          default: true
+
+    UnidadCreatedResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idunidademergencia, placa, activo]
+          properties:
+            idunidademergencia:
+              type: integer
+            placa:
+              type: string
+            activo:
+              type: boolean
+
+    UnidadPatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        tipopropiedad:
+          type: string
+          enum: [Propia, Externa]
+        capacidad:
+          type: string
+        idcondado:
+          type: integer
+        contactoproveedor:
+          type: string
+        unidademergencia:
+          type: string
+        tipounidademergencia:
+          type: string
+          enum: [Ambulancia, Grúa, Patrulla, Bomberos, Defensa Civil]
+        latitud:
+          type: number
+          format: float
+        longitud:
+          type: number
+          format: float
+
+    UnidadUpdatedResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idunidademergencia, campos_modificados]
+          properties:
+            idunidademergencia:
+              type: integer
+            campos_modificados:
+              type: array
+              items:
+                type: string
+
+    ImportacionLoteResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [insertadas, fallidas]
+          properties:
+            insertadas:
+              type: integer
+            fallidas:
+              type: array
+              items:
+                type: object
+                required: [fila, motivo]
+                properties:
+                  fila:
+                    type: integer
+                  motivo:
+                    type: string
+
+    BajaUnidadRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+        forzar:
+          type: boolean
+          default: false
+          description: Requerido en 'true' si la unidad tiene un despacho activo en curso
+
+    BajaUnidadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idunidademergencia, activo]
+          properties:
+            idunidademergencia:
+              type: integer
+            activo:
+              type: boolean
+              enum: [false]
+
+    DisponibilidadRequest:
+      type: object
+      required: [idestadounidademergencia]
+      properties:
+        idestadounidademergencia:
+          type: integer
+          description: Nuevo estado a declarar. "En Misión" rechazado (exclusivo del sistema).
+
+    DisponibilidadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [idunidademergencia, estadonuevo]
+          properties:
+            idunidademergencia:
+              type: integer
+            estadonuevo:
+              type: string

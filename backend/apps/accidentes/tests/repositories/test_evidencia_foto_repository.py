@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.evidencia.evidencia_foto_repository import EvidenciaFotoRepository
+from core.repositories.evidencia.evidencia_foto_repository import (
+    EvidenciaFotoRepository,
+)
 
 
 @pytest.mark.repository

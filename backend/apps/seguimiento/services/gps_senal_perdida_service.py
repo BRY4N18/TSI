@@ -5,13 +5,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from core.repositories.accidentes.nota_accidente_repository import NotaAccidenteRepository
+from core.repositories.accidentes.nota_accidente_repository import (
+    NotaAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_CONFIRMADO,
     HistorialDespachoRepository,
 )
-from core.repositories.seguimiento.historial_ubicacion_repository import HistorialUbicacionRepository
+from core.repositories.seguimiento.historial_ubicacion_repository import (
+    HistorialUbicacionRepository,
+)
 from core.repositories.seguimiento.parametros_seguimiento_repository import (
     ParametrosSeguimientoRepository,
 )

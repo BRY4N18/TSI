@@ -12,7 +12,9 @@ class DespachoConfig(AppConfig):
         from apps.despacho.consumers.accidente_reportado_consumer import (
             handle_accidente_reportado,
         )
-        from apps.despacho.consumers.despacho_timeout_consumer import handle_despacho_timeout
+        from apps.despacho.consumers.despacho_timeout_consumer import (
+            handle_despacho_timeout,
+        )
 
         register_consumer(
             settings.KAFKA_TOPICS["accidente_estado"],

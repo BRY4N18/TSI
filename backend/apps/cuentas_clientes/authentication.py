@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from apps.cuentas_clientes.services.session_validation_service import SessionValidationService
+from apps.cuentas_clientes.services.session_validation_service import (
+    SessionValidationService,
+)
 
 
 @dataclass

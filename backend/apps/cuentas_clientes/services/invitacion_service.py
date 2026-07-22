@@ -5,12 +5,16 @@ from __future__ import annotations
 import secrets
 
 from apps.cuentas_clientes.services.audit_service import AuditService
-from apps.cuentas_clientes.services.onboarding_access_service import OnboardingAccessService
+from apps.cuentas_clientes.services.onboarding_access_service import (
+    OnboardingAccessService,
+)
 from apps.cuentas_clientes.services.onboarding_notificacion_service import (
     OnboardingNotificacionService,
 )
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
-from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
+from core.repositories.cuentas_clientes.credential_repository import (
+    CredentialRepository,
+)
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 
 

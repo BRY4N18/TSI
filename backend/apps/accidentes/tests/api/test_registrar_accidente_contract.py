@@ -31,7 +31,9 @@ class TestRegistrarAccidenteContract:
         self, api_client, operador_auth_headers, accidente_payload, mock_pinot, mock_kafka
     ):
         # Arrange
-        from core.repositories.accidentes.accidente_repository import AccidenteRepository
+        from core.repositories.accidentes.accidente_repository import (
+            AccidenteRepository,
+        )
 
         ts = accidente_payload["fechahoraaccidente"]
         AccidenteRepository().create(

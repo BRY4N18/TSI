@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.despacho.historial_despacho_repository import HistorialDespachoRepository
+from core.repositories.despacho.historial_despacho_repository import (
+    HistorialDespachoRepository,
+)
 
 
 @pytest.mark.repository

@@ -9,7 +9,9 @@ from apps.accidentes.domain_constants import (
     ESTADO_BUSCANDO_UNIDAD,
     ESTADO_REPORTADO,
 )
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 
 
 class EstadoAccidenteDespachoRepository:

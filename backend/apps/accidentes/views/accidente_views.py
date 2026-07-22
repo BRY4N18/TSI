@@ -7,16 +7,21 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accidentes.permissions import AccidentesLecturaPermission, OperadorEmergenciasPermission
+from apps.accidentes.permissions import (
+    AccidentesLecturaPermission,
+    OperadorEmergenciasPermission,
+)
 from apps.accidentes.services.consulta_accidente_service import ConsultaAccidenteService
-from apps.accidentes.services.geocodificacion_inversa_service import GeocodificacionInversaService
+from apps.accidentes.services.geocodificacion_inversa_service import (
+    GeocodificacionInversaService,
+)
 from apps.accidentes.services.registro_accidente_service import (
     BlockingValidationError,
     DuplicateConflictError,
     RegistroAccidenteService,
 )
 from core.api.response_envelope import error_response, success_response
-from apps.cuentas_clientes.permissions import IsAuthenticated401
+from core.auth.permissions import IsAuthenticated401
 
 
 class GeocodificacionInversaView(APIView):

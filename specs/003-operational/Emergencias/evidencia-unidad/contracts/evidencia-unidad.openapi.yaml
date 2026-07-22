@@ -398,9 +398,14 @@ components:
 
     EstadoDisponibilidadUnidad:
       type: string
+      description: >-
+        "En Misión" es de asignación exclusiva del sistema al confirmar un despacho
+        (despacho-inteligente); un POST de declaración manual con estadonuevo=En Misión
+        responde 422.
       enum:
         - Activa
         - Ocupada
+        - En Misión
         - Fuera de servicio
 
     TipoNotaCampo:
@@ -672,6 +677,19 @@ components:
           format: int64
           nullable: true
           description: null si no hay historial (estado por defecto Fuera de servicio)
+        placa:
+          type: string
+          nullable: true
+        tipounidademergencia:
+          type: string
+          nullable: true
+        capacidad:
+          type: string
+          nullable: true
+        idcondado:
+          type: integer
+          nullable: true
+          description: FK a Dim_Condado (reemplaza al antiguo zonacobertura, migración 2026-07-21)
 
     DisponibilidadUnidadResponse:
       type: object

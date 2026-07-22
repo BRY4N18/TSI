@@ -9,8 +9,12 @@ from apps.accidentes.services.audit_accidente_service import AuditAccidenteServi
 from apps.accidentes.services.confirmar_reporte_service import ConflictError
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
 from core.repositories.accidentes.despacho_read_repository import DespachoReadRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
-from core.repositories.accidentes.nota_accidente_repository import NotaAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
+from core.repositories.accidentes.nota_accidente_repository import (
+    NotaAccidenteRepository,
+)
 
 
 class EscalarSeveridadService:

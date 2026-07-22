@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
+from core.repositories.cuentas_clientes.credential_repository import (
+    CredentialRepository,
+)
 
 
 @pytest.mark.repository

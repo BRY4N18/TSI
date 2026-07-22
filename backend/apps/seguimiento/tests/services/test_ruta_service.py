@@ -2,7 +2,10 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.seguimiento.services.ruta_service import RutaCoordenadasInvalidasError, RutaService
+from apps.seguimiento.services.ruta_service import (
+    RutaCoordenadasInvalidasError,
+    RutaService,
+)
 from core.osrm.client import OsrmError
 
 

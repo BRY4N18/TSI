@@ -8,7 +8,9 @@ from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_PENDIENTE,
     HistorialDespachoRepository,
 )
-from core.repositories.despacho.notificacion_despacho_repository import NotificacionDespachoRepository
+from core.repositories.despacho.notificacion_despacho_repository import (
+    NotificacionDespachoRepository,
+)
 
 
 @pytest.mark.service

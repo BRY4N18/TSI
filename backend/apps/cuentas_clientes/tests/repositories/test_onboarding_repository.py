@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.cuentas_clientes.onboarding_repository import OnboardingRepository
+from core.repositories.cuentas_clientes.onboarding_repository import (
+    OnboardingRepository,
+)
 
 
 @pytest.mark.repository

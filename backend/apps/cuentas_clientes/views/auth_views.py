@@ -6,12 +6,10 @@ import logging
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-
-from apps.cuentas_clientes.permissions import IsAuthenticated401
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from apps.cuentas_clientes.services.auth_service import AuthService, AuthenticationError
+from apps.cuentas_clientes.services.auth_service import AuthenticationError, AuthService
 from apps.cuentas_clientes.services.logout_service import LogoutError, LogoutService
 from apps.cuentas_clientes.services.revoke_session_service import (
     ForbiddenRevokeError,
@@ -19,6 +17,7 @@ from apps.cuentas_clientes.services.revoke_session_service import (
     RevokeSessionService,
 )
 from core.api.response_envelope import error_response, success_response
+from core.auth.permissions import IsAuthenticated401
 
 logger = logging.getLogger("tsi.security.auth")
 

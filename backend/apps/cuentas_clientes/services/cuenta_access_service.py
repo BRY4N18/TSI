@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
-from core.repositories.cuentas_clientes.cuenta_usuario_repository import CuentaUsuarioRepository
+from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+    CuentaUsuarioRepository,
+)
 
 
 class CuentaAccessError(Exception):

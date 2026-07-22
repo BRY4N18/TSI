@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import patch
 
-from apps.cuentas_clientes.services.onboarding_reminder_service import OnboardingReminderService
+import pytest
+
+from apps.cuentas_clientes.services.onboarding_reminder_service import (
+    OnboardingReminderService,
+)
 
 
 @pytest.mark.service

@@ -2,7 +2,9 @@ import time
 
 import pytest
 
-from apps.accidentes.services.validacion_accidente_service import ValidacionAccidenteService
+from apps.accidentes.services.validacion_accidente_service import (
+    ValidacionAccidenteService,
+)
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
 
 

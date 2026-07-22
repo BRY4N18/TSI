@@ -5,10 +5,16 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from apps.accidentes.domain_constants import ESTADO_ASIGNADO, ESTADO_CERRADO, ESTADO_EN_ATENCION
+from apps.accidentes.domain_constants import (
+    ESTADO_ASIGNADO,
+    ESTADO_CERRADO,
+    ESTADO_EN_ATENCION,
+)
 from apps.seguimiento.services.retiro_despacho_service import RetiroDespachoService
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.estado_accidente_repository import EstadoAccidenteRepository
+from core.repositories.accidentes.estado_accidente_repository import (
+    EstadoAccidenteRepository,
+)
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_ABORTADO,

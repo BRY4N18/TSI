@@ -1,6 +1,8 @@
 import pytest
 
-from core.repositories.accidentes.elemento_climatico_repository import ElementoClimaticoRepository
+from core.repositories.accidentes.elemento_climatico_repository import (
+    ElementoClimaticoRepository,
+)
 
 
 @pytest.mark.repository

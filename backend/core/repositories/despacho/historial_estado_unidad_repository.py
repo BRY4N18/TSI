@@ -12,6 +12,7 @@ from core.repositories.accidentes.kafka_writer import KafkaWriter
 
 ESTADO_ACTIVA = "Activa"
 ESTADO_OCUPADA = "Ocupada"
+ESTADO_EN_MISION = "En Misión"
 ESTADO_FUERA_SERVICIO = "Fuera de servicio"
 ESTADO_DEFAULT = ESTADO_FUERA_SERVICIO
 
@@ -19,12 +20,17 @@ ESTADO_ID_MAP = {
     ESTADO_ACTIVA: 1,
     ESTADO_OCUPADA: 2,
     ESTADO_FUERA_SERVICIO: 3,
+    ESTADO_EN_MISION: 4,
 }
 
+# "En Misión" solo la asigna el sistema al confirmar un despacho (confirmar_despacho_service.py)
+# y solo se abandona al cerrar/abortar el caso (seguimiento-cierre-de-casos) — no es una transición
+# manual disponible para la unidad vía /disponibilidad.
 VALID_TRANSITIONS: dict[str, set[str]] = {
-    ESTADO_ACTIVA: {ESTADO_OCUPADA, ESTADO_FUERA_SERVICIO},
+    ESTADO_ACTIVA: {ESTADO_OCUPADA, ESTADO_FUERA_SERVICIO, ESTADO_EN_MISION},
     ESTADO_OCUPADA: {ESTADO_ACTIVA, ESTADO_FUERA_SERVICIO},
     ESTADO_FUERA_SERVICIO: {ESTADO_ACTIVA},
+    ESTADO_EN_MISION: {ESTADO_ACTIVA, ESTADO_FUERA_SERVICIO},
 }
 
 

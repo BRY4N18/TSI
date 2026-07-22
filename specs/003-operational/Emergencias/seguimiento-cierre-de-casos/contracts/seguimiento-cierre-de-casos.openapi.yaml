@@ -637,7 +637,7 @@ components:
           type: string
         estado_unidad:
           type: string
-          enum: [Activa, Ocupada, Fuera_de_servicio]
+          enum: [Activa, Ocupada, En_Misión, Fuera_de_servicio]
         coordenadas:
           $ref: '#/components/schemas/Coordenada'
         idaccidente:
