@@ -2,8 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthApiService } from '../../modules/cuentas-clientes/auth/services/auth-api.service';
-import { AlertHostComponent } from '../notifications/alert-host.component';
-import { ToastHostComponent } from '../notifications/toast-host.component';
 import { ThemeService } from '../theme/theme.service';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { NAV_LINKS, NavLink } from './nav-links';
@@ -21,8 +19,6 @@ interface NavGroup {
     RouterLinkActive,
     RouterOutlet,
     TablerIconComponent,
-    ToastHostComponent,
-    AlertHostComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -197,9 +193,6 @@ interface NavGroup {
         </main>
       </div>
     </div>
-
-    <app-toast-host />
-    <app-alert-host />
   `,
 })
 export class AppShellComponent {

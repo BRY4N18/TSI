@@ -94,3 +94,13 @@
 - **Conflicto:** Performance Efficiency (O22 <5s CA-DES-001) vs Maintainability (múltiples servicios + evento async O36).
 - **Prioridad:** Maintainability — servicios separados; performance garantizada con cache lectura Pinot, filtro condado previo y job O35 desacoplado.
 - **Safety:** fail-fast en fallo notificación (Decision 7) prioriza tiempo de respuesta sobre reintento prolongado.
+
+## Decision 11 (delta 2026-07-24): Alerta Admin + hook plan
+
+- **Decision:**
+  - Sin candidatas tras O34 / agotamiento O36: mantener `Dim_NotaAccidente` **y** fan-out SMTP a rol `Administrador` vía `AlertaAdminService` + `EmailNotificationSender` (fail-open).
+  - Elegibilidad/prioridad por plan: método `filtrar_por_plan_severidad` en `ConsultaCandidatasService` invocado antes del scoring; hoy no-op hasta Suscripciones-Facturación (`Dim_Plan`).
+- **Rationale:** CA-DES-007, CA-DES-011, CA-DES-014 (clarify Session 2026-07-24).
+- **Alternatives considered:**
+  - Solo nota pasiva (rechazado: cierra escalón radio → plan bloqueado → Admin).
+  - Filtrar candidatas por plan ahora (rechazado: módulo facturación inexistente; fail-open).

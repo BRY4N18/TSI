@@ -1,0 +1,305 @@
+openapi: 3.0.3
+info:
+  title: TSI Notificación de Prospectos a Ventas API
+  version: 1.0.0
+  description: >
+    Contract-first REST for Ventas-CRM notificacion-ventas (O118, O122 + consulta).
+    Aligns to api-standards.md: success/error envelopes, cursor pagination.
+    Demo session uses dedicated Bearer token (typ=demo_session), not user JWT RS256.
+    Rule evaluation job is internal (Celery) — no public evaluate endpoint.
+servers:
+  - url: /api/v1
+tags:
+  - name: Demo
+  - name: Notificaciones
+paths:
+  /ventas-crm/demo/sesiones:
+    post:
+      tags: [Demo]
+      summary: Abrir o reanudar sesión de demo (O118 / RF-NV-001)
+      description: >
+        Público. Requiere idprospecto + demo_grant (HMAC emitido en registro de prospecto).
+        Primer canje: fija demo_expiracion (+30 min ISO-8601 UTC), publica inicio_sesion.
+        Resume: si grant válido y demo aún activa, reemite session token sin nuevo inicio_sesion.
+      operationId: abrirSesionDemo
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbrirSesionDemoRequest'
+      responses:
+        '200':
+          description: Sesión activa (primer canje o resume)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionDemoEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Grant inválido / firma incorrecta / no corresponde al prospecto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Prospecto inactivo o demo expirada (sin renovación)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /ventas-crm/demo/interacciones:
+    post:
+      tags: [Demo]
+      summary: Ingesta de evento de interacción en demo (O118 / RF-NV-001)
+      description: >
+        Requiere Bearer demo session token (typ=demo_session).
+        Rate limit 60 req/min por token. No dispara evaluación síncrona de reglas.
+      operationId: registrarInteraccionDemo
+      security:
+        - demoSessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InteraccionDemoRequest'
+      responses:
+        '201':
+          description: Evento aceptado (publicado a Kafka)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteraccionDemoEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Session token ausente, inválido o tipado incorrecto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Token no corresponde al idprospecto del body o demo expirada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: Rate limit 60/min por token de sesión
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /ventas-crm/notificaciones:
+    get:
+      tags: [Notificaciones]
+      summary: Listar notificaciones de ventas (RF-NV-004)
+      description: >
+        GerenteVentas / GerenteCuentasPublicas: solo filas donde
+        idusuariogerentenotificado = usuario autenticado.
+        Administrador: todas; query idusuario opcional para filtrar.
+      operationId: listarNotificacionesVentas
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: idusuario
+          in: query
+          description: Solo Administrador; filtra por destinatario
+          schema:
+            type: integer
+        - name: regladisparada
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReglaDisparada'
+        - name: id_prospecto
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificacionListEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: User JWT RS256 (Gerente / Administrador) — autenticacion-y-rbac
+    demoSessionAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Demo session token HS256 with claim typ=demo_session and exp bound to demo_expiracion.
+        Not interchangeable with user JWT.
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    IdempotencyKeyOptional:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    TipoEventoDemo:
+      type: string
+      enum: [click, tiempo_seccion, inicio_sesion, fin_sesion]
+
+    CanalNotificacion:
+      type: string
+      enum: [email, slack, push]
+
+    ReglaDisparada:
+      type: string
+      enum: [tiempo_seccion_precios_5min, visito_pricing_3x]
+
+    AbrirSesionDemoRequest:
+      type: object
+      required: [idprospecto, demo_grant]
+      properties:
+        idprospecto: { type: integer }
+        demo_grant:
+          type: string
+          minLength: 16
+          description: HMAC grant issued at prospect registration
+
+    SesionDemo:
+      type: object
+      required: [idprospecto, demo_session_token, demo_expiracion, modo]
+      properties:
+        idprospecto: { type: integer }
+        demo_session_token: { type: string }
+        demo_expiracion:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC absolute expiration
+        modo:
+          type: string
+          enum: [primer_canje, resume]
+
+    SesionDemoEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/SesionDemo' }
+
+    InteraccionDemoRequest:
+      type: object
+      required: [idprospecto, tipo_evento, seccion, timestamp_evento]
+      properties:
+        idprospecto: { type: integer }
+        tipo_evento: { $ref: '#/components/schemas/TipoEventoDemo' }
+        seccion: { type: string, minLength: 1 }
+        metadata:
+          type: object
+          additionalProperties: true
+          description: >
+            For tiempo_seccion must include duracion_ms (integer >= 0).
+            Serialized to STRING JSON in Pinot.
+        timestamp_evento:
+          type: integer
+          format: int64
+          description: Epoch ms client event time
+
+    InteraccionDemo:
+      type: object
+      properties:
+        idinteraccion: { type: integer }
+        idprospecto: { type: integer }
+        tipo_evento: { $ref: '#/components/schemas/TipoEventoDemo' }
+        seccion: { type: string }
+        metadata: { type: string }
+        timestamp_evento: { type: integer, format: int64 }
+
+    InteraccionDemoEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/InteraccionDemo' }
+
+    NotificacionVentas:
+      type: object
+      properties:
+        idnotificacion: { type: integer }
+        id_prospecto: { type: integer }
+        idinteraccion: { type: integer }
+        idusuariogerentenotificado: { type: integer }
+        regladisparada: { $ref: '#/components/schemas/ReglaDisparada' }
+        canal: { $ref: '#/components/schemas/CanalNotificacion' }
+        fechahoranotificacion: { type: integer, format: int64 }
+
+    NotificacionListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/NotificacionVentas' }
+        meta:
+          type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                next_cursor: { type: string, nullable: true }
+                limit: { type: integer }
+
+  responses:
+    BadRequest:
+      description: Validación de campos o regla de negocio
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Credencial ausente o inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: Rol insuficiente o fuera de ownership
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Prospecto no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    TooManyRequests:
+      description: Rate limit (sesiones por IP o interacciones por token)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }

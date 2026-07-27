@@ -6,7 +6,7 @@
 
 **Tests**: Incluidos por requerimiento explícito (`testing-expert` + `testing.md`). Cada tarea de servicio/repositorio tiene test asociado con markers `unit`/`repository`/`service`/`api` y patrón AAA (Arrange-Act-Assert).
 
-**Organization**: Tareas agrupadas por historia de usuario (CU-O54, CU-O56, CU-O57, CU-O58, CU-O59) para implementación y validación independiente.
+**Organization**: Tareas históricas (CU-O54…O59) + **Phase 9 delta 2026-07-24** (actor Proveedor, lote+creds, eliminar O59).
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -336,3 +336,57 @@ Task: "T063 [US5] operador-disponibilidad.guard.spec.ts (marker unit, AAA)"
 | **Tests emparejados repo/servicio/api** | 19 backend + 5 frontend unit + 2 performance |
 | **MVP sugerido** | Phase 1 + 2 + US1 (T001–T037) |
 | **Estado final** | ✅ 80/80 tareas completas. Backend: 62/62 tests `red_operativa` + 90/90 `despacho` post-migración (572/575 en la suite global, 3 fallos preexistentes no relacionados). Frontend: `tsc --noEmit` limpio + `ng build` de producción exitoso (sin Chrome/Karma disponible en este entorno para ejecutar Jasmine) |
+
+---
+
+## Phase 9: Delta 2026-07-24 — Actor Proveedor + eliminar O59
+
+**Purpose**: Adaptar el módulo ya implementado al modelo Proveedor. Fases 1–8 = historial `[X]`; Phase 9 delta **completada** (2026-07-24).
+
+**Prerequisites**: `spec.md` Session 2026-07-24, OpenAPI `1.1.0`, dependencia `incorporacion-clientes` (Proveedor `Activo`).
+
+### User Story Map (delta)
+
+| Story | Prioridad | CU | Goal |
+|-------|-----------|-----|------|
+| US6 | P1 🎯 | O54/O57/O58 | Actor Proveedor + ownership `idcliente` JWT; sin Admin override |
+| US7 | P1 | O56 | Columna `gmail` + crear usuarios/credenciales; todo-o-nada total |
+| US8 | P1 | O59↓ | Retirar disponibilidad externa (código, FE, tests, contrato) |
+
+### Contract & RBAC
+
+- [X] T076 Validar OpenAPI 1.1.0 (sin path disponibilidad; create sin idcliente requerido) en `contracts/alta-unidades.openapi.yaml`
+- [X] T077 [P] Reemplazar `IsAdministradorRedOperativa` por `IsProveedorFlota` (cliente Activo + ownership) en `backend/apps/red_operativa/permissions.py`
+- [X] T078 [P] Test unit permisos Proveedor / rechazo Admin override en `backend/apps/red_operativa/tests/unit/test_red_operativa_permissions_proveedor.py`
+- [X] T079 Fixture `proveedor_auth_headers` (+ `idcliente`) en `backend/conftest.py`
+
+### US6 — Ownership Proveedor (O54/O57/O58)
+
+- [X] T080 [P] [US6] Tests API: alta sin idcliente body; 403 unidad ajena; Admin 403 en `backend/apps/red_operativa/tests/api/test_proveedor_ownership_contract.py`
+- [X] T081 [P] [US6] Tests service ownership en `test_registro_unidad_service.py` / `test_edicion_unidad_service.py` / `test_baja_unidad_service.py` (extender)
+- [X] T082 [US6] `RegistroUnidadService`: resolver `idcliente` del token; exigir cliente Activo en `registro_unidad_service.py`
+- [X] T083 [US6] `EdicionUnidadService` / `BajaUnidadService`: filtrar por `idcliente` propio
+- [X] T084 [US6] FE: `ProveedorFlotaGuard` + quitar `AdministradorRedOperativaGuard` de CRUD en `alta-unidades/guards/` y routes
+- [X] T085 [US6] Regenerar `unidad-emergencia.contract.ts` desde OpenAPI 1.1.0
+- [X] T086 [US6] Gate CA-CAM-001/005/010 en `traceability.md`
+
+### US7 — Lote + credenciales (O56)
+
+- [X] T087 [P] [US7] Test contrato lote con gmail inválido/duplicado → insertadas=0 en `test_importacion_lote_contract.py`
+- [X] T088 [P] [US7] Test service: fallo credencial revierte todo el lote en `test_importacion_lote_unidad_service.py`
+- [X] T089 [US7] Extender `ImportacionLoteUnidadService` (validar gmail + crear Dim_Usuarios/Credencial/Rol unidad; atómico) en `importacion_lote_unidad_service.py`
+- [X] T090 [US7] Reutilizar mecanismo invitación/SMTP (mismo que CU-O08) para cada unidad creada
+- [X] T091 [US7] FE catálogo: documentar columna `gmail` en plantilla CSV / UI errores
+- [X] T092 [US7] Gate CA-CAM-003/004 en `traceability.md`
+
+### US8 — Eliminar CU-O59
+
+- [X] T093 [US8] Eliminar endpoint/vista disponibilidad externa de `unidad_views.py` + `urls.py`
+- [X] T094 [US8] Eliminar o archivar `disponibilidad_externa_service.py` y tests `test_disponibilidad_externa_*`
+- [X] T095 [US8] Eliminar página FE `disponibilidad-externa/`, guard Operador, entradas sidebar/rutas
+- [X] T096 [US8] Confirmar que disponibilidad queda solo vía CU-O30 (`evidencia-unidad`) — nota en `quickstart.md` + `traceability.md`
+- [X] T097 [US8] Gate CA-CAM-009 (O59 retirado) en `traceability.md`
+
+**Checkpoint delta**: Solo Proveedor gestiona su flota; lote crea logins atómicos; O59 fuera del producto.
+
+**Orden**: T076–T079 → US6 → US7 → US8 (US8 puede ir en paralelo a US7 tras T076).

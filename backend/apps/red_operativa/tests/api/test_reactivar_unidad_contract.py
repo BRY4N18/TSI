@@ -4,14 +4,14 @@ import pytest
 @pytest.mark.api
 class TestReactivarUnidadContract:
     def test_post_reactivar_when_sin_conflicto_returns_200(
-        self, api_client, admin_auth_headers, mock_unidad_emergencia
+        self, api_client, proveedor_auth_headers, mock_unidad_emergencia
     ):
         # Arrange
         api_client.post(
             f"/api/v1/red-operativa/unidades/{mock_unidad_emergencia['idunidademergencia']}/baja",
             {"motivo": "Baja"},
             format="json",
-            **admin_auth_headers,
+            **proveedor_auth_headers,
         )
 
         # Act
@@ -19,7 +19,7 @@ class TestReactivarUnidadContract:
             f"/api/v1/red-operativa/unidades/{mock_unidad_emergencia['idunidademergencia']}/reactivar",
             {},
             format="json",
-            **admin_auth_headers,
+            **proveedor_auth_headers,
         )
 
         # Assert
@@ -27,19 +27,18 @@ class TestReactivarUnidadContract:
         assert response.json()["data"]["activo"] is True
 
     def test_post_reactivar_when_placa_duplicada_returns_409(
-        self, api_client, admin_auth_headers, mock_unidad_emergencia
+        self, api_client, proveedor_auth_headers, mock_unidad_emergencia
     ):
         # Arrange
         api_client.post(
             f"/api/v1/red-operativa/unidades/{mock_unidad_emergencia['idunidademergencia']}/baja",
             {"motivo": "Baja"},
             format="json",
-            **admin_auth_headers,
+            **proveedor_auth_headers,
         )
         api_client.post(
             "/api/v1/red-operativa/unidades",
             {
-                "idcliente": 1,
                 "idcondado": 1,
                 "tipopropiedad": "Externa",
                 "placa": mock_unidad_emergencia["placa"],
@@ -48,7 +47,7 @@ class TestReactivarUnidadContract:
                 "tipounidademergencia": "Patrulla",
             },
             format="json",
-            **admin_auth_headers,
+            **proveedor_auth_headers,
         )
 
         # Act
@@ -56,7 +55,7 @@ class TestReactivarUnidadContract:
             f"/api/v1/red-operativa/unidades/{mock_unidad_emergencia['idunidademergencia']}/reactivar",
             {},
             format="json",
-            **admin_auth_headers,
+            **proveedor_auth_headers,
         )
 
         # Assert

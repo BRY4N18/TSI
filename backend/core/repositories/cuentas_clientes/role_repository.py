@@ -81,6 +81,17 @@ class RoleRepository:
         )
         return [row["rol"] for row in roles]
 
+    def list_user_ids_for_role(self, rol: str) -> list[int]:
+        """Return user ids assigned to an active role name (Dim_Usuario_Rol)."""
+        role = self.find_role_by_name(rol)
+        if not role or not role.get("activo", True):
+            return []
+        links = self.pinot.query(
+            "SELECT idusuario FROM Dim_Usuario_Rol WHERE idrol = %(idrol)s",
+            {"idrol": int(role["idrol"])},
+        )
+        return [int(row["idusuario"]) for row in links]
+
     def assign_role_to_user(self, user_id: int, role_id: int) -> dict[str, Any]:
         now = datetime.now(timezone.utc).isoformat()
         payload = {

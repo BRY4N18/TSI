@@ -4,16 +4,17 @@ import { Observable } from 'rxjs';
 
 import {
   ApiEnvelope,
+  AprobacionData,
+  AprobacionRequest,
+  AutorregistroProveedorData,
+  AutorregistroProveedorRequest,
   CompletarEtapaData,
   CompletarEtapaRequest,
-  ConfiguracionCuentaData,
-  ConfiguracionCuentaRequest,
   LogoUploadUrlData,
   OnboardingProgresoData,
-  RegistroCuentaData,
-  RegistroCuentaRequest,
   ReenviarInvitacionData,
   ReenviarInvitacionRequest,
+  SolicitudItem,
 } from '../models/incorporacion-cliente.contract';
 
 @Injectable({ providedIn: 'root' })
@@ -21,17 +22,37 @@ export class IncorporacionClienteApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/cuentas-clientes';
 
-  registrarCuenta(body: RegistroCuentaRequest): Observable<ApiEnvelope<RegistroCuentaData>> {
-    return this.http.post<ApiEnvelope<RegistroCuentaData>>(this.base, body);
+  autorregistrar(
+    body: AutorregistroProveedorRequest,
+  ): Observable<ApiEnvelope<AutorregistroProveedorData>> {
+    return this.http.post<ApiEnvelope<AutorregistroProveedorData>>(
+      `${this.base}/autorregistro`,
+      body,
+    );
   }
 
-  configurarCuenta(
+  listarSolicitudes(
+    estado: 'Pendiente_Aprobación' | 'Rechazado' = 'Pendiente_Aprobación',
+  ): Observable<ApiEnvelope<SolicitudItem[]>> {
+    return this.http.get<ApiEnvelope<SolicitudItem[]>>(`${this.base}/solicitudes`, {
+      params: { estado },
+    });
+  }
+
+  decidirSolicitud(
     idcliente: number,
-    body: ConfiguracionCuentaRequest,
-  ): Observable<ApiEnvelope<ConfiguracionCuentaData>> {
-    return this.http.patch<ApiEnvelope<ConfiguracionCuentaData>>(
-      `${this.base}/${idcliente}/configuracion`,
+    body: AprobacionRequest,
+  ): Observable<ApiEnvelope<AprobacionData>> {
+    return this.http.post<ApiEnvelope<AprobacionData>>(
+      `${this.base}/${idcliente}/aprobacion`,
       body,
+    );
+  }
+
+  anularRechazo(idcliente: number): Observable<ApiEnvelope<AprobacionData>> {
+    return this.http.post<ApiEnvelope<AprobacionData>>(
+      `${this.base}/${idcliente}/anular-rechazo`,
+      {},
     );
   }
 

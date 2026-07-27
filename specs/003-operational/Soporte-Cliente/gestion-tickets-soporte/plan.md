@@ -12,7 +12,7 @@ Implementar el módulo de gestión de tickets de soporte con enfoque **contract-
 
 - **Objetivo operacional:** canalizar y resolver incidencias de clientes dentro de los SLA contractuales (BSC — retención y satisfacción de clientes).
 - **UC cubiertos:** CU-O91, O92, O95, O96, O97.
-- **Dependencias:** `autenticacion-y-rbac` (roles), `incorporacion-clientes` (cliente con cuenta activa), `billing-and-auto-renewal` (`Fact_Suscripcion`/`idplan`).
+- **Dependencias:** `autenticacion-y-rbac` (roles), `incorporacion-clientes` (cliente con cuenta activa), `subscriptions-and-billing` (`Fact_Suscripcion`/`idplan`).
 - **Consumidores downstream:** ninguno declarado en el spec (módulo terminal del módulo Soporte-Cliente).
 
 ## Technical Context
@@ -46,7 +46,7 @@ Implementar el módulo de gestión de tickets de soporte con enfoque **contract-
 | Performance Efficiency | PASS | RNF-TIC-001 (job 1 min), RNF-TIC-003 (registro <3s) declarados como criterios medibles |
 | Interaction Capability | PASS | Dashboard RF-TIC-007; UI cliente/agente/admin diferenciada por rol |
 | Security | PASS | JWT + RBAC por rol; notas internas filtradas server-side (RN-TIC-002, no solo frontend) |
-| Compatibility | PASS | Contract-first OpenAPI; SLA depende de `idplan` de `billing-and-auto-renewal` vía integración de datos, no API directa |
+| Compatibility | PASS | Contract-first OpenAPI; SLA depende de `idplan` de `subscriptions-and-billing` vía integración de datos, no API directa |
 | Maintainability | PASS | Vista→Servicio→Repositorio; servicios por CU; app nueva `apps/soporte_cliente/` sin `queries.py` (CRUD simple) |
 | Flexibility | PASS | `Dim_SLAConfig` versionado temporal permite nuevos planes/prioridades sin migración de tickets existentes |
 | Safety | Not applicable | Este módulo no participa en el camino crítico de despacho ni en decisiones que afecten la seguridad física de personas en un accidente (Additional Constraints de la constitution) |

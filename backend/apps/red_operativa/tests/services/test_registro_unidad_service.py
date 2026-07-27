@@ -1,13 +1,15 @@
 import pytest
 
+from apps.red_operativa.services.proveedor_access_service import ProveedorAccessError
 from apps.red_operativa.services.registro_unidad_service import RegistroUnidadService
+
+PROVEEDOR = {"user_id": 3, "roles": ["Cliente"]}
 
 
 @pytest.mark.service
 class TestRegistroUnidadService:
     def _valid_data(self, **overrides):
         data = {
-            "idcliente": 1,
             "idcondado": 1,
             "tipopropiedad": "Externa",
             "placa": "SVC-001",
@@ -23,11 +25,12 @@ class TestRegistroUnidadService:
         service = RegistroUnidadService()
 
         # Act
-        result = service.registrar(self._valid_data())
+        result = service.registrar(self._valid_data(), **PROVEEDOR)
 
         # Assert
         assert result["placa"] == "SVC-001"
         assert result["activo"] is True
+        assert result["idcliente"] == 1
 
     def test_registrar_when_placa_duplicada_raises_value_error(
         self, mock_pinot, mock_kafka, mock_unidad_emergencia
@@ -38,7 +41,7 @@ class TestRegistroUnidadService:
 
         # Act & Assert
         with pytest.raises(ValueError):
-            service.registrar(data)
+            service.registrar(data, **PROVEEDOR)
 
     def test_registrar_when_idcondado_invalido_raises_lookup_error(self, mock_pinot, mock_kafka):
         # Arrange
@@ -47,7 +50,7 @@ class TestRegistroUnidadService:
 
         # Act & Assert
         with pytest.raises(LookupError):
-            service.registrar(data)
+            service.registrar(data, **PROVEEDOR)
 
     def test_registrar_when_externa_sin_contacto_raises_key_error(self, mock_pinot, mock_kafka):
         # Arrange
@@ -56,7 +59,7 @@ class TestRegistroUnidadService:
 
         # Act & Assert
         with pytest.raises(KeyError):
-            service.registrar(data)
+            service.registrar(data, **PROVEEDOR)
 
     def test_registrar_when_tipopropiedad_invalido_raises_key_error(self, mock_pinot, mock_kafka):
         # Arrange
@@ -65,4 +68,12 @@ class TestRegistroUnidadService:
 
         # Act & Assert
         with pytest.raises(KeyError):
-            service.registrar(data)
+            service.registrar(data, **PROVEEDOR)
+
+    def test_registrar_when_admin_raises_access_error(self, mock_pinot, mock_kafka):
+        # Arrange
+        service = RegistroUnidadService()
+
+        # Act & Assert
+        with pytest.raises(ProveedorAccessError):
+            service.registrar(self._valid_data(), user_id=1, roles=["Administrador"])

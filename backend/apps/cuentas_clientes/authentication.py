@@ -28,6 +28,9 @@ class JWTSessionAuthentication(BaseAuthentication):
 
     keyword = "Bearer"
 
+    def authenticate_header(self, request):
+        return self.keyword
+
     def __init__(self):
         self.session_validator = SessionValidationService()
 

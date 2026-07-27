@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.despacho.services.alerta_admin_service import AlertaAdminService
 from apps.despacho.services.asignacion_inteligente_service import (
     AsignacionInteligenteService,
 )
@@ -19,10 +20,12 @@ class EscalamientoZonaService:
         asignacion: AsignacionInteligenteService | None = None,
         nota_repo: NotaAccidenteRepository | None = None,
         accidente_repo: AccidenteRepository | None = None,
+        alerta_admin: AlertaAdminService | None = None,
     ):
         self.asignacion = asignacion or AsignacionInteligenteService()
         self.notas = nota_repo or NotaAccidenteRepository()
         self.accidentes = accidente_repo or AccidenteRepository()
+        self.alerta_admin = alerta_admin or AlertaAdminService()
 
     def escalar(self, *, idaccidente: str, idusuario: int) -> dict[str, Any]:
         if not self.accidentes.find_by_id(idaccidente):
@@ -39,6 +42,10 @@ class EscalamientoZonaService:
                 idaccidente=idaccidente,
                 idusuario=idusuario,
                 nota="Escalamiento a zona vecina sin unidades disponibles.",
+            )
+            self.alerta_admin.notificar_sin_unidades(
+                idaccidente=idaccidente,
+                contexto="escalamiento_zona",
             )
             return {
                 "message": "Sin unidades en condados vecinos",
@@ -58,6 +65,10 @@ class EscalamientoZonaService:
                 idaccidente=idaccidente,
                 idusuario=idusuario,
                 nota="Escalamiento sin despacho creado.",
+            )
+            self.alerta_admin.notificar_sin_unidades(
+                idaccidente=idaccidente,
+                contexto="escalamiento_zona",
             )
             return {
                 "message": "Sin unidades en condados vecinos",

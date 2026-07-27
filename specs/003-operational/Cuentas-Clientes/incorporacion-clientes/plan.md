@@ -6,18 +6,16 @@
 
 ## Summary
 
-Implementar alta, configuración y onboarding digital de clientes (CU-O01, O12, O02, O09, O08) con enfoque **contract-first**: primero contrato OpenAPI REST según `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía Kafka; finalmente frontend Angular 17+ con servicios tipados (`typescript-expert`), guards (`angular-architect`) y wizard de onboarding. Membresía usuario↔cuenta exclusivamente por `Dim_Cliente.admin_local_id` (sin `Dim_Usuario_Cliente`).
+**Actualización 2026-07-25:** Phase 10 — O01/O12 **retirados** (410); O16 + email SMTP + soft-anular `Rechazado_Anulado`; O08 UI en solicitudes/wizard; login permitido en pendiente. Ver `spec.md` Session 2026-07-25.
+
+Plan original (2026-07-09): alta/configuración/onboarding (antes O01, O12, O02, O09, O08) contract-first.
 
 ## Traceability
 
-- **Objetivo Operacional (OP)**: OP-TSI-ONB-01 (incorporación B2B/B2G con onboarding trazable).
-- **UC cubiertos**: CU-O01, CU-O12, CU-O02, CU-O09, CU-O08.
-- **Mapeo de cumplimiento**:
-  - Contract-first REST versionado (`/api/v1/cuentas-clientes/...`).
-  - Patrón Vista→Servicio→Repositorio; Kafka como único canal de escritura.
-  - JWT + validación de sesión (dependencia autenticacion-y-rbac).
-  - SMTP vía `core/notificaciones`; fallo no revierte operación.
-  - Recordatorios semanales día 30+ vía job programado (RN-ONB-004).
+- **Objetivo Operacional (OP)**: OP-TSI-ONB-01.
+- **UC cubiertos (canónicos)**: CU-O14, CU-O16 (aprobar/rechazar/anular), CU-O02, CU-O09, CU-O08.
+- **Retirados (410)**: CU-O01, CU-O12.
+- **Delta 2026-07-25**: soft-anular; email O16; hard-kill O01/O12; login OK en pendiente.
 
 ## Technical Context
 
@@ -33,7 +31,7 @@ Implementar alta, configuración y onboarding digital de clientes (CU-O01, O12, 
 
 **Project Type**: Aplicación web (backend + frontend)
 
-**Performance Goals**: Registro O01 < 3 min usuario (RNF-ONB-001); p95 registro API ≤ 800 ms; p95 etapa onboarding ≤ 500 ms; onboarding 24/7 (RNF-ONB-002)
+**Performance Goals**: Autorregistro O14 < 3 min usuario (RNF-ONB-001); p95 autorregistro API ≤ 800 ms; p95 etapa onboarding ≤ 500 ms; onboarding 24/7 (RNF-ONB-002)
 
 **Constraints**: `/api/v1/`, envelope estándar, `Idempotency-Key` en escrituras, sin INSERT/UPDATE directo a Pinot, scope Cliente vía `admin_local_id`
 
@@ -43,15 +41,15 @@ Implementar alta, configuración y onboarding digital de clientes (CU-O01, O12, 
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Functional Suitability: PASS — cubre CU-O01/O12/O02/O09/O08 y CA-ONB-001..007.
+- Functional Suitability: PASS — O14/O16/O02/O09/O08; O01/O12 retirados (410); CA-ONB-001..011.
 - Reliability: PASS — progreso persistido en Fact_Onboarding; reanudación sin pérdida (RN-ONB-005).
-- Performance Efficiency: PASS — RNF-ONB-001/002 explicitados; objetivos p95 en Technical Context.
-- Interaction Capability: PASS — wizard Angular con guards de onboarding y rol.
-- Security: PASS — JWT + sesión; O01/O12 solo Administrador; scope por `admin_local_id`.
+- Performance Efficiency: PASS — RNF-ONB-001/002 explicitados; objetivos p95 O14/onboarding.
+- Interaction Capability: PASS — design-system tokens + HTML separado; wizard con guards (CA-ONB-011).
+- Security: PASS — JWT + sesión; O16 solo Administrador; scope por `admin_local_id`; O01/O12 410.
 - Compatibility: PASS — contrato OpenAPI versionado; reutiliza patrones auth y gestion-cuentas (logo Blob).
 - Maintainability: PASS — capas Vista→Servicio→Repositorio; tipos TS alineados al contrato.
 - Flexibility: PASS — etapas opcionales por plan diferidas; SMTP por env.
-- Safety: PASS — sin borrado físico; credenciales temporales con cambio forzado.
+- Safety: PASS — soft-anular sin borrado físico; credenciales temporales con cambio forzado.
 
 Post-Design Gate: PASS (sin violaciones ni excepciones abiertas).
 
@@ -76,13 +74,13 @@ specs/003-operational/Cuentas-Clientes/incorporacion-clientes/
 backend/
 ├── apps/cuentas_clientes/
 │   ├── views/
-│   │   └── onboarding_views.py           # Vista DRF (registro, config, onboarding, invitación)
+│   │   └── onboarding_views.py           # O14, O16, O02/O09, O08; O01/O12 → 410
 │   ├── services/
-│   │   ├── registro_cuenta_service.py    # CU-O01
-│   │   ├── configuracion_cuenta_service.py # CU-O12
-│   │   ├── onboarding_service.py         # CU-O02, O09
-│   │   ├── invitacion_service.py         # CU-O08
-│   │   └── onboarding_notificacion_service.py
+│   │   ├── autorregistro_proveedor_service.py  # CU-O14
+│   │   ├── aprobacion_proveedor_service.py     # CU-O16 (+ anular)
+│   │   ├── onboarding_service.py               # CU-O02, O09
+│   │   ├── invitacion_service.py               # CU-O08
+│   │   └── onboarding_notificacion_service.py  # O14/O16/O08 SMTP
 │   ├── management/commands/
 │   │   └── send_onboarding_reminders.py  # RN-ONB-004
 │   └── tests/
@@ -110,9 +108,9 @@ frontend/src/app/
 │   │   ├── onboarding-pendiente.guard.ts
 │   │   └── onboarding-completado.guard.ts
 │   └── pages/
-│       ├── registro/                     # Admin: O01
-│       ├── configuracion/                # Admin: O12
-│       └── onboarding-wizard/            # Cliente: O02
+│       ├── autorregistro/                # Público: O14 (+ HTML design-system)
+│       ├── aprobacion-solicitudes/       # Admin: O16 + O08
+│       └── onboarding-wizard/            # Cliente: O02 + O08
 └── core/guards/
     └── administrador.guard.ts            # reutilizar
 ```
@@ -133,3 +131,12 @@ frontend/src/app/
 |-------------------|---------------|------------|
 | `CuentaUsuarioRepository` usa `Dim_Usuario_Cliente` hoy | Implementado antes de clarificación RN-ONB-007 | Refactor en tarea de alineación post-onboarding |
 | Etapas opcionales por plan sin catálogo | Fuera de alcance spec §13 | Hook en `OnboardingService` para extensión futura |
+| Servicios `registro_cuenta` / `configuracion_cuenta` residuales | O01/O12 retirados en HTTP | Vistas 410; servicios no llamados; tests service skipped |
+
+## Phase 10 (2026-07-25) — Cierre gaps
+
+1. Hard-kill O01/O12 (410 + FE sin rutas).
+2. Soft-anular + email O16 + tests.
+3. Reubicar UI O08 (solicitudes + wizard).
+4. Sync spec / plan / tasks / OpenAPI 1.2.0 / quickstart / traceability.
+5. Remediation analyze: UI design-system (T106–T107), orphans FE (T108), p95 O14 (T109), check-prerequisites (T110).

@@ -14,9 +14,19 @@ Minimizar el tiempo de respuesta ante un accidente de tránsito mediante la asig
 - Q: ¿Cómo se dispara O36 tras el timeout O35? → A: Evento asíncrono: O35 publica evento de dominio; un worker O36 independiente consume y re-asigna.
 - Q: ¿Qué hacer si push y SMS fallan al notificar despacho (O23)? → A: Tras un reintento fallido en ambos canales, marcar fallo de entrega y disparar O36 inmediatamente (sin esperar timeout).
 
+### Session 2026-07-24 (cambios diferidos + alerta Admin)
+
+- Q: ¿Filtro de elegibilidad por plan/severidad del proveedor? → A: ⛔ Bloqueado hasta Suscripciones-Facturación (`Dim_Plan`). Mientras tanto, dejar **hook de extensión** en la consulta de candidatas (O22/O36) sin filtrar por plan (fail-open: comportamiento actual).
+- Q: ¿Priorizar planes superiores en el ranking? → A: ⛔ Bloqueado; mismo hook futuro.
+- Q: ¿Qué ocurre si no hay unidades en condado ni vecinos (O34) o se agotan candidatas (O36)? → A: Mantener `Dim_NotaAccidente` **y** notificar de forma **activa** a un **Administrador** (además del Operador), cerrando el escalón de respaldo radio → [plan bloqueado] → alerta Admin.
+
+**Fuente de alineación:** `especificacion-cambios-implementacion.md`.
+
 ## 2. Contexto
 
 Cuando un accidente es registrado en TSI, el sistema ejecuta un algoritmo de asignación inteligente que evalúa en tiempo real todas las unidades disponibles, selecciona la óptima según criterios múltiples y notifica a la unidad para que confirme o rechace el despacho. El modelo de datos soporta una relación N-N (Caso ↔ Unidad) donde un caso puede tener múltiples despachos activos (grúa + ambulancia + policía) y se mantiene un historial completo de intentos fallidos (rechazos, timeouts, re-asignaciones).
+
+La cadena de oferta no cambia: **CU-O22 → CU-O23 → CU-O24 | CU-O45 | CU-O35 → CU-O36**, con **CU-O34** para ampliación a vecinos / sin unidades.
 
 **Casos de uso incluidos:**
 
@@ -26,9 +36,9 @@ Cuando un accidente es registrado en TSI, el sistema ejecuta un algoritmo de asi
 | CU-O23 | Notificar despacho | Sistema | Fact_NotificacionDespacho (UPDATE) |
 | CU-O24 | Confirmar despacho | Unidad de emergencia | Fact_NotificacionDespacho, Fact_HistorialDespachoUnidad, Fact_HistorialEstadoUnidad, Fact_AccidenteTipoEstadoAccidente |
 | CU-O33 | Asignar unidad manualmente | Operador | Igual que O22, idorigendespacho=Manual |
-| CU-O34 | Escalar caso a zona | Sistema / Operador | Igual que O22 (zona vecina) o Dim_NotaAccidente (sin unidades) |
+| CU-O34 | Escalar caso a zona | Sistema / Operador | Igual que O22 (zona vecina) o Dim_NotaAccidente + notificación Admin (sin unidades) |
 | CU-O35 | Timeout de despacho | Sistema (job) | Fact_HistorialDespachoUnidad, evento `DespachoTimeout` |
-| CU-O36 | Re-asignación tras rechazo o timeout | Sistema (worker) | Igual que O22 (mismo idaccidente, nueva unidad) |
+| CU-O36 | Re-asignación tras rechazo o timeout | Sistema (worker) | Igual que O22 (mismo idaccidente, nueva unidad); alerta Admin si se agotan |
 | CU-O38 | Coordinar despacho múltiple | Operador | Igual que O22 (nueva unidad, mismo caso activo) |
 | CU-O45 | Rechazar despacho | Unidad de emergencia | Fact_NotificacionDespacho (UPDATE con motivo), Fact_HistorialDespachoUnidad |
 
@@ -59,6 +69,7 @@ Cuando un accidente es registrado en TSI, el sistema ejecuta un algoritmo de asi
 | **Sistema (worker O36)** | Consumidor de re-asignación | Consume eventos `DespachoTimeout` y ejecuta la lógica de re-asignación (O36). |
 | **Unidad de emergencia** | Receptor, confirmador y rechazador | Recibe notificación push/SMS. Confirma (O24) o rechaza con motivo (O45). |
 | **Operador de emergencias** | Supervisor humano | Asigna manualmente (O33), escala a zona vecina (O34), coordina despacho múltiple (O38), monitorea el proceso. |
+| **Administrador** | Receptor de escalamiento crítico | Recibe notificación **activa** cuando no hay unidades candidatas tras O34 / agotamiento en O36 (además de la nota en `Dim_NotaAccidente`). |
 
 ## 4. Requisitos funcionales
 
@@ -72,6 +83,7 @@ El Sistema debe ejecutar automáticamente el siguiente algoritmo cuando se regis
    - Última fila en `Fact_HistorialEstadoUnidad` tiene `idestadounidademergencia` = "Activa".
    - No tener un despacho activo (`Fact_Despacho.activo=true`) para el mismo accidente.
    - Pertenecer al mismo `Dim_Condado` del accidente: resolver `Fact_Accidente.idcalle` → `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` y filtrar unidades cuya ubicación (`latitud`, `longitud`) o `idcondado` coincida con ese condado.
+   - **Hook de elegibilidad por plan/severidad (📎, no activo):** punto de extensión documentado en la consulta de candidatas (`ConsultaCandidatasService` o equivalente) donde, cuando exista Suscripciones-Facturación / `Dim_Plan`, se filtrará a unidades cuyo proveedor (`idcliente`) tenga un plan que permita la `idseveridad` del accidente, y se podrá priorizar planes superiores en el ranking. **Hoy el hook es no-op (fail-open):** no se excluye ninguna candidata por plan. Safety: un fallo o ausencia del módulo de planes no debe impedir la asignación.
 3. **Calcular distancia:** para cada unidad candidata, resolver su posición efectiva:
    - Tomar `Dim_UnidadEmergencia.latitud`, `Dim_UnidadEmergencia.longitud` como base.
    - Si existe fila en `Dim_HistorialUbicacionUnidadEmergencia` con `fechahora` más reciente que `Dim_UnidadEmergencia.fecha_actualizacion`, usar `latitud`/`longitud` de esa fila.
@@ -154,7 +166,10 @@ Tras un rechazo (O45) o timeout (O35), el Sistema debe crear un nuevo intento de
 - El despacho anterior queda con `activo=false` y permanece en `Fact_HistorialDespachoUnidad` como historial del intento fallido.
 - El proceso continúa hasta que una unidad confirme o se agoten todas las candidatas.
 
-Si se agotan las candidatas, escalar al Operador para intervención manual y generar alerta crítica.
+Si se agotan las candidatas:
+1. INSERT en `Dim_NotaAccidente` con alerta crítica (visible al Operador en el expediente).
+2. **Notificar de forma activa a un Administrador** (mismo canal de notificación ya usado en el sistema — push/email/inbox — según plan de implementación), no solo dejar la nota pasiva.
+3. Escalar al Operador para intervención manual (O33).
 
 ### RF-DES-007: Asignación manual de unidad (O33)
 
@@ -167,9 +182,11 @@ El Operador debe poder seleccionar manualmente una unidad desde la interfaz de m
 
 Si el algoritmo no encuentra unidades disponibles en el condado del accidente (o si el Operador lo solicita explícitamente), el sistema debe:
 
-1. Ampliar la consulta de `Dim_UnidadEmergencia` a **condados vecinos** del condado del accidente (misma jerarquía `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado`; vecindad definida por condados adyacentes en la misma `Dim_Ciudad` o condados limítrofes según catálogo geográfico).
+1. Ampliar la consulta de `Dim_UnidadEmergencia` a **condados vecinos** del condado del accidente (misma jerarquía `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado`; vecindad definida por condados adyacentes en la misma `Dim_Ciudad` o condados limítrofes según catálogo geográfico). El mismo **hook de plan/severidad** de RF-DES-001 aplica (hoy no-op).
 2. Si encuentra unidad(es): mismo patrón O22 con `idorigendespacho` = Escalado_zona.
-3. Si no encuentra ninguna: INSERT en `Dim_NotaAccidente` (`idaccidente`, `idusuario`, `nota`="Sin unidades disponibles en condado ni condados vecinos", `tipo`=alerta, `activo=true`).
+3. Si no encuentra ninguna:
+   - INSERT en `Dim_NotaAccidente` (`idaccidente`, `idusuario`, `nota`="Sin unidades disponibles en condado ni condados vecinos", `tipo`=alerta o escalamiento, `activo=true`).
+   - **Notificar de forma activa a un Administrador** (además de la visibilidad para el Operador).
 
 ### RF-DES-009: Coordinar despacho múltiple (O38)
 
@@ -391,6 +408,8 @@ Dado que un accidente ocurre en una zona con solo 2 unidades activas
 Y ambas rechazan el despacho
 Cuando el sistema agota las candidatas
 Entonces debe generar una alerta crítica: "Sin unidades disponibles para accidente #12345"
+Y debe INSERT en Dim_NotaAccidente
+Y debe notificar de forma activa a un Administrador
 Y debe notificar al Operador de emergencias para intervención manual.
 
 ### Escenario 5: Configuración de parámetros del algoritmo (RF-DES-010)
@@ -416,7 +435,8 @@ Dado que un accidente ocurre en un condado sin unidades activas disponibles
 Cuando el Sistema (u Operador) solicita escalar la búsqueda
 Entonces el sistema debe ampliar la consulta a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado)
 Y si encuentra unidad en condado vecino, ejecutar O22 con idorigendespacho = Escalado_zona
-Y si no encuentra ninguna, INSERT en Dim_NotaAccidente con alerta de "Sin unidades disponibles en condado ni condados vecinos".
+Y si no encuentra ninguna, INSERT en Dim_NotaAccidente con alerta de "Sin unidades disponibles en condado ni condados vecinos"
+Y notifica activamente a un Administrador.
 
 ### Escenario 8: Coordinación de despacho múltiple (O38)
 
@@ -467,7 +487,7 @@ Si la unidad rechaza (con motivo), se actualiza Fact_NotificacionDespacho a Rech
 Si la unidad no responde en el timeout configurado (por defecto 90s), el job O35 marca Fact_Despacho.activo=false, inserta Timeout, publica evento DespachoTimeout y el worker O36 re-asigna de forma asíncrona.
 
 ### CA-DES-007
-Si se agotan las unidades candidatas, se genera alerta crítica y se escala al Operador para intervención manual.
+Si se agotan las unidades candidatas, se genera alerta en `Dim_NotaAccidente`, se notifica de forma **activa a un Administrador**, y se escala al Operador para intervención manual.
 
 ### CA-DES-008
 El Director Tecnológico puede configurar: timeout de respuesta, pesos del algoritmo y prioridades por tipo de emergencia.
@@ -479,7 +499,10 @@ El proceso completo desde registro hasta confirmación se completa en menos de 2
 La asignación manual (O33) persiste con idorigendespacho = Manual.
 
 ### CA-DES-011
-El escalamiento a zona vecina (O34) amplía la búsqueda desde el condado del accidente a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado); si no encuentra, inserta alerta en Dim_NotaAccidente.
+El escalamiento a zona vecina (O34) amplía la búsqueda desde el condado del accidente a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado); si no encuentra, inserta alerta en Dim_NotaAccidente **y** notifica activamente a un Administrador.
+
+### CA-DES-014
+La consulta de candidatas (O22/O36) expone un hook documentado de elegibilidad/prioridad por plan; mientras Suscripciones-Facturación no exista, el hook es no-op y no bloquea la asignación (fail-open).
 
 ### CA-DES-012
 El despacho múltiple (O38) permite asignar una nueva unidad a un caso que ya tiene despacho(s) activo(s).
@@ -497,6 +520,7 @@ Si push y SMS fallan tras reintento en O23, el sistema marca No_entregada, desac
 
 ## 13. Fuera de alcance
 
+- **Filtro real y prioridad por plan/severidad del proveedor:** ⛔ Suscripciones-Facturación / `Dim_Plan` (solo hook no-op en esta oleada).
 - **Rastreo GPS en tiempo real de la unidad en tránsito:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O25).
 - **Registro de llegada al sitio:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O26).
 - **Cierre del caso y liberación de unidad:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O28).

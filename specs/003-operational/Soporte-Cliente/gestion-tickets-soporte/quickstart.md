@@ -7,7 +7,7 @@ Guía de validación end-to-end contract-first para CU-O91, O92, O95, O96, O97 y
 - Spec: `spec.md` (clarificaciones Session 2026-07-21)
 - Plan: `plan.md`, `research.md`, `data-model.md`
 - Contrato: `contracts/gestion-tickets-soporte.openapi.yaml`
-- Dependencias: `autenticacion-y-rbac` (roles Cliente, Soporte al cliente, Desarrollador de APIs, Director Tecnológico, Administrador, Supervisor de Soporte), `incorporacion-clientes` (cliente con cuenta activa), `billing-and-auto-renewal` (`Fact_Suscripcion`/`idplan` vigente)
+- Dependencias: `autenticacion-y-rbac` (roles Cliente, Soporte al cliente, Desarrollador de APIs, Director Tecnológico, Administrador, Supervisor de Soporte), `incorporacion-clientes` (cliente con cuenta activa), `subscriptions-and-billing` (`Fact_Suscripcion`/`idplan` vigente)
 - Infra: Kafka productor/consumidor, Pinot broker lectura, job scheduler (cada 1 min, RNF-TIC-001), backend Django, frontend Angular
 
 ## 1) Validar contrato REST (backend contract-first)

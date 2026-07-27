@@ -27,8 +27,8 @@ export interface ApiEnvelope<T> {
   meta: { pagination: object | null };
 }
 
+/** OpenAPI 1.1.0 — idcliente deprecated/ignored (JWT Proveedor). */
 export interface UnidadCreateRequest {
-  idcliente: number;
   idcondado: number;
   tipopropiedad: TipoPropiedad;
   placa: string;
@@ -37,6 +37,9 @@ export interface UnidadCreateRequest {
   unidademergencia: string;
   tipounidademergencia: TipoUnidadEmergencia;
   activo?: boolean;
+  gmail?: string;
+  /** @deprecated Ignorado — se resuelve del JWT */
+  idcliente?: number;
 }
 
 export interface UnidadCreatedData {
@@ -68,6 +71,7 @@ export interface ImportacionLoteFallida {
 
 export interface ImportacionLoteData {
   insertadas: number;
+  usuarios_creados?: number;
   fallidas: ImportacionLoteFallida[];
 }
 
@@ -75,10 +79,3 @@ export interface BajaUnidadData {
   idunidademergencia: number;
   activo: false;
 }
-
-export interface DisponibilidadData {
-  idunidademergencia: number;
-  estadonuevo: string;
-}
-
-export type EstadoDisponibilidad = 'Activa' | 'Ocupada' | 'Fuera de servicio';

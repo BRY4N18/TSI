@@ -44,15 +44,22 @@ Mapeo CU → RF/RNF → Criterios de Aceptación → Task IDs, para verificació
 
 **Gate T060**: CA-CAM-006, CA-CAM-007 cumplidos.
 
-## US5 — Disponibilidad externa (CU-O59)
+## US5 — Disponibilidad externa (CU-O59) — RETIRADO 2026-07-24
 
 | Requisito | Descripción | Task IDs | Estado |
 |---|---|---|---|
-| RF-CAM-005 | Declaración de disponibilidad por Operador, alerta si "Activa" con despacho activo | T064, T065 | ✅ |
-| CA-CAM-008 | `idusuario` registrado es el del Operador | T061, T064 | ✅ |
-| CA-CAM-009 | Alerta (422) al marcar "Activa" con despacho sin retirar | T061, T064 | ✅ |
+| RF-CAM-005 / CA-CAM-008 / CA-CAM-009 | Declaración por Operador sin login de unidad | T093–T097 | ❌ Retirado |
+| **Reemplazo** | Disponibilidad solo vía **CU-O30** (`evidencia-unidad`, unidad autenticada) | T096 | ✅ |
 
-**Gate T070**: CA-CAM-008, CA-CAM-009 cumplidos.
+**Gate CA-CAM-009 (delta)**: endpoint `/disponibilidad` de `alta-unidades` eliminado; no hay override Operador.
+
+## Phase 9 delta — Actor Proveedor (2026-07-24)
+
+| Requisito | Descripción | Task IDs | Estado |
+|---|---|---|---|
+| CA-CAM-001 / CA-CAM-010 | Alta con `idcliente` desde JWT; Admin sin override | T080–T086 | ✅ |
+| CA-CAM-005 | Ownership en edición/baja | T081, T083 | ✅ |
+| CA-CAM-003 / CA-CAM-004 | Lote + `gmail` + credenciales todo-o-nada | T087–T092 | ✅ |
 
 ## Migración cruzada (bloqueante, ejecutada en Foundational)
 
@@ -63,7 +70,6 @@ Mapeo CU → RF/RNF → Criterios de Aceptación → Task IDs, para verificació
 
 ## Resumen de cobertura
 
-- Total CU cubiertos: 5/5 (CU-O54, O56, O57, O58, O59)
-- Total CA cubiertos: 9/9 (CA-CAM-001 a CA-CAM-009)
-- Tests backend: 61/61 en `apps/red_operativa` + 90/90 en `apps/despacho` tras la migración
-- Tests frontend: no ejecutables en este entorno (sin Chrome/Karma) — validados con `tsc --noEmit` (app + spec) y `ng build` de producción, ambos limpios
+- Total CU cubiertos: 4/4 activos (CU-O54, O56, O57, O58); **CU-O59 eliminado**
+- Disponibilidad: solo CU-O30 en `evidencia-unidad`
+- Phase 9 delta: T076–T097 ✅

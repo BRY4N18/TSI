@@ -35,7 +35,7 @@
 ## Decision 5: Resolución de `idplan` del cliente para lookup de SLA
 
 - **Decision:** `AsignacionSLAService` resuelve `idplan` desde la suscripción activa del cliente: `Fact_Suscripcion` con `idcliente` dado y `estado='activa'`/`activo=true` (más reciente por `fecha_inicio` si hubiera más de una), no desde `Dim_Cliente.plan_suscripcion` (campo `STRING` denormalizado de solo referencia rápida, no fuente de verdad transaccional).
-- **Rationale:** `Fact_Suscripcion` es la tabla de hechos del módulo `billing-and-auto-renewal` (dependencia declarada en `## 12. Dependencias` del spec); es la fuente correcta para saber el plan vigente, evitando inconsistencia si `Dim_Cliente.plan_suscripcion` queda desactualizado.
+- **Rationale:** `Fact_Suscripcion` es la tabla de hechos del módulo `subscriptions-and-billing` (dependencia declarada en `## 12. Dependencias` del spec); es la fuente correcta para saber el plan vigente, evitando inconsistencia si `Dim_Cliente.plan_suscripcion` queda desactualizado.
 - **Alternatives considered:**
   - Leer directo `Dim_Cliente.plan_suscripcion` (rechazado: es un campo STRING de conveniencia, no normalizado a `idplan`, y puede quedar desactualizado frente a cambios de plan).
 

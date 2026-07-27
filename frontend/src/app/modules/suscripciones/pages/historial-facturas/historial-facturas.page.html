@@ -1,0 +1,114 @@
+<section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
+  <header class="grid gap-1.5">
+    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Historial</p>
+    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Facturas</h2>
+    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+      Emisiones del ciclo de facturación. Impuestos = 0 en MVP. Solo ves facturas de tu cuenta.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="rounded-[10px] border border-border-default bg-bg-surface p-5" aria-busy="true">
+      <div class="h-4 w-3/5 animate-pulse rounded-lg bg-border-default"></div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      role="alert"
+    >
+      <h3 class="m-0 text-lg font-semibold">Error</h3>
+      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        (click)="cargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (items().length === 0) {
+    <div class="grid justify-items-start gap-2 rounded-[10px] border border-border-default bg-bg-surface p-5">
+      <h3 class="m-0 text-lg font-semibold">Sin facturas</h3>
+      <p class="m-0 text-sm text-text-secondary">
+        Cuando exista un método de pago activo se generarán facturas del periodo.
+      </p>
+    </div>
+  } @else {
+    <section class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Número</th>
+              <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Periodo</th>
+              <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Estado</th>
+              <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Total</th>
+              <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Emisión</th>
+              <th class="border-b border-border-default px-2.5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of items(); track f.id_factura) {
+              <tr>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">{{ f.numero_factura }}</td>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">{{ f.periodo }}</td>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">
+                  <span [class]="badge(f.estado_pago)">{{ f.estado_pago }}</span>
+                </td>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">
+                  {{ f.monto_total | currency: 'USD':'symbol':'1.2-2' }}
+                </td>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">
+                  {{ f.fecha_emision | date: 'short' }}
+                </td>
+                <td class="border-b border-border-default px-2.5 py-3 align-top">
+                  <button
+                    type="button"
+                    class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+                    (click)="verDetalle(f)"
+                  >
+                    Detalle
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (selected(); as f) {
+    <aside class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm" aria-label="Detalle de factura">
+      <h3 class="m-0 text-lg font-semibold">{{ f.numero_factura }}</h3>
+      <div class="mt-4 grid gap-4 md:grid-cols-3">
+        <div class="grid gap-1.5">
+          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Base</p>
+          <p class="m-0 text-xl font-semibold">{{ f.monto_base | currency: 'USD':'symbol':'1.2-2' }}</p>
+        </div>
+        <div class="grid gap-1.5">
+          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Impuestos</p>
+          <p class="m-0 text-xl font-semibold">{{ f.impuestos | currency: 'USD':'symbol':'1.2-2' }}</p>
+        </div>
+        <div class="grid gap-1.5">
+          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Reintentos</p>
+          <p class="m-0 text-xl font-semibold">{{ f.reintentos ?? 0 }}</p>
+        </div>
+      </div>
+      @if (f.desglose_cargos?.length) {
+        <ul class="mt-4 list-disc pl-4 text-text-secondary">
+          @for (c of f.desglose_cargos; track c.concepto) {
+            <li>{{ c.concepto }} — {{ c.monto | currency: 'USD':'symbol':'1.2-2' }}</li>
+          }
+        </ul>
+      }
+      <button
+        type="button"
+        class="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+        (click)="selected.set(null)"
+      >
+        Cerrar
+      </button>
+    </aside>
+  }
+</section>

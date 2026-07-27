@@ -6,7 +6,7 @@
 
 **Tests**: Incluidos por requerimiento explícito (`testing-expert` + `testing.md`). Cada tarea de servicio/repositorio tiene test asociado con markers `unit`/`repository`/`service`/`api` y patrón AAA (Arrange-Act-Assert).
 
-**Organization**: Tareas agrupadas por historia de usuario (CU-O01, O12, O02/O09, O08, recordatorios) para implementación y validación independiente.
+**Organization**: Tareas históricas (CU-O01, O12, O02/O09, O08) + **Phase 9 delta 2026-07-24** (CU-O14, O16, gate onboarding / logo cliente).
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -205,7 +205,7 @@
 
 **Purpose**: Performance, documentación y validación E2E.
 
-- [X] T068 [P] Añadir test de performance registro p95 ≤ 800 ms en `backend/apps/cuentas_clientes/tests/performance/test_registro_cuenta_p95.py` (marker: slow)
+- [X] T068 [P] ~~p95 registro O01~~ → **supersedido por T109** (`test_autorregistro_proveedor_p95.py`, O14)
 - [X] T069 [P] Añadir test de performance etapa onboarding p95 ≤ 500 ms en `backend/apps/cuentas_clientes/tests/performance/test_onboarding_etapa_p95.py` (marker: slow)
 - [X] T070 [P] Actualizar mapeo RF/RNF/CA→Task IDs en `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/traceability.md`
 - [X] T071 Ejecutar validación end-to-end según `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/quickstart.md`
@@ -326,3 +326,90 @@ Task: "T043–T046 [US3] guards y facade .spec.ts (marker unit, AAA)"
 | **Polish** | 5 tareas (T068–T072) |
 | **Tests emparejados repo/servicio** | 12 pares backend + 6 frontend unit |
 | **MVP sugerido** | Phase 1 + 2 + US1 (T001–T029) |
+
+---
+
+## Phase 9: Delta 2026-07-24 — Modelo Proveedor (CU-O14 / CU-O16)
+
+**Purpose**: Alinear implementación ya entregada con el flujo autorregistro → aprobación. Las fases 1–8 quedan como historial `[X]`; Phase 9 delta **completada** (2026-07-24).
+
+**Prerequisites**: `spec.md` Session 2026-07-24, contrato OpenAPI `1.1.0`, `especificacion-cambios-implementacion.md`.
+
+**Depends on**: Ninguna fase nueva previa; reutiliza repositorios/servicios existentes.
+
+### User Story Map (delta)
+
+| Story | Prioridad | CU | Goal |
+|-------|-----------|-----|------|
+| US6 | P1 🎯 | CU-O14 | Autorregistro → `Pendiente_Aprobación` |
+| US7 | P1 | CU-O16 | Aprobar/rechazar; gate onboarding |
+| US8 | P1 | O02/O12 | Logo en cliente; deprecar O12 Admin; 403 si no Activo |
+
+### Contract & permissions
+
+- [X] T073 Validar contrato OpenAPI 1.1.0 (autorregistro, solicitudes, aprobación) en `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/contracts/incorporacion-clientes.openapi.yaml`
+- [X] T074 [P] Extender `ClienteRepository` con `list_by_estado`, `update_estado` (Pendiente_Aprobación/Activo/Rechazado) en `backend/core/repositories/cuentas_clientes/cliente_repository.py`
+- [X] T075 [P] Test repository (AAA) para estados de solicitud en `backend/apps/cuentas_clientes/tests/repositories/test_cliente_repository_aprobacion.py`
+- [X] T076 Actualizar permisos: público/autorregistro O14; Admin solo O16; onboarding exige `estado=Activo` en `backend/apps/cuentas_clientes/onboarding_permissions.py`
+- [X] T077 [P] Test unit permisos delta en `backend/apps/cuentas_clientes/tests/unit/test_onboarding_permissions_proveedor.py`
+
+### US6 — Autorregistro (CU-O14)
+
+- [X] T078 [P] [US6] Test API `POST /api/v1/cuentas-clientes/autorregistro` en `backend/apps/cuentas_clientes/tests/api/test_autorregistro_proveedor_contract.py`
+- [X] T079 [P] [US6] Test service autorregistro en `backend/apps/cuentas_clientes/tests/services/test_autorregistro_proveedor_service.py`
+- [X] T080 [US6] Implementar `AutorregistroProveedorService` (`estado=Pendiente_Aprobación`, tipo Proveedor, campos actuales) en `backend/apps/cuentas_clientes/services/autorregistro_proveedor_service.py`
+- [X] T081 [US6] Vista + ruta `AutorregistroProveedorView` en `backend/apps/cuentas_clientes/views/onboarding_views.py` y `urls.py`
+- [X] T082 [US6] Página pública FE autorregistro en `frontend/src/app/modules/cuentas-clientes/incorporacion-clientes/pages/autorregistro/autorregistro.page.ts`
+- [X] T083 [US6] Regenerar tipos TS desde OpenAPI 1.1.0 en `frontend/src/app/modules/cuentas-clientes/incorporacion-clientes/models/incorporacion-cliente.contract.ts`
+- [X] T084 [US6] Gate CA-ONB-001 (nuevo) en `traceability.md`
+
+### US7 — Aprobación (CU-O16)
+
+- [X] T085 [P] [US7] Test API listar solicitudes + POST aprobación en `backend/apps/cuentas_clientes/tests/api/test_aprobacion_proveedor_contract.py`
+- [X] T086 [P] [US7] Test service aprobación/rechazo (motivo obligatorio al rechazar) en `backend/apps/cuentas_clientes/tests/services/test_aprobacion_proveedor_service.py`
+- [X] T087 [US7] Implementar `AprobacionProveedorService` (Activo+`estado_onboarding=Pendiente` / Rechazado; sin logo/plan) en `backend/apps/cuentas_clientes/services/aprobacion_proveedor_service.py`
+- [X] T088 [US7] Vistas listado + decisión en `onboarding_views.py` + rutas
+- [X] T089 [US7] Página Admin solicitudes en `frontend/.../pages/aprobacion-solicitudes/aprobacion-solicitudes.page.ts`
+- [X] T090 [US7] Gate CA-ONB-002 / CA-ONB-008 en `traceability.md`
+
+### US8 — Onboarding gate + logo cliente + deprecar O12
+
+- [X] T091 [P] [US8] Test onboarding 403 si `Pendiente_Aprobación`/`Rechazado` en `backend/apps/cuentas_clientes/tests/api/test_onboarding_requiere_activo_contract.py`
+- [X] T092 [US8] Extender `OnboardingService` para exigir `estado=Activo` y persistir `logo_url` en etapa `perfil_corporativo` en `backend/apps/cuentas_clientes/services/onboarding_service.py`
+- [X] T093 [US8] Marcar endpoints O01/O12 como deprecados en código (warnings/docs) y quitar logo Admin de UI configuración en `frontend/.../pages/configuracion/`
+- [X] T094 [US8] Mover UX de logo al wizard onboarding / perfil en páginas FE existentes
+- [X] T095 [US8] Actualizar `traceability.md` + `quickstart.md` con flujo O14→O16→O02
+- [X] T096 [US8] Actualizar rol semilla `Proveedor` en `autenticacion-y-rbac` / fixtures `backend/conftest.py` si falta
+
+**Checkpoint delta**: Autorregistro + aprobación + onboarding post-Activo operativos; O01/O12 no usados para Proveedor.
+
+**Orden sugerido**: T073–T077 → US6 → US7 → US8.
+
+---
+
+## Phase 10: Delta 2026-07-25 — Cierre gaps (O01/O12/anular/email/O08 UI)
+
+**Purpose**: Implementar decisiones cerradas Session 2026-07-25. Completada.
+
+- [X] T097 Hard-kill CU-O01: `RegistrarCuentaView` → 410; FE sin ruta `registro`; test API 410
+- [X] T098 Hard-kill CU-O12: `ConfigurarCuentaView` → 410; FE sin ruta `configuracion`; test API 410
+- [X] T099 Soft-anular: `anular_rechazo` → `Rechazado_Anulado`; `find_by_nit`/`find_by_admin_local` excluyen anulado; `POST .../anular-rechazo`
+- [X] T100 [P] Test service anular + liberar NIT; test API anular (happy + 409)
+- [X] T101 Email O16: `notify_aprobacion` / `notify_rechazo` cableados en `decidir`
+- [X] T102 [P] Tests notificación O16 + wiring desde `decidir`
+- [X] T103 FE: lista rechazadas + anular + reenviar O08 en `aprobacion-solicitudes`; O08 en wizard
+- [X] T104 Nav Admin → Solicitudes; OpenAPI 1.2.0; `data-model` / `quickstart` / `traceability` / `spec` Session 2026-07-25
+- [X] T105 Actualizar `especificacion-cambios-cuentas-clientes.md` + `especificacion-cambios-implementacion.md` §3
+
+### Phase 10b — Remediation `/speckit-analyze` (todas las severidades)
+
+- [X] T106 UI design-system: `templateUrl` + tokens Tailwind en autorregistro / solicitudes / wizard (`.html` + clases `bg-bg-*` / `accent-*`)
+- [X] T107 Pantalla post-O14 “Solicitud en revisión” (CA-ONB-011 Interaction Capability)
+- [X] T108 Eliminar orphans FE `pages/registro` y `pages/configuracion`; quitar métodos FE O01/O12
+- [X] T109 Reapuntar p95 a O14 (`test_autorregistro_proveedor_p95.py`); T068 histórico O01
+- [X] T110 Anotar Phases 3–4 / T061 como históricas supersedidas; restaurar `check-prerequisites.ps1`
+- [X] T111 UX design-system 100%: Toast host + Tabler icons + botones `min-h-11` (44px) + modal rechazo (sin `window.prompt`) en autorregistro / solicitudes / wizard; O14 público fuera de `sessionGuard`; Toast/Alert en `app.component`
+
+**Nota histórica:** Phases 3–4 (US1 O01, US2 O12) y T061 (`configuracion.page`) quedan como registro de entrega previa; el flujo canónico vigente es Phase 9–10. No reabrir O01/O12.
+
+**Checkpoint Phase 10**: checklist §10 del MD de cambios en ✅; plan Suscripciones sigue ⛔; hallazgos analyze C1/I1–I3/U1–U2/A1/G1/S1 remediados.

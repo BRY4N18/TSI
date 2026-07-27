@@ -1,6 +1,7 @@
 # Quickstart - Validación de Incorporación de Clientes
 
-Guía de validación end-to-end contract-first para CU-O01, O12, O02, O09 y O08.
+Guía de validación end-to-end contract-first para **CU-O14, O16, O02, O09 y O08**.
+CU-O01 y CU-O12 están retirados (HTTP 410).
 
 ## Prerequisitos
 
@@ -8,7 +9,7 @@ Guía de validación end-to-end contract-first para CU-O01, O12, O02, O09 y O08.
 - Spec y plan en `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/`
 - Módulo **autenticacion-y-rbac** operativo (login JWT + validación de sesión)
 - Topic `Fact_Onboarding_topic` registrado en `backend/config/settings.py` → `KAFKA_TOPICS`
-- Variables SMTP para O01/O08/recordatorios (opcional en dev; fallo debe loguearse sin revertir)
+- Variables SMTP para O14/O16/O08/recordatorios (opcional en dev; fallo debe loguearse sin revertir)
 
 ```bash
 # Variables SMTP (backend/.env — ver backend/env.example)
@@ -24,12 +25,16 @@ DEFAULT_FROM_EMAIL=Tráfico Seguro Integral <...>
 
 | Método | Ruta | UC | Rol |
 |--------|------|-----|-----|
-| POST | `/api/v1/cuentas-clientes` | O01 | Administrador |
-| PATCH | `/api/v1/cuentas-clientes/{idcliente}/configuracion` | O12 | Administrador |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | O12 | Administrador |
+| POST | `/api/v1/cuentas-clientes/autorregistro` | O14 | público |
+| GET | `/api/v1/cuentas-clientes/solicitudes` | O16 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/aprobacion` | O16 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/anular-rechazo` | O16 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | O02 | Cliente (admin local) |
 | GET | `/api/v1/cuentas-clientes/{idcliente}/onboarding/progreso` | O09 | Cliente (admin local) / Admin |
 | POST | `/api/v1/cuentas-clientes/{idcliente}/onboarding/etapas` | O02 | Cliente (admin local) / Admin |
 | POST | `/api/v1/cuentas-clientes/{idcliente}/invitacion/reenviar` | O08 | Administrador / Cliente |
+| POST | `/api/v1/cuentas-clientes` | O01 | **410 Gone** |
+| PATCH | `/api/v1/cuentas-clientes/{idcliente}/configuracion` | O12 | **410 Gone** |
 
 Convenciones (`api-standards.md`):
 
@@ -37,22 +42,20 @@ Convenciones (`api-standards.md`):
 - Envelope error: `{ "error", "detail", "code" }`
 - Header `Idempotency-Key` en POST/PATCH de escritura
 
-**Resultado esperado**: contrato alineado con spec clarificada (sesión 2026-07-09).
+**Resultado esperado**: contrato alineado con decisiones 2026-07-25 (O14→O16 canónico).
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio)
 
-### Escenario A — Registro de cuenta (O01)
+### Escenario A — Autorregistro (O14)
 
-1. Login como **Administrador** → JWT.
-2. `POST /api/v1/cuentas-clientes` con `Idempotency-Key` y cuerpo:
+1. `POST /api/v1/cuentas-clientes/autorregistro` (sin auth) con cuerpo:
 
 ```json
 {
-  "razon_social": "Seguros Demo SA",
-  "nombre": "Seguros Demo",
-  "tipo": "Aseguradora",
-  "nit_identificacion": "900123456-1",
-  "fecha_inicio_contrato": 1720500000000,
+  "razon_social": "Flota Demo SA",
+  "nombre": "Flota Demo",
+  "tipo": "Proveedor",
+  "nit_identificacion": "900999888-1",
   "admin_local": {
     "nombres": "Ana",
     "apellidos": "García",
@@ -61,82 +64,60 @@ Convenciones (`api-standards.md`):
 }
 ```
 
-3. Esperar **201** con `idcliente`, `estado: Activo`, `admin_local_id`.
-4. Verificar eventos Kafka: `Dim_Cliente_topic`, `Dim_Usuarios_topic`, `Dim_Credencial_topic`, `Dim_Usuario_Rol_topic`.
-5. Verificar email de invitación (o log SMTP si no configurado).
-6. Repetir mismo NIT → **409**.
+2. Esperar **201** con `estado: Pendiente_Aprobación`.
+3. Mismo NIT → **409**.
+4. Login con ese usuario: **permitido** (gate en módulos, no en auth).
 
-### Escenario B — Configuración (O12)
+### Escenario B — Aprobación / rechazo / anular (O16)
 
-1. Login como **Administrador**.
-2. `POST .../logo/upload-url` → subir PNG a Azure Blob.
-3. `PATCH .../configuracion` con `{ "plan_suscripcion": "Plan Básico", "logo_url": "..." }` → **200**, `estado_onboarding: Pendiente`.
-4. Verificar `Dim_Cliente_topic` con `plan_suscripcion` y `estado_onboarding`.
+1. Login **Administrador**.
+2. `GET .../solicitudes` → lista pendientes.
+3. `POST .../{id}/aprobacion` `{ "decision": "aprobar" }` → **200**, `Activo`, email.
+4. Alternativa rechazo: `{ "decision": "rechazar", "motivo": "..." }` → email.
+5. `POST .../{id}/anular-rechazo` → `Rechazado_Anulado`; nuevo O14 mismo NIT → **201**.
 
-### Escenario C — Onboarding con progreso (O02 + O09)
+### Escenario B2 — O01/O12 retirados
 
-1. Login como **Cliente** (admin local creado en O01) con credencial temporal → cambiar contraseña si aplica.
-2. `GET .../onboarding/progreso` → `etapa_actual: cambio_password`, `estado_onboarding: Pendiente` o `En progreso`.
-3. `POST .../onboarding/etapas` con `{ "etapa": "cambio_password" }` → **200**.
-4. `POST .../etapas` con `{ "etapa": "perfil_corporativo", "datos_etapa": { "razon_social": "..." } }` → **200**.
-5. `POST .../etapas` con `{ "etapa": "preferencias", "datos_etapa": { "canales_notificacion": "email", ... } }` → **200**; verificar `Dim_Preferencias_Cliente_topic` (primera fila).
-6. `GET .../progreso` → `estado_onboarding: Completado`, `etapa_actual: null`.
-7. Cerrar sesión, re-login → `GET progreso` confirma etapas sin reinicio (CA-ONB-005).
+1. `POST /api/v1/cuentas-clientes` → **410**.
+2. `PATCH .../configuracion` → **410**.
+
+### Escenario C — Onboarding (O02 + O09)
+
+1. Login Cliente admin local de cuenta **Activo**.
+2. `GET .../onboarding/progreso` → etapa actual.
+3. Completar `cambio_password` → `perfil_corporativo` (logo) → `preferencias`.
+4. Si cuenta `Pendiente_Aprobación` → **403**.
 
 ### Escenario D — Reenviar invitación (O08)
 
-1. Login como **Administrador**.
-2. `POST .../invitacion/reenviar` con `{ "id_usuario": <admin_local_id> }` → **200**.
-3. Verificar `Dim_Credencial_topic` con `estadocredencial: Cambio contraseña`.
-4. Login Cliente con nueva temp password → fuerza cambio.
+1. Admin desde UI Solicitudes o `POST .../invitacion/reenviar`.
+2. Cliente desde wizard onboarding.
 
 ### Escenario E — Recordatorios (RN-ONB-004)
 
-1. Fixture cuenta con `estado_onboarding: En progreso` y `fecha_inicio_contrato` > 30 días atrás.
-2. Ejecutar: `python manage.py send_onboarding_reminders`
-3. Verificar un correo al gmail del admin local (máximo uno por semana por cuenta).
-4. Con `estado_onboarding: Completado` → sin envío.
+1. Fixture `Activo` con onboarding incompleto >30 días post-aprobación.
+2. `python manage.py send_onboarding_reminders`.
 
 ### Validaciones transversales
 
-- Cliente accediendo a `idcliente` donde no es `admin_local_id` → **403**.
-- Operador sin rol Administrador en O01/O12 → **403**.
-- Etapa `preferencias` antes de `perfil_corporativo` → **400**.
-- `etapa` fuera de catálogo → **400**.
+- Cliente en `idcliente` ajeno → **403**.
+- Etapa fuera de orden / catálogo → **400**.
 
 ## 3) Validar consumo frontend (Angular)
 
-### Servicios (`typescript-expert`)
+| Ruta | Actor |
+|------|-------|
+| `/cuentas-clientes/incorporacion-clientes/autorregistro` | Público |
+| `/cuentas-clientes/incorporacion-clientes/solicitudes` | Administrador |
+| `/cuentas-clientes/incorporacion-clientes/:id/onboarding` | Admin local Activo |
 
-- `models/incorporacion-cliente.contract.ts` — tipos alineados al OpenAPI.
-- `IncorporacionClienteApiService` — un método por `operationId`.
-- `OnboardingFacadeService` — orquesta wizard según `GET progreso`.
-
-### Guards (`angular-architect`)
-
-| Guard | Comportamiento esperado |
-|-------|-------------------------|
-| `AdministradorGuard` | Solo Admin en `/registro` y `/configuracion` |
-| `AdminLocalOnboardingGuard` | Cliente solo si `user.id === cuenta.admin_local_id` |
-| `OnboardingPendienteGuard` | Redirige a wizard si onboarding incompleto |
-| `OnboardingCompletadoGuard` | Impide re-entrar al wizard si `Completado` |
-
-### Escenarios UI
-
-1. Admin registra cliente → formulario O01 → toast 201 → navega a configuración.
-2. Admin configura plan/logo → estado Pendiente visible.
-3. Cliente completa wizard 3 pasos → pantalla de éxito al `Completado`.
-4. Admin reenvía invitación desde panel de cuenta.
+Guards: `sessionGuard` + `roleGuard` (solicitudes); `adminLocalOnboardingGuard` + `onboardingPendienteGuard` (wizard).
 
 ## 4) Pruebas sugeridas
 
 ```bash
 cd backend
-pytest apps/cuentas_clientes/tests/api/test_registro_cuenta_contract.py -v -m api
-pytest apps/cuentas_clientes/tests/api/test_configuracion_cuenta_contract.py -v -m api
-pytest apps/cuentas_clientes/tests/api/test_onboarding_contract.py -v -m api
-pytest apps/cuentas_clientes/tests/api/test_reenviar_invitacion_contract.py -v -m api
-pytest apps/cuentas_clientes/tests/services/test_onboarding_service.py -v -m service
+pytest apps/cuentas_clientes/tests -q
 ```
 
 ```bash
@@ -146,28 +127,24 @@ npm test -- --include='**/incorporacion-clientes/**/*.spec.ts'
 
 ## 5) Criterios de salida
 
-- [ ] Contrato OpenAPI aprobado y alineado con spec clarificada.
-- [ ] CU-O01: registro con `estado=Activo`, admin local, credencial temp, email.
-- [ ] CU-O12: configuración plan/logo, `estado_onboarding=Pendiente`.
-- [ ] CU-O02/O09: etapas canónicas, progreso reanudable, `Dim_Preferencias_Cliente` en etapa preferencias.
-- [ ] CU-O08: reenvío invitación con `estadocredencial=Cambio contraseña`.
-- [ ] RN-ONB-004: job semanal documentado y probable en dev.
-- [ ] Patrón Vista→Servicio→Repositorio y Kafka-only-write verificados.
-- [ ] Guards Angular restringen Admin, admin local y estado onboarding.
+- [x] OpenAPI alineado (1.2.0) con Session 2026-07-25.
+- [x] CU-O14 → Pendiente_Aprobación.
+- [x] CU-O16 aprobar/rechazar/anular + email.
+- [x] CU-O01/O12 → 410.
+- [x] CU-O02/O09 solo Activo; logo cliente.
+- [x] CU-O08 en solicitudes + wizard.
+- [x] RN-ONB-004 job documentado.
 
 ## 6) Cron recordatorios (producción)
 
 ```bash
-# Ejemplo: lunes 08:00 UTC
 0 8 * * 1 cd /app/backend && python manage.py send_onboarding_reminders
 ```
 
 ## 7) Post-validación: gestion-cuentas
 
-Tras onboarding `Completado`, validar que **gestion-cuentas** opera sobre la misma cuenta:
+Tras onboarding `Completado`:
 
 ```bash
 # Login admin local → GET /api/v1/cuentas-clientes/{idcliente}/perfil → 200
 ```
-
-Si `CuentaUsuarioRepository` aún usa `Dim_Usuario_Cliente`, ejecutar refactor de alineación documentado en `plan.md` § Complexity Tracking.

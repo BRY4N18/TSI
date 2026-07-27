@@ -1,27 +1,26 @@
-"""Lectura de Fact_Suscripcion — fuente de verdad del `idplan` vigente del cliente.
+"""Thin wrapper — delega al repositorio canónico de suscripciones (Title Case).
 
-research.md Decision 5: no usar `Dim_Cliente.plan_suscripcion` (STRING de
-conveniencia) para resolver el `idplan` — la suscripción activa en
-`billing-and-auto-renewal` es la fuente correcta. Repositorio de solo lectura:
-este módulo no escribe en `Fact_Suscripcion`.
+Deprecated path: prefer `core.repositories.suscripciones.suscripcion_repository`.
 """
 
 from __future__ import annotations
 
-from core.pinot.client import PinotClient
+from core.repositories.suscripciones.suscripcion_repository import (
+    SuscripcionRepository as CanonicalSuscripcionRepository,
+)
 
 
 class SuscripcionRepository:
-    def __init__(self, pinot: PinotClient | None = None):
-        self.pinot = pinot or PinotClient()
+    """Solo-lectura adapter used by soporte SLA (find_idplan_activo)."""
+
+    def __init__(self, pinot=None, kafka=None):
+        self._inner = CanonicalSuscripcionRepository(pinot=pinot, kafka=kafka)
+        self.pinot = self._inner.pinot
 
     def find_idplan_activo(self, idcliente: int) -> int | None:
-        rows = self.pinot.query(
-            "SELECT * FROM Fact_Suscripcion WHERE idcliente = %(idcliente)s",
-            {"idcliente": idcliente},
-        )
-        activas = [r for r in rows if r.get("activo") and r.get("estado") == "activa"]
-        if not activas:
+        sus = self._inner.find_activa_by_cliente(idcliente)
+        if not sus:
             return None
-        activas.sort(key=lambda r: r.get("fecha_inicio", 0), reverse=True)
-        return activas[0]["idplan"]
+        if sus.get("estado") != "Activa":
+            return None
+        return sus.get("idplan")

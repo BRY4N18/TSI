@@ -6,7 +6,7 @@ import { PasswordResetPage } from './modules/cuentas-clientes/auth/pages/passwor
 import { AppShellComponent } from './shared/layout/app-shell.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'cuentas-clientes/auth/login', pathMatch: 'full' },
+  { path: '', redirectTo: 'ventas-crm/planes', pathMatch: 'full' },
   {
     path: 'cuentas-clientes/auth/login',
     component: LoginPage,
@@ -14,6 +14,27 @@ export const routes: Routes = [
   {
     path: 'cuentas-clientes/auth/password-reset',
     component: PasswordResetPage,
+  },
+  {
+    path: 'cuentas-clientes/incorporacion-clientes/autorregistro',
+    loadComponent: () =>
+      import(
+        './modules/cuentas-clientes/incorporacion-clientes/pages/autorregistro/autorregistro.page'
+      ).then((m) => m.AutorregistroPage),
+  },
+  {
+    path: 'ventas-crm/planes',
+    loadComponent: () =>
+      import('./modules/ventas-crm/pages/catalogo-planes/catalogo-planes.page').then(
+        (m) => m.CatalogoPlanesPage,
+      ),
+  },
+  {
+    path: 'ventas-crm/registro',
+    loadComponent: () =>
+      import('./modules/ventas-crm/pages/registro-publico/registro-publico.page').then(
+        (m) => m.RegistroPublicoPage,
+      ),
   },
   {
     path: '',
@@ -69,6 +90,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'ventas-crm',
+        loadChildren: () =>
+          import('./modules/ventas-crm/ventas-crm.routes').then((m) => m.VENTAS_CRM_ROUTES),
+      },
+      {
         path: 'red-operativa/alta-unidades',
         loadChildren: () =>
           import('./modules/red-operativa/alta-unidades/alta-unidades.routes').then(
@@ -82,7 +108,14 @@ export const routes: Routes = [
             './modules/red-operativa/incorporacion-regional/incorporacion-regional.routes'
           ).then((m) => m.INCORPORACION_REGIONAL_ROUTES),
       },
+      {
+        path: 'suscripciones',
+        loadChildren: () =>
+          import('./modules/suscripciones/suscripciones.routes').then(
+            (m) => m.SUSCRIPCIONES_ROUTES,
+          ),
+      },
     ],
   },
-  { path: '**', redirectTo: 'cuentas-clientes/auth/login' },
+  { path: '**', redirectTo: 'ventas-crm/planes' },
 ];

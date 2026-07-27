@@ -74,6 +74,8 @@ class ConsultaCandidatasService:
         candidatas = self.unidades.list_candidatas_por_condado(
             idcondado, idcondados_extra=vecinos if incluir_vecinos else None
         )
+        # CA-DES-014: hook plan/severidad antes del scoring (hoy no-op / fail-open).
+        candidatas = self.filtrar_por_plan_severidad(candidatas, accidente)
         rechazadas = self._unidades_rechazaron(idaccidente)
         excluir = set(excluir_unidades or set()) | rechazadas
         params = self.parametros.get()
@@ -117,6 +119,20 @@ class ConsultaCandidatasService:
             )
         resultados.sort(key=lambda r: r["puntuacion"], reverse=True)
         return resultados
+
+    def filtrar_por_plan_severidad(
+        self,
+        candidatas: list[dict[str, Any]],
+        accidente: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Hook CA-DES-014 — elegibilidad/prioridad por plan del proveedor.
+
+        TODO(Suscripciones-Facturación): cuando exista `Dim_Plan`, filtrar unidades
+        cuyo proveedor (`idcliente`) tenga un plan que permita la `idseveridad` del
+        accidente y, opcionalmente, priorizar planes superiores en el ranking.
+        Hoy es no-op (fail-open): no excluye candidatas ni altera scores.
+        """
+        return candidatas
 
     @staticmethod
     def _disponibilidad_reciente_score(desde_ms: int | None) -> float:

@@ -20,35 +20,34 @@ describe('IncorporacionClienteApiService', () => {
     http.verify();
   });
 
-  it('registrarCuenta_when_ok_returns_envelope', () => {
+  it('autorregistrar_when_ok_returns_envelope', () => {
     // Arrange
     const payload = {
       razon_social: 'Acme SA',
       nombre: 'Acme',
-      tipo: 'Aseguradora' as const,
+      tipo: 'Proveedor' as const,
       nit_identificacion: '900123456',
-      fecha_inicio_contrato: 1_700_000_000_000,
       admin_local: { nombres: 'Ana', apellidos: 'López', gmail: 'ana@acme.com' },
     };
     const mock = {
       data: {
         idcliente: 42,
-        estado: 'Activo' as const,
+        estado: 'Pendiente_Aprobación' as const,
         admin_local_id: 7,
         admin_local_gmail: 'ana@acme.com',
-        message: 'Cuenta creada',
+        message: 'Solicitud en revisión',
       },
       meta: { pagination: null },
     };
 
     // Act
-    service.registrarCuenta(payload).subscribe((res) => {
+    service.autorregistrar(payload).subscribe((res) => {
       // Assert
       expect(res.data.idcliente).toBe(42);
-      expect(res.data.estado).toBe('Activo');
+      expect(res.data.estado).toBe('Pendiente_Aprobación');
     });
 
-    const req = http.expectOne('/api/v1/cuentas-clientes');
+    const req = http.expectOne('/api/v1/cuentas-clientes/autorregistro');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
     req.flush(mock);

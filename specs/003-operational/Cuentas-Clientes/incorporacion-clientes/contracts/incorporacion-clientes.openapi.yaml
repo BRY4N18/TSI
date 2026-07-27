@@ -1,27 +1,28 @@
 openapi: 3.0.3
 info:
   title: TSI Incorporación de Clientes API
-  version: 1.0.0
+  version: 1.2.0
   description: >
-    Contrato contract-first para CU-O01 (registro), CU-O12 (configuración),
-    CU-O02/O09 (onboarding digital), CU-O08 (reenviar invitación).
-    Sigue api-standards.md del proyecto.
+    Contrato (2026-07-25): CU-O14 autorregistro, CU-O16 aprobar/rechazar/anular,
+    CU-O02/O09 onboarding (logo cliente), CU-O08 reenviar invitación.
+    CU-O01 y CU-O12 retirados (HTTP 410). Plan → Suscripciones.
 servers:
   - url: /api/v1
 tags:
-  - name: Registro
-  - name: Configuracion
+  - name: Autorregistro
+  - name: Aprobacion
   - name: Onboarding
   - name: Invitacion
   - name: Logo
+  - name: Retirado
+    description: CU-O01/O12 — responden 410 Gone
 paths:
-  /cuentas-clientes:
+  /cuentas-clientes/autorregistro:
     post:
-      tags: [Registro]
-      summary: Registrar cuenta de nuevo cliente y admin local (CU-O01)
-      operationId: registrarCuentaCliente
-      security:
-        - bearerAuth: []
+      tags: [Autorregistro]
+      summary: Autorregistro (CU-O14) — estado Pendiente_Aprobación
+      operationId: autorregistrarProveedor
+      security: []
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -29,28 +30,50 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegistroCuentaRequest'
+              $ref: '#/components/schemas/AutorregistroProveedorRequest'
       responses:
         '201':
-          description: Cuenta creada
+          description: Solicitud creada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegistroCuentaResponse'
+                $ref: '#/components/schemas/AutorregistroProveedorResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes/solicitudes:
+    get:
+      tags: [Aprobacion]
+      summary: Listar solicitudes Pendiente_Aprobación o Rechazado (CU-O16)
+      operationId: listarSolicitudesProveedor
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [Pendiente_Aprobación, Rechazado]
+            default: Pendiente_Aprobación
+      responses:
+        '200':
+          description: Lista de solicitudes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudesListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
 
-  /cuentas-clientes/{idcliente}/configuracion:
-    patch:
-      tags: [Configuracion]
-      summary: Configurar plan y logo; establece estado_onboarding Pendiente (CU-O12)
-      operationId: configurarCuentaCliente
+  /cuentas-clientes/{idcliente}/aprobacion:
+    post:
+      tags: [Aprobacion]
+      summary: Aprobar o rechazar solicitud (CU-O16)
+      operationId: decidirSolicitudProveedor
       security:
         - bearerAuth: []
       parameters:
@@ -61,14 +84,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfiguracionCuentaRequest'
+              $ref: '#/components/schemas/AprobacionRequest'
       responses:
         '200':
-          description: Cuenta configurada
+          description: Decisión aplicada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConfiguracionCuentaResponse'
+                $ref: '#/components/schemas/AprobacionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -80,10 +103,62 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /cuentas-clientes/{idcliente}/anular-rechazo:
+    post:
+      tags: [Aprobacion]
+      summary: Soft-anular Rechazado → Rechazado_Anulado (libera NIT para nuevo O14)
+      operationId: anularRechazoProveedor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Rechazo anulado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AprobacionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cuentas-clientes:
+    post:
+      tags: [Retirado]
+      deprecated: true
+      summary: "[RETIRADO] CU-O01 — responde 410 Gone"
+      operationId: registrarCuentaCliente
+      security:
+        - bearerAuth: []
+      responses:
+        '410':
+          description: Endpoint retirado — usar autorregistro O14 + aprobación O16
+
+  /cuentas-clientes/{idcliente}/configuracion:
+    patch:
+      tags: [Retirado]
+      deprecated: true
+      summary: "[RETIRADO] CU-O12 — responde 410 Gone"
+      operationId: configurarCuentaCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdCliente'
+      responses:
+        '410':
+          description: Endpoint retirado — logo cliente; plan en Suscripciones
+
   /cuentas-clientes/{idcliente}/logo/upload-url:
     post:
       tags: [Logo]
-      summary: URL firmada para subir logo durante configuración (CU-O12)
+      summary: URL firmada para subir logo (cliente en onboarding O02 / perfil — no Admin)
       operationId: createOnboardingLogoUploadUrl
       security:
         - bearerAuth: []
@@ -245,7 +320,11 @@ components:
 
     TipoCliente:
       type: string
-      enum: [Aseguradora, Municipio, Smart City]
+      enum: [Proveedor, Aseguradora, Municipio, Smart City]
+
+    EstadoCuenta:
+      type: string
+      enum: [Pendiente_Aprobación, Activo, Rechazado, Rechazado_Anulado, Dado de baja]
 
     EstadoOnboarding:
       type: string
@@ -268,6 +347,122 @@ components:
         gmail:
           type: string
           format: email
+
+    AutorregistroProveedorRequest:
+      type: object
+      required:
+        - razon_social
+        - nombre
+        - tipo
+        - nit_identificacion
+        - admin_local
+      properties:
+        razon_social:
+          type: string
+          minLength: 2
+        nombre:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoCliente'
+          description: Canónico Proveedor para este flujo
+        nit_identificacion:
+          type: string
+        fecha_inicio_contrato:
+          type: integer
+          format: int64
+          nullable: true
+          description: Epoch ms opcional en solicitud
+        admin_local:
+          $ref: '#/components/schemas/AdminLocalInput'
+
+    AutorregistroProveedorData:
+      type: object
+      required: [idcliente, estado, admin_local_id, admin_local_gmail]
+      properties:
+        idcliente:
+          type: integer
+        estado:
+          type: string
+          enum: [Pendiente_Aprobación]
+        admin_local_id:
+          type: integer
+        admin_local_gmail:
+          type: string
+          format: email
+        message:
+          type: string
+          example: Solicitud en revisión
+
+    AutorregistroProveedorResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/AutorregistroProveedorData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    SolicitudItem:
+      type: object
+      required: [idcliente, razon_social, nit_identificacion, estado, tipo]
+      properties:
+        idcliente:
+          type: integer
+        razon_social:
+          type: string
+        nit_identificacion:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoCliente'
+        estado:
+          type: string
+          enum: [Pendiente_Aprobación]
+
+    SolicitudesListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolicitudItem'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    AprobacionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [aprobar, rechazar]
+        motivo:
+          type: string
+          description: Requerido si decision=rechazar
+
+    AprobacionData:
+      type: object
+      required: [idcliente, estado]
+      properties:
+        idcliente:
+          type: integer
+        estado:
+          type: string
+          enum: [Activo, Rechazado, Rechazado_Anulado]
+        estado_onboarding:
+          allOf:
+            - $ref: '#/components/schemas/EstadoOnboarding'
+          nullable: true
+          description: Pendiente si aprobado; null si rechazado
+
+    AprobacionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/AprobacionData'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
 
     RegistroCuentaRequest:
       type: object

@@ -1,0 +1,52 @@
+<section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
+  <header class="grid gap-1.5">
+    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Catálogo</p>
+    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Planes activos</h2>
+    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+      Precios y límites vigentes. La contratación se hace desde Mi suscripción o Cambio de plan.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="grid gap-4 md:grid-cols-3" aria-busy="true">
+      @for (_ of [1, 2, 3]; track $index) {
+        <article class="grid gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5">
+          <div class="h-4 w-1/2 animate-pulse rounded-lg bg-border-default"></div>
+          <div class="h-8 w-1/3 animate-pulse rounded-lg bg-border-default"></div>
+          <div class="h-4 w-4/5 animate-pulse rounded-lg bg-border-default"></div>
+        </article>
+      }
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      role="alert"
+    >
+      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        (click)="cargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    <div class="grid gap-4 md:grid-cols-3">
+      @for (p of planes(); track p.idplan) {
+        <article class="grid content-start gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="m-0 text-lg font-semibold">{{ p.nombre }}</h3>
+            <span [class]="infoBadge()">{{ p.nivel }}</span>
+          </div>
+          <p class="m-0 text-[1.75rem] font-bold">
+            {{ p.precio | currency: 'USD':'symbol':'1.2-2' }}
+            <span class="text-sm font-normal text-text-secondary">/ mes</span>
+          </p>
+          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Límites</p>
+          <p class="m-0 text-sm text-text-secondary">{{ limitesTexto(p.limites) }}</p>
+        </article>
+      }
+    </div>
+  }
+</section>

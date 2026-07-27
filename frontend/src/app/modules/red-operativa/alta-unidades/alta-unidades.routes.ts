@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
 
-import { administradorRedOperativaGuard } from './guards/administrador-red-operativa.guard';
-import { operadorDisponibilidadGuard } from './guards/operador-disponibilidad.guard';
+import { proveedorFlotaGuard } from './guards/proveedor-flota.guard';
 import { BajaPage } from './pages/baja/baja.page';
 import { CatalogoPage } from './pages/catalogo/catalogo.page';
-import { DisponibilidadExternaPage } from './pages/disponibilidad-externa/disponibilidad-externa.page';
 import { EdicionPage } from './pages/edicion/edicion.page';
 
 export const ALTA_UNIDADES_ROUTES: Routes = [
@@ -14,22 +12,17 @@ export const ALTA_UNIDADES_ROUTES: Routes = [
       {
         path: 'catalogo',
         component: CatalogoPage,
-        canActivate: [administradorRedOperativaGuard],
+        canActivate: [proveedorFlotaGuard],
       },
       {
         path: 'editar/:idunidademergencia',
         component: EdicionPage,
-        canActivate: [administradorRedOperativaGuard],
+        canActivate: [proveedorFlotaGuard],
       },
       {
         path: 'baja/:idunidademergencia',
         component: BajaPage,
-        canActivate: [administradorRedOperativaGuard],
-      },
-      {
-        path: 'disponibilidad-externa',
-        component: DisponibilidadExternaPage,
-        canActivate: [operadorDisponibilidadGuard],
+        canActivate: [proveedorFlotaGuard],
       },
       { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
     ],

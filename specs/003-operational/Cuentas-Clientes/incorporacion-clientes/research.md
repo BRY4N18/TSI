@@ -95,7 +95,17 @@
 
 ## Decision 9: Registro O01 transaccional lógico
 
-- Decision: `RegistroCuentaService.registrar()` orquesta en orden: validar NIT/gmail únicos → crear `Dim_Usuarios` → `Dim_Credencial` (temp password, `estadocredencial='Cambio contraseña'`) → rol Cliente en `Dim_Usuario_Rol` → crear `Dim_Cliente` con `admin_local_id`, `estado='Activo'` → email invitación.
-- Rationale: RF-ONB-001; atomicidad lógica vía servicio (eventos Kafka secuenciales; compensación manual en logs si fallo parcial).
+- Decision: *(Histórico Phase 3)* `RegistroCuentaService` creaba `Activo` inmediato. **Superada 2026-07-25:** O01 retirado (410); alta vía O14→O16.
+
+## Decision 10: Cierre gaps 2026-07-25
+
+- Decision:
+  - Camino único O14→O16 para todos los tipos; O01/O12 → HTTP 410.
+  - Soft-anular `Rechazado` → `Rechazado_Anulado`; NIT reutilizable en nuevo O14.
+  - Email SMTP en aprobar/rechazar; login permitido en pendiente; gate por módulo.
+  - UI O08 en solicitudes Admin + wizard (configuracion sin ruta).
+- Rationale: Decisiones producto Session 2026-07-25; elimina pantallas fantasma Admin.
 - Alternatives considered:
-  - Saga distribuida (rechazado: complejidad excesiva para MVP individual).
+  - Mantener O01 legado no-Proveedor (rechazado).
+  - Bloquear login hasta Activo (rechazado: gate por módulo).
+  - Reintento NIT self-service tras Rechazado (rechazado: soft-anular Admin).

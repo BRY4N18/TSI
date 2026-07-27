@@ -357,11 +357,38 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Dim_Plan": [
         {
             "idplan": 1,
-            "nombre": "Premium",
-            "nivel": "premium",
-            "limites": "{}",
+            "nombre": "Básico",
+            "nivel": "Básico",
+            "limites": '{"unidades_max": 5, "usuarios_max": 3, "api_calls_mes": 1000}',
             "activo": True,
-            "precio": 999.0,
+            "precio": 49.0,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idplan": 2,
+            "nombre": "Profesional",
+            "nivel": "Profesional",
+            "limites": '{"unidades_max": 25, "usuarios_max": 10, "api_calls_mes": 10000}',
+            "activo": True,
+            "precio": 149.0,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idplan": 3,
+            "nombre": "Empresarial",
+            "nivel": "Empresarial",
+            "limites": '{"unidades_max": 100, "usuarios_max": 50, "api_calls_mes": 100000}',
+            "activo": True,
+            "precio": 399.0,
+            "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "idplan": 4,
+            "nombre": "Legacy Off",
+            "nivel": "Básico",
+            "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 10}',
+            "activo": False,
+            "precio": 9.0,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
         },
     ],
@@ -370,15 +397,20 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "id_suscripcion": 1,
             "idcliente": 1,
             "idplan": 1,
-            "estado": "activa",
+            "estado": "Activa",
             "activo": True,
             "renovacionautomatica": True,
             "motivocancelacion": None,
-            "precio": 999.0,
+            "fechacancelacion": None,
+            "precio": 49.0,
             "fecha_inicio": 1704067200000,
+            "fecha_fin": 1735689600000,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
         },
     ],
+    "Dim_MetodoPago": [],
+    "Fact_Factura": [],
+    "Fact_Solicitud_Cambio_Plan": [],
     "Dim_Estado_Soporte": [
         {"id_estado_soporte": 1, "nombre": "Abierto", "descripcion": "Ticket registrado", "activo": True},
         {"id_estado_soporte": 2, "nombre": "Pendiente_de_clasificacion", "descripcion": "Sin clasificar", "activo": True},
@@ -448,6 +480,31 @@ _TEST_PASSWORD_HASH = bcrypt.hashpw(b"password123", bcrypt.gensalt(rounds=4)).de
 for _cred in _INITIAL_PINOT_STORE["Dim_Credencial"]:
     _cred["contrasena"] = _TEST_PASSWORD_HASH
 
+# Commercial CRM seed data.
+_INITIAL_PINOT_STORE["Dim_Usuarios"].extend([
+    {"idusuario": 20, "nombres": "Gerente", "apellidos": "Ventas", "gmail": "gerente.ventas@tsi.com", "activo": True},
+    {"idusuario": 21, "nombres": "Gerente", "apellidos": "Público", "gmail": "gerente.publico@tsi.com", "activo": True},
+])
+_INITIAL_PINOT_STORE["Dim_Credencial"].extend([
+    {"idcredencial": 20, "idusuario": 20, "contrasena": _TEST_PASSWORD_HASH, "estadocredencial": "Activo"},
+    {"idcredencial": 21, "idusuario": 21, "contrasena": _TEST_PASSWORD_HASH, "estadocredencial": "Activo"},
+])
+_INITIAL_PINOT_STORE["Dim_Rol"].extend([
+    {"idrol": 7, "rol": "GerenteVentas", "activo": True},
+    {"idrol": 8, "rol": "GerenteCuentasPublicas", "activo": True},
+    {"idrol": 9, "rol": "Sistema", "activo": True},
+])
+_INITIAL_PINOT_STORE["Dim_Usuario_Rol"].extend([
+    {"idusuario": 20, "idrol": 7}, {"idusuario": 21, "idrol": 8},
+])
+_INITIAL_PINOT_STORE.update({
+    "Dim_Prospecto": [],
+    "Fact_Asignacion": [],
+    "Fact_Pipeline": [],
+    "Fact_Interaccion_Demo": [],
+    "Fact_NotificacionVentas": [],
+})
+
 PINOT_STORE: dict[str, list[dict]] = {}
 
 
@@ -468,6 +525,109 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     sql_upper = sql.upper().replace("\n", " ").strip()
 
     # --- MAX id queries (must precede generic id lookups) ---
+    if "MAX(IDPROSPECTO)" in sql_upper:
+        rows = PINOT_STORE["Dim_Prospecto"]; return [{"max_id": max((r["idprospecto"] for r in rows), default=0)}]
+    if "MAX(IDASIGNACION)" in sql_upper:
+        rows = PINOT_STORE["Fact_Asignacion"]; return [{"max_id": max((r["idasignacion"] for r in rows), default=0)}]
+    if "MAX(ID_TRANSICION)" in sql_upper:
+        rows = PINOT_STORE["Fact_Pipeline"]; return [{"max_id": max((r["id_transicion"] for r in rows), default=0)}]
+    if "MAX(IDINTERACCION)" in sql_upper:
+        rows = PINOT_STORE["Fact_Interaccion_Demo"]
+        return [{"max_id": max((r["idinteraccion"] for r in rows), default=0)}]
+    if "MAX(IDNOTIFICACION)" in sql_upper:
+        rows = PINOT_STORE["Fact_NotificacionVentas"]
+        return [{"max_id": max((r["idnotificacion"] for r in rows), default=0)}]
+    # --- Dim_Plan (public catalog read — RF-CPP-000 / billing) ---
+    if "FROM DIM_PLAN" in sql_upper:
+        if "MAX(IDPLAN)" in sql_upper:
+            rows = PINOT_STORE["Dim_Plan"]
+            return [{"max_id": max((r["idplan"] for r in rows), default=0)}]
+        rows = list(PINOT_STORE["Dim_Plan"])
+        if "IDPLAN =" in sql_upper:
+            rows = [r for r in rows if r.get("idplan") == params.get("idplan")]
+        if "ACTIVO = TRUE" in sql_upper or "ACTIVO = %(ACTIVO)S" in sql_upper:
+            want = params.get("activo", True)
+            rows = [r for r in rows if r.get("activo") is want]
+        elif "ACTIVO =" in sql_upper:
+            want = params.get("activo", True)
+            rows = [r for r in rows if r.get("activo") is want]
+        return rows
+    # --- Billing tables ---
+    if "MAX(IDMETODOPAGO)" in sql_upper:
+        rows = PINOT_STORE["Dim_MetodoPago"]
+        return [{"max_id": max((r["idmetodopago"] for r in rows), default=0)}]
+    if "MAX(ID_SUSCRIPCION)" in sql_upper:
+        rows = PINOT_STORE["Fact_Suscripcion"]
+        return [{"max_id": max((r["id_suscripcion"] for r in rows), default=0)}]
+    if "MAX(IDSOLICITUD)" in sql_upper:
+        rows = PINOT_STORE["Fact_Solicitud_Cambio_Plan"]
+        return [{"max_id": max((r["idsolicitud"] for r in rows), default=0)}]
+    if "FROM DIM_METODOPAGO" in sql_upper:
+        rows = list(PINOT_STORE["Dim_MetodoPago"])
+        if "IDMETODOPAGO =" in sql_upper:
+            rows = [r for r in rows if r.get("idmetodopago") == params.get("id")]
+        return rows
+    if "FROM FACT_FACTURA" in sql_upper:
+        rows = list(PINOT_STORE["Fact_Factura"])
+        if "ID_FACTURA =" in sql_upper:
+            rows = [r for r in rows if r.get("id_factura") == params.get("id")]
+        return rows
+    if "FROM FACT_SOLICITUD_CAMBIO_PLAN" in sql_upper:
+        rows = list(PINOT_STORE["Fact_Solicitud_Cambio_Plan"])
+        if "IDSOLICITUD =" in sql_upper:
+            rows = [r for r in rows if r.get("idsolicitud") == params.get("id")]
+        return rows
+    # --- Commercial CRM tables ---
+    if "FROM DIM_PROSPECTO" in sql_upper:
+        rows = list(PINOT_STORE["Dim_Prospecto"])
+        if "GMAIL =" in sql_upper: rows = [r for r in rows if r.get("gmail") == params.get("gmail")]
+        if "IDPROSPECTO =" in sql_upper: rows = [r for r in rows if r.get("idprospecto") == params.get("id")]
+        if "IDUSUARIO =" in sql_upper: rows = [r for r in rows if r.get("idusuario") == params.get("owner_id", params.get("id"))]
+        if "ACTIVO = TRUE" in sql_upper: rows = [r for r in rows if r.get("activo") is True]
+        if "ETAPA_ACTUAL =" in sql_upper: rows = [r for r in rows if r.get("etapa_actual") == params.get("etapa")]
+        if "IDPROSPECTO >" in sql_upper: rows = [r for r in rows if r.get("idprospecto", 0) > int(params.get("cursor", 0))]
+        if "COUNT(*)" in sql_upper: return [{"count": len(rows)}]
+        return rows[:params.get("limit", len(rows))]
+    if "FROM FACT_ASIGNACION" in sql_upper:
+        return [r for r in PINOT_STORE["Fact_Asignacion"] if r.get("idprospecto") == params.get("id")]
+    if "FROM FACT_PIPELINE" in sql_upper:
+        return [r for r in PINOT_STORE["Fact_Pipeline"] if r.get("id_prospecto") == params.get("id")]
+    if "FROM FACT_INTERACCION_DEMO" in sql_upper:
+        rows = list(PINOT_STORE["Fact_Interaccion_Demo"])
+        if "IDPROSPECTO =" in sql_upper:
+            rows = [r for r in rows if r.get("idprospecto") == params.get("id")]
+        if "TIPO_EVENTO =" in sql_upper:
+            rows = [r for r in rows if r.get("tipo_evento") == params.get("tipo")]
+        if "TIMESTAMP_EVENTO >=" in sql_upper:
+            rows = [r for r in rows if int(r.get("timestamp_evento") or 0) >= int(params.get("since", 0))]
+        return rows
+    if "FROM FACT_NOTIFICACIONVENTAS" in sql_upper:
+        rows = list(PINOT_STORE["Fact_NotificacionVentas"])
+        if "ID_PROSPECTO =" in sql_upper and "REGLADISPARADA" in sql_upper:
+            rows = [
+                r for r in rows
+                if r.get("id_prospecto") == params.get("idp")
+                and r.get("regladisparada") == params.get("regla")
+                and int(params.get("start", 0)) <= int(r.get("fechahoranotificacion") or 0) < int(params.get("end", 0))
+            ]
+            if "COUNT(*)" in sql_upper:
+                return [{"count": len(rows)}]
+        if "IDUSUARIOGERENTENOTIFICADO =" in sql_upper:
+            rows = [r for r in rows if r.get("idusuariogerentenotificado") == params.get("uid")]
+        if "REGLADISPARADA =" in sql_upper and "ID_PROSPECTO =" not in sql_upper:
+            rows = [r for r in rows if r.get("regladisparada") == params.get("regla")]
+        if "ID_PROSPECTO =" in sql_upper and "REGLADISPARADA" not in sql_upper:
+            rows = [r for r in rows if r.get("id_prospecto") == params.get("idp")]
+        if "IDNOTIFICACION >" in sql_upper:
+            rows = [r for r in rows if int(r.get("idnotificacion") or 0) > int(params.get("cursor", 0))]
+        if "COUNT(*)" in sql_upper:
+            return [{"count": len(rows)}]
+        limit = int(params.get("limit", len(rows)))
+        return rows[:limit]
+    if "JOIN DIM_USUARIO_ROL" in sql_upper and "GERENTE" in str(params.get("role", "")).upper():
+        wanted = next((r["idrol"] for r in PINOT_STORE["Dim_Rol"] if r.get("rol") == params["role"]), None)
+        ids = {r["idusuario"] for r in PINOT_STORE["Dim_Usuario_Rol"] if r["idrol"] == wanted}
+        return [{"idusuario": u["idusuario"]} for u in PINOT_STORE["Dim_Usuarios"] if u["idusuario"] in ids and u.get("activo")]
     if "MAX(IDUSUARIO)" in sql_upper:
         ids = [u["idusuario"] for u in PINOT_STORE["Dim_Usuarios"]]
         return [{"max_id": max(ids) if ids else 0}]
@@ -608,13 +768,24 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     # --- Dim_Cliente ---
     if "FROM DIM_CLIENTE" in sql_upper and "WHERE NIT_IDENTIFICACION" in sql_upper:
         nit = params.get("nit")
-        return [c for c in PINOT_STORE["Dim_Cliente"] if c["nit_identificacion"] == nit]
+        rows = [c for c in PINOT_STORE["Dim_Cliente"] if c["nit_identificacion"] == nit]
+        if "RECHAZADO_ANULADO" in sql_upper or "<>" in sql_upper or "!=" in sql_upper:
+            rows = [c for c in rows if c.get("estado") != "Rechazado_Anulado"]
+        return rows
     if "FROM DIM_CLIENTE" in sql_upper and "WHERE ADMIN_LOCAL_ID" in sql_upper:
         admin_id = params.get("admin_local_id")
-        return [c for c in PINOT_STORE["Dim_Cliente"] if c.get("admin_local_id") == admin_id]
+        rows = [
+            c for c in PINOT_STORE["Dim_Cliente"] if c.get("admin_local_id") == admin_id
+        ]
+        if "RECHAZADO_ANULADO" in sql_upper or "<>" in sql_upper or "!=" in sql_upper:
+            rows = [c for c in rows if c.get("estado") != "Rechazado_Anulado"]
+        return rows
     if "FROM DIM_CLIENTE" in sql_upper and "WHERE IDCLIENTE" in sql_upper:
         cid = params.get("idcliente")
         return [c for c in PINOT_STORE["Dim_Cliente"] if c["idcliente"] == cid]
+    if "FROM DIM_CLIENTE" in sql_upper and "WHERE ESTADO" in sql_upper:
+        estado = params.get("estado")
+        return [c for c in PINOT_STORE["Dim_Cliente"] if c.get("estado") == estado]
 
     if "FROM DIM_CLIENTE" in sql_upper and "SELECT *" in sql_upper:
         return list(PINOT_STORE["Dim_Cliente"])
@@ -666,6 +837,14 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         ]
 
     # --- Role/permission lookups (no JOIN, two sequential queries) ---
+    if "FROM DIM_USUARIO_ROL" in sql_upper and "WHERE IDROL" in sql_upper:
+        rid = params.get("idrol")
+        return [
+            {"idusuario": ur["idusuario"]}
+            for ur in PINOT_STORE["Dim_Usuario_Rol"]
+            if ur["idrol"] == rid
+        ]
+
     if "FROM DIM_USUARIO_ROL" in sql_upper and "WHERE IDUSUARIO" in sql_upper:
         uid = params.get("idusuario")
         return [{"idrol": ur["idrol"]} for ur in PINOT_STORE["Dim_Usuario_Rol"] if ur["idusuario"] == uid]
@@ -1028,8 +1207,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         return [r for r in PINOT_STORE["Dim_Estado_Soporte"] if r["nombre"] == nombre]
 
     if "FROM FACT_SUSCRIPCION" in sql_upper:
-        cid = params.get("idcliente")
-        return [r for r in PINOT_STORE["Fact_Suscripcion"] if r["idcliente"] == cid]
+        rows = list(PINOT_STORE["Fact_Suscripcion"])
+        if "ID_SUSCRIPCION =" in sql_upper:
+            rows = [r for r in rows if r.get("id_suscripcion") == params.get("id")]
+        if "IDCLIENTE =" in sql_upper:
+            rows = [r for r in rows if r.get("idcliente") == params.get("idcliente")]
+        return rows
 
     return []
 
@@ -1141,6 +1324,41 @@ def mock_kafka():
                 clientes[existing_idx] = payload
             else:
                 clientes.append(payload)
+        elif topic.endswith("Dim_Prospecto_topic") or topic == "Dim_Prospecto_topic":
+            rows = PINOT_STORE["Dim_Prospecto"]
+            index = next((i for i, row in enumerate(rows) if row["idprospecto"] == payload["idprospecto"]), None)
+            if index is None: rows.append(payload)
+            else: rows[index] = payload
+        elif topic.endswith("Fact_Asignacion_topic") or topic == "Fact_Asignacion_topic":
+            rows = PINOT_STORE["Fact_Asignacion"]
+            index = next((i for i, row in enumerate(rows) if row["idasignacion"] == payload["idasignacion"]), None)
+            if index is None: rows.append(payload)
+            else: rows[index] = payload
+        elif topic.endswith("Fact_Pipeline_topic") or topic == "Fact_Pipeline_topic":
+            rows = PINOT_STORE["Fact_Pipeline"]
+            index = next((i for i, row in enumerate(rows) if row["id_transicion"] == payload["id_transicion"]), None)
+            if index is None: rows.append(payload)
+            else: rows[index] = payload
+        elif topic.endswith("Fact_Interaccion_Demo_topic") or topic == "Fact_Interaccion_Demo_topic":
+            rows = PINOT_STORE["Fact_Interaccion_Demo"]
+            index = next(
+                (i for i, row in enumerate(rows) if row["idinteraccion"] == payload["idinteraccion"]),
+                None,
+            )
+            if index is None:
+                rows.append(payload)
+            else:
+                rows[index] = payload
+        elif topic.endswith("Fact_NotificacionVentas_topic") or topic == "Fact_NotificacionVentas_topic":
+            rows = PINOT_STORE["Fact_NotificacionVentas"]
+            index = next(
+                (i for i, row in enumerate(rows) if row["idnotificacion"] == payload["idnotificacion"]),
+                None,
+            )
+            if index is None:
+                rows.append(payload)
+            else:
+                rows[index] = payload
         elif (
             topic.endswith("Dim_Preferencias_Cliente_topic")
             or topic == "Dim_Preferencias_Cliente_topic"
@@ -1323,6 +1541,56 @@ def mock_kafka():
                 regiones.append(payload)
         elif topic.endswith("Dim_ValidacionRegion_topic") or topic == "Dim_ValidacionRegion_topic":
             PINOT_STORE["Dim_ValidacionRegion"].append(payload)
+        elif topic.endswith("Dim_Plan_topic") or topic == "Dim_Plan_topic":
+            rows = PINOT_STORE["Dim_Plan"]
+            idx = next((i for i, r in enumerate(rows) if r["idplan"] == payload["idplan"]), None)
+            if idx is not None:
+                rows[idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Dim_MetodoPago_topic") or topic == "Dim_MetodoPago_topic":
+            rows = PINOT_STORE["Dim_MetodoPago"]
+            idx = next(
+                (i for i, r in enumerate(rows) if r["idmetodopago"] == payload["idmetodopago"]),
+                None,
+            )
+            if idx is not None:
+                rows[idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Fact_Suscripcion_topic") or topic == "Fact_Suscripcion_topic":
+            rows = PINOT_STORE["Fact_Suscripcion"]
+            idx = next(
+                (i for i, r in enumerate(rows) if r["id_suscripcion"] == payload["id_suscripcion"]),
+                None,
+            )
+            if idx is not None:
+                rows[idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Fact_Factura_topic") or topic == "Fact_Factura_topic":
+            rows = PINOT_STORE["Fact_Factura"]
+            idx = next(
+                (i for i, r in enumerate(rows) if r["id_factura"] == payload["id_factura"]),
+                None,
+            )
+            if idx is not None:
+                rows[idx] = payload
+            else:
+                rows.append(payload)
+        elif (
+            topic.endswith("Fact_Solicitud_Cambio_Plan_topic")
+            or topic == "Fact_Solicitud_Cambio_Plan_topic"
+        ):
+            rows = PINOT_STORE["Fact_Solicitud_Cambio_Plan"]
+            idx = next(
+                (i for i, r in enumerate(rows) if r["idsolicitud"] == payload["idsolicitud"]),
+                None,
+            )
+            if idx is not None:
+                rows[idx] = payload
+            else:
+                rows.append(payload)
 
     with patch.object(KafkaWriter, "publish", _publish):
         yield published
@@ -1345,6 +1613,65 @@ def auth_headers(mock_pinot, mock_kafka):
 def admin_auth_headers(auth_headers):
     """Alias for auth_headers (Administrador)."""
     return auth_headers
+
+@pytest.fixture
+def admin_crm_auth_headers(admin_auth_headers):
+    return admin_auth_headers
+
+@pytest.fixture
+def gerente_ventas_auth_headers(mock_pinot, mock_kafka):
+    PINOT_STORE["Fact_Session"].append({"idsession": 20, "idusuario": 20, "estadosession": "Inicio sesion"})
+    token = create_access_token(user_id=20, roles=["GerenteVentas"], session_id=20)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+@pytest.fixture
+def gerente_cuentas_publicas_auth_headers(mock_pinot, mock_kafka):
+    PINOT_STORE["Fact_Session"].append({"idsession": 21, "idusuario": 21, "estadosession": "Inicio sesion"})
+    token = create_access_token(user_id=21, roles=["GerenteCuentasPublicas"], session_id=21)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def demo_grant_factory(settings):
+    from apps.ventas_crm.demo_tokens import issue_demo_grant
+
+    def _factory(idprospecto: int) -> str:
+        return issue_demo_grant(idprospecto)
+
+    return _factory
+
+
+@pytest.fixture
+def demo_session_auth_headers(mock_pinot, mock_kafka, demo_grant_factory):
+    """Bearer demo_session token for a seeded prospect with active demo_expiracion."""
+    from datetime import datetime, timedelta, timezone
+
+    from apps.ventas_crm.demo_tokens import format_iso_expiracion, issue_demo_session_token
+    from core.repositories.ventas_crm.prospecto_repository import ProspectoRepository
+
+    repo = ProspectoRepository()
+    p = repo.create(
+        {
+            "nombres": "Demo",
+            "apellidos": "User",
+            "gmail": "demo.session@example.com",
+            "empresa": "DemoCo",
+            "tipo_organizacion": "Privado",
+            "cargo": "Buyer",
+            "telefono": "3001111111",
+            "como_nos_conocio": "web",
+            "demo_expiracion": None,
+        }
+    )
+    iso = format_iso_expiracion(datetime.now(timezone.utc) + timedelta(minutes=30))
+    repo.update_demo_expiracion(p["idprospecto"], iso)
+    token = issue_demo_session_token(idprospecto=p["idprospecto"], demo_expiracion_iso=iso)
+    return {
+        "HTTP_AUTHORIZATION": f"Bearer {token}",
+        "idprospecto": p["idprospecto"],
+        "demo_grant": demo_grant_factory(p["idprospecto"]),
+        "demo_expiracion": iso,
+    }
 
 
 @pytest.fixture
@@ -1726,6 +2053,24 @@ def administrador_auth_headers(admin_auth_headers):
 def operador_auth_headers_red_operativa(operador_auth_headers):
     """Alias for operador_auth_headers (spec naming: red_operativa module)."""
     return operador_auth_headers
+
+
+@pytest.fixture
+def proveedor_auth_headers(cliente_auth_headers):
+    """JWT Proveedor/Cliente Activo (user 3 = admin_local de idcliente 1)."""
+    return cliente_auth_headers
+
+
+@pytest.fixture
+def proveedor_billing_auth_headers(proveedor_auth_headers):
+    """Alias billing — Proveedor autenticado (idcliente=1)."""
+    return proveedor_auth_headers
+
+
+@pytest.fixture
+def admin_billing_auth_headers(admin_auth_headers):
+    """Alias billing — Administrador."""
+    return admin_auth_headers
 
 
 @pytest.fixture

@@ -1,22 +1,25 @@
 openapi: 3.0.3
 info:
   title: TSI Alta y Configuración de Unidades de Emergencia API
-  version: 1.0.0
+  version: 1.1.0
   description: >
-    Contrato contract-first para CU-O54 (alta individual), CU-O56 (alta en lote),
-    CU-O57 (edición), CU-O58 (baja/reactivación) y CU-O59 (disponibilidad externa).
+    Contrato contract-first (delta 2026-07-24): CU-O54/O56/O57/O58 para actor Proveedor.
+    idcliente se resuelve del JWT (no en body). O56 requiere columna gmail y crea
+    credenciales con todo-o-nada total. CU-O59 eliminado — disponibilidad solo vía CU-O30.
     Sigue api-standards.md del proyecto.
 servers:
   - url: /api/v1
 tags:
   - name: Unidades
-  - name: Disponibilidad
 paths:
   /red-operativa/unidades:
     post:
       tags: [Unidades]
-      summary: Registrar una unidad de emergencia individual (CU-O54)
+      summary: Registrar una unidad de emergencia individual (CU-O54) — actor Proveedor; idcliente desde JWT
       operationId: createUnidad
+      description: >
+        El Proveedor autenticado registra una unidad. El idcliente se toma del token;
+        si el body envía idcliente distinto, se ignora o se rechaza (403).
       security:
         - bearerAuth: []
       parameters:
@@ -46,8 +49,11 @@ paths:
   /red-operativa/unidades/importacion-lote:
     post:
       tags: [Unidades]
-      summary: Registrar unidades de emergencia en lote vía CSV/Excel (CU-O56)
+      summary: Registrar unidades en lote vía CSV/Excel (CU-O56) — incluye gmail + credenciales, todo-o-nada
       operationId: importUnidadesLote
+      description: >
+        Columnas de alta individual más `gmail` por fila. Valida unidades y credenciales;
+        si cualquier fila falla, insertadas=0 (ninguna unidad ni usuario). Max 500 filas.
       security:
         - bearerAuth: []
       parameters:
@@ -205,42 +211,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /red-operativa/unidades/{idunidademergencia}/disponibilidad:
-    post:
-      tags: [Disponibilidad]
-      summary: Declarar disponibilidad de una unidad externa sin login propio (CU-O59)
-      operationId: declararDisponibilidadExterna
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/IdUnidad'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DisponibilidadRequest'
-      responses:
-        '200':
-          description: Disponibilidad actualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DisponibilidadResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          description: Alerta de inconsistencia — despacho activo sin retirar al marcar "Activa"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
 components:
   securitySchemes:
     bearerAuth:
@@ -374,7 +344,6 @@ components:
     UnidadCreateRequest:
       type: object
       required:
-        - idcliente
         - idcondado
         - tipopropiedad
         - placa
@@ -383,11 +352,14 @@ components:
       properties:
         idcliente:
           type: integer
+          deprecated: true
+          description: Ignorado — se resuelve del JWT del Proveedor
         idcondado:
           type: integer
         tipopropiedad:
           type: string
           enum: [Propia, Externa]
+          default: Externa
         placa:
           type: string
         capacidad:
@@ -403,6 +375,10 @@ components:
         activo:
           type: boolean
           default: true
+        gmail:
+          type: string
+          format: email
+          description: Opcional en alta individual; obligatorio por fila en O56
 
     UnidadCreatedResponse:
       type: object
@@ -479,6 +455,9 @@ components:
                     type: integer
                   motivo:
                     type: string
+            usuarios_creados:
+              type: integer
+              description: Igual a insertadas en lote exitoso; 0 si falló alguna credencial
 
     BajaUnidadRequest:
       type: object
@@ -504,24 +483,3 @@ components:
             activo:
               type: boolean
               enum: [false]
-
-    DisponibilidadRequest:
-      type: object
-      required: [idestadounidademergencia]
-      properties:
-        idestadounidademergencia:
-          type: integer
-          description: Nuevo estado a declarar. "En Misión" rechazado (exclusivo del sistema).
-
-    DisponibilidadResponse:
-      type: object
-      required: [data]
-      properties:
-        data:
-          type: object
-          required: [idunidademergencia, estadonuevo]
-          properties:
-            idunidademergencia:
-              type: integer
-            estadonuevo:
-              type: string

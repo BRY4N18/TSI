@@ -16,8 +16,12 @@ from apps.cuentas_clientes.views.cuenta_views import (
     UsuariosElegiblesView,
 )
 from apps.cuentas_clientes.views.onboarding_views import (
+    AnularRechazoProveedorView,
+    AutorregistroProveedorView,
     CompletarOnboardingEtapaView,
     ConfigurarCuentaView,
+    DecidirSolicitudProveedorView,
+    ListarSolicitudesProveedorView,
     OnboardingProgresoView,
     ReenviarInvitacionView,
     RegistrarCuentaView,
@@ -74,8 +78,28 @@ urlpatterns = [
         ServerRoleMappingView.as_view(),
         name="server-role-mapping",
     ),
-    # Gestion de cuenta (CU-O03, O10, O11)
+    # Gestion de cuenta / incorporacion (CU-O14, O16; O01/O12 retirados → 410)
+    path(
+        "cuentas-clientes/autorregistro",
+        AutorregistroProveedorView.as_view(),
+        name="cuenta-autorregistro",
+    ),
+    path(
+        "cuentas-clientes/solicitudes",
+        ListarSolicitudesProveedorView.as_view(),
+        name="cuenta-solicitudes",
+    ),
     path("cuentas-clientes", RegistrarCuentaView.as_view(), name="cuenta-registro"),
+    path(
+        "cuentas-clientes/<int:idcliente>/aprobacion",
+        DecidirSolicitudProveedorView.as_view(),
+        name="cuenta-aprobacion",
+    ),
+    path(
+        "cuentas-clientes/<int:idcliente>/anular-rechazo",
+        AnularRechazoProveedorView.as_view(),
+        name="cuenta-anular-rechazo",
+    ),
     path(
         "cuentas-clientes/<int:idcliente>/configuracion",
         ConfigurarCuentaView.as_view(),

@@ -8,19 +8,20 @@
 - Campos relevantes para este módulo:
   - `razon_social` (STRING, requerido)
   - `nombre` (STRING)
-  - `tipo` (STRING: `Aseguradora` | `Municipio` | `Smart City`, inmutable post O01)
-  - `nit_identificacion` (STRING, único, inmutable post O01)
-  - `fecha_inicio_contrato` (LONG epoch ms)
-  - `plan_suscripcion` (STRING, asignado en O12)
-  - `logo_url` (STRING, URL Azure Blob, asignado en O12 u onboarding perfil)
-  - `estado_onboarding` (STRING: `Pendiente` | `En progreso` | `Completado`)
-  - `estado` (STRING: `Activo` desde O01)
+  - `tipo` (STRING: `Proveedor` | `Aseguradora` | `Municipio` | `Smart City`; canónico Proveedor vía CU-O14)
+  - `nit_identificacion` (STRING, único, inmutable post alta)
+  - `fecha_inicio_contrato` (LONG epoch ms, opcional en solicitud)
+  - `plan_suscripcion` (STRING, ⛔ no asignado en esta oleada — Suscripciones-Facturación)
+  - `logo_url` (STRING, URL Azure Blob — lo setea el **cliente** en O02 `perfil_corporativo` / CU-O03; **nunca** el Admin en aprobación)
+  - `estado_onboarding` (STRING: `Pendiente` | `En progreso` | `Completado`) — `Pendiente` al aprobar (CU-O16)
+  - `estado` (STRING: `Pendiente_Aprobación` | `Activo` | `Rechazado` | `Rechazado_Anulado` | `Dado de baja`)
   - `admin_local_id` (INT → `Dim_Usuarios.idusuario`)
   - `fecha_actualizacion` (LONG epoch ms)
 - Reglas:
   - NIT único (RN-ONB-001).
-  - `estado='Activo'` en O01; independiente de `estado_onboarding` (RN-ONB-008).
-  - `estado_onboarding='Pendiente'` se establece en O12.
+  - Proveedor: `estado='Pendiente_Aprobación'` en O14; `Activo`/`Rechazado` solo en O16 (RN-ONB-008).
+  - Onboarding solo si `estado='Activo'` (RN-ONB-011).
+  - CU-O01/O12 legado: no canónicos para Proveedor.
 
 ## 2) Usuario administrador local (`Dim_Usuarios`)
 
@@ -76,13 +77,15 @@
 
 ### Dim_Cliente.estado
 
-- *(creación O01)* → `Activo`
-- `Activo` → `Dado de baja` (gestion-cuentas CU-O11, fuera de este módulo)
+- O14 → `Pendiente_Aprobación`
+- O16 aprobar → `Activo` (+ `estado_onboarding='Pendiente'`)
+- O16 rechazar → `Rechazado`
+- O16 anular rechazo → `Rechazado_Anulado` (soft; NIT libre para nuevo O14)
+- `Activo` → `Dado de baja` (gestion-cuentas CU-O11)
 
 ### Dim_Cliente.estado_onboarding
 
-- *(O01)* → null / sin valor hasta O12
-- O12 → `Pendiente`
+- O16 aprobar → `Pendiente`
 - Primera `Fact_Onboarding` → `En progreso`
 - 3 etapas obligatorias `completado=true` → `Completado`
 

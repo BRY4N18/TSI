@@ -12,12 +12,18 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | CA-DES-004 | Confirmar → ASIGNADO + En Misión | T042, T046, T098 | `test_confirmar_despacho_contract` |
 | CA-DES-005 | Rechazo → activo=false + O36 | T043, T047 | `test_rechazar_despacho_contract` |
 | CA-DES-006 | Timeout job O35 | T050, T056, T057 | `test_timeout_despacho_service` |
-| CA-DES-007 | Consumer O36 async | T052, T058, T053 | `test_timeout_reasignacion_integration` |
+| CA-DES-007 | Agotamiento candidatas → nota + notify Admin + O33 | T052, T058, T053, T103–T107 | `test_timeout_reasignacion_integration`, `test_reasignacion_alerta_admin` |
 | CA-DES-008 | Parámetros RF-DES-010 | T076-T079 | `test_parametros_despacho_contract` |
 | CA-DES-010 | Asignación manual O33 | T062, T069 | `test_asignar_manual_contract` |
-| CA-DES-011 | Monitoreo REST + SSE | T060, T072, T074 | `test_monitoreo_despacho_contract` |
-| CA-DES-012 | Escalamiento O34 | T063, T070 | `test_escalar_zona_contract` |
+| CA-DES-011 | Escalamiento O34 + alerta Admin si sin unidades | T063, T070, T103, T105, T107 | `test_escalar_zona_contract`, `test_escalamiento_zona_alerta_admin` |
+| CA-DES-012 | Despacho múltiple O38 | T064, T067 | `test_coordinar_despacho_contract` |
 | CA-DES-013 | Fail entrega O23→O36 | T054 | `test_fallo_notificacion_integration` |
+| CA-DES-014 | Hook plan/severidad no-op (fail-open) | T109–T112 | `test_elegibilidad_plan_hook` |
+
+> **Nota Phase 10 (2026-07-24):** CA-DES-007/011 exigen fan-out email a rol `Administrador`
+> vía `AlertaAdminService` (`core/notificaciones.EmailNotificationSender`), fail-open.
+> Monitoreo REST+SSE permanece bajo RF-DES-011 (`test_monitoreo_despacho_contract`).
+> CA-DES-014: `ConsultaCandidatasService.filtrar_por_plan_severidad` es no-op hasta Suscripciones-Facturación.
 
 ## Casos de uso
 
@@ -27,9 +33,9 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | CU-O23 | `notificacion_despacho_service` | T031 |
 | CU-O24 | `confirmar_despacho_service`, `mi_despacho_views`, `mi_despacho_service` (mapa+ruta+countdown en dashboard, T095b) | T042, T044, T095b |
 | CU-O33 | `asignacion_manual_service`, `asignacion_views` | T062, T065 |
-| CU-O34 | `escalamiento_zona_service` | T063, T066 |
+| CU-O34 | `escalamiento_zona_service` + `alerta_admin_service` | T063, T066, T103, T105 |
 | CU-O35 | `timeout_despacho_service`, `timeout_despacho_job` | T050, T053 |
-| CU-O36 | `reasignacion_despacho_service`, `despacho_timeout_consumer` | T051, T052 |
+| CU-O36 | `reasignacion_despacho_service`, `despacho_timeout_consumer`, `alerta_admin_service` | T051, T052, T104, T106 |
 | CU-O38 | `coordinacion_multiple_service` | T064, T067 |
 | CU-O45 | `rechazar_despacho_service` | T043, T045 |
 | RF-DES-010 | `parametros_despacho_service`, `parametros_views` | T077, T076 |

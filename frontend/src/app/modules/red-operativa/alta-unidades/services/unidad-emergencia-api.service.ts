@@ -5,7 +5,6 @@ import { Observable } from 'rxjs';
 import {
   ApiEnvelope,
   BajaUnidadData,
-  DisponibilidadData,
   ImportacionLoteData,
   UnidadCreateRequest,
   UnidadCreatedData,
@@ -65,16 +64,6 @@ export class UnidadEmergenciaApiService {
     return this.http.post<ApiEnvelope<UnidadEmergenciaData>>(
       `${this.baseUrl}/${idunidademergencia}/reactivar`,
       {},
-    );
-  }
-
-  declararDisponibilidad(
-    idunidademergencia: number,
-    estadonuevo: string,
-  ): Observable<ApiEnvelope<DisponibilidadData>> {
-    return this.http.post<ApiEnvelope<DisponibilidadData>>(
-      `${this.baseUrl}/${idunidademergencia}/disponibilidad`,
-      { estadonuevo },
     );
   }
 }

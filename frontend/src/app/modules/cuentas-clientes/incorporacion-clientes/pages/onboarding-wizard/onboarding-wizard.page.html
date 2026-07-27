@@ -1,0 +1,157 @@
+<div class="mx-auto max-w-2xl space-y-6 p-6">
+  <header class="space-y-2">
+    <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Onboarding</p>
+    <h1 class="m-0 text-[28px] font-bold text-text-primary">Configuración inicial</h1>
+    <p class="m-0 text-sm text-text-secondary">Cuenta #{{ idcliente }}</p>
+  </header>
+
+  <div class="flex flex-wrap gap-2">
+    <button
+      type="button"
+      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default bg-bg-surface px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+      (click)="reenviarInvitacion()"
+      [disabled]="reenviando"
+    >
+      <app-tabler-icon name="refresh" [size]="18" [class.animate-spin]="reenviando" />
+      {{ reenviando ? 'Reenviando…' : 'Reenviar invitación' }}
+    </button>
+  </div>
+
+  @if (progreso) {
+    <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+      <p class="m-0 text-sm text-text-secondary">
+        Estado: <span class="font-medium text-text-primary">{{ progreso.estado_onboarding }}</span>
+        · Etapa:
+        <span class="font-medium text-text-primary">{{ facade.etapaLabel(progreso.etapa_actual) }}</span>
+      </p>
+
+      <ol class="m-0 grid list-none gap-2 p-0">
+        @for (e of etapas; track e) {
+          <li
+            class="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+            [class.border-alert-success]="progreso.etapas_completadas.includes(e)"
+            [class.bg-alert-success-bg]="progreso.etapas_completadas.includes(e)"
+            [class.text-alert-success]="progreso.etapas_completadas.includes(e)"
+            [class.border-border-default]="!progreso.etapas_completadas.includes(e)"
+            [class.text-text-secondary]="!progreso.etapas_completadas.includes(e)"
+          >
+            @if (progreso.etapas_completadas.includes(e)) {
+              <app-tabler-icon name="circle-check" [size]="18" />
+            } @else {
+              <app-tabler-icon name="info-circle" [size]="18" />
+            }
+            {{ facade.etapaLabel(e) }}
+          </li>
+        }
+      </ol>
+
+      @switch (progreso.etapa_actual) {
+        @case ('cambio_password') {
+          <div class="space-y-3">
+            <p class="m-0 text-sm text-text-primary">
+              Confirma que ya cambiaste tu contraseña temporal antes de continuar.
+            </p>
+            <button
+              type="button"
+              (click)="completarCambioPassword()"
+              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+            >
+              Continuar
+              <app-tabler-icon name="chevron-right" [size]="18" />
+            </button>
+          </div>
+        }
+        @case ('perfil_corporativo') {
+          <form (ngSubmit)="completarPerfil()" class="grid gap-4">
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Razón social</span>
+              <input
+                [(ngModel)]="perfil.razon_social"
+                name="razon_social"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Nombre</span>
+              <input
+                [(ngModel)]="perfil.nombre"
+                name="nombre"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Logo corporativo</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="onLogoSeleccionado($event)"
+                name="logo"
+                class="block w-full text-sm text-text-secondary file:mr-3 file:inline-flex file:min-h-11 file:items-center file:rounded-md file:border-0 file:bg-accent-primary file:px-4 file:font-medium file:text-white"
+              />
+            </label>
+            @if (logoFile) {
+              <p class="m-0 flex items-center gap-2 text-sm text-text-secondary">
+                <app-tabler-icon name="upload" [size]="16" />
+                Archivo: {{ logoFile.name }}
+              </p>
+            }
+            <button
+              type="submit"
+              class="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+            >
+              <app-tabler-icon name="circle-check" [size]="18" />
+              Guardar perfil
+            </button>
+          </form>
+        }
+        @case ('preferencias') {
+          <form (ngSubmit)="completarPreferencias()" class="grid gap-4">
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Canales</span>
+              <select
+                [(ngModel)]="preferencias.canales_notificacion"
+                name="canales"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              >
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="ambos">Ambos</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Teléfono SMS</span>
+              <input
+                [(ngModel)]="preferencias.telefono_sms"
+                name="telefono"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <button
+              type="submit"
+              class="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+            >
+              <app-tabler-icon name="circle-check" [size]="18" />
+              Finalizar onboarding
+            </button>
+          </form>
+        }
+        @default {
+          <div class="space-y-3">
+            <p class="m-0 flex items-center gap-2 text-sm text-alert-success">
+              <app-tabler-icon name="circle-check" [size]="18" />
+              Onboarding completado.
+            </p>
+            <button
+              type="button"
+              (click)="irAGestion()"
+              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+            >
+              Ir a gestión de cuenta
+              <app-tabler-icon name="chevron-right" [size]="18" />
+            </button>
+          </div>
+        }
+      }
+    </section>
+  }
+</div>

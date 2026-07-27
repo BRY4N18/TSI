@@ -77,6 +77,57 @@ class OnboardingNotificacionService:
             body=body,
         )
 
+    def notify_aprobacion(
+        self,
+        *,
+        cliente_id: int,
+        admin_local_id: int,
+        actor_id: int,
+    ) -> None:
+        user = self.user_repo.find_by_id(admin_local_id)
+        if not user or not user.get("gmail"):
+            return
+        subject = "Solicitud aprobada — Tráfico Seguro Integral"
+        body = (
+            f"Su solicitud de cuenta #{cliente_id} fue aprobada.\n\n"
+            f"Ya puede iniciar sesión e iniciar el onboarding digital."
+        )
+        self._send(
+            event="aprobacion_proveedor",
+            cliente_id=cliente_id,
+            actor_id=actor_id,
+            gmail=user["gmail"],
+            subject=subject,
+            body=body,
+        )
+
+    def notify_rechazo(
+        self,
+        *,
+        cliente_id: int,
+        admin_local_id: int,
+        actor_id: int,
+        motivo: str,
+    ) -> None:
+        user = self.user_repo.find_by_id(admin_local_id)
+        if not user or not user.get("gmail"):
+            return
+        subject = "Solicitud rechazada — Tráfico Seguro Integral"
+        body = (
+            f"Su solicitud de cuenta #{cliente_id} fue rechazada.\n\n"
+            f"Motivo: {motivo}\n\n"
+            f"Si corrige los datos, un administrador podrá anular el rechazo "
+            f"para que pueda autorregistrarse de nuevo."
+        )
+        self._send(
+            event="rechazo_proveedor",
+            cliente_id=cliente_id,
+            actor_id=actor_id,
+            gmail=user["gmail"],
+            subject=subject,
+            body=body,
+        )
+
     def _send(
         self,
         *,

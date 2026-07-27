@@ -1,0 +1,284 @@
+<main class="min-h-screen bg-bg-page text-text-primary">
+  <!-- Top bar -->
+  <header class="border-b border-border-default bg-bg-surface/90 backdrop-blur-sm">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-3">
+      <div class="flex items-center gap-3">
+        <span
+          class="grid h-10 w-10 place-items-center rounded-lg bg-accent-primary text-xs font-bold text-white"
+          aria-hidden="true"
+          >TSI</span
+        >
+        <div>
+          <p class="m-0 text-[0.9375rem] font-semibold">Tráfico Seguro Integral</p>
+          <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Portal comercial</p>
+        </div>
+      </div>
+
+      <nav class="hidden items-center gap-6 text-sm font-medium text-text-secondary md:flex" aria-label="Secciones">
+        <button
+          type="button"
+          class="cursor-pointer bg-transparent p-0 text-inherit hover:text-text-primary"
+          (click)="scrollTo('capacidades')"
+        >
+          Servicios
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer bg-transparent p-0 text-inherit hover:text-text-primary"
+          (click)="scrollTo('planes')"
+        >
+          Planes
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer bg-transparent p-0 text-inherit hover:text-text-primary"
+          (click)="scrollTo('cta-final')"
+        >
+          Contacto
+        </button>
+      </nav>
+
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <button
+          type="button"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border-default text-text-secondary transition-colors hover:bg-alert-info-bg hover:text-alert-info"
+          (click)="themeService.toggle()"
+          [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+          [attr.aria-pressed]="themeService.isDark()"
+        >
+          <app-tabler-icon [name]="themeService.isDark() ? 'sun' : 'moon'" [size]="20" />
+        </button>
+        <a
+          routerLink="/cuentas-clientes/auth/login"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary no-underline transition-colors hover:bg-bg-page"
+        >
+          Iniciar sesión
+        </a>
+        <a
+          routerLink="/ventas-crm/registro"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-accent-hover"
+        >
+          Registrarme
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="mx-auto grid max-w-6xl gap-6 px-5 pb-12 pt-10 md:pb-16 md:pt-14" aria-labelledby="hero-title">
+    <span
+      class="inline-flex w-fit items-center gap-2 rounded-md bg-alert-success-bg px-3 py-1 text-xs font-medium text-alert-success"
+    >
+      <span class="h-1.5 w-1.5 rounded-full bg-alert-success" aria-hidden="true"></span>
+      Sistema operativo
+    </span>
+    <h1 id="hero-title" class="m-0 max-w-3xl text-3xl font-bold leading-tight md:text-4xl">
+      Una emergencia reportada. Una unidad en camino.
+    </h1>
+    <p class="m-0 max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
+      Plataforma B2B para registrar accidentes, despachar unidades y dar seguimiento operativo —
+      con planes según la severidad que tu flota puede atender.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+        (click)="scrollTo('planes')"
+      >
+        Explorar planes
+      </button>
+      <a
+        routerLink="/ventas-crm/registro"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-5 text-sm font-medium text-accent-primary no-underline transition-colors hover:bg-accent-primary/10"
+      >
+        Solicitar demo
+      </a>
+    </div>
+  </section>
+
+  <!-- Capacidades -->
+  <section id="capacidades" class="scroll-mt-20 border-y border-border-default bg-bg-surface" aria-labelledby="cap-title">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12">
+      <div class="grid max-w-2xl gap-2">
+        <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">Servicios</p>
+        <h2 id="cap-title" class="m-0 text-2xl font-bold">Capacidades de la plataforma</h2>
+        <p class="m-0 text-sm leading-normal text-text-secondary">
+          El mismo núcleo operativo que usan los centros de monitoreo, disponible según el plan
+          contratado.
+        </p>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @for (c of capacidades; track c.title) {
+          <article class="grid gap-3 rounded-[10px] border border-border-default bg-bg-page p-5">
+            <span
+              class="grid h-10 w-10 place-items-center rounded-lg bg-accent-primary/15 text-accent-primary"
+              aria-hidden="true"
+            >
+              <app-tabler-icon [name]="c.icon" [size]="22" />
+            </span>
+            <h3 class="m-0 text-base font-semibold">{{ c.title }}</h3>
+            <p class="m-0 text-sm leading-normal text-text-secondary">{{ c.description }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Planes -->
+  <section id="planes" class="mx-auto grid max-w-6xl scroll-mt-20 gap-8 px-5 py-12" aria-labelledby="planes-title">
+    <div class="grid max-w-2xl gap-2">
+      <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">Catálogo público</p>
+      <h2 id="planes-title" class="m-0 text-2xl font-bold">Planes de suscripción</h2>
+      <p class="m-0 text-sm leading-normal text-text-secondary">
+        Precios, límites y severidades desbloqueadas. Sin iniciar sesión.
+      </p>
+    </div>
+
+    @if (loading()) {
+      <div class="grid gap-5 md:grid-cols-3" aria-busy="true" aria-label="Cargando planes">
+        @for (_ of [1, 2, 3]; track $index) {
+          <article class="grid min-h-72 gap-4 rounded-[10px] border border-border-default bg-bg-surface p-5">
+            <div class="h-6 w-1/2 animate-pulse rounded-lg bg-border-default"></div>
+            <div class="h-8 w-2/5 animate-pulse rounded-lg bg-border-default"></div>
+            <div class="h-4 w-3/4 animate-pulse rounded-lg bg-border-default"></div>
+            <div class="h-16 w-full animate-pulse rounded-lg bg-border-default"></div>
+          </article>
+        }
+      </div>
+    } @else if (error()) {
+      <div
+        class="grid max-w-md justify-items-start gap-3 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-6"
+        role="alert"
+      >
+        <h3 class="m-0 text-xl font-semibold">No pudimos cargar el catálogo</h3>
+        <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-medium text-white hover:bg-accent-hover"
+          (click)="cargar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    } @else if (planes().length === 0) {
+      <div class="grid max-w-md justify-items-start gap-3 rounded-[10px] border border-border-default bg-bg-surface p-6">
+        <h3 class="m-0 text-xl font-semibold">No hay planes activos</h3>
+        <p class="m-0 text-sm text-text-secondary">
+          El catálogo está vacío por ahora. Puedes registrarte como prospecto y un ejecutivo te
+          orientará.
+        </p>
+        <a
+          routerLink="/ventas-crm/registro"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+          >Ir al registro</a
+        >
+      </div>
+    } @else {
+      <div class="grid items-stretch gap-5 md:grid-cols-3" aria-label="Planes activos">
+        @for (p of planes(); track p.idplan) {
+          <article [class]="cardClass(p)">
+            @if (esPopular(p)) {
+              <span
+                class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-md bg-accent-primary px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-white shadow-sm"
+              >
+                Popular
+              </span>
+            }
+
+            <div class="flex items-start justify-between gap-3" [class.pt-2]="esPopular(p)">
+              <h3 class="m-0 text-xl font-semibold">{{ p.nombre }}</h3>
+              <span
+                class="shrink-0 rounded-md border border-border-default px-2 py-1 text-xs font-medium text-text-secondary"
+              >
+                {{ p.nivel }}
+              </span>
+            </div>
+
+            <p [class]="priceClass(p)">
+              {{ p.precio | currency: 'USD':'symbol':'1.2-2' }}
+              <span class="text-sm font-normal text-text-secondary"> / mes</span>
+            </p>
+
+            <p class="m-0 min-h-10 text-sm leading-normal text-text-secondary">{{ slogan(p) }}</p>
+
+            <div class="grid gap-2.5 border-t border-border-default pt-3">
+              <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Severidades desbloqueadas
+              </p>
+              <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
+                @if (p.severidades_desbloqueadas.length === 0) {
+                  <li class="rounded-md bg-alert-info-bg px-2 py-1 text-xs font-medium text-alert-info">
+                    Sin mapeo de severidad
+                  </li>
+                } @else {
+                  @for (s of p.severidades_desbloqueadas; track s) {
+                    <li class="rounded-md px-2 py-1 text-xs font-medium" [ngClass]="badgeClass(s)">
+                      {{ s }}
+                    </li>
+                  }
+                }
+              </ul>
+            </div>
+
+            <div class="grid flex-1 gap-2.5 border-t border-border-default pt-3">
+              <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Límites incluidos
+              </p>
+              <ul class="m-0 grid list-none gap-1.5 p-0">
+                @for (item of limitesComoLista(p.limites); track item.label) {
+                  <li class="flex items-baseline justify-between gap-4 py-1 text-sm leading-snug">
+                    <span class="text-text-secondary">{{ item.label }}</span>
+                    <span class="font-semibold tabular-nums text-text-primary">{{ item.value }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <a routerLink="/ventas-crm/registro" [class]="ctaClass(p)">Me interesa este plan</a>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- CTA final -->
+  <section id="cta-final" class="scroll-mt-20 border-t border-border-default bg-bg-surface">
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-5 py-10"
+    >
+      <div class="flex max-w-xl items-start gap-3">
+        <span
+          class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-primary/15 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="info-circle" [size]="20" />
+        </span>
+        <div class="grid gap-1">
+          <p class="m-0 text-lg font-semibold">¿Listo para continuar?</p>
+          <p class="m-0 text-sm leading-normal text-text-secondary">
+            Regístrate como prospecto y un ejecutivo te guía en la contratación del plan adecuado.
+          </p>
+        </div>
+      </div>
+      <a
+        routerLink="/ventas-crm/registro"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-5 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+      >
+        Registrarme como prospecto
+      </a>
+    </div>
+  </section>
+
+  <footer class="border-t border-border-default">
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6 text-xs text-text-secondary"
+    >
+      <p class="m-0">© {{ year }} Tráfico Seguro Integral. Todos los derechos reservados.</p>
+      <div class="flex flex-wrap gap-4 uppercase tracking-wide">
+        <span>Privacidad</span>
+        <span>Términos</span>
+        <span>Soporte</span>
+      </div>
+    </div>
+  </footer>
+</main>

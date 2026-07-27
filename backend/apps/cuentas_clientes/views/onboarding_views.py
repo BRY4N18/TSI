@@ -1,16 +1,19 @@
-"""Onboarding API views — CU-O01, O12, O02, O09, O08."""
+"""Onboarding API views — CU-O14, O16; O01/O12 retirados (410)."""
 
 from __future__ import annotations
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.cuentas_clientes.services.configuracion_cuenta_service import (
-    ConfiguracionCuentaError,
-    ConfiguracionCuentaService,
+from apps.cuentas_clientes.services.aprobacion_proveedor_service import (
+    AprobacionProveedorError,
+    AprobacionProveedorService,
+)
+from apps.cuentas_clientes.services.autorregistro_proveedor_service import (
+    AutorregistroProveedorError,
+    AutorregistroProveedorService,
 )
 from apps.cuentas_clientes.services.invitacion_service import (
     InvitacionError,
@@ -22,14 +25,11 @@ from apps.cuentas_clientes.services.logo_upload_service import (
 )
 from apps.cuentas_clientes.services.onboarding_access_service import (
     OnboardingAccessError,
+    OnboardingAccessService,
 )
 from apps.cuentas_clientes.services.onboarding_service import (
     OnboardingError,
     OnboardingService,
-)
-from apps.cuentas_clientes.services.registro_cuenta_service import (
-    RegistroCuentaError,
-    RegistroCuentaService,
 )
 from apps.cuentas_clientes.views.cuenta_views import _client_ip, _require_auth
 from core.api.response_envelope import error_response, success_response
@@ -40,22 +40,17 @@ class _OnboardingAuthenticatedView(APIView):
     permission_classes = [AllowAny]
 
 
-class RegistrarCuentaView(_OnboardingAuthenticatedView):
+class AutorregistroProveedorView(_OnboardingAuthenticatedView):
+    """CU-O14 — public self-registration."""
+
     def post(self, request: Request):
-        user, err = _require_auth(request)
-        if err:
-            return err
-        service = RegistroCuentaService()
+        service = AutorregistroProveedorService()
         try:
-            data = service.registrar(
-                user_id=user.idusuario,
-                roles=user.roles,
+            data = service.autorregistrar(
                 data=request.data,
                 ip_address=_client_ip(request),
             )
-        except OnboardingAccessError:
-            return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
-        except RegistroCuentaError as exc:
+        except AutorregistroProveedorError as exc:
             detail = str(exc)
             if "ya registrado" in detail.lower():
                 return error_response("conflict", detail, "409", status_code=409)
@@ -63,30 +58,104 @@ class RegistrarCuentaView(_OnboardingAuthenticatedView):
         return success_response(data, status_code=status.HTTP_201_CREATED)
 
 
-class ConfigurarCuentaView(_OnboardingAuthenticatedView):
-    def patch(self, request: Request, idcliente: int):
+class ListarSolicitudesProveedorView(_OnboardingAuthenticatedView):
+    def get(self, request: Request):
         user, err = _require_auth(request)
         if err:
             return err
-        service = ConfiguracionCuentaService()
+        estado = request.query_params.get("estado", "Pendiente_Aprobación")
+        service = AprobacionProveedorService()
         try:
-            data = service.configurar(
+            data = service.listar_solicitudes(roles=user.roles, estado=estado)
+        except OnboardingAccessError:
+            return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
+        except AprobacionProveedorError as exc:
+            return error_response("bad_request", str(exc), "400", status_code=400)
+        return success_response(data)
+
+
+class DecidirSolicitudProveedorView(_OnboardingAuthenticatedView):
+    def post(self, request: Request, idcliente: int):
+        user, err = _require_auth(request)
+        if err:
+            return err
+        service = AprobacionProveedorService()
+        try:
+            data = service.decidir(
                 user_id=user.idusuario,
                 roles=user.roles,
                 cliente_id=idcliente,
-                data=request.data,
+                decision=request.data.get("decision"),
+                motivo=request.data.get("motivo"),
                 ip_address=_client_ip(request),
             )
         except OnboardingAccessError:
             return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
-        except ConfiguracionCuentaError as exc:
+        except AprobacionProveedorError as exc:
             detail = str(exc)
             if "no encontrada" in detail:
                 return error_response("not_found", detail, "404", status_code=404)
-            if "completado" in detail.lower():
+            if "no esta pendiente" in detail.lower():
                 return error_response("conflict", detail, "409", status_code=409)
             return error_response("bad_request", detail, "400", status_code=400)
         return success_response(data)
+
+
+class AnularRechazoProveedorView(_OnboardingAuthenticatedView):
+    """Admin soft-anula Rechazado → Rechazado_Anulado (libera NIT para nuevo O14)."""
+
+    def post(self, request: Request, idcliente: int):
+        user, err = _require_auth(request)
+        if err:
+            return err
+        service = AprobacionProveedorService()
+        try:
+            data = service.anular_rechazo(
+                user_id=user.idusuario,
+                roles=user.roles,
+                cliente_id=idcliente,
+                ip_address=_client_ip(request),
+            )
+        except OnboardingAccessError:
+            return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
+        except AprobacionProveedorError as exc:
+            detail = str(exc)
+            if "no encontrada" in detail:
+                return error_response("not_found", detail, "404", status_code=404)
+            if "solo se pueden anular" in detail.lower():
+                return error_response("conflict", detail, "409", status_code=409)
+            return error_response("bad_request", detail, "400", status_code=400)
+        return success_response(data)
+
+
+class RegistrarCuentaView(_OnboardingAuthenticatedView):
+    """CU-O01 retirado — todo cliente pasa por autorregistro O14 + aprobación O16."""
+
+    def post(self, request: Request):
+        user, err = _require_auth(request)
+        if err:
+            return err
+        return error_response(
+            "gone",
+            "CU-O01 retirado. Use POST /cuentas-clientes/autorregistro (O14) y aprobación (O16).",
+            "410",
+            status_code=status.HTTP_410_GONE,
+        )
+
+
+class ConfigurarCuentaView(_OnboardingAuthenticatedView):
+    """CU-O12 retirado — logo cliente (O02/O03); plan diferido a Suscripciones."""
+
+    def patch(self, request: Request, idcliente: int):
+        user, err = _require_auth(request)
+        if err:
+            return err
+        return error_response(
+            "gone",
+            "CU-O12 retirado. El logo lo configura el cliente; el plan se gestiona en Suscripciones.",
+            "410",
+            status_code=status.HTTP_410_GONE,
+        )
 
 
 class OnboardingLogoUploadUrlView(_OnboardingAuthenticatedView):
@@ -98,13 +167,11 @@ class OnboardingLogoUploadUrlView(_OnboardingAuthenticatedView):
         if not content_type:
             return error_response("bad_request", "Campos invalidos", "400", status_code=400)
 
-        from apps.cuentas_clientes.services.onboarding_access_service import (
-            OnboardingAccessService,
-        )
-
         access = OnboardingAccessService()
         try:
-            access.require_admin_global(user.roles)
+            access.require_admin_local(
+                user_id=user.idusuario, roles=user.roles, cliente_id=idcliente
+            )
         except OnboardingAccessError:
             return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
 
@@ -143,6 +210,8 @@ class OnboardingProgresoView(_OnboardingAuthenticatedView):
             detail = str(exc)
             if "no encontrada" in detail:
                 return error_response("not_found", detail, "404", status_code=404)
+            if "solo disponible" in detail.lower():
+                return error_response("forbidden", detail, "403", status_code=403)
             return error_response("bad_request", detail, "400", status_code=400)
         return success_response(data)
 
@@ -172,6 +241,8 @@ class CompletarOnboardingEtapaView(_OnboardingAuthenticatedView):
             detail = str(exc)
             if "no encontrada" in detail:
                 return error_response("not_found", detail, "404", status_code=404)
+            if "solo disponible" in detail.lower():
+                return error_response("forbidden", detail, "403", status_code=403)
             if "ya completada" in detail.lower() or "completado" in detail.lower():
                 return error_response("conflict", detail, "409", status_code=409)
             return error_response("bad_request", detail, "400", status_code=400)

@@ -54,11 +54,11 @@ class ConfiguracionCuentaService:
             "plan_suscripcion": plan,
             "estado_onboarding": "Pendiente",
         }
-        logo_url = data.get("logo_url")
-        if logo_url is not None:
-            if logo_url and not str(logo_url).startswith("https://"):
-                raise ConfiguracionCuentaError("logo_url invalida")
-            updates["logo_url"] = logo_url
+        # Decisión 2026-07-24: el logo lo configura el cliente (O02/O03), no Admin vía O12.
+        if "logo_url" in data and data.get("logo_url") is not None:
+            raise ConfiguracionCuentaError(
+                "logo_url debe configurarlo el cliente (onboarding/perfil); Admin no define branding"
+            )
 
         updated = self.cliente_repo.update(cliente_id, updates)
         if not updated:

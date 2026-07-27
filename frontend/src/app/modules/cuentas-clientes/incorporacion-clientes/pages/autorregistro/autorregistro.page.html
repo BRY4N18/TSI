@@ -1,0 +1,128 @@
+<div class="mx-auto max-w-2xl space-y-6 p-6">
+  <header class="space-y-2">
+    <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Incorporación de clientes</p>
+    <h1 class="m-0 text-[28px] font-bold text-text-primary">Autorregistro</h1>
+    <p class="m-0 text-sm text-text-secondary">
+      Completa los datos de tu organización. La solicitud quedará en revisión hasta que un administrador la apruebe.
+    </p>
+  </header>
+
+  @if (enviado && idSolicitud) {
+    <section
+      role="status"
+      class="space-y-3 rounded-lg border border-border-default border-l-4 border-l-alert-info bg-alert-info-bg p-6"
+    >
+      <div class="flex items-center gap-2 text-alert-info">
+        <app-tabler-icon name="info-circle" [size]="22" />
+        <h2 class="m-0 text-xl font-semibold">Solicitud en revisión</h2>
+      </div>
+      <p class="m-0 text-sm text-text-primary">
+        Solicitud <strong>#{{ idSolicitud }}</strong> registrada con estado
+        <strong>{{ estadoSolicitud }}</strong>.
+      </p>
+      <p class="m-0 text-sm text-text-secondary">
+        Ya puedes iniciar sesión con el correo indicado. El onboarding y la operación de módulos activos
+        estarán disponibles solo después de la aprobación.
+      </p>
+      <button
+        type="button"
+        (click)="nuevaSolicitud()"
+        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default bg-bg-surface px-5 text-sm font-medium text-text-primary hover:bg-bg-page"
+      >
+        <app-tabler-icon name="refresh" [size]="18" />
+        Enviar otra solicitud
+      </button>
+    </section>
+  } @else {
+    <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+      <form (ngSubmit)="enviar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label class="block sm:col-span-2">
+          <span class="mb-1 block text-sm font-medium text-text-secondary">Razón social</span>
+          <input
+            [(ngModel)]="form.razon_social"
+            name="razon_social"
+            required
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          />
+        </label>
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-text-secondary">Nombre comercial</span>
+          <input
+            [(ngModel)]="form.nombre"
+            name="nombre"
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          />
+        </label>
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo</span>
+          <select
+            [(ngModel)]="form.tipo"
+            name="tipo"
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          >
+            @for (t of tipos; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="mb-1 block text-sm font-medium text-text-secondary">NIT</span>
+          <input
+            [(ngModel)]="form.nit_identificacion"
+            name="nit"
+            required
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          />
+        </label>
+
+        <fieldset class="sm:col-span-2 grid grid-cols-1 gap-4 rounded-md border border-border-default p-4 sm:grid-cols-2">
+          <legend class="px-1 text-sm font-semibold text-text-primary">Administrador local</legend>
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">Nombres</span>
+            <input
+              [(ngModel)]="form.admin_local.nombres"
+              name="nombres"
+              required
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">Apellidos</span>
+            <input
+              [(ngModel)]="form.admin_local.apellidos"
+              name="apellidos"
+              required
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            />
+          </label>
+          <label class="block sm:col-span-2">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">Email</span>
+            <input
+              type="email"
+              [(ngModel)]="form.admin_local.gmail"
+              name="gmail"
+              required
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            />
+          </label>
+        </fieldset>
+
+        <div class="sm:col-span-2">
+          <button
+            type="submit"
+            [disabled]="enviando"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+            [class.opacity-80]="enviando"
+          >
+            @if (enviando) {
+              <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
+              Enviando…
+            } @else {
+              Enviar solicitud
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</div>

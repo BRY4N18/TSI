@@ -1,6 +1,9 @@
 import pytest
 
 from apps.red_operativa.services.baja_unidad_service import BajaUnidadService
+from apps.red_operativa.services.proveedor_access_service import ProveedorAccessError
+
+PROVEEDOR_KW = {"roles": ["Cliente"]}
 
 
 @pytest.mark.service
@@ -13,7 +16,10 @@ class TestBajaUnidadService:
 
         # Act
         result = service.dar_de_baja(
-            mock_unidad_emergencia["idunidademergencia"], motivo="Mantenimiento", idusuario=1
+            mock_unidad_emergencia["idunidademergencia"],
+            motivo="Mantenimiento",
+            idusuario=3,
+            **PROVEEDOR_KW,
         )
 
         # Assert
@@ -28,7 +34,10 @@ class TestBajaUnidadService:
         # Act & Assert
         with pytest.raises(ValueError):
             service.dar_de_baja(
-                mock_despacho_activo["idunidademergencia"], motivo="Baja forzada", idusuario=1
+                mock_despacho_activo["idunidademergencia"],
+                motivo="Baja forzada",
+                idusuario=3,
+                **PROVEEDOR_KW,
             )
 
     def test_dar_de_baja_when_forzada_registra_idaccidente(
@@ -41,8 +50,9 @@ class TestBajaUnidadService:
         service.dar_de_baja(
             mock_despacho_activo["idunidademergencia"],
             motivo="Baja forzada",
-            idusuario=1,
+            idusuario=3,
             forzar=True,
+            **PROVEEDOR_KW,
         )
         bajas = service.baja_repo.list_by_unidad(mock_despacho_activo["idunidademergencia"])
 
@@ -56,11 +66,16 @@ class TestBajaUnidadService:
         # Arrange
         service = BajaUnidadService()
         service.dar_de_baja(
-            mock_unidad_emergencia["idunidademergencia"], motivo="Baja", idusuario=1
+            mock_unidad_emergencia["idunidademergencia"],
+            motivo="Baja",
+            idusuario=3,
+            **PROVEEDOR_KW,
         )
 
         # Act
-        result = service.reactivar(mock_unidad_emergencia["idunidademergencia"])
+        result = service.reactivar(
+            mock_unidad_emergencia["idunidademergencia"], user_id=3, **PROVEEDOR_KW
+        )
 
         # Assert
         assert result["activo"] is True
@@ -71,7 +86,10 @@ class TestBajaUnidadService:
         # Arrange
         service = BajaUnidadService()
         service.dar_de_baja(
-            mock_unidad_emergencia["idunidademergencia"], motivo="Baja", idusuario=1
+            mock_unidad_emergencia["idunidademergencia"],
+            motivo="Baja",
+            idusuario=3,
+            **PROVEEDOR_KW,
         )
         service.unidad_repo.create(
             {
@@ -87,4 +105,19 @@ class TestBajaUnidadService:
 
         # Act & Assert
         with pytest.raises(ValueError):
-            service.reactivar(mock_unidad_emergencia["idunidademergencia"])
+            service.reactivar(
+                mock_unidad_emergencia["idunidademergencia"], user_id=3, **PROVEEDOR_KW
+            )
+
+    def test_dar_de_baja_when_admin_raises(self, mock_pinot, mock_kafka, mock_unidad_emergencia):
+        # Arrange
+        service = BajaUnidadService()
+
+        # Act & Assert
+        with pytest.raises(ProveedorAccessError):
+            service.dar_de_baja(
+                mock_unidad_emergencia["idunidademergencia"],
+                motivo="Hack",
+                idusuario=1,
+                roles=["Administrador"],
+            )

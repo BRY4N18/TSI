@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from apps.despacho.services.alerta_admin_service import AlertaAdminService
 from apps.despacho.services.consulta_candidatas_service import ConsultaCandidatasService
 from core.repositories.accidentes.nota_accidente_repository import (
     NotaAccidenteRepository,
@@ -19,10 +20,12 @@ class ReasignacionDespachoService:
         asignacion: AsignacionInteligenteService | None = None,
         candidatas: ConsultaCandidatasService | None = None,
         nota_repo: NotaAccidenteRepository | None = None,
+        alerta_admin: AlertaAdminService | None = None,
     ):
         self._asignacion = asignacion
         self.candidatas = candidatas or ConsultaCandidatasService()
         self.notas = nota_repo or NotaAccidenteRepository()
+        self.alerta_admin = alerta_admin or AlertaAdminService()
 
     @property
     def asignacion(self) -> AsignacionInteligenteService:
@@ -68,4 +71,8 @@ class ReasignacionDespachoService:
             idaccidente=idaccidente,
             idusuario=idusuario,
             nota="Sin unidades disponibles. Requiere intervención manual.",
+        )
+        self.alerta_admin.notificar_sin_unidades(
+            idaccidente=idaccidente,
+            contexto="reasignacion_agotamiento",
         )

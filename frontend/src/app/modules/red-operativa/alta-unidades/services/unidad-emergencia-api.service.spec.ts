@@ -28,7 +28,6 @@ describe('UnidadEmergenciaApiService', () => {
     // Act
     service
       .registrar({
-        idcliente: 1,
         idcondado: 1,
         tipopropiedad: 'Externa',
         placa: 'ABC-123',

@@ -56,6 +56,7 @@ class OnboardingService:
         cliente = self.cliente_repo.find_by_id(cliente_id)
         if not cliente:
             raise OnboardingError("Cuenta de cliente no encontrada")
+        self._require_cuenta_activa(cliente)
         return self._build_progreso(cliente)
 
     def completar_etapa(
@@ -72,6 +73,7 @@ class OnboardingService:
         cliente = self.cliente_repo.find_by_id(cliente_id)
         if not cliente:
             raise OnboardingError("Cuenta de cliente no encontrada")
+        self._require_cuenta_activa(cliente)
 
         if etapa not in ETAPAS_OBLIGATORIAS:
             raise OnboardingError("etapa invalida")
@@ -111,6 +113,14 @@ class OnboardingService:
         )
 
         return {"etapa": etapa, "progreso": progreso}
+
+    def _require_cuenta_activa(self, cliente: dict[str, Any]) -> None:
+        estado = cliente.get("estado")
+        if estado != "Activo":
+            raise OnboardingError(
+                "Onboarding solo disponible para cuentas Activo "
+                f"(estado actual: {estado or 'desconocido'})"
+            )
 
     def _validate_stage_order(self, cliente_id: int, etapa: str) -> None:
         idx = ETAPAS_OBLIGATORIAS.index(etapa)

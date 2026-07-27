@@ -6,17 +6,19 @@
 
 ## Summary
 
-Implementar el ciclo de vida administrativo del catálogo de unidades de emergencia (CU-O54, O56, O57, O58, O59) con enfoque **contract-first**: primero contrato OpenAPI REST bajo `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía Kafka; finalmente frontend Angular 17+ con servicios tipados y guards de rol (Administrador / Operador de emergencias). Incluye la migración de `despacho-inteligente` de `zonacobertura` (texto libre) a `idcondado` (FK real), acordada en clarificación.
+**Actualización 2026-07-24:** actor **Proveedor** (no Admin) en CU-O54/56/57/58; `idcliente` auto del token; O56 crea credenciales con todo-o-nada total; **CU-O59 eliminado**. Ver `spec.md` Session 2026-07-24 y `especificacion-cambios-implementacion.md`.
+
+Plan original (2026-07-21): ciclo de vida administrativo (CU-O54, O56, O57, O58; O59 retirado) contract-first; Vista→Servicio→Repositorio; Kafka; Angular. Migración `zonacobertura`→`idcondado` ya acordada.
 
 ## Traceability
 
-- **Objetivo Operacional (OP)**: OP-TSI-RED-01 (catálogo confiable de unidades externas para el algoritmo de despacho — TSI no posee flotas, su valor es el de orquestador digital).
-- **UC cubiertos**: CU-O54, CU-O56, CU-O57, CU-O58, CU-O59.
-- **Mapeo de cumplimiento**:
-  - Contract-first REST versionado (`/api/v1/red-operativa/unidades/...`).
-  - Patrón Vista→Servicio→Repositorio; Kafka como único canal de escritura (`Dim_UnidadEmergencia_topic`, `Fact_BajaUnidad_topic`, `Fact_HistorialEstadoUnidad_topic`).
-  - JWT + RBAC: Administrador (CU-O54/56/57/58), Operador de emergencias (CU-O59) — dependencia `autenticacion-y-rbac`.
-  - Migración cruzada documentada: `despacho-inteligente` debe adoptar `idcondado` (ver Sección 12 del spec y Decision 8 de `research.md`).
+- **Objetivo Operacional (OP)**: OP-TSI-RED-01.
+- **UC cubiertos**: CU-O54, CU-O56, CU-O57, CU-O58. **CU-O59: eliminado.**
+- **Mapeo de cumplimiento** (delta 2026-07-24):
+  - JWT + RBAC: rol **Proveedor** + ownership por `idcliente`; sin override Administrador.
+  - O56: columnas + `gmail`; creación usuarios/credenciales; transacción atómica con unidades.
+  - Retirar OpenAPI/FE/tests de disponibilidad externa (O59).
+  - Dependencia fuerte de `incorporacion-clientes` (Proveedor `Activo` vía O14/O16).
 
 ## Technical Context
 

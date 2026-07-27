@@ -32,7 +32,7 @@ class LogoUploadService:
         content_type: str,
         file_name: str | None = None,
     ) -> dict:
-        self.access.require_access(user_id=user_id, roles=roles, cliente_id=cliente_id)
+        self.access.require_admin_local(user_id=user_id, cliente_id=cliente_id)
         self.access.ensure_cuenta_activa(cliente_id)
 
         if content_type not in ALLOWED_CONTENT_TYPES:

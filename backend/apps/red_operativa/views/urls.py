@@ -12,7 +12,6 @@ from apps.red_operativa.views.region_views import (
 from apps.red_operativa.views.unidad_views import (
     UnidadBajaView,
     UnidadDetailView,
-    UnidadDisponibilidadView,
     UnidadImportacionLoteView,
     UnidadListCreateView,
     UnidadReactivarView,
@@ -64,10 +63,5 @@ urlpatterns = [
         "red-operativa/unidades/<int:idunidademergencia>/reactivar",
         UnidadReactivarView.as_view(),
         name="red-operativa-unidad-reactivar",
-    ),
-    path(
-        "red-operativa/unidades/<int:idunidademergencia>/disponibilidad",
-        UnidadDisponibilidadView.as_view(),
-        name="red-operativa-unidad-disponibilidad",
     ),
 ]

@@ -375,3 +375,36 @@ T014+T015 ubicacion_unidad_repository
 - `ReasignacionDespachoService` compartido por O45 síncrono, O23 fail-fast y consumer O36
 - Markers: `repository` para repos, `service` para servicios/consumers, `api` para contract tests, `critical_path` para integración despacho
 - Commit sugerido tras cada par implementación+test o al cerrar cada checkpoint
+
+---
+
+## Phase 10: Delta 2026-07-24 — Alerta Admin + hook plan
+
+**Purpose**: Cumplir CA-DES-007/011/014 del spec actualizado. Fases 1–9 = historial; esta fase = **completada**.
+
+**Prerequisites**: `spec.md` Session 2026-07-24, `especificacion-cambios-implementacion.md`.
+
+| Story | Prioridad | CU/RF | Goal |
+|-------|-----------|-------|------|
+| US7 | P1 | O34/O36 | Notificación activa a Administrador sin candidatas |
+| US8 | P2 | O22/O36 | Hook no-op elegibilidad/prioridad por plan (fail-open) |
+
+### US7 — Alerta Administrador
+
+- [X] T103 [P] [US7] Test service: sin candidatas en escalamiento dispara nota + notify Admin en `backend/apps/despacho/tests/services/test_escalamiento_zona_alerta_admin.py`
+- [X] T104 [P] [US7] Test service: agotamiento en reasignación notifica Admin en `backend/apps/despacho/tests/services/test_reasignacion_alerta_admin.py`
+- [X] T105 [US7] Extender `EscalamientoZonaService` para notificar Administrador (reutilizar canal `core/notificaciones` o equivalente) en `escalamiento_zona_service.py`
+- [X] T106 [US7] Extender `ReasignacionDespachoService._alerta_critica` (o equivalente) con fan-out Admin en `reasignacion_despacho_service.py`
+- [X] T107 [US7] Resolver destinatarios Admin (rol Administrador / setting) en helper reutilizable bajo `backend/apps/despacho/services/` o `core/`
+- [X] T108 [US7] Actualizar escenarios quickstart / `traceability.md` CA-DES-007, CA-DES-011
+
+### US8 — Hook plan/severidad (no-op)
+
+- [X] T109 [P] [US8] Test unit: hook no filtra candidatas hoy (fail-open) en `backend/apps/despacho/tests/unit/test_elegibilidad_plan_hook.py`
+- [X] T110 [US8] Introducir método/extensión documentada `filtrar_por_plan_severidad` (no-op) en `consulta_candidatas_service.py`
+- [X] T111 [US8] Invocar hook desde ranking O22/O36 sin cambiar scores actuales; comentario TODO Suscripciones-Facturación
+- [X] T112 [US8] Documentar CA-DES-014 en `traceability.md` + nota en `research.md` si aplica
+
+**Checkpoint delta**: Sin unidades → Admin notificado; hook listo sin depender de `Dim_Plan`.
+
+**Orden**: US7 (P1) antes o en paralelo a US8 (P2).

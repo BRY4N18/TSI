@@ -6,7 +6,6 @@ import { UnidadEmergenciaApiService } from './unidad-emergencia-api.service';
 import {
   ApiEnvelope,
   BajaUnidadData,
-  DisponibilidadData,
   ImportacionLoteData,
   UnidadCreateRequest,
   UnidadCreatedData,
@@ -57,16 +56,6 @@ export class UnidadEmergenciaFacadeService {
 
   reactivar(idunidademergencia: number): Observable<OperationResult<UnidadEmergenciaData>> {
     return this.wrap(this.api.reactivar(idunidademergencia));
-  }
-
-  declararDisponibilidad(
-    idunidademergencia: number,
-    estadonuevo: string,
-  ): Observable<OperationResult<DisponibilidadData>> {
-    if (estadonuevo === 'En Misión') {
-      return of({ ok: false, error: '"En Misión" es de asignación exclusiva del sistema' });
-    }
-    return this.wrap(this.api.declararDisponibilidad(idunidademergencia, estadonuevo));
   }
 
   private wrap<T>(source: Observable<ApiEnvelope<T>>): Observable<OperationResult<T>> {

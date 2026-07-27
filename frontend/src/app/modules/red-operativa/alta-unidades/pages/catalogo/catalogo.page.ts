@@ -13,7 +13,6 @@ import {
 } from '../../models/unidad-emergencia.contract';
 
 interface NuevaUnidadForm {
-  idcliente: number | null;
   idcondado: number | null;
   tipopropiedad: TipoPropiedad;
   placa: string;
@@ -24,7 +23,6 @@ interface NuevaUnidadForm {
 }
 
 const FORM_INICIAL: NuevaUnidadForm = {
-  idcliente: null,
   idcondado: null,
   tipopropiedad: 'Externa',
   placa: '',
@@ -34,6 +32,9 @@ const FORM_INICIAL: NuevaUnidadForm = {
   tipounidademergencia: 'Ambulancia',
 };
 
+const CSV_PLANTILLA =
+  'idcondado,tipopropiedad,placa,contactoproveedor,unidademergencia,tipounidademergencia,gmail';
+
 @Component({
   selector: 'app-red-operativa-catalogo-page',
   standalone: true,
@@ -42,22 +43,14 @@ const FORM_INICIAL: NuevaUnidadForm = {
     <div class="mx-auto max-w-2xl space-y-8 p-6">
       <header>
         <h1 class="text-[28px] font-bold text-text-primary">Catálogo de unidades de emergencia</h1>
-        <p class="mt-1 text-sm text-text-secondary">Registrar unidades individualmente o en lote.</p>
+        <p class="mt-1 text-sm text-text-secondary">
+          Registrar unidades de su flota (Proveedor) individualmente o en lote.
+        </p>
       </header>
 
       <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
         <h2 class="text-lg font-semibold text-text-primary">Alta individual</h2>
         <form (ngSubmit)="registrar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Cliente (ID)</span>
-            <input
-              type="number"
-              [(ngModel)]="form.idcliente"
-              name="idcliente"
-              required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
-            />
-          </label>
           <label class="block">
             <span class="mb-1 block text-sm font-medium text-text-secondary">Condado (ID)</span>
             <input
@@ -166,6 +159,12 @@ const FORM_INICIAL: NuevaUnidadForm = {
 
       <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
         <h2 class="text-lg font-semibold text-text-primary">Importación en lote (CSV)</h2>
+        <p class="text-sm text-text-secondary">
+          Columnas requeridas:
+          <code class="rounded bg-bg-muted px-1 text-xs">{{ csvPlantilla }}</code>.
+          Cada fila debe incluir un <strong>gmail</strong> único; se crean usuario y credenciales
+          (todo-o-nada).
+        </p>
         <div class="flex flex-wrap items-center gap-3">
           <input
             type="file"
@@ -186,7 +185,12 @@ const FORM_INICIAL: NuevaUnidadForm = {
 
         @if (loteResultado) {
           <div class="space-y-2 text-sm text-text-primary">
-            <p>{{ loteResultado.insertadas }} unidades insertadas.</p>
+            <p>
+              {{ loteResultado.insertadas }} unidades insertadas
+              @if (loteResultado.usuarios_creados != null) {
+                ({{ loteResultado.usuarios_creados }} usuarios).
+              }
+            </p>
             @if (loteResultado.fallidas.length > 0) {
               <ul class="list-inside list-disc space-y-1 text-alert-critical">
                 @for (fallida of loteResultado.fallidas; track fallida.fila) {
@@ -211,6 +215,8 @@ const FORM_INICIAL: NuevaUnidadForm = {
 })
 export class CatalogoPage implements OnInit {
   private readonly facade = inject(UnidadEmergenciaFacadeService);
+
+  readonly csvPlantilla = CSV_PLANTILLA;
 
   form: NuevaUnidadForm = { ...FORM_INICIAL };
   guardando = false;
@@ -248,13 +254,12 @@ export class CatalogoPage implements OnInit {
     this.errorMensaje = null;
     this.ultimaUnidadCreada = null;
 
-    if (!this.form.idcliente || !this.form.idcondado || !this.form.placa || !this.form.unidademergencia) {
+    if (!this.form.idcondado || !this.form.placa || !this.form.unidademergencia) {
       this.errorMensaje = 'Completa todos los campos requeridos.';
       return;
     }
 
     const body: UnidadCreateRequest = {
-      idcliente: this.form.idcliente,
       idcondado: this.form.idcondado,
       tipopropiedad: this.form.tipopropiedad,
       placa: this.form.placa,

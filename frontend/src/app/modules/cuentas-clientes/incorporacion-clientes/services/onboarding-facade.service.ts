@@ -3,7 +3,6 @@ import { Observable, switchMap } from 'rxjs';
 
 import {
   CompletarEtapaData,
-  ConfiguracionCuentaData,
   DatosEtapaPerfil,
   DatosEtapaPreferencias,
   EtapaOnboarding,
@@ -16,9 +15,7 @@ export class OnboardingFacadeService {
   private readonly api = inject(IncorporacionClienteApiService);
 
   loadProgreso(idcliente: number): Observable<OnboardingProgresoData> {
-    return this.api.getOnboardingProgreso(idcliente).pipe(
-      switchMap((res) => [res.data]),
-    );
+    return this.api.getOnboardingProgreso(idcliente).pipe(switchMap((res) => [res.data]));
   }
 
   completarCambioPassword(idcliente: number): Observable<CompletarEtapaData> {
@@ -36,6 +33,22 @@ export class OnboardingFacadeService {
       .pipe(switchMap((res) => [res.data]));
   }
 
+  /** Obtiene URL firmada y completa perfil corporativo con logo_url (cliente). */
+  uploadLogoAndCompletarPerfil(
+    idcliente: number,
+    datos: DatosEtapaPerfil,
+    file: File,
+  ): Observable<CompletarEtapaData> {
+    return this.api.createLogoUploadUrl(idcliente, file.type, file.name).pipe(
+      switchMap((upload) =>
+        this.completarPerfil(idcliente, {
+          ...datos,
+          logo_url: upload.data.logo_url,
+        }),
+      ),
+    );
+  }
+
   completarPreferencias(
     idcliente: number,
     datos: DatosEtapaPreferencias,
@@ -45,29 +58,16 @@ export class OnboardingFacadeService {
       .pipe(switchMap((res) => [res.data]));
   }
 
-  uploadLogoAndConfigurar(
-    idcliente: number,
-    plan: string,
-    file: File,
-  ): Observable<ConfiguracionCuentaData> {
-    return this.api.createLogoUploadUrl(idcliente, file.type, file.name).pipe(
-      switchMap((upload) =>
-        this.api
-          .configurarCuenta(idcliente, {
-            plan_suscripcion: plan,
-            logo_url: upload.data.logo_url,
-          })
-          .pipe(switchMap((res) => [res.data])),
-      ),
-    );
-  }
-
   etapaLabel(etapa: EtapaOnboarding | null): string {
-    const labels: Record<EtapaOnboarding, string> = {
-      cambio_password: 'Cambio de contraseña',
-      perfil_corporativo: 'Perfil corporativo',
-      preferencias: 'Preferencias operativas',
-    };
-    return etapa ? labels[etapa] : 'Completado';
+    switch (etapa) {
+      case 'cambio_password':
+        return 'Cambio de contraseña';
+      case 'perfil_corporativo':
+        return 'Perfil corporativo';
+      case 'preferencias':
+        return 'Preferencias';
+      default:
+        return 'Completado';
+    }
   }
 }

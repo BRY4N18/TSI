@@ -1,4 +1,10 @@
-export type TipoCliente = 'Aseguradora' | 'Municipio' | 'Smart City';
+export type TipoCliente = 'Proveedor' | 'Aseguradora' | 'Municipio' | 'Smart City';
+export type EstadoCuenta =
+  | 'Pendiente_Aprobación'
+  | 'Activo'
+  | 'Rechazado'
+  | 'Rechazado_Anulado'
+  | 'Dado de baja';
 export type EstadoOnboarding = 'Pendiente' | 'En progreso' | 'Completado';
 export type EtapaOnboarding = 'cambio_password' | 'perfil_corporativo' | 'preferencias';
 
@@ -13,6 +19,44 @@ export interface AdminLocalInput {
   gmail: string;
 }
 
+export interface AutorregistroProveedorRequest {
+  razon_social: string;
+  nombre: string;
+  tipo: TipoCliente;
+  nit_identificacion: string;
+  fecha_inicio_contrato?: number | null;
+  admin_local: AdminLocalInput;
+}
+
+export interface AutorregistroProveedorData {
+  idcliente: number;
+  estado: 'Pendiente_Aprobación';
+  admin_local_id: number;
+  admin_local_gmail: string;
+  message?: string;
+}
+
+export interface SolicitudItem {
+  idcliente: number;
+  razon_social: string;
+  nit_identificacion: string;
+  tipo: TipoCliente;
+  estado: 'Pendiente_Aprobación' | 'Rechazado';
+}
+
+export interface AprobacionRequest {
+  decision: 'aprobar' | 'rechazar';
+  motivo?: string;
+}
+
+export interface AprobacionData {
+  idcliente: number;
+  estado: 'Activo' | 'Rechazado' | 'Rechazado_Anulado';
+  estado_onboarding?: EstadoOnboarding | null;
+  message?: string;
+}
+
+/** @deprecated CU-O01 legado — no usar para Proveedor */
 export interface RegistroCuentaRequest {
   razon_social: string;
   nombre: string;
@@ -22,6 +66,7 @@ export interface RegistroCuentaRequest {
   admin_local: AdminLocalInput;
 }
 
+/** @deprecated CU-O01 legado */
 export interface RegistroCuentaData {
   idcliente: number;
   estado: 'Activo';
@@ -30,6 +75,7 @@ export interface RegistroCuentaData {
   message?: string;
 }
 
+/** @deprecated CU-O12 — logo lo pone el cliente en onboarding */
 export interface ConfiguracionCuentaRequest {
   plan_suscripcion: string;
   logo_url?: string;

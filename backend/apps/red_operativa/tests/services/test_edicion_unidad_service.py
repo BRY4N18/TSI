@@ -1,6 +1,9 @@
 import pytest
 
 from apps.red_operativa.services.edicion_unidad_service import EdicionUnidadService
+from apps.red_operativa.services.proveedor_access_service import ProveedorAccessError
+
+PROVEEDOR = {"user_id": 3, "roles": ["Cliente"]}
 
 
 @pytest.mark.service
@@ -10,7 +13,9 @@ class TestEdicionUnidadService:
         service = EdicionUnidadService()
 
         # Act
-        result = service.editar(mock_unidad_emergencia["idunidademergencia"], {"capacidad": "8"})
+        result = service.editar(
+            mock_unidad_emergencia["idunidademergencia"], {"capacidad": "8"}, **PROVEEDOR
+        )
 
         # Assert
         assert result["capacidad"] == "8"
@@ -26,6 +31,7 @@ class TestEdicionUnidadService:
             service.editar(
                 mock_despacho_activo["idunidademergencia"],
                 {"tipounidademergencia": "Patrulla"},
+                **PROVEEDOR,
             )
 
     def test_editar_when_campo_critico_confirmado_updates(
@@ -39,6 +45,7 @@ class TestEdicionUnidadService:
             mock_despacho_activo["idunidademergencia"],
             {"tipounidademergencia": "Patrulla"},
             confirmar_edicion_critica=True,
+            **PROVEEDOR,
         )
 
         # Assert
@@ -52,4 +59,27 @@ class TestEdicionUnidadService:
 
         # Act & Assert
         with pytest.raises(KeyError):
-            service.editar(mock_unidad_emergencia["idunidademergencia"], {"idcliente": 99})
+            service.editar(
+                mock_unidad_emergencia["idunidademergencia"], {"idcliente": 99}, **PROVEEDOR
+            )
+
+    def test_editar_when_unidad_ajena_raises(self, mock_pinot, mock_kafka, pinot_store):
+        # Arrange
+        pinot_store["Dim_UnidadEmergencia"].append(
+            {
+                "idunidademergencia": 777,
+                "idcliente": 99,
+                "idcondado": 1,
+                "tipopropiedad": "Externa",
+                "placa": "AJENA-777",
+                "unidademergencia": "Ajena",
+                "tipounidademergencia": "Grúa",
+                "contactoproveedor": "1",
+                "activo": True,
+            }
+        )
+        service = EdicionUnidadService()
+
+        # Act & Assert
+        with pytest.raises(ProveedorAccessError):
+            service.editar(777, {"capacidad": "1"}, **PROVEEDOR)

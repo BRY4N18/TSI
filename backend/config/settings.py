@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "apps.seguimiento",
     "apps.soporte_cliente",
     "apps.red_operativa",
+    "apps.ventas_crm",
+    "apps.suscripciones",
 ]
 
 MIDDLEWARE = [
@@ -166,6 +168,16 @@ KAFKA_TOPICS = {
     "baja_unidad": "Fact_BajaUnidad_topic",
     "region_operativa_snapshot": "Dim_RegionOperativa_topic",
     "validacion_region_snapshot": "Dim_ValidacionRegion_topic",
+    "prospecto": "Dim_Prospecto_topic",
+    "asignacion": "Fact_Asignacion_topic",
+    "pipeline": "Fact_Pipeline_topic",
+    "interaccion_demo": "Fact_Interaccion_Demo_topic",
+    "notificacion_ventas": "Fact_NotificacionVentas_topic",
+    "plan": "Dim_Plan_topic",
+    "metodo_pago": "Dim_MetodoPago_topic",
+    "suscripcion": "Fact_Suscripcion_topic",
+    "factura": "Fact_Factura_topic",
+    "solicitud_cambio_plan": "Fact_Solicitud_Cambio_Plan_topic",
 }
 
 # --- Soporte al cliente (Gestión de Tickets) ---
@@ -219,4 +231,22 @@ REST_FRAMEWORK = {
     ],
     "UNAUTHENTICATED_USER": None,
     "EXCEPTION_HANDLER": "core.api.response_envelope.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "prospecto_registro": "10/min",
+        "demo_sesion_ip": "20/min",
+        "demo_interaccion_token": "60/min",
+    },
 }
+
+# Demo interactiva (notificacion-ventas) — secrets for grant HMAC + session HS256
+DEMO_GRANT_SECRET = os.environ.get(
+    "DEMO_GRANT_SECRET", "dev-demo-grant-secret-min-32-chars!!"
+)
+DEMO_SESSION_SECRET = os.environ.get(
+    "DEMO_SESSION_SECRET", "dev-demo-session-secret-min-32-chars!"
+)
+DEMO_SESSION_MINUTES = int(os.environ.get("DEMO_SESSION_MINUTES", "30"))
+DEMO_REEVAL_DAYS = int(os.environ.get("DEMO_REEVAL_DAYS", "7"))
+EVALUACION_REGLAS_DEMO_INTERVAL_SECONDS = int(
+    os.environ.get("EVALUACION_REGLAS_DEMO_INTERVAL_SECONDS", "60")
+)

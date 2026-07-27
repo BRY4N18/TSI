@@ -72,6 +72,12 @@ Convenciones (`api-standards.md`):
 1. Caso sin candidatas en condado local.
 2. `POST .../escalar-zona`.
 3. **Esperado:** despacho con `origen=Escalado_zona` o HTTP 202 con alerta `Dim_NotaAccidente`.
+4. **Sin candidatas en vecinos (CA-DES-011):** nota de escalamiento **y** email activo a usuarios con rol `Administrador` (`AlertaAdminService` / SMTP). Fallo SMTP no debe revertir la nota.
+
+### Escenario Fbis — Agotamiento O36 (CA-DES-007)
+
+1. Forzar reasignación sin candidatas locales ni vecinas (`incluir_vecinos=true`).
+2. **Esperado:** `Dim_NotaAccidente` tipo alerta + fan-out email a Administradores; operador escala a O33 manual.
 
 ### Escenario G — Despacho múltiple O38
 
@@ -130,7 +136,7 @@ Escenarios UI mínimos:
 
 - [ ] Todos los endpoints OpenAPI implementados y contract tests verdes
 - [ ] O22–O36 flujos internos validados con quickstart escenarios A–E
-- [ ] CA-DES-001–013 verificables manualmente o en integración
+- [ ] CA-DES-001–014 verificables manualmente o en integración (incl. Admin notify + hook plan)
 - [ ] Angular guards bloquean rutas por rol
 - [ ] Ningún repositorio escribe directo a Pinot
 

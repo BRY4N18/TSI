@@ -1,0 +1,86 @@
+<section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
+  <header class="grid gap-1.5">
+    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Administración</p>
+    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Aprobaciones de downgrade</h2>
+    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+      Solo solicitudes en estado Pendiente. Al aprobar se actualiza el plan y
+      <code class="font-mono text-[0.8125rem]">Dim_Cliente.plan_suscripcion</code> vía repositorio de
+      clientes.
+    </p>
+  </header>
+
+  @if (message()) {
+    <p class="rounded-lg bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
+      {{ message() }}
+    </p>
+  }
+
+  @if (loading()) {
+    <div class="rounded-[10px] border border-border-default bg-bg-surface p-5" aria-busy="true">
+      <div class="h-4 w-2/5 animate-pulse rounded-lg bg-border-default"></div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      role="alert"
+    >
+      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        (click)="cargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (pendientes().length === 0) {
+    <div class="grid justify-items-start gap-2 rounded-[10px] border border-border-default bg-bg-surface p-5">
+      <h3 class="m-0 text-lg font-semibold">Cola vacía</h3>
+      <p class="m-0 text-sm text-text-secondary">No hay downgrades pendientes de revisión.</p>
+    </div>
+  } @else {
+    <div class="grid gap-4 md:grid-cols-3">
+      @for (s of pendientes(); track s.idsolicitud) {
+        <article class="grid content-start gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+            Solicitud #{{ s.idsolicitud }}
+          </p>
+          <p class="m-0 text-xl font-semibold">Cliente {{ s.idcliente }}</p>
+          <p class="m-0 text-sm text-text-secondary">
+            Plan {{ s.idplanactual }} → {{ s.idplansolicitado }}
+          </p>
+          <p class="m-0 text-sm text-text-secondary">Motivo: {{ s.motivo || '—' }}</p>
+          <div class="grid gap-1.5">
+            <label [attr.for]="'rej-' + s.idsolicitud" class="text-[0.8125rem] font-medium text-text-secondary"
+              >Motivo rechazo</label
+            >
+            <input
+              [id]="'rej-' + s.idsolicitud"
+              class="min-h-11 rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+              [(ngModel)]="motivos[s.idsolicitud!]"
+              placeholder="Obligatorio para rechazar"
+            />
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+              [disabled]="busyId() === s.idsolicitud"
+              (click)="aprobar(s)"
+            >
+              Aprobar
+            </button>
+            <button
+              type="button"
+              class="inline-flex min-h-11 items-center justify-center rounded-lg border border-alert-critical/45 bg-transparent px-4 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:cursor-not-allowed disabled:opacity-55"
+              [disabled]="busyId() === s.idsolicitud"
+              (click)="rechazar(s)"
+            >
+              Rechazar
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

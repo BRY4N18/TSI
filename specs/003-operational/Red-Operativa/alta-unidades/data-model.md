@@ -44,14 +44,13 @@
   - `idunidademergencia` (FK)
   - `idestadounidademergencia` (FK a `Dim_EstadoUnidadEmergencia`)
   - `estadoanterior`, `estadonuevo` (STRING)
-  - `idusuario` (INT — el Operador que declara, CU-O59; o la unidad-usuario si es autodeclaración, CU-O30 en `evidencia-unidad`)
+  - `idusuario` (INT — unidad-usuario en autodeclaración **CU-O30**; CU-O59 Operador-sin-login **eliminado** 2026-07-24)
   - `fechahora` (LONG epoch ms)
   - `fecha_actualizacion` (LONG epoch ms)
 - Reglas:
   - El estado *actual* se obtiene siempre por la fila con `fechahora` más reciente — nunca es un campo directo.
-  - "En Misión" es de escritura exclusiva del sistema (`despacho-inteligente`); no declarable vía CU-O59.
-  - El Operador puede declarar cualquier otro estado (`Activa`, `Ocupada`, `Fuera de servicio`) vía CU-O59.
-  - Alerta (no bloqueo) si se intenta marcar "Activa" con un despacho activo sin retirar en `Fact_Despacho` (RF-CAM-005).
+  - "En Misión" es de escritura exclusiva del sistema (`despacho-inteligente`); no declarable vía CU-O30.
+  - Este módulo (`alta-unidades`) **ya no escribe** disponibilidad (CU-O59 retirado).
 
 ## 4) Catálogo de estados (`Dim_EstadoUnidadEmergencia`) — solo lectura
 
@@ -62,7 +61,7 @@
 - Consultado en tiempo real (sin cache) para:
   - Bloquear/confirmar edición de `tipopropiedad`/`tipounidademergencia` si hay despacho sin `fechahoraretiro` (RF-CAM-003).
   - Determinar `tipobaja` y poblar `idaccidente` en `Fact_BajaUnidad` al forzar una baja (RF-CAM-004).
-  - Alertar inconsistencia al declarar "Activa" vía CU-O59 (RF-CAM-005).
+  - (Disponibilidad "Activa" inconsistente: validada en **CU-O30**, no en este módulo.)
 
 ## 6) Condado (`Dim_Condado`) — solo lectura, módulo Emergencias/registro-accidente
 

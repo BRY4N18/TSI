@@ -57,7 +57,7 @@ La Unidad de emergencia debe poder cambiar manualmente su estado de disponibilid
 Un POST de declaración manual con `estadonuevo = En Misión` debe ser rechazado con HTTP 422.
 
 Cada cambio debe:
-1. Insertar un nuevo registro en `Fact_HistorialEstadoUnidad` con `idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `idusuario`, `fechahora`. **`idusuario`** identifica quién declaró el cambio — la propia unidad (autodeclarado, caso de este CU) o un operador declarando a nombre de una unidad sin login (caso cubierto por `CU-O59` en el módulo Red-Operativa, que comparte esta misma tabla).
+1. Insertar un nuevo registro en `Fact_HistorialEstadoUnidad` con `idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `idusuario`, `fechahora`. **`idusuario`** identifica a la unidad autenticada que autodeclara (este CU). *(Nota 2026-07-24: la declaración por Operador sin login — antiguo CU-O59 en `alta-unidades` — fue **eliminada**; este CU-O30 es la única vía de declaración de disponibilidad.)*
 2. El estado actual no es un campo directo en `Dim_UnidadEmergencia`; se obtiene siempre consultando la fila con `fechahora` más reciente en `Fact_HistorialEstadoUnidad` para esa unidad.
 3. El historial de cambios debe ser consultable.
 

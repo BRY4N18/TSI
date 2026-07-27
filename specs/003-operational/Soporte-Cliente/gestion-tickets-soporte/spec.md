@@ -281,7 +281,7 @@ Y debe conservar todo el historial previo en `Fact_Historial_Ticket`.
 
 - **`autenticacion-y-rbac`:** requiere roles Cliente, Soporte al Cliente, Administrador, Desarrollador de APIs, Director Tecnológico, y el rol nuevo **Supervisor de Soporte** (agregado a `Dim_Rol` por la clarificación Session 2026-07-21 de RN-TIC-005 — un único usuario responsable fijo, sin gestión de turnos).
 - **`incorporacion-clientes`:** tickets asociados a clientes con cuenta activa.
-- **`billing-and-auto-renewal`** (módulo Suscripciones-Facturación): `Dim_SLAConfig` depende de `idplan` (plan de suscripción del cliente).
+- **`subscriptions-and-billing`** (módulo Suscripciones-Facturación): `Dim_SLAConfig` depende de `idplan` (plan de suscripción del cliente).
 
 ## 13. Fuera de alcance
 

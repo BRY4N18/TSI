@@ -1,0 +1,160 @@
+<div class="mx-auto max-w-4xl space-y-6 p-6">
+  <header class="flex flex-wrap items-start justify-between gap-4">
+    <div class="space-y-2">
+      <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Administración</p>
+      <h1 class="m-0 text-[28px] font-bold text-text-primary">Solicitudes de cliente</h1>
+      <p class="m-0 text-sm text-text-secondary">
+        Aprueba, rechaza o anula autorregistros. El plan de suscripción se gestiona fuera de este módulo.
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="cargar()"
+      [disabled]="cargando"
+      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default bg-bg-surface px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+    >
+      <app-tabler-icon name="refresh" [size]="18" [class.animate-spin]="cargando" />
+      {{ cargando ? 'Actualizando…' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+    <h2 class="m-0 text-xl font-semibold text-text-primary">Pendientes de aprobación</h2>
+    <ul class="m-0 list-none space-y-3 p-0">
+      @for (s of pendientes; track s.idcliente) {
+        <li
+          class="flex flex-col gap-3 rounded-md border border-border-default p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="m-0 font-semibold text-text-primary">#{{ s.idcliente }} — {{ s.razon_social }}</p>
+            <p class="m-0 text-sm text-text-secondary">{{ s.tipo }} · NIT {{ s.nit_identificacion }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="aprobar(s)"
+              [disabled]="procesando"
+              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+            >
+              <app-tabler-icon name="circle-check" [size]="18" />
+              Aprobar
+            </button>
+            <button
+              type="button"
+              (click)="abrirRechazo(s)"
+              [disabled]="procesando"
+              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-alert-critical px-5 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-50"
+            >
+              <app-tabler-icon name="alert-triangle" [size]="18" />
+              Rechazar
+            </button>
+            <button
+              type="button"
+              (click)="reenviar(s)"
+              [disabled]="procesando"
+              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+            >
+              <app-tabler-icon name="refresh" [size]="18" />
+              Reenviar invitación
+            </button>
+          </div>
+        </li>
+      } @empty {
+        <li class="flex items-center gap-2 text-sm text-text-secondary">
+          <app-tabler-icon name="info-circle" [size]="18" />
+          No hay solicitudes pendientes.
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+    <div class="space-y-1">
+      <h2 class="m-0 text-xl font-semibold text-text-primary">Rechazadas</h2>
+      <p class="m-0 text-sm text-text-secondary">
+        Anular marca la fila como Rechazado_Anulado (sin borrado). El solicitante puede autorregistrarse de
+        nuevo con el mismo NIT.
+      </p>
+    </div>
+    <ul class="m-0 list-none space-y-3 p-0">
+      @for (s of rechazadas; track s.idcliente) {
+        <li
+          class="flex flex-col gap-3 rounded-md border border-border-default p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="m-0 font-semibold text-text-primary">#{{ s.idcliente }} — {{ s.razon_social }}</p>
+            <p class="m-0 text-sm text-text-secondary">NIT {{ s.nit_identificacion }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="anular(s)"
+            [disabled]="procesando"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+          >
+            <app-tabler-icon name="refresh" [size]="18" />
+            Anular rechazo
+          </button>
+        </li>
+      } @empty {
+        <li class="flex items-center gap-2 text-sm text-text-secondary">
+          <app-tabler-icon name="info-circle" [size]="18" />
+          No hay solicitudes rechazadas.
+        </li>
+      }
+    </ul>
+  </section>
+
+  @if (rechazoTarget; as target) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl">
+        <div class="mb-3 flex items-center gap-2 text-alert-critical">
+          <app-tabler-icon name="alert-triangle" [size]="22" />
+          <h2 class="m-0 text-lg font-semibold">Confirmar rechazo</h2>
+        </div>
+        <p class="m-0 mb-4 text-sm text-text-secondary">
+          Vas a rechazar la solicitud <strong class="text-text-primary">#{{ target.idcliente }}</strong>
+          ({{ target.razon_social }}). Indica el motivo — es obligatorio.
+        </p>
+        <label class="mb-4 block">
+          <span class="mb-1 block text-sm font-medium text-text-secondary">Motivo</span>
+          <textarea
+            [(ngModel)]="motivoRechazo"
+            name="motivoRechazo"
+            rows="3"
+            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            [class.border-alert-critical]="motivoError"
+          ></textarea>
+          @if (motivoError) {
+            <span class="mt-1 flex items-center gap-1 text-sm text-alert-critical">
+              <app-tabler-icon name="alert-circle" [size]="16" />
+              El motivo es obligatorio.
+            </span>
+          }
+        </label>
+        <div class="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            (click)="cerrarRechazo()"
+            [disabled]="procesando"
+            class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="confirmarRechazo()"
+            [disabled]="procesando"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-alert-critical bg-alert-critical-bg px-5 text-sm font-semibold text-alert-critical hover:opacity-90 disabled:opacity-50"
+          >
+            @if (procesando) {
+              <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
+              Rechazando…
+            } @else {
+              Confirmar rechazo
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

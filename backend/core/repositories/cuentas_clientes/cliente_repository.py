@@ -32,24 +32,60 @@ class ClienteRepository:
         return rows[0] if rows else None
 
     def find_by_nit(self, nit: str) -> dict[str, Any] | None:
+        """NIT activo para duplicados — excluye soft-anulados (Rechazado_Anulado)."""
         rows = self.pinot.query(
             """
             SELECT * FROM Dim_Cliente
-            WHERE nit_identificacion = %(nit)s LIMIT 1
+            WHERE nit_identificacion = %(nit)s
+              AND estado <> 'Rechazado_Anulado'
+            LIMIT 1
             """,
             {"nit": nit},
         )
         return rows[0] if rows else None
 
+    def exists_by_nit_any(self, nit: str) -> bool:
+        """Return whether a NIT exists regardless of the client's state."""
+        rows = self.pinot.query(
+            "SELECT idcliente FROM Dim_Cliente WHERE nit_identificacion = %(nit)s LIMIT 1",
+            {"nit": nit},
+        )
+        return bool(rows)
+
     def find_by_admin_local(self, user_id: int) -> dict[str, Any] | None:
+        """Cuenta vigente del admin local — excluye soft-anulados."""
         rows = self.pinot.query(
             """
             SELECT * FROM Dim_Cliente
-            WHERE admin_local_id = %(admin_local_id)s LIMIT 1
+            WHERE admin_local_id = %(admin_local_id)s
+              AND estado <> 'Rechazado_Anulado'
+            LIMIT 1
             """,
             {"admin_local_id": user_id},
         )
         return rows[0] if rows else None
+
+    def list_by_estado(self, estado: str) -> list[dict[str, Any]]:
+        rows = self.pinot.query(
+            """
+            SELECT * FROM Dim_Cliente
+            WHERE estado = %(estado)s
+            """,
+            {"estado": estado},
+        )
+        return list(rows or [])
+
+    def update_estado(
+        self,
+        cliente_id: int,
+        *,
+        estado: str,
+        estado_onboarding: str | None = None,
+    ) -> dict[str, Any] | None:
+        data: dict[str, Any] = {"estado": estado}
+        if estado_onboarding is not None:
+            data["estado_onboarding"] = estado_onboarding
+        return self.update(cliente_id, data)
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         now = datetime.now(timezone.utc).isoformat()
@@ -65,7 +101,8 @@ class ClienteRepository:
             "logo_url": data.get("logo_url"),
             "estado_onboarding": data.get("estado_onboarding"),
             "estado": data.get("estado", "Activo"),
-            "admin_local_id": data["admin_local_id"],
+            "idprospecto": data.get("idprospecto"),
+            "admin_local_id": data.get("admin_local_id"),
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)

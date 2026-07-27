@@ -1,9 +1,13 @@
-"""CU-O54 — registrar unidad de emergencia individual."""
+"""CU-O54 — registrar unidad de emergencia individual (actor Proveedor)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from apps.red_operativa.services.proveedor_access_service import (
+    ProveedorAccessError,
+    ProveedorAccessService,
+)
 from core.repositories.red_operativa.unidad_emergencia_repository import (
     UnidadEmergenciaRepository,
 )
@@ -13,16 +17,33 @@ TIPOS_UNIDAD = {"Ambulancia", "Grúa", "Patrulla", "Bomberos", "Defensa Civil"}
 
 
 class RegistroUnidadService:
-    def __init__(self, unidad_repo: UnidadEmergenciaRepository | None = None):
+    def __init__(
+        self,
+        unidad_repo: UnidadEmergenciaRepository | None = None,
+        access: ProveedorAccessService | None = None,
+    ):
         self.unidad_repo = unidad_repo or UnidadEmergenciaRepository()
+        self.access = access or ProveedorAccessService()
 
-    def registrar(self, data: dict[str, Any]) -> dict[str, Any]:
-        self._validar(data)
-        if self.unidad_repo.find_by_placa_activa(data["placa"]):
-            raise ValueError(f"Ya existe una unidad activa con placa {data['placa']}")
-        if not self.unidad_repo.condado_exists(data["idcondado"]):
-            raise LookupError(f"idcondado {data['idcondado']} no existe")
-        return self.unidad_repo.create(data)
+    def registrar(
+        self,
+        data: dict[str, Any],
+        *,
+        user_id: int,
+        roles: list[str],
+    ) -> dict[str, Any]:
+        cliente = self.access.resolve_cliente_activo(user_id=user_id, roles=roles)
+        payload = dict(data)
+        payload.pop("idcliente", None)
+        payload["idcliente"] = cliente["idcliente"]
+        if not payload.get("tipopropiedad"):
+            payload["tipopropiedad"] = "Externa"
+        self._validar(payload)
+        if self.unidad_repo.find_by_placa_activa(payload["placa"]):
+            raise ValueError(f"Ya existe una unidad activa con placa {payload['placa']}")
+        if not self.unidad_repo.condado_exists(payload["idcondado"]):
+            raise LookupError(f"idcondado {payload['idcondado']} no existe")
+        return self.unidad_repo.create(payload)
 
     def _validar(self, data: dict[str, Any]) -> None:
         if not data.get("idcliente"):

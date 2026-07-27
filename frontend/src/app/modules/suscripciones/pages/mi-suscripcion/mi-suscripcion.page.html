@@ -1,0 +1,140 @@
+<section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
+  <header class="grid gap-1.5">
+    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Cuenta</p>
+    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Mi suscripción</h2>
+    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+      Consulta el estado del plan, el acceso al servicio y gestiona cancelación o reintento de cobro.
+    </p>
+  </header>
+
+  @if (message()) {
+    <p class="rounded-lg bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
+      {{ message() }}
+    </p>
+  }
+
+  @if (loading()) {
+    <div class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm" aria-busy="true">
+      <div class="mb-3 h-4 w-2/5 animate-pulse rounded-lg bg-border-default"></div>
+      <div class="h-4 w-3/4 animate-pulse rounded-lg bg-border-default"></div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      role="alert"
+    >
+      <h3 class="m-0 text-lg font-semibold">No pudimos cargar tu suscripción</h3>
+      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        (click)="cargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (detalle()) {
+    <div class="grid gap-4 md:grid-cols-3">
+      <article class="grid gap-1.5 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Plan</p>
+        <p class="m-0 text-xl font-semibold">{{ detalle()!.plan_nombre || ('#' + detalle()!.idplan) }}</p>
+        <span [class]="infoBadge()">{{ detalle()!.nivel || '—' }}</span>
+      </article>
+      <article class="grid gap-1.5 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Estado</p>
+        <p class="m-0 text-xl font-semibold">
+          <span [class]="estadoBadge(detalle()!.estado)">{{ detalle()!.estado }}</span>
+        </p>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Acceso: {{ detalle()!.acceso_permitido ? 'Permitido' : 'Denegado' }}
+        </p>
+      </article>
+      <article class="grid gap-1.5 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Precio ciclo</p>
+        <p class="m-0 text-xl font-semibold">{{ detalle()!.precio | currency: 'USD':'symbol':'1.2-2' }}</p>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Fin de ciclo: {{ detalle()!.fecha_fin | date: 'mediumDate' }}
+        </p>
+      </article>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+      <a
+        routerLink="/suscripciones/metodos-pago"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+        >Métodos de pago</a
+      >
+      <a
+        routerLink="/suscripciones/cambio-plan"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+        >Cambiar plan</a
+      >
+      @if (detalle()!.estado === 'Suspendida') {
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+          [disabled]="busy()"
+          (click)="reintentarCobro()"
+        >
+          Reintentar cobro
+        </button>
+      }
+    </div>
+
+    @if (detalle()!.estado !== 'Cancelada') {
+      <section class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm" aria-labelledby="cancel-title">
+        <h3 id="cancel-title" class="m-0 text-lg font-semibold">Cancelar suscripción</h3>
+        <p class="mt-2 m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+          Mantendrás acceso hasta la fecha de fin del ciclo. La renovación automática se desactiva.
+        </p>
+        <div class="mt-4 grid gap-1.5">
+          <label for="motivo" class="text-[0.8125rem] font-medium text-text-secondary">Motivo</label>
+          <textarea
+            id="motivo"
+            class="min-h-20 resize-y rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+            [(ngModel)]="motivoCancelacion"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="inline-flex min-h-11 items-center justify-center rounded-lg border border-alert-critical/45 bg-transparent px-4 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:cursor-not-allowed disabled:opacity-55"
+            [disabled]="busy()"
+            (click)="cancelar()"
+          >
+            Confirmar cancelación
+          </button>
+        </div>
+      </section>
+    }
+  } @else {
+    <section class="grid justify-items-start gap-2 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+      <h3 class="m-0 text-lg font-semibold">Sin suscripción activa</h3>
+      <p class="m-0 text-sm text-text-secondary">Contrata un plan para habilitar el servicio de tu cuenta.</p>
+      <div class="mt-3 grid w-full max-w-xs gap-1.5">
+        <label for="plan" class="text-[0.8125rem] font-medium text-text-secondary">Plan</label>
+        <select
+          id="plan"
+          class="min-h-11 rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+          [(ngModel)]="selectedPlanId"
+        >
+          <option [ngValue]="null">Selecciona…</option>
+          @for (p of planes(); track p.idplan) {
+            <option [ngValue]="p.idplan">
+              {{ p.nombre }} — {{ p.precio | currency: 'USD':'symbol':'1.2-2' }}
+            </option>
+          }
+        </select>
+      </div>
+      <button
+        type="button"
+        class="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+        [disabled]="busy() || !selectedPlanId"
+        (click)="contratar()"
+      >
+        Contratar plan
+      </button>
+    </section>
+  }
+</section>

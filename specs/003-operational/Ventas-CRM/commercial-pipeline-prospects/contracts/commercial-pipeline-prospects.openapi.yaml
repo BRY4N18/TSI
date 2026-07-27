@@ -1,0 +1,616 @@
+openapi: 3.0.3
+info:
+  title: TSI Commercial Pipeline & Prospects API
+  version: 1.0.0
+  description: >
+    Contract-first REST for Ventas-CRM commercial-pipeline-prospects
+    (RF-CPP-000 portal planes + O116, O117, O119, O121 + entrada directa + consulta).
+    Aligns to api-standards.md: Bearer JWT (excepto GET /planes y POST /prospectos),
+    success/error envelopes, cursor pagination, Idempotency-Key on conversion.
+servers:
+  - url: /api/v1
+tags:
+  - name: Planes
+  - name: Prospectos
+  - name: Asignacion
+  - name: Pipeline
+  - name: Conversion
+  - name: EntradaDirecta
+paths:
+  /ventas-crm/planes:
+    get:
+      tags: [Planes]
+      summary: Catálogo público de planes activos (RF-CPP-000) — precondición del embudo
+      description: >
+        Solo lectura de Dim_Plan (módulo Suscripciones-Facturación). Sin JWT.
+        No escribe. Expone nombre, precio, límites y severidades desbloqueadas.
+        Alias documental CU-O123 (ID canónico a definir en module-map).
+      operationId: listarPlanesPublicos
+      security: []
+      responses:
+        '200':
+          description: Lista de planes con activo=true (puede ser vacía)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanesListEnvelope'
+  /ventas-crm/prospectos:
+    post:
+      tags: [Prospectos]
+      summary: Registro público de prospecto (O116) + dispara asignación automática (O117)
+      operationId: registrarProspecto
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroProspectoRequest'
+      responses:
+        '201':
+          description: Prospecto creado (asignación automática intentada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProspectoEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    get:
+      tags: [Prospectos]
+      summary: Listar prospectos (RF-CPP-008) — Gerente solo propios; Admin todos
+      operationId: listarProspectos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: activo
+          in: query
+          schema:
+            type: boolean
+        - name: etapa_actual
+          in: query
+          schema:
+            $ref: '#/components/schemas/EtapaPipeline'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProspectoListEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /ventas-crm/prospectos/{idprospecto}:
+    get:
+      tags: [Prospectos]
+      summary: Detalle de prospecto + historiales (RF-CPP-008)
+      operationId: obtenerProspecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProspecto'
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProspectoDetalleEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ventas-crm/prospectos/{idprospecto}/asignacion:
+    patch:
+      tags: [Asignacion]
+      summary: Asignación/reasignación manual (O117)
+      description: >
+        Primera asignación de huérfano (idusuario null) solo Administrador.
+        Reasignación Gerente dueño o Administrador. Requiere motivo.
+      operationId: asignarProspectoManual
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProspecto'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignacionManualRequest'
+      responses:
+        '200':
+          description: Asignación aplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsignacionEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /ventas-crm/prospectos/{idprospecto}/pipeline:
+    post:
+      tags: [Pipeline]
+      summary: Transición de etapa o pérdida (O119)
+      description: >
+        Solo avance adyacente o Perdido. Rechaza Ganado (usar /conversion).
+        Requiere etapa_actual_esperada (optimistic concurrency).
+      operationId: registrarTransicionPipeline
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProspecto'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineTransicionRequest'
+      responses:
+        '201':
+          description: Transición registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /ventas-crm/prospectos/{idprospecto}/conversion:
+    post:
+      tags: [Conversion]
+      summary: Convertir prospecto en cliente (O121)
+      description: >
+        Precondición Negociación. Atómico Ganado + Dim_Cliente + terminal convertido.
+        Idempotency-Key obligatorio. Rechaza NIT duplicado.
+      operationId: convertirProspectoCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProspecto'
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionRequest'
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /ventas-crm/clientes/entrada-directa:
+    post:
+      tags: [EntradaDirecta]
+      summary: Alta de cliente sin prospecto (RF-CPP-007)
+      operationId: registrarEntradaDirecta
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntradaDirectaRequest'
+      responses:
+        '201':
+          description: Cliente creado sin idprospecto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdProspecto:
+      name: idprospecto
+      in: path
+      required: true
+      schema:
+        type: integer
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        nullable: true
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    IdempotencyKeyRequired:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKeyOptional:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            next_cursor:
+              type: string
+              nullable: true
+            limit:
+              type: integer
+
+    PlanPublico:
+      type: object
+      required: [idplan, nombre, precio, limites, severidades_desbloqueadas, nivel]
+      properties:
+        idplan:
+          type: integer
+        nombre:
+          type: string
+        precio:
+          type: number
+          format: double
+        limites:
+          type: string
+          description: >
+            STRING canónico de Dim_Plan.limites (puede ser JSON serializado).
+            El cliente puede parsear si es JSON válido.
+        nivel:
+          type: string
+          description: Valor de Dim_Plan.nivel (Básico | Profesional | Empresarial)
+          example: Profesional
+        severidades_desbloqueadas:
+          type: array
+          items:
+            type: string
+            enum: [Baja, Media, Alta]
+          description: >
+            Derivadas de nivel (Decision 10): Básico→[Baja]; Profesional→[Baja,Media];
+            Empresarial→[Baja,Media,Alta]; desconocido→[]
+
+    PlanesListEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanPublico'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+
+    ErrorResponse:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error:
+          type: string
+          description: snake_case machine code
+        detail:
+          type: string
+        code:
+          type: string
+          description: HTTP status as string
+
+    TipoOrganizacion:
+      type: string
+      enum: [Público, Privado]
+
+    EtapaPipeline:
+      type: string
+      enum: [Nuevo, Contactado, Calificado, Propuesta, Negociación, Ganado, Perdido]
+
+    TipoCliente:
+      type: string
+      enum: [Proveedor, Aseguradora, Municipio, Smart City]
+
+    RegistroProspectoRequest:
+      type: object
+      required:
+        - nombres
+        - apellidos
+        - gmail
+        - empresa
+        - tipo_organizacion
+        - cargo
+        - telefono
+        - como_nos_conocio
+      properties:
+        nombres: { type: string }
+        apellidos: { type: string }
+        gmail: { type: string, format: email }
+        empresa: { type: string }
+        tipo_organizacion: { $ref: '#/components/schemas/TipoOrganizacion' }
+        cargo: { type: string }
+        telefono: { type: string }
+        como_nos_conocio: { type: string }
+        valor_estimado: { type: number, nullable: true }
+
+    Prospecto:
+      type: object
+      properties:
+        idprospecto: { type: integer }
+        nombres: { type: string }
+        apellidos: { type: string }
+        gmail: { type: string }
+        empresa: { type: string }
+        tipo_organizacion: { $ref: '#/components/schemas/TipoOrganizacion' }
+        cargo: { type: string }
+        telefono: { type: string }
+        como_nos_conocio: { type: string }
+        etapa_actual: { $ref: '#/components/schemas/EtapaPipeline' }
+        idusuario: { type: integer, nullable: true }
+        activo: { type: boolean }
+        motivo_inactividad: { type: string, nullable: true, enum: [perdido, convertido] }
+        valor_estimado: { type: number, nullable: true }
+        fecha_registro: { type: integer, format: int64 }
+        demo_grant:
+          type: string
+          nullable: true
+          description: HMAC grant for demo session (present on create; used by notificacion-ventas)
+        asignacion_automatica:
+          type: object
+          nullable: true
+          description: Present on create; null if pool empty
+          properties:
+            ok: { type: boolean }
+            idusuariogerenteactual: { type: integer, nullable: true }
+            error: { type: string, nullable: true }
+
+    ProspectoEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/Prospecto' }
+        meta: { $ref: '#/components/schemas/EnvelopeMeta' }
+
+    ProspectoListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Prospecto' }
+        meta: { $ref: '#/components/schemas/EnvelopeMeta' }
+
+    AsignacionItem:
+      type: object
+      properties:
+        idasignacion: { type: integer }
+        idprospecto: { type: integer }
+        idusuariogerenteanterior: { type: integer, nullable: true }
+        idusuariogerenteactual: { type: integer }
+        tipoasignacion: { type: string, enum: [automatica, manual] }
+        motivo: { type: string, nullable: true }
+        fechahoraasignacion: { type: integer, format: int64 }
+
+    PipelineItem:
+      type: object
+      properties:
+        id_transicion: { type: integer }
+        id_prospecto: { type: integer }
+        etapa_anterior: { $ref: '#/components/schemas/EtapaPipeline' }
+        etapa_nueva: { $ref: '#/components/schemas/EtapaPipeline' }
+        notas: { type: string, nullable: true }
+        motivo_perdida: { type: string, nullable: true }
+        gerente_id: { type: integer }
+        fecha_transicion: { type: integer, format: int64 }
+
+    ProspectoDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Prospecto'
+        - type: object
+          properties:
+            historial_asignacion:
+              type: array
+              items: { $ref: '#/components/schemas/AsignacionItem' }
+            historial_pipeline:
+              type: array
+              items: { $ref: '#/components/schemas/PipelineItem' }
+
+    ProspectoDetalleEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/ProspectoDetalle' }
+
+    AsignacionManualRequest:
+      type: object
+      required: [idusuariogerenteactual, motivo]
+      properties:
+        idusuariogerenteactual: { type: integer }
+        motivo: { type: string, minLength: 1 }
+        idusuario_esperado:
+          type: integer
+          nullable: true
+          description: >
+            Optimistic concurrency. Null expected for orphan first assign;
+            current owner id for reassignment.
+
+    AsignacionEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            prospecto: { $ref: '#/components/schemas/Prospecto' }
+            asignacion: { $ref: '#/components/schemas/AsignacionItem' }
+
+    PipelineTransicionRequest:
+      type: object
+      required: [etapa_nueva, etapa_actual_esperada]
+      properties:
+        etapa_nueva:
+          type: string
+          enum: [Contactado, Calificado, Propuesta, Negociación, Perdido]
+          description: Ganado no permitido aquí
+        etapa_actual_esperada: { $ref: '#/components/schemas/EtapaPipeline' }
+        notas: { type: string, nullable: true }
+        motivo_perdida:
+          type: string
+          nullable: true
+          description: Required when etapa_nueva is Perdido
+
+    PipelineEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            prospecto: { $ref: '#/components/schemas/Prospecto' }
+            transicion: { $ref: '#/components/schemas/PipelineItem' }
+
+    ConversionRequest:
+      type: object
+      required: [tipo, nit_identificacion, etapa_actual_esperada]
+      properties:
+        tipo: { $ref: '#/components/schemas/TipoCliente' }
+        nit_identificacion: { type: string, minLength: 1 }
+        etapa_actual_esperada:
+          type: string
+          enum: [Negociación]
+
+    Cliente:
+      type: object
+      properties:
+        idcliente: { type: integer }
+        idprospecto: { type: integer, nullable: true }
+        nombre: { type: string }
+        razon_social: { type: string }
+        tipo: { $ref: '#/components/schemas/TipoCliente' }
+        nit_identificacion: { type: string }
+        estado: { type: string, example: Activo }
+        estado_onboarding: { type: string, example: Pendiente }
+        fecha_inicio_contrato: { type: integer, format: int64 }
+
+    ConversionEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            prospecto: { $ref: '#/components/schemas/Prospecto' }
+            cliente: { $ref: '#/components/schemas/Cliente' }
+            transicion: { $ref: '#/components/schemas/PipelineItem' }
+
+    EntradaDirectaRequest:
+      type: object
+      required: [nombre, razon_social, tipo, nit_identificacion]
+      properties:
+        nombre: { type: string }
+        razon_social: { type: string }
+        tipo: { $ref: '#/components/schemas/TipoCliente' }
+        nit_identificacion: { type: string, minLength: 1 }
+
+    ClienteEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/Cliente' }
+
+  responses:
+    BadRequest:
+      description: Validación de campos o regla de negocio
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: JWT ausente o inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: Rol insuficiente o no es dueño del prospecto
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Prospecto no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: >
+        gmail duplicado, NIT duplicado, transición inválida, o
+        optimistic concurrency (etapa/idusuario esperado obsoleto)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    TooManyRequests:
+      description: Rate limit registro público (10 req/min/IP)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
