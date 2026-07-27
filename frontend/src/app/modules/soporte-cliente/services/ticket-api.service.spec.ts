@@ -38,4 +38,30 @@ describe('TicketApiService', () => {
     expect(req.request.method).toBe('POST');
     req.flush({ data: { id_reclamo: 1, estado_anterior: 'Abierto', estado_nuevo: 'En_progreso' }, meta: {} });
   });
+
+  it('listar_when_filtros_propaga_query_params', () => {
+    service.listar({ prioridad: 'baja', idestadosoporte: 'Abierto' }).subscribe((res) => {
+      expect(res.data.items.length).toBe(1);
+    });
+    const req = http.expectOne(
+      (r) =>
+        r.url === '/api/v1/soporte/tickets' &&
+        r.params.get('prioridad') === 'baja' &&
+        r.params.get('idestadosoporte') === 'Abierto',
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        items: [{ id_reclamo: 9, asunto: 't', estado: 'Abierto', prioridad: 'baja' }],
+      },
+      meta: {},
+    });
+  });
+
+  it('listar_when_sin_filtros_no_envia_query_vacios', () => {
+    service.listar({}).subscribe();
+    const req = http.expectOne('/api/v1/soporte/tickets');
+    expect(req.request.params.keys().length).toBe(0);
+    req.flush({ data: { items: [] }, meta: {} });
+  });
 });

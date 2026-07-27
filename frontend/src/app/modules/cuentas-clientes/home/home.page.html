@@ -1,0 +1,61 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="cuentas-home">
+  <header>
+    <h1 class="m-0 text-2xl font-bold text-text-primary">Cuentas y clientes</h1>
+    <p class="m-0 mt-1 text-sm text-text-secondary">
+      @if (profile; as p) {
+        Sesión: {{ p.gmail }} · {{ p.roles.join(', ') || 'sin roles' }}
+      } @else {
+        Portal de cuentas TSI
+      }
+    </p>
+  </header>
+
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    @if (esAdmin()) {
+      <a
+        routerLink="/cuentas-clientes/gestion-cuenta"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="settings" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Gestión de cuenta</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Usuarios, roles y perfil corporativo</p>
+      </a>
+      <a
+        routerLink="/cuentas-clientes/incorporacion-clientes/solicitudes"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="list" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Solicitudes de cliente</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Aprobar o rechazar autorregistros</p>
+      </a>
+    }
+    @if (esCliente()) {
+      <a
+        routerLink="/soporte-cliente/mis-tickets"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="list" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Mis tickets</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Soporte e incidencias</p>
+      </a>
+    }
+    @if (esSoporte()) {
+      <a
+        routerLink="/soporte-cliente/cola"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="list" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Cola de soporte</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Tickets pendientes de atención</p>
+      </a>
+    }
+  </div>
+</div>

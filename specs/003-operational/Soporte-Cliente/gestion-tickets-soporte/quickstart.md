@@ -98,10 +98,10 @@ Convenciones (`api-standards.md`):
 Escenarios UI mínimos:
 
 1. Cliente registra ticket con adjuntos y ve estado/SLA en tiempo real de la respuesta.
-2. Agente ve cola de tickets, toma uno, comenta (nota interna oculta al cliente), resuelve.
-3. Cliente confirma cierre o ve reapertura disponible sobre un ticket Cerrado.
+2. Agente abre **Cola de soporte** (master-detail): filtra por prioridad/estado, selecciona un ticket en la lista, toma/comenta (nota interna oculta al cliente) y resuelve desde el panel de detalle; empty state muestra "No hay tickets pendientes." sin CTA de reembolso ni alta.
+3. Cliente confirma cierre o ve reapertura disponible sobre un ticket Cerrado (ruta detalle / mis tickets).
 4. Administrador crea/modifica reglas de `Dim_SLAConfig` desde un panel.
-5. Dashboard muestra métricas de RF-TIC-007 (tickets por estado, SLA en riesgo/vencidos, tasa de reapertura).
+5. Dashboard muestra métricas de RF-TIC-007 (tickets por estado; SLA `en riesgo` / `incumplido`; tasa de reapertura).
 
 ## 4) Pruebas sugeridas
 

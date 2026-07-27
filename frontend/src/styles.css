@@ -97,7 +97,173 @@ html[data-theme='dark'] {
   }
 
   button,
-  input {
+  input,
+  select,
+  textarea {
     font: inherit;
+  }
+}
+
+/* Componentes globales TSI — design-system.md §5 (Formularios / Botones / Badges)
+   Usar estas clases en pantallas nuevas para no duplicar Tailwind ad hoc. */
+@layer components {
+  .tsi-input {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-width: 0;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-default);
+    background: var(--bg-page);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .tsi-input::placeholder {
+    color: var(--text-secondary);
+  }
+
+  .tsi-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(46, 111, 242, 0.15);
+  }
+
+  .tsi-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .tsi-select {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-width: 10rem;
+    appearance: none;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-default);
+    background-color: var(--bg-page);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235a5e70' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding: 0.5rem 2.5rem 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  html[data-theme='dark'] .tsi-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238a8da0' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  }
+
+  .tsi-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(46, 111, 242, 0.15);
+  }
+
+  .tsi-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .tsi-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
+      opacity 150ms ease;
+  }
+
+  .tsi-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .tsi-btn-primary {
+    border: 1px solid transparent;
+    background: var(--accent-primary);
+    color: #fff;
+  }
+
+  .tsi-btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .tsi-btn-secondary {
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
+  .tsi-btn-secondary:hover:not(:disabled) {
+    background: var(--bg-page);
+  }
+
+  .tsi-btn-ghost {
+    border: 1px solid var(--accent-primary);
+    background: transparent;
+    color: var(--accent-primary);
+  }
+
+  .tsi-btn-ghost:hover:not(:disabled) {
+    background: rgba(46, 111, 242, 0.05);
+  }
+
+  .tsi-btn-icon {
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+  }
+
+  .tsi-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .tsi-badge-neutral {
+    border: 1px solid var(--border-default);
+    background: var(--bg-page);
+    color: var(--text-secondary);
+  }
+
+  .tsi-badge-info {
+    background: var(--alert-info-bg);
+    color: var(--alert-info);
+  }
+
+  .tsi-badge-success {
+    background: var(--alert-success-bg);
+    color: var(--alert-success);
+  }
+
+  .tsi-badge-warning {
+    background: var(--alert-warning-bg);
+    color: var(--alert-warning);
+  }
+
+  .tsi-badge-urgent {
+    background: var(--alert-urgent-bg);
+    color: var(--alert-urgent);
+  }
+
+  .tsi-badge-critical {
+    background: var(--alert-critical-bg);
+    color: var(--alert-critical);
   }
 }

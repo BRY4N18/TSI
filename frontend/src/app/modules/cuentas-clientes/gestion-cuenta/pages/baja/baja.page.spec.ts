@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
 import { CuentaClienteApiService } from '../../services/cuenta-cliente-api.service';
@@ -19,7 +20,13 @@ describe('BajaPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [BajaPage],
-      providers: [{ provide: CuentaClienteApiService, useValue: api }],
+      providers: [
+        { provide: CuentaClienteApiService, useValue: api },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: (k: string) => (k === 'idcliente' ? '1' : null) } } },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BajaPage);

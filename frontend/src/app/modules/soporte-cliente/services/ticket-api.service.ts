@@ -20,8 +20,15 @@ export class TicketApiService {
     idestadosoporte?: string;
     prioridad?: string;
   }): Observable<ApiEnvelope<{ items: Ticket[] }>> {
+    const query: Record<string, string> = {};
+    if (params?.idestadosoporte) {
+      query['idestadosoporte'] = params.idestadosoporte;
+    }
+    if (params?.prioridad) {
+      query['prioridad'] = params.prioridad;
+    }
     return this.http.get<ApiEnvelope<{ items: Ticket[] }>>(this.base, {
-      params: { ...params },
+      params: query,
     });
   }
 

@@ -107,7 +107,7 @@ export const NAV_LINKS: NavLink[] = [
   },
   {
     label: 'Gestión de cuenta',
-    description: 'Administrar usuarios, roles y accesos',
+    description: 'Usuarios, roles y perfil corporativo de clientes',
     path: '/cuentas-clientes/gestion-cuenta',
     roles: ['Administrador'],
     icon: 'settings',

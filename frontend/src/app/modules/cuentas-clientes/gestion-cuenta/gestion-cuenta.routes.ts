@@ -6,11 +6,18 @@ import { adminLocalGuard } from './guards/admin-local.guard';
 import { cuentaActivaGuard } from './guards/cuenta-activa.guard';
 import { cuentaScopeGuard } from './guards/cuenta-scope.guard';
 import { BajaPage } from './pages/baja/baja.page';
+import { GestionCuentaHubPage } from './pages/hub/hub.page';
 import { PerfilPage } from './pages/perfil/perfil.page';
 import { PreferenciasPage } from './pages/preferencias/preferencias.page';
 import { TransferenciaPage } from './pages/transferencia/transferencia.page';
 
 export const GESTION_CUENTA_ROUTES: Routes = [
+  {
+    path: '',
+    component: GestionCuentaHubPage,
+    canActivate: [sessionGuard, roleGuard],
+    data: { roles: ['Administrador'] },
+  },
   {
     path: ':idcliente',
     canActivate: [sessionGuard, cuentaScopeGuard, cuentaActivaGuard],

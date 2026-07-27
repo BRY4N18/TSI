@@ -1,25 +1,34 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { CuentaClienteApiService } from '../../services/cuenta-cliente-api.service';
 
 @Component({
   selector: 'app-baja-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <h1>Dar de baja cuenta</h1>
-    <label>Motivo (opcional) <textarea [(ngModel)]="motivo" name="motivo"></textarea></label>
-    <button type="button" (click)="confirmar()">Confirmar baja</button>
-  `,
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './baja.page.html',
 })
 export class BajaPage {
   private readonly api = inject(CuentaClienteApiService);
+  private readonly route = inject(ActivatedRoute);
+
   motivo = '';
-  readonly idcliente = 1;
+  mensaje = '';
+  error = '';
+  readonly idcliente = Number(this.route.snapshot.paramMap.get('idcliente')) || 1;
 
   confirmar(): void {
-    this.api.darBaja(this.idcliente, this.motivo || undefined).subscribe();
+    this.api.darBaja(this.idcliente, this.motivo || undefined).subscribe({
+      next: () => {
+        this.mensaje = `Cuenta #${this.idcliente} dada de baja.`;
+        this.error = '';
+      },
+      error: () => {
+        this.error = 'No se pudo dar de baja la cuenta.';
+      },
+    });
   }
 }

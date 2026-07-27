@@ -1,0 +1,90 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="configuracion-sla">
+  <header class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="m-0 text-2xl font-bold text-text-primary">Configuración de SLA</h1>
+      <p class="m-0 mt-1 text-sm text-text-secondary">
+        Reglas de tiempo de respuesta y resolución por plan, tipo y prioridad (CU-O95).
+      </p>
+    </div>
+    <button type="button" class="tsi-btn tsi-btn-secondary" [disabled]="cargando()" (click)="cargar()">
+      <app-tabler-icon name="refresh" [size]="16" />
+      Actualizar
+    </button>
+  </header>
+
+  @if (mensaje()) {
+    <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensaje() }}</p>
+  }
+
+  <section class="overflow-x-auto rounded-lg border border-border-default bg-bg-surface">
+    <table class="w-full min-w-[40rem] border-collapse text-left text-sm">
+      <thead>
+        <tr class="border-b border-border-default text-xs uppercase tracking-wide text-text-secondary">
+          <th class="px-4 py-3 font-semibold">ID</th>
+          <th class="px-4 py-3 font-semibold">Plan</th>
+          <th class="px-4 py-3 font-semibold">Tipo</th>
+          <th class="px-4 py-3 font-semibold">Prioridad</th>
+          <th class="px-4 py-3 font-semibold">Respuesta (s)</th>
+          <th class="px-4 py-3 font-semibold">Resolución (s)</th>
+          <th class="px-4 py-3 font-semibold">Activo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of reglas(); track r.idslaconfig) {
+          <tr class="border-b border-border-default last:border-b-0">
+            <td class="px-4 py-3 font-mono text-text-primary">{{ r.idslaconfig }}</td>
+            <td class="px-4 py-3 text-text-primary">{{ r.idplan }}</td>
+            <td class="px-4 py-3 text-text-primary">{{ r.tipoincidencia }}</td>
+            <td class="px-4 py-3">
+              <span class="tsi-badge tsi-badge-neutral">{{ r.prioridad }}</span>
+            </td>
+            <td class="px-4 py-3 text-text-primary">{{ r.tiemporespuestamax }}</td>
+            <td class="px-4 py-3 text-text-primary">{{ r.tiemporesolucionmax }}</td>
+            <td class="px-4 py-3">
+              <span
+                class="tsi-badge"
+                [class.tsi-badge-success]="r.activo"
+                [class.tsi-badge-neutral]="!r.activo"
+              >
+                {{ r.activo ? 'Sí' : 'No' }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-text-secondary">
+              No hay reglas SLA configuradas.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="max-w-xl rounded-lg border border-border-default bg-bg-surface p-4">
+    <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Nueva regla</h2>
+    <form class="grid gap-3" (ngSubmit)="crear()">
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Plan (ID)
+        <input class="tsi-input" type="number" name="idplan" [(ngModel)]="idplan" />
+      </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Tipo de incidencia
+        <input class="tsi-input" name="tipoincidencia" [(ngModel)]="tipoincidencia" />
+      </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Prioridad
+        <input class="tsi-input" name="prioridad" [(ngModel)]="prioridad" placeholder="baja | media | alta | crítico" />
+      </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Tiempo respuesta (seg)
+        <input class="tsi-input" type="number" name="tiemporespuestamax" [(ngModel)]="tiemporespuestamax" />
+      </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Tiempo resolución (seg)
+        <input class="tsi-input" type="number" name="tiemporesolucionmax" [(ngModel)]="tiemporesolucionmax" />
+      </label>
+      <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Crear regla</button>
+    </form>
+  </section>
+</div>

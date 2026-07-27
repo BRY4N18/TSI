@@ -151,7 +151,7 @@
               >
               <select
                 id="tipo_organizacion"
-                class="box-border h-11 w-full min-w-0 appearance-none rounded-md border border-border-default bg-bg-page bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-10 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)]"
+                [class]="selectClass('tipo_organizacion')"
                 style="
                   background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27%3E%3Cpath d=%27m4 6 4 4 4-4%27/%3E%3C/svg%3E');
                 "
@@ -196,17 +196,41 @@
             <label for="como_nos_conocio" class="text-sm font-medium text-text-secondary"
               >Cómo nos conoció</label
             >
-            <input
+            <select
               id="como_nos_conocio"
-              type="text"
-              [class]="inputClass('como_nos_conocio')"
-              formControlName="como_nos_conocio"
-              placeholder="Web, referido, redes…"
-            />
-            @if (fieldError('como_nos_conocio'); as msg) {
+              [class]="selectClass('fuente')"
+              style="
+                background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27%3E%3Cpath d=%27m4 6 4 4 4-4%27/%3E%3C/svg%3E');
+              "
+              formControlName="fuente"
+            >
+              <option value="" disabled>Selecciona una opción</option>
+              @for (opcion of fuentes; track opcion) {
+                <option [value]="opcion">{{ opcion }}</option>
+              }
+            </select>
+            @if (fieldError('fuente'); as msg) {
               <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
             }
           </div>
+
+          @if (esOtro()) {
+            <div class="grid min-w-0 gap-1.5">
+              <label for="fuente_otro" class="text-sm font-medium text-text-secondary"
+                >Especifica cómo nos conoció</label
+              >
+              <input
+                id="fuente_otro"
+                type="text"
+                [class]="inputClass('fuente_otro')"
+                formControlName="fuente_otro"
+                placeholder="Ej. LinkedIn, feria Quito 2026…"
+              />
+              @if (fieldError('fuente_otro'); as msg) {
+                <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
+              }
+            </div>
+          }
 
           @if (error()) {
             <p class="m-0 text-sm text-alert-critical" role="alert">{{ error() }}</p>

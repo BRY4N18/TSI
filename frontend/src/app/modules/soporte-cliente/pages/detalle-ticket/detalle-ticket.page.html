@@ -1,0 +1,106 @@
+<div class="flex min-h-0 flex-1 flex-col gap-4 p-6 lg:p-8" data-testid="detalle-ticket">
+  <a
+    routerLink="/soporte-cliente/mis-tickets"
+    class="inline-flex w-fit items-center gap-1 text-sm font-medium text-accent-primary no-underline hover:underline"
+  >
+    <app-tabler-icon name="arrow-left" [size]="16" />
+    Volver
+  </a>
+
+  @if (cargando() && !ticket()) {
+    <div class="h-40 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+  } @else if (ticket()) {
+    @let t = ticket()!;
+    <section class="rounded-lg border border-border-default bg-bg-surface">
+      <header
+        class="flex flex-wrap items-start justify-between gap-3 border-b border-border-default px-4 py-4"
+      >
+        <div>
+          <p class="m-0 font-mono text-xs text-text-secondary">#{{ t.id_reclamo }}</p>
+          <h1 class="m-0 mt-1 text-2xl font-bold text-text-primary">{{ t.asunto }}</h1>
+          <p class="m-0 mt-2 flex flex-wrap gap-2 text-sm text-text-secondary">
+            <span class="tsi-badge" [ngClass]="estadoBadge(t.estado)">{{ labelEstado(t.estado) }}</span>
+            <span class="tsi-badge tsi-badge-neutral">Prioridad: {{ t.prioridad ?? '—' }}</span>
+            <span class="tsi-badge tsi-badge-neutral">SLA: {{ t.sla_status ?? '—' }}</span>
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          @if (esAgente() && (t.estado === 'En_progreso' || t.estado === 'Escalado')) {
+            <button type="button" class="tsi-btn tsi-btn-ghost" (click)="resolver()">
+              Marcar como resuelto
+            </button>
+          }
+          @if (esCliente() && t.estado === 'Resuelto') {
+            <button type="button" class="tsi-btn tsi-btn-primary" (click)="confirmarCierre()">
+              Confirmar cierre
+            </button>
+          }
+          @if (esCliente() && t.estado === 'Cerrado') {
+            <button type="button" class="tsi-btn tsi-btn-secondary" (click)="reabrir()">
+              Reabrir ticket
+            </button>
+          }
+        </div>
+      </header>
+
+      <div class="px-4 py-4">
+        <p class="m-0 whitespace-pre-wrap text-sm text-text-secondary">{{ t.descripcion }}</p>
+
+        <h2 class="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+          Historial
+        </h2>
+        @if (!historial().length) {
+          <div class="rounded-md border border-border-default bg-alert-info-bg px-4 py-3 text-sm text-alert-info">
+            Sin mensajes previos registrados
+          </div>
+        } @else {
+          <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            @for (h of historial(); track h.id_historial) {
+              <li class="rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm">
+                <div class="mb-1 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+                  <span class="font-medium text-text-primary">{{ h.tipo_accion }}</span>
+                  @if (h.es_nota_interna) {
+                    <span class="tsi-badge tsi-badge-warning">Nota interna</span>
+                  }
+                </div>
+                <p class="m-0 text-text-primary">{{ h.mensaje || '—' }}</p>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      @if (esAgente() && t.estado !== 'Cerrado') {
+        <form
+          class="flex flex-col gap-2 border-t border-border-default p-4"
+          (ngSubmit)="comentar()"
+        >
+          <label class="grid gap-1 text-sm font-medium text-text-secondary">
+            Comentario
+            <textarea
+              class="tsi-input !h-auto min-h-20 py-2.5"
+              name="mensaje"
+              [(ngModel)]="mensaje"
+            ></textarea>
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-text-secondary">
+            <input
+              type="checkbox"
+              name="notaInterna"
+              class="accent-accent-primary"
+              [(ngModel)]="notaInterna"
+            />
+            Nota interna (no visible para el cliente)
+          </label>
+          <button type="submit" class="tsi-btn tsi-btn-primary w-fit" [disabled]="!mensaje.trim()">
+            Comentar
+          </button>
+        </form>
+      }
+    </section>
+  }
+
+  @if (mensajeAccion()) {
+    <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensajeAccion() }}</p>
+  }
+</div>

@@ -24,7 +24,8 @@
 | US4 | P2 | CU-O95 | Escenario 5 |
 | US5 | P2 | CU-O97 | Escenario 7 |
 | US6 | P2 | RF-TIC-007 | quickstart §3 |
-| US7 | P2 | Frontend Angular | quickstart §3 |
+| US7 | P2 | Frontend Angular (esqueleto API) | quickstart §3 |
+| US8 | P2 | RF-TIC-008, RNF-TIC-004, CA-TIC-014/015 | Cola de soporte master-detail |
 
 ---
 
@@ -255,10 +256,10 @@
 - [X] T074 [US7] Implementar `SlaConfigApiService` en `frontend/src/app/modules/soporte-cliente/services/sla-config-api.service.ts`
 - [X] T075 [US7] Implementar guards en `frontend/src/app/modules/soporte-cliente/guards/cliente-soporte.guard.ts`, `agente-soporte.guard.ts`, `administrador-sla.guard.ts`
 - [X] T076 [US7] Completar rutas lazy con guards en `frontend/src/app/modules/soporte-cliente/soporte-cliente.routes.ts` (ruta de detalle de ticket sin guard de rol propio: compartida por Cliente/agentes, filtrada internamente y protegida por el backend)
-- [X] T077 [US7] Implementar página "Mis tickets" (Cliente) en `frontend/src/app/modules/soporte-cliente/pages/mis-tickets/mis-tickets.page.ts`
-- [X] T078 [US7] Implementar página "Cola de agente" (Soporte al cliente) en `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.ts`
-- [X] T079 [US7] Implementar página "Detalle de ticket" (vista filtrada por rol, oculta notas internas al Cliente) en `frontend/src/app/modules/soporte-cliente/pages/detalle-ticket/detalle-ticket.page.ts`
-- [X] T080 [US7] Implementar página "Configuración SLA" (Administrador) en `frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/configuracion-sla.page.ts`
+- [X] T077 [US7] Implementar página "Mis tickets" (Cliente) en `frontend/src/app/modules/soporte-cliente/pages/mis-tickets/mis-tickets.page.ts` + `mis-tickets.page.html` (`templateUrl`, sin plantilla inline)
+- [X] T078 [US7] Implementar página esqueleto "Cola de soporte" (listado/tabla mínima) en `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.ts` — **no cierra RF-TIC-008**; ver US8 / T088+
+- [X] T079 [US7] Implementar página "Detalle de ticket" (vista filtrada por rol, oculta notas internas al Cliente) en `frontend/src/app/modules/soporte-cliente/pages/detalle-ticket/detalle-ticket.page.ts` + `detalle-ticket.page.html` (`templateUrl`) — deep-link / Cliente; panel embebido de cola en US8
+- [X] T080 [US7] Implementar página "Configuración SLA" (Administrador) en `frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/configuracion-sla.page.ts` + `configuracion-sla.page.html` (`templateUrl`)
 - [X] T081 [US7] Implementar página "Dashboard de soporte" en `frontend/src/app/modules/soporte-cliente/pages/dashboard-soporte/dashboard-soporte.page.ts`
 - [X] T082 [US7] Registrar entradas sidebar por rol — agregadas directamente a `frontend/src/app/shared/layout/nav-links.ts` (fuente real consumida por el shell; `core/sidebar/despacho-menu.config.ts` resultó ser código muerto no consumido en ningún lado, así que no se replicó ese patrón)
 
@@ -278,6 +279,31 @@
 
 ---
 
+## Phase 11: User Story 8 — Cola de soporte master-detail (Priority: P2) — remediation analyze
+
+**Goal**: Cumplir RF-TIC-008, RNF-TIC-004 y CA-TIC-014/015. Layout master-detail en **Cola de soporte** (lista + detalle/acciones), filtros OpenAPI, empty state, sin CTA reembolso ni alta de ticket.
+
+**Independent Test**: Agente abre `/soporte-cliente/cola`, ve lista+detalle simultáneos (≥1024px), filtra por prioridad/estado, selecciona ticket, responde/toma/resuelve según estado; con cero resultados ve empty state tipado; no existe botón de reembolso.
+
+**Measurable Criteria**: CA-TIC-014, CA-TIC-015, RNF-TIC-004; quickstart §3 escenario agente actualizado.
+
+### Tests for User Story 8
+
+- [X] T088 [P] [US8] Crear test unitario frontend (AAA) del layout/filtros/empty state de cola en `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.spec.ts`
+- [X] T089 [P] [US8] Extender `ticket-api.service.spec.ts` para verificar que `listar` propaga query params `prioridad` e `idestadosoporte` en `frontend/src/app/modules/soporte-cliente/services/ticket-api.service.spec.ts`
+
+### Implementation for User Story 8
+
+- [X] T090 [US8] Extender `TicketApiService.listar` para aceptar filtros `prioridad` / `idestadosoporte` (y tipado) en `frontend/src/app/modules/soporte-cliente/services/ticket-api.service.ts` y `models/soporte.types.ts`
+- [X] T091 [US8] Rediseñar `cola-agente.page.ts` a master-detail: lista con badges (prioridad/estado/`sla_status` vía tokens design system), selección, panel detalle con historial + composer + acciones CU-O92 (tomar/resolver/escalar según estado); **sin** CTA reembolso ni "+ Nuevo ticket"
+- [X] T092 [US8] Implementar filtros UI prioridad/estado cableados a `listar` y empty state "No hay tickets pendientes." con título "Cola de soporte" en `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.ts` (+ estilos del módulo si aplica)
+- [X] T093 [US8] Asegurar responsive RNF-TIC-004: en viewport ≥1024px dos paneles; en viewports menores, stack lista→detalle sin perder acciones; confirmar label nav canónico "Cola de soporte" en `frontend/src/app/shared/layout/nav-links.ts`
+- [X] T094 [US8] Validar CA-TIC-014/015 y documentar en `specs/003-operational/Soporte-Cliente/gestion-tickets-soporte/traceability.md` + actualizar escenarios UI en `quickstart.md`
+
+**Checkpoint**: US8 operativa — Cola de soporte cumple Interaction Capability (Principle IV) con layout y empty state especificados.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -290,8 +316,9 @@
 - **US4 (Phase 6)**: Depende de Foundational (repositorio `sla_config_repository.py`, T012–T013); independiente de US1–US3
 - **US5 (Phase 7)**: Depende de US2 (necesita un ticket Cerrado)
 - **US6 (Phase 8)**: Depende de US1 + US2 (lee datos de tickets ya creados/atendidos)
-- **US7 (Phase 9)**: Depende de US1, US2, US4, US5, US6 (endpoints disponibles)
+- **US7 (Phase 9)**: Depende de US1, US2, US4, US5, US6 (endpoints disponibles) — esqueleto frontend
 - **Polish (Phase 10)**: Depende de US1–US7 deseados
+- **US8 (Phase 11)**: Depende de US7 (T078 esqueleto) + RF-TIC-008/RNF-TIC-004; puede seguir a Phase 10
 
 ### User Story Dependencies
 
@@ -301,8 +328,9 @@ Phase 2 (Foundational)
                                           ├── US3 (monitoreo SLA)
                                           └── US6 (dashboard, tras US2)
               US4 (config SLA) ──────────┘ (paralelo, solo depende de Foundational)
-    US1 + US2 + US4 + US5 + US6 ── US7 (frontend)
+    US1 + US2 + US4 + US5 + US6 ── US7 (frontend esqueleto)
     US1–US7 ── Phase 10 (polish)
+    US7 ── US8 (Cola de soporte master-detail, RF-TIC-008)
 ```
 
 ### Within Each User Story
@@ -362,8 +390,9 @@ T016+T017 supervisor_soporte_repository
 5. US4 configuración SLA → administración sin redeploy
 6. US5 reapertura → cierre del ciclo de reincidencia
 7. US6 dashboard → visibilidad operativa
-8. US7 frontend → UX completa
+8. US7 frontend → esqueleto API + guards
 9. Phase 10 → flujo end-to-end y cobertura
+10. US8 Cola de soporte master-detail → cierra RF-TIC-008 / Interaction Capability
 
 ### Suggested MVP Scope
 
@@ -379,3 +408,4 @@ T016+T017 supervisor_soporte_repository
 - Notas internas (`es_nota_interna=true`) se filtran en `comentar_ticket_service.py`/serializers, nunca solo en el frontend (RN-TIC-002, Principio V constitution)
 - Markers: `repository` para repos, `service` para servicios/job, `api` para contract tests, `integration` para flujos end-to-end de este módulo (no forma parte del camino crítico de despacho, por eso no usa marker `critical_path`)
 - Commit sugerido tras cada par implementación+test o al cerrar cada checkpoint
+- **US8 (T088–T094):** remediation `/speckit-analyze` 2026-07-26 — T078 no cierra Interaction Capability; término canónico **Cola de soporte**; sin CTA reembolso (§13)

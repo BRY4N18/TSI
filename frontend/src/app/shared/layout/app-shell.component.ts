@@ -22,7 +22,7 @@ interface NavGroup {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col bg-bg-page">
+    <div class="flex h-screen flex-col overflow-hidden bg-bg-page">
       <header
         class="relative flex h-16 shrink-0 items-center justify-between border-b border-border-default bg-bg-surface px-6"
       >
@@ -188,7 +188,7 @@ interface NavGroup {
           }
         </aside>
 
-        <main class="min-w-0 flex-1 overflow-auto">
+        <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
           <router-outlet />
         </main>
       </div>

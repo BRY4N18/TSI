@@ -1,10 +1,30 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { TablerIconComponent } from '../../../shared/ui/icon/tabler-icon.component';
+import { AuthApiService } from '../auth/services/auth-api.service';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
+  imports: [RouterLink, TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: ``,
-  host: { class: 'block p-8' },
+  templateUrl: './home.page.html',
 })
-export class HomePage {}
+export class HomePage {
+  private readonly auth = inject(AuthApiService);
+
+  readonly profile = this.auth.getProfile();
+
+  esAdmin(): boolean {
+    return this.auth.hasRole('Administrador');
+  }
+
+  esCliente(): boolean {
+    return this.auth.hasRole('Cliente');
+  }
+
+  esSoporte(): boolean {
+    return this.auth.hasAnyRole(['Soporte', 'DesarrolladorAPIs', 'DirectorTecnologico', 'Administrador']);
+  }
+}

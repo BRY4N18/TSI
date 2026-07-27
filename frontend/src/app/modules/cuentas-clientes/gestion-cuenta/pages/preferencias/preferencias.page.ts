@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { CuentaClienteApiService } from '../../services/cuenta-cliente-api.service';
 import { PreferenciasData } from '../../models/cuenta-cliente.contract';
@@ -8,34 +9,44 @@ import { PreferenciasData } from '../../models/cuenta-cliente.contract';
 @Component({
   selector: 'app-preferencias-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <h1>Preferencias operativas</h1>
-    @if (preferencias) {
-      <form (ngSubmit)="guardar()">
-        <label>Teléfono SMS <input [(ngModel)]="preferencias.telefono_sms" name="telefono_sms" /></label>
-        <label>Canales <input [(ngModel)]="preferencias.canales_notificacion" name="canales" /></label>
-        <button type="submit">Guardar</button>
-      </form>
-    }
-  `,
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './preferencias.page.html',
 })
-export class PreferenciasPage {
+export class PreferenciasPage implements OnInit {
   private readonly api = inject(CuentaClienteApiService);
+  private readonly route = inject(ActivatedRoute);
+
   preferencias: PreferenciasData | null = null;
-  readonly idcliente = 1;
+  mensaje = '';
+  error = '';
+  readonly idcliente = Number(this.route.snapshot.paramMap.get('idcliente')) || 1;
 
   ngOnInit(): void {
-    this.api.getPreferencias(this.idcliente).subscribe((res) => {
-      this.preferencias = res.data;
+    this.api.getPreferencias(this.idcliente).subscribe({
+      next: (res) => {
+        this.preferencias = res.data;
+      },
+      error: () => {
+        this.error = 'No se pudieron cargar las preferencias.';
+      },
     });
   }
 
   guardar(): void {
     if (!this.preferencias) return;
-    this.api.patchPreferencias(this.idcliente, {
-      telefono_sms: this.preferencias.telefono_sms ?? undefined,
-      canales_notificacion: this.preferencias.canales_notificacion,
-    }).subscribe();
+    this.api
+      .patchPreferencias(this.idcliente, {
+        telefono_sms: this.preferencias.telefono_sms ?? undefined,
+        canales_notificacion: this.preferencias.canales_notificacion,
+      })
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Preferencias guardadas.';
+          this.error = '';
+        },
+        error: () => {
+          this.error = 'No se pudieron guardar las preferencias.';
+        },
+      });
   }
 }

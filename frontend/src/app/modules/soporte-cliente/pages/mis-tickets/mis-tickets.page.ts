@@ -1,59 +1,24 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { Ticket } from '../../services/models/soporte.types';
 
 @Component({
   selector: 'app-mis-tickets',
   standalone: true,
-  imports: [FormsModule, RouterLink],
-  template: `
-    <section>
-      <h1>Mis tickets de soporte</h1>
-
-      <details>
-        <summary>Registrar nuevo ticket</summary>
-        <form (ngSubmit)="registrar()">
-          <label>Asunto <input name="asunto" [(ngModel)]="asunto" required /></label>
-          <label>Descripción <textarea name="descripcion" [(ngModel)]="descripcion" required></textarea></label>
-          <label>
-            Tipo
-            <select name="tipo" [(ngModel)]="tipo">
-              <option value="tecnico">Técnico</option>
-              <option value="acceso">Acceso</option>
-              <option value="operativo">Operativo</option>
-            </select>
-          </label>
-          <button type="submit">Enviar</button>
-        </form>
-        @if (mensaje()) {
-          <p data-testid="mensaje">{{ mensaje() }}</p>
-        }
-      </details>
-
-      @if (tickets().length) {
-        <ul>
-          @for (t of tickets(); track t.id_reclamo) {
-            <li>
-              <a [routerLink]="['/soporte-cliente', 'tickets', t.id_reclamo]">
-                #{{ t.id_reclamo }} — {{ t.asunto }} ({{ t.estado }}, SLA: {{ t.sla_status ?? 'sin asignar' }})
-              </a>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p>No tienes tickets registrados.</p>
-      }
-    </section>
-  `,
+  imports: [FormsModule, RouterLink, TablerIconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './mis-tickets.page.html',
 })
 export class MisTicketsPage {
   private readonly api = inject(TicketApiService);
 
   readonly tickets = signal<Ticket[]>([]);
   readonly mensaje = signal('');
+  readonly cargando = signal(false);
   asunto = '';
   descripcion = '';
   tipo = 'tecnico';
@@ -62,8 +27,22 @@ export class MisTicketsPage {
     this.cargar();
   }
 
-  private cargar(): void {
-    this.api.listar().subscribe({ next: (res) => this.tickets.set(res.data.items) });
+  labelEstado(estado: string): string {
+    return estado.replaceAll('_', ' ');
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.api.listar().subscribe({
+      next: (res) => {
+        this.tickets.set(res.data.items);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.mensaje.set('No se pudieron cargar tus tickets.');
+      },
+    });
   }
 
   registrar(): void {

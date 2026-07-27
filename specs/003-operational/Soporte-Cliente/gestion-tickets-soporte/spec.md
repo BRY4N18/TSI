@@ -13,6 +13,15 @@ Canalizar y resolver incidencias reportadas por los clientes dentro de los tiemp
 - Q: RN-TIC-005 asigna el ticket escalado a "supervisor/gerente de turno" pero no hay tabla ni mecanismo de turnos definido — ¿cómo se resuelve? → A: Rol fijo — se asigna a un usuario con rol "Supervisor de Soporte" configurado como responsable por defecto, sin lógica de horario/turno rotativo.
 - Q: El job de CU-O96 vigila `sla_primera_respuesta` y `sla_resolucion` — ¿deben monitorearse de forma independiente? → A: Sí, de forma independiente — alerta/escala si se incumple cualquiera de los dos plazos por separado.
 
+### Session 2026-07-26 (remediation `/speckit-analyze`)
+
+- Q: ¿Nombre canónico de la superficie del agente? → A: **Cola de soporte** (nav, spec, plan, UI). Deprecar sinónimos "Cola de agente" / "Tickets de Soporte" en documentación nueva.
+- Q: ¿Layout de la cola? → A: **Master-detail** en una sola página (`cola-agente`): lista izquierda + panel de detalle/acciones a la derecha. La ruta `detalle-ticket` permanece para deep-link y rol Cliente.
+- Q: ¿El agente crea tickets desde la cola? → A: No en v1 de RF-TIC-008. El alta sigue CU-O91 (Cliente / flujo de registro). No hay CTA "+ Nuevo ticket" en la cola del agente.
+- Q: ¿Botón "Procesar reembolso" en la cola? → A: **No** — permanece fuera de alcance (§13). No se muestra en UI.
+- Q: ¿Filtros de cola? → A: Sí — prioridad y estado vía query params ya definidos en OpenAPI (`prioridad`, `idestadosoporte`).
+- Q: ¿Qué significa "SLA próximos a vencer" en RF-TIC-007? → A: Tickets con `sla_status='en riesgo'` (umbral 80% de RF-TIC-004 / CA-TIC-010). "Vencidos" = `sla_status='incumplido'`.
+
 ## 2. Contexto
 
 Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plataforma para decisiones en tiempo real. Cuando enfrentan una incidencia técnica (API no responde, dato inconsistente) u operativa (problema de acceso, consulta sobre funcionalidad), necesitan un canal formal para reportarla y recibir atención dentro de tiempos comprometidos según su plan contratado.
@@ -107,11 +116,23 @@ Job programado que se ejecuta cada 1 minuto (RNF-TIC-001):
 
 ### RF-TIC-006: Confirmación de cierre por cliente (CU-O92)
 
-Ticket en Resuelto espera confirmación del cliente. Si confirma → Cerrado con `cierreconfirmadocliente=true`. Si no responde en 5 días → Cerrado automático con `cierreconfirmadocliente=false`.
+**Alias de lectura** de los pasos de confirmación/cierre automático ya definidos en **RF-TIC-002** (pasos 7): ticket en Resuelto espera confirmación del cliente. Si confirma → Cerrado con `cierreconfirmadocliente=true`. Si no responde en 5 días → Cerrado automático con `cierreconfirmadocliente=false`. No introduce comportamiento adicional; se conserva el ID por trazabilidad de CA-TIC-006/007.
 
 ### RF-TIC-007: Dashboard de soporte
 
-Métricas: tickets por estado/prioridad, SLA próximos a vencer/vencidos, tiempo promedio de primera respuesta y resolución, distribución por tipo de incidencia y por cliente, tasa de reapertura.
+Métricas: tickets por estado/prioridad; SLA **próximos a vencer** (= `sla_status='en riesgo'`, umbral 80% de RF-TIC-004) y **vencidos** (= `sla_status='incumplido'`); tiempo promedio de primera respuesta y resolución; distribución por tipo de incidencia y por cliente; tasa de reapertura.
+
+### RF-TIC-008: Cola de soporte — layout master-detail (Interaction Capability / CU-O92)
+
+Superficie canónica del agente (**Cola de soporte**) para atender tickets bajo presión operativa (Ley de Hick / Gestalt / carga cognitiva — `.specify/docs/design/design-system.md`).
+
+1. **Composición:** una sola vista con dos paneles:
+   - **Lista (izquierda):** cada ítem muestra `id_reclamo`, asunto, badges de prioridad y estado, y tipo/categoría cuando esté disponible. El ítem seleccionado se distingue visualmente (borde/acento del design system).
+   - **Detalle (derecha):** asunto + id, controles de asignación/estado alineados a transiciones CU-O92 (tomar, escalar, resolver según rol y estado), historial de mensajes/acciones, composer de respuesta (con opción de nota interna solo para roles de soporte).
+2. **Filtros:** controles de prioridad y estado que invocan `GET /soporte/tickets` con `prioridad` y/o `idestadosoporte` (contrato OpenAPI existente).
+3. **Empty state:** si no hay tickets tras filtros (o sin filtros), mostrar título de página + mensaje "No hay tickets pendientes." sin acciones de reembolso ni de alta de ticket. No dejar la pantalla en blanco total sin contexto de título.
+4. **Fuera de esta superficie:** no mostrar CTA de reembolso ni de pasarela de pago. No CTA "+ Nuevo ticket" (alta = CU-O91 fuera de esta página).
+5. **Deep-link:** `detalle-ticket` sigue disponible para Cliente y URLs directas; la cola del agente no obliga a navegar fuera para las acciones diarias de CU-O92.
 
 ## 5. Requisitos no funcionales
 
@@ -123,6 +144,9 @@ El job de `CU-O96` debe ejecutarse cada 1 minuto para detectar el umbral del 80%
 
 ### RNF-TIC-003: Tiempo de respuesta del registro de ticket
 El registro de un ticket (`CU-O91`), incluyendo clasificación automática y asignación de SLA, debe completarse en menos de 3 segundos.
+
+### RNF-TIC-004: Operabilidad de la Cola de soporte (Interaction Capability)
+En viewport ≥1024px, lista + detalle deben ser visibles simultáneamente sin scroll horizontal de la composición. Acciones primarias del ticket seleccionado (responder / tomar o resolver según estado) deben estar al alcance del panel de detalle (Ley de Fitts). Badges de prioridad, estado y `sla_status` usan tokens semánticos del design system (no hex ad hoc). Notas internas nunca se renderizan para rol Cliente (RN-TIC-002; verificación también en API).
 
 ## 6. Reglas de negocio
 
@@ -276,6 +300,8 @@ Y debe conservar todo el historial previo en `Fact_Historial_Ticket`.
 | CA-TIC-011 | Job escala automáticamente al exceder SLA → idestadosoporte=Escalado. | O96 |
 | CA-TIC-012 | Cliente reabre ticket cerrado → idestadosoporte=Reabierto con historial conservado. | O97 |
 | CA-TIC-013 | Reapertura permite adjuntar nueva evidencia. | O97 |
+| CA-TIC-014 | Cola de soporte muestra layout master-detail: lista con badges + panel detalle/historial/composer; filtros prioridad/estado consumen query OpenAPI. | O92 / RF-TIC-008 |
+| CA-TIC-015 | Empty state de cola: título + "No hay tickets pendientes."; sin CTA de reembolso ni alta de ticket; sin botones de pasarela de pago. | O92 / RF-TIC-008 |
 
 ## 12. Dependencias
 
@@ -290,4 +316,5 @@ Y debe conservar todo el historial previo en `Fact_Historial_Ticket`.
 - Encuesta de satisfacción post-resolución (NPS).
 - Integración con sistemas externos de helpdesk (Zendesk, Freshdesk, Jira).
 - Automatización de respuestas con IA o sugerencia de soluciones basadas en tickets similares.
-- Integración con pasarela de pago para reembolsos.
+- Integración con pasarela de pago para reembolsos — **incluye cualquier CTA/botón "Procesar reembolso" (o equivalente) en la Cola de soporte u otras pantallas de este módulo**.
+- Alta de ticket desde la Cola de soporte del agente (CTA "+ Nuevo ticket"); el registro permanece en CU-O91 / flujo Cliente.

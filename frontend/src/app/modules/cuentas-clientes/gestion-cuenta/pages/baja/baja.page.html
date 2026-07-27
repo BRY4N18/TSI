@@ -1,0 +1,26 @@
+<div class="flex min-h-0 flex-1 flex-col gap-4 p-6 lg:p-8" data-testid="baja-cuenta">
+  <a
+    routerLink="/cuentas-clientes/gestion-cuenta"
+    class="inline-flex w-fit items-center gap-1 text-sm font-medium text-accent-primary no-underline hover:underline"
+  >
+    Volver a gestión
+  </a>
+
+  <h1 class="m-0 text-2xl font-bold text-text-primary">Dar de baja cuenta</h1>
+  <p class="m-0 text-sm text-text-secondary">Cliente #{{ idcliente }} · la baja no elimina datos históricos</p>
+
+  @if (mensaje) {
+    <p class="m-0 text-sm text-accent-primary">{{ mensaje }}</p>
+  }
+  @if (error) {
+    <p class="m-0 text-sm text-alert-critical">{{ error }}</p>
+  }
+
+  <form class="grid max-w-md gap-3 rounded-lg border border-border-default bg-bg-surface p-4" (ngSubmit)="confirmar()">
+    <label class="grid gap-1 text-sm font-medium text-text-secondary">
+      Motivo (opcional)
+      <textarea class="tsi-input !h-auto min-h-24 py-2.5" [(ngModel)]="motivo" name="motivo"></textarea>
+    </label>
+    <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Confirmar baja</button>
+  </form>
+</div>

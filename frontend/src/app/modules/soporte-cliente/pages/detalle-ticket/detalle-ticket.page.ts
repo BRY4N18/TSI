@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { HistorialTicketItem, Ticket } from '../../services/models/soporte.types';
@@ -9,54 +11,9 @@ import { HistorialTicketItem, Ticket } from '../../services/models/soporte.types
 @Component({
   selector: 'app-detalle-ticket',
   standalone: true,
-  imports: [FormsModule],
-  template: `
-    @if (ticket(); as t) {
-      <section>
-        <h1>Ticket #{{ t.id_reclamo }} — {{ t.asunto }}</h1>
-        <p>Estado: {{ t.estado }} · Prioridad: {{ t.prioridad ?? '—' }} · SLA: {{ t.sla_status ?? '—' }}</p>
-        <p>{{ t.descripcion }}</p>
-
-        <h2>Historial</h2>
-        <ul>
-          @for (h of historial(); track h.id_historial) {
-            <li>
-              [{{ h.tipo_accion }}] {{ h.mensaje }}
-              @if (h.es_nota_interna) {
-                <em>(nota interna)</em>
-              }
-            </li>
-          }
-        </ul>
-
-        @if (esAgente()) {
-          <form (ngSubmit)="comentar()">
-            <label>
-              Comentario
-              <textarea name="mensaje" [(ngModel)]="mensaje"></textarea>
-            </label>
-            <label>
-              <input type="checkbox" name="notaInterna" [(ngModel)]="notaInterna" />
-              Nota interna
-            </label>
-            <button type="submit">Comentar</button>
-          </form>
-          <button type="button" (click)="resolver()">Marcar como resuelto</button>
-        }
-
-        @if (esCliente() && t.estado === 'Resuelto') {
-          <button type="button" (click)="confirmarCierre()">Confirmar cierre</button>
-        }
-        @if (esCliente() && t.estado === 'Cerrado') {
-          <button type="button" (click)="reabrir()">Reabrir ticket</button>
-        }
-
-        @if (mensajeAccion()) {
-          <p data-testid="mensaje">{{ mensajeAccion() }}</p>
-        }
-      </section>
-    }
-  `,
+  imports: [FormsModule, NgClass, RouterLink, TablerIconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './detalle-ticket.page.html',
 })
 export class DetalleTicketPage {
   private readonly api = inject(TicketApiService);
@@ -66,6 +23,7 @@ export class DetalleTicketPage {
   readonly ticket = signal<Ticket | null>(null);
   readonly historial = signal<HistorialTicketItem[]>([]);
   readonly mensajeAccion = signal('');
+  readonly cargando = signal(false);
   mensaje = '';
   notaInterna = false;
 
@@ -77,11 +35,17 @@ export class DetalleTicketPage {
     return Number(this.route.snapshot.paramMap.get('idReclamo'));
   }
 
-  private cargar(): void {
+  cargar(): void {
+    this.cargando.set(true);
     this.api.obtenerDetalle(this.idReclamo).subscribe({
       next: (res) => {
         this.ticket.set(res.data.ticket);
         this.historial.set(res.data.historial);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.mensajeAccion.set('No se pudo cargar el ticket.');
       },
     });
   }
@@ -99,6 +63,28 @@ export class DetalleTicketPage {
     return this.authApi.hasRole('Cliente');
   }
 
+  labelEstado(estado: string): string {
+    return estado.replaceAll('_', ' ');
+  }
+
+  estadoBadge(estado: string): string {
+    switch (estado) {
+      case 'Resuelto':
+      case 'Cerrado':
+        return 'tsi-badge-success';
+      case 'Escalado':
+      case 'Pendiente_de_clasificacion':
+        return 'tsi-badge-urgent';
+      case 'En_progreso':
+      case 'Reabierto':
+        return 'tsi-badge-info';
+      case 'Abierto':
+        return 'tsi-badge-warning';
+      default:
+        return 'tsi-badge-neutral';
+    }
+  }
+
   comentar(): void {
     if (!this.mensaje) {
       return;
@@ -109,18 +95,28 @@ export class DetalleTicketPage {
         this.notaInterna = false;
         this.cargar();
       },
+      error: () => this.mensajeAccion.set('Error al comentar'),
     });
   }
 
   resolver(): void {
-    this.api.resolver(this.idReclamo).subscribe({ next: () => this.cargar() });
+    this.api.resolver(this.idReclamo).subscribe({
+      next: () => this.cargar(),
+      error: () => this.mensajeAccion.set('Error al resolver'),
+    });
   }
 
   confirmarCierre(): void {
-    this.api.confirmarCierre(this.idReclamo).subscribe({ next: () => this.cargar() });
+    this.api.confirmarCierre(this.idReclamo).subscribe({
+      next: () => this.cargar(),
+      error: () => this.mensajeAccion.set('Error al confirmar cierre'),
+    });
   }
 
   reabrir(): void {
-    this.api.reabrir(this.idReclamo).subscribe({ next: () => this.cargar() });
+    this.api.reabrir(this.idReclamo).subscribe({
+      next: () => this.cargar(),
+      error: () => this.mensajeAccion.set('Error al reabrir'),
+    });
   }
 }

@@ -1,0 +1,52 @@
+<div class="flex min-h-0 flex-1 flex-col gap-4 p-6 lg:p-8" data-testid="perfil-cuenta">
+  <a
+    routerLink="/cuentas-clientes/gestion-cuenta"
+    class="inline-flex w-fit items-center gap-1 text-sm font-medium text-accent-primary no-underline hover:underline"
+  >
+    Volver a gestión
+  </a>
+
+  <h1 class="m-0 text-2xl font-bold text-text-primary">Perfil corporativo</h1>
+  <p class="m-0 text-sm text-text-secondary">Cliente #{{ idcliente }}</p>
+
+  @if (mensaje) {
+    <p class="m-0 text-sm text-accent-primary">{{ mensaje }}</p>
+  }
+  @if (error) {
+    <p class="m-0 text-sm text-alert-critical">{{ error }}</p>
+  }
+
+  @if (perfil) {
+    <form
+      class="grid max-w-md gap-3 rounded-lg border border-border-default bg-bg-surface p-4"
+      (ngSubmit)="guardar()"
+    >
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Razón social
+        <input class="tsi-input" [(ngModel)]="perfil.razon_social" name="razon_social" />
+      </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Nombre
+        <input class="tsi-input" [(ngModel)]="perfil.nombre" name="nombre" />
+      </label>
+      <p class="m-0 text-sm text-text-secondary">Tipo: {{ perfil.tipo }} (solo lectura)</p>
+      <p class="m-0 text-sm text-text-secondary">NIT: {{ perfil.nit_identificacion }} (solo lectura)</p>
+      @if (perfil.logo_url) {
+        <p class="m-0 text-sm text-text-secondary">
+          Logo actual:
+          <a [href]="perfil.logo_url" target="_blank" rel="noopener" class="text-accent-primary">ver</a>
+        </p>
+      }
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Actualizar logo
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          (change)="onLogoSeleccionado($event)"
+          name="logo"
+        />
+      </label>
+      <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Guardar</button>
+    </form>
+  }
+</div>

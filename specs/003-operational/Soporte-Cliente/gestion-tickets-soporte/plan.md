@@ -41,10 +41,10 @@ Implementar el módulo de gestión de tickets de soporte con enfoque **contract-
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O91–O97 + CA-TIC-001–013 trazables al contrato y data-model |
+| Functional Suitability | PASS | CU-O91–O97 + CA-TIC-001–015 trazables al contrato y data-model (CA-TIC-014/015 = Cola de soporte UI) |
 | Reliability | PASS | Historial append-only (RNF-TIC-002), job idempotente, SLA independiente del estado del ticket (RN-TIC-001) |
 | Performance Efficiency | PASS | RNF-TIC-001 (job 1 min), RNF-TIC-003 (registro <3s) declarados como criterios medibles |
-| Interaction Capability | PASS | Dashboard RF-TIC-007; UI cliente/agente/admin diferenciada por rol |
+| Interaction Capability | PASS | RF-TIC-008 + RNF-TIC-004 + CA-TIC-014/015: Cola de soporte master-detail (lista+detalle), filtros OpenAPI, empty state explícito, badges semánticos; UI por rol (Cliente / agente / admin); notas internas ocultas al Cliente (RN-TIC-002) |
 | Security | PASS | JWT + RBAC por rol; notas internas filtradas server-side (RN-TIC-002, no solo frontend) |
 | Compatibility | PASS | Contract-first OpenAPI; SLA depende de `idplan` de `subscriptions-and-billing` vía integración de datos, no API directa |
 | Maintainability | PASS | Vista→Servicio→Repositorio; servicios por CU; app nueva `apps/soporte_cliente/` sin `queries.py` (CRUD simple) |
@@ -113,11 +113,11 @@ frontend/
 └── src/app/
     ├── modules/soporte-cliente/
     │   ├── pages/
-    │   │   ├── mis-tickets/              # Cliente
-    │   │   ├── cola-agente/              # Soporte al cliente
-    │   │   ├── detalle-ticket/           # Todos los roles (vista filtrada)
-    │   │   ├── configuracion-sla/        # Administrador
-    │   │   └── dashboard-soporte/        # RF-TIC-007
+    │   │   ├── mis-tickets/              # Cliente — *.page.ts + *.page.html
+    │   │   ├── cola-agente/              # Cola de soporte (RF-TIC-008) — *.page.ts + *.page.html
+    │   │   ├── detalle-ticket/           # Deep-link / Cliente — *.page.ts + *.page.html
+    │   │   ├── configuracion-sla/        # Administrador — *.page.ts + *.page.html
+    │   │   └── dashboard-soporte/        # RF-TIC-007 — *.page.ts + *.page.html
     │   ├── services/
     │   │   ├── ticket-api.service.ts
     │   │   ├── sla-config-api.service.ts
@@ -131,7 +131,9 @@ frontend/
         └── interceptors/                 # JWT (reutilizar auth)
 ```
 
-**Structure Decision:** Nueva app `apps/soporte_cliente/` y módulo Angular `soporte-cliente/`, ya reservados en `project-structure.md`/`module-map.md`. App CRUD sin `queries.py` (sin lecturas complejas tipo Haversine). Repositorios en `core/repositories/soporte/`.
+**Structure Decision:** Nueva app `apps/soporte_cliente/` y módulo Angular `soporte-cliente/`, ya reservados en `project-structure.md`/`module-map.md`. App CRUD sin `queries.py` (sin lecturas complejas tipo Haversine). Repositorios en `core/repositories/soporte/`. **Cola de soporte (RF-TIC-008):** layout master-detail dentro de `cola-agente/` (no CTA reembolso ni alta de ticket). `detalle-ticket` se mantiene para deep-link y Cliente.
+
+**Frontend UI convention (repo):** páginas Angular usan `templateUrl: './….page.html'` (plantilla HTML separada) + utilidades Tailwind/tokens en `frontend/src/styles.css` (clases `.tsi-*` del design system). No embeber plantillas grandes con `template:` inline en el `.ts`.
 
 ## Phase 0: Research (completado)
 
@@ -191,12 +193,12 @@ POST /soporte/tickets
 | `TicketApiService` | `/soporte/tickets/*` |
 | `SlaConfigApiService` | `/soporte/sla-config*` |
 | `ClienteSoporteGuard` | Mis tickets, reabrir |
-| `AgenteSoporteGuard` | Cola de agente, tomar/comentar/escalar/resolver |
+| `AgenteSoporteGuard` | Cola de soporte (master-detail), tomar/comentar/escalar/resolver |
 | `AdministradorSlaGuard` | Configuración SLA |
 
-## Phase 2: Tasks (siguiente comando)
+## Phase 2: Tasks
 
-Ejecutar `/speckit-tasks` para generar `tasks.md` ordenado por dependencias: contrato → repos → servicios → job → views → contract tests → Angular.
+`tasks.md` generado. **US8 (Phase 11)** añade cobertura de RF-TIC-008 / RNF-TIC-004 tras remediation analyze 2026-07-26 (T078 fue esqueleto; no cierra Interaction Capability).
 
 ## Complexity Tracking
 

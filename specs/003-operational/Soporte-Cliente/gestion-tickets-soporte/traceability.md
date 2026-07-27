@@ -19,6 +19,8 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-21).
 | CA-TIC-011 | Job escala automáticamente al exceder SLA | T050-T052 | `test_monitoreo_sla_service::test_ejecutar_ciclo_when_excede_100_escala_a_supervisor` |
 | CA-TIC-012 | Reapertura con historial conservado | T061-T063 | `test_reabrir_ticket_service::test_reabrir_when_cerrado_renueva_sla_y_conserva_historial`, `test_reabrir_ticket_contract` |
 | CA-TIC-013 | Reapertura permite adjuntar nueva evidencia | T061-T063 | `test_reabrir_ticket_service::test_reabrir_when_adjunto_publica_archivo` |
+| CA-TIC-014 | Cola master-detail + filtros OpenAPI | T088-T093 | `cola-agente.page.spec.ts` (master-detail + filtros) |
+| CA-TIC-015 | Empty state sin CTA reembolso/alta | T088, T091-T092 | `cola-agente.page.spec.ts::muestra_empty_state_when_sin_tickets` |
 
 ## Casos de uso
 
@@ -30,6 +32,7 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-21).
 | CU-O96 | `monitoreo_sla_service`, `monitoreo_sla_job` + `management/commands/run_monitoreo_sla_job.py` | T048-T049 |
 | CU-O97 | `reabrir_ticket_service`, `ReabrirTicketView` | T060 |
 | RF-TIC-007 | `dashboard_soporte_service`, `DashboardSoporteView` | T065 |
+| RF-TIC-008 / RNF-TIC-004 | `cola-agente.page.ts` master-detail (US8) | T088-T094 |
 
 ## Quickstart escenarios A–G
 
@@ -50,7 +53,8 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-21).
 | TicketApiService | `frontend/src/app/modules/soporte-cliente/services/ticket-api.service.ts` |
 | SlaConfigApiService | `frontend/src/app/modules/soporte-cliente/services/sla-config-api.service.ts` |
 | Guards | `frontend/src/app/modules/soporte-cliente/guards/{cliente-soporte,agente-soporte,administrador-sla}.guard.ts` |
-| Páginas | `frontend/src/app/modules/soporte-cliente/pages/{mis-tickets,cola-agente,detalle-ticket,configuracion-sla,dashboard-soporte}/*.page.ts` |
+| Páginas | `frontend/src/app/modules/soporte-cliente/pages/{mis-tickets,cola-agente,detalle-ticket,configuracion-sla,dashboard-soporte}/*.{page.ts,page.html}` (`templateUrl`; sin `template:`/`styles:` inline) |
+| Cola de soporte (US8) | Master-detail en `cola-agente.page.ts` — tokens design system; sin CTA reembolso ni "+ Nuevo ticket"; filtros `prioridad`/`idestadosoporte` |
 | Entradas sidebar | `frontend/src/app/shared/layout/nav-links.ts` (grupo "Soporte") — `core/sidebar/despacho-menu.config.ts` no se replicó por ser código muerto no consumido |
 
 ## Cobertura de tests (backend)
