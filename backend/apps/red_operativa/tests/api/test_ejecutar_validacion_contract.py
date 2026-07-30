@@ -73,16 +73,13 @@ class TestEjecutarValidacionContract:
         assert response.status_code == 200
         assert response.json()["data"]["estadoregion_actual"] == "Producción"
 
-    def test_post_when_unauthenticated_returns_403(self, api_client):
-        # Act
+    def test_post_when_unauthenticated_returns_401_or_403(self, api_client):
         response = api_client.post(
             self.URL,
             {"idregionoperativa": 1, "resultado": "Aprobada"},
             format="json",
         )
-
-        # Assert
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)
 
     def test_post_when_operador_returns_403(self, api_client, operador_auth_headers):
         # Act

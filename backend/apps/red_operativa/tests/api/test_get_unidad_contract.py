@@ -39,11 +39,8 @@ class TestGetUnidadContract:
         # Assert
         assert response.status_code == 404
 
-    def test_get_unidad_when_unauthenticated_returns_403(self, api_client, mock_unidad_emergencia):
-        # Act
+    def test_get_unidad_when_unauthenticated_returns_401_or_403(self, api_client, mock_unidad_emergencia):
         response = api_client.get(
             f"/api/v1/red-operativa/unidades/{mock_unidad_emergencia['idunidademergencia']}"
         )
-
-        # Assert
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)

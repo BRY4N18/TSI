@@ -22,6 +22,25 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
         <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
           <form (ngSubmit)="guardar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Nombre</span>
+              <input
+                [(ngModel)]="unidad.unidademergencia"
+                name="unidademergencia"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo propiedad</span>
+              <select
+                [(ngModel)]="unidad.tipopropiedad"
+                name="tipopropiedad"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none"
+              >
+                <option value="Externa">Externa</option>
+                <option value="Propia">Propia</option>
+              </select>
+            </label>
+            <label class="block">
               <span class="mb-1 block text-sm font-medium text-text-secondary">Capacidad</span>
               <input
                 [(ngModel)]="unidad.capacidad"
@@ -39,6 +58,14 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
               />
             </label>
             <label class="block sm:col-span-2">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Contacto proveedor</span>
+              <input
+                [(ngModel)]="unidad.contactoproveedor"
+                name="contactoproveedor"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <label class="block sm:col-span-2">
               <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo de unidad</span>
               <select
                 [(ngModel)]="unidad.tipounidademergencia"
@@ -51,6 +78,26 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
                 <option value="Bomberos">Bomberos</option>
                 <option value="Defensa Civil">Defensa Civil</option>
               </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Latitud</span>
+              <input
+                type="number"
+                step="any"
+                [(ngModel)]="unidad.latitud"
+                name="latitud"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Longitud</span>
+              <input
+                type="number"
+                step="any"
+                [(ngModel)]="unidad.longitud"
+                name="longitud"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              />
             </label>
             <div class="sm:col-span-2">
               <button
@@ -69,7 +116,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
             >
               <div class="flex items-center gap-2">
                 <app-tabler-icon name="alert-triangle" [size]="18" />
-                <span>La unidad tiene un despacho activo. Confirma para forzar la edición del tipo de unidad.</span>
+                <span>La unidad tiene un despacho activo. Confirma para forzar la edición crítica.</span>
               </div>
               <button
                 type="button"
@@ -124,9 +171,14 @@ export class EdicionPage implements OnInit {
       .editar(
         this.unidad.idunidademergencia,
         {
+          tipopropiedad: this.unidad.tipopropiedad,
           capacidad: this.unidad.capacidad ?? undefined,
           idcondado: this.unidad.idcondado,
+          contactoproveedor: this.unidad.contactoproveedor ?? undefined,
+          unidademergencia: this.unidad.unidademergencia,
           tipounidademergencia: this.unidad.tipounidademergencia,
+          latitud: this.unidad.latitud ?? undefined,
+          longitud: this.unidad.longitud ?? undefined,
         },
         confirmarEdicionCritica,
       )

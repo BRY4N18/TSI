@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthApiService } from '../services/auth-api.service';
+import { resolvePostLoginPath } from '../services/post-login-home';
 
 @Component({
   selector: 'app-login-page',
@@ -41,8 +42,7 @@ export class LoginPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
-          const returnUrl =
-            this.route.snapshot.queryParamMap.get('returnUrl') ?? '/cuentas-clientes';
+          const requestedReturn = this.route.snapshot.queryParamMap.get('returnUrl');
 
           if (response.data.requiresPasswordChange) {
             void this.router.navigate(['/cuentas-clientes/auth/password-reset'], {
@@ -51,7 +51,8 @@ export class LoginPage {
             return;
           }
 
-          void this.router.navigateByUrl(returnUrl);
+          const target = resolvePostLoginPath(response.data.profile?.roles, requestedReturn);
+          void this.router.navigateByUrl(target);
         },
         error: () => {
           this.errorMessage.set('Credenciales inválidas o usuario inactivo.');

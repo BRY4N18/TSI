@@ -26,9 +26,14 @@ class DescartarCasoService:
         current = self.estado_repo.get_current_estado(idaccidente)
         if current != ESTADO_BORRADOR:
             raise ConflictError("Solo se puede descartar en BORRADOR")
+        if not motivo or not motivo.strip():
+            raise ValueError("El motivo del descarte es obligatorio")
         self.accidente_repo.update(idaccidente, {"activo": False})
         self.estado_repo.append_estado(
-            idaccidente=idaccidente, estado=ESTADO_DESCARTADO, idusuario=idusuario
+            idaccidente=idaccidente,
+            estado=ESTADO_DESCARTADO,
+            idusuario=idusuario,
+            motivo=motivo,
         )
         self.audit.log_action(
             action="descartar",

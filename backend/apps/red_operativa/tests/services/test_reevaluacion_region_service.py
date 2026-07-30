@@ -13,7 +13,9 @@ class TestReevaluacionRegionService:
         service.region_repo.update(1, {"estadoregion": "Producción"})
 
         # Act
-        result = service.reevaluar(1, estadoregion_nuevo="En_Alerta", motivo="Latencia alta")
+        result = service.reevaluar(
+            1, estadoregion_nuevo="En_Alerta", motivo="Latencia alta", idusuario=9
+        )
 
         # Assert
         assert result["estadoregion"] == "En_Alerta"
@@ -27,7 +29,9 @@ class TestReevaluacionRegionService:
         pinot_store["Fact_Accidente"].append({"idaccidente": "acc-1", "idcalle": 1, "activo": True})
 
         # Act
-        result = service.reevaluar(1, estadoregion_nuevo="Despublicada", motivo="Sin cobertura")
+        result = service.reevaluar(
+            1, estadoregion_nuevo="Despublicada", motivo="Sin cobertura", idusuario=9
+        )
 
         # Assert: la despublicación procede igual — solo bloquea casos nuevos, no cancela existentes
         assert result["estadoregion"] == "Despublicada"
@@ -40,7 +44,7 @@ class TestReevaluacionRegionService:
 
         # Act & Assert
         with pytest.raises(ValueError):
-            service.reevaluar(1, estadoregion_nuevo="En_Alerta", motivo="x")
+            service.reevaluar(1, estadoregion_nuevo="En_Alerta", motivo="x", idusuario=9)
 
     def test_reevaluar_when_region_inexistente_raises(self, mock_pinot, mock_kafka):
         # Arrange
@@ -48,4 +52,4 @@ class TestReevaluacionRegionService:
 
         # Act & Assert
         with pytest.raises(LookupError):
-            service.reevaluar(999, estadoregion_nuevo="En_Alerta", motivo="x")
+            service.reevaluar(999, estadoregion_nuevo="En_Alerta", motivo="x", idusuario=9)

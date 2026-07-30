@@ -37,7 +37,7 @@ describe('LoginPage', () => {
     fixture.componentInstance.form.setValue({ gmail, password });
   }
 
-  it('onSubmit_when_success_navigates_to_returnUrl', () => {
+  it('onSubmit_when_success_navigates_to_role_home', () => {
     // Arrange
     authApi.login.and.returnValue(
       of<any>({
@@ -64,6 +64,31 @@ describe('LoginPage', () => {
     });
     expect(router.navigateByUrl).toHaveBeenCalledWith('/cuentas-clientes');
     expect(fixture.componentInstance.loading()).toBeFalse();
+  });
+
+  it('onSubmit_when_unidad_navigates_to_mi_despacho', () => {
+    authApi.login.and.returnValue(
+      of<any>({
+        data: {
+          accessToken: 'a',
+          refreshToken: 'r',
+          tokenType: 'Bearer',
+          expiresInSeconds: 3600,
+          profile: {
+            idusuario: 6,
+            gmail: 'diego.ramirez.unidad@demo.tsi.com',
+            roles: ['Unidad'],
+          },
+          requiresPasswordChange: false,
+        },
+        meta: {},
+      }),
+    );
+    fillForm('diego.ramirez.unidad@demo.tsi.com', 'password123');
+
+    fixture.componentInstance.onSubmit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/despacho/mi-despacho');
   });
 
   it('onSubmit_when_requires_password_change_navigates_to_password_reset', () => {

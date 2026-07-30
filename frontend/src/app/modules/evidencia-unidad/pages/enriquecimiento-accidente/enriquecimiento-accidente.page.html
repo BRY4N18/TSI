@@ -1,0 +1,517 @@
+<div class="mx-auto max-w-6xl p-8">
+  <a
+    [routerLink]="['/accidentes', idaccidente]"
+    class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+  >
+    <app-tabler-icon name="arrow-left" [size]="16" />
+    Volver al accidente
+  </a>
+
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="m-0 text-2xl font-bold text-text-primary">
+          {{ soloLectura() ? 'Datos del siniestro (solo lectura)' : 'Enriquecimiento en sitio' }}
+        </h1>
+        <span
+          class="flex items-center gap-1.5 text-xs font-medium text-text-secondary"
+          data-testid="conexion"
+        >
+          <span
+            class="h-2 w-2 rounded-full"
+            [class.bg-alert-success]="connectivity.online()"
+            [class.bg-text-secondary]="!connectivity.online()"
+          ></span>
+          {{ connectivity.online() ? 'En vivo' : 'Sin conexión' }}
+        </span>
+      </div>
+      <p class="m-0 mt-1 text-sm text-text-secondary" data-testid="caso">Caso: {{ idaccidente }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <a
+        [routerLink]="['/evidencia-unidad/accidentes', idaccidente, 'galeria']"
+        [queryParams]="soloLectura() ? { mode: 'view' } : {}"
+        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+      >
+        <app-tabler-icon name="camera" [size]="16" />
+        Galería
+      </a>
+      <button
+        type="button"
+        (click)="recargar()"
+        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+      >
+        <app-tabler-icon name="refresh" [size]="16" />
+        Recargar
+      </button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="mb-4 text-sm text-alert-critical">{{ error() }}</p>
+  }
+
+  @if (cargando()) {
+    <p class="text-sm text-text-secondary">Cargando…</p>
+  } @else {
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Clima y período</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+            Período del día
+            <select
+              class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-70"
+              [(ngModel)]="idperiododia"
+              name="idperiododia"
+              [disabled]="soloLectura()"
+            >
+              <option [ngValue]="null">—</option>
+              @for (p of periodos(); track p['idperiododia']) {
+                <option [ngValue]="p['idperiododia']">
+                  {{ catalogLabel(p, 'idperiododia', 'amaneceranochecer') }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+            Estado del clima
+            <select
+              class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-70"
+              [(ngModel)]="idestadoclima"
+              name="idestadoclima"
+              [disabled]="soloLectura()"
+            >
+              <option [ngValue]="null">—</option>
+              @for (c of climas(); track c['idestadoclima']) {
+                <option [ngValue]="c['idestadoclima']">
+                  {{ catalogLabel(c, 'idestadoclima', 'condicionclima') }}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (!soloLectura()) {
+          <button
+            type="button"
+            data-testid="btn-guardar-clima"
+            (click)="guardarClima()"
+            [disabled]="guardando()"
+            class="mt-4 inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+          >
+            Guardar clima
+          </button>
+        }
+      </section>
+
+      <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Elementos físicos</h2>
+        @if (!soloLectura()) {
+          <div class="flex flex-wrap items-end gap-3">
+            <label class="block min-w-[12rem] flex-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Elemento
+              <select
+                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                [(ngModel)]="idelementofisico"
+                name="idelementofisico"
+              >
+                <option [ngValue]="null">—</option>
+                @for (e of elementosCatalogo(); track e['idelementofisico']) {
+                  <option [ngValue]="e['idelementofisico']">
+                    {{ catalogLabel(e, 'idelementofisico', 'elementofisico') }}
+                  </option>
+                }
+              </select>
+            </label>
+            <button
+              type="button"
+              (click)="agregarFisico()"
+              [disabled]="guardando()"
+              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+            >
+              Agregar
+            </button>
+          </div>
+        }
+        <ul class="mt-4 m-0 list-none space-y-2 p-0">
+          @for (item of data()?.elementos_fisicos ?? []; track item.idelementosfisicosaccidente) {
+            <li
+              class="flex items-center justify-between rounded-md border border-border-default px-3 py-2 text-sm"
+            >
+              <span class="text-text-primary">{{ item.elementofisico || item.idelementofisico }}</span>
+              @if (!soloLectura()) {
+                <button
+                  type="button"
+                  (click)="desactivarFisico(item)"
+                  class="text-xs font-medium text-alert-critical hover:underline"
+                >
+                  Quitar
+                </button>
+              }
+            </li>
+          } @empty {
+            <li class="text-sm text-text-secondary">Sin elementos físicos vinculados.</li>
+          }
+        </ul>
+      </section>
+
+      <section class="rounded-lg border border-border-default bg-bg-surface p-6 lg:col-span-2">
+        <div class="mb-5">
+          <h2 class="m-0 text-base font-semibold text-text-primary">Conductores y vehículos</h2>
+          @if (!soloLectura()) {
+            <p class="m-0 mt-1 text-sm text-text-secondary">
+              Complete primero los datos del conductor y luego los del vehículo. El máximo de
+              registros sigue el número de vehículos declarado en el caso.
+            </p>
+          }
+        </div>
+
+        @if (!soloLectura()) {
+        <div class="grid gap-5 lg:grid-cols-2">
+          <!-- Conductor -->
+          <div class="rounded-md border border-border-default bg-bg-page/40 p-4">
+            <h3 class="m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <app-tabler-icon name="user" [size]="16" />
+              Conductor
+            </h3>
+            <p class="m-0 mb-4 text-xs text-text-secondary">Identidad y estado en el evento</p>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
+                Identificación *
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="identificacion"
+                  name="identificacion"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Nombres *
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="nombres"
+                  name="nombres"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Apellidos *
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="apellidos"
+                  name="apellidos"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Género
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="genero"
+                  name="genero"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Ciudad de residencia
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="ciudadresidencia"
+                  name="ciudadresidencia"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Tipo de licencia
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="tipolicencia"
+                  name="tipolicencia"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Estado de licencia
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="estadolicencia"
+                  name="estadolicencia"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
+                Años de experiencia
+                <input
+                  type="number"
+                  min="0"
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="aniosexperiencia"
+                  name="aniosexperiencia"
+                />
+              </label>
+            </div>
+
+            <fieldset class="mt-4 border-0 p-0">
+              <legend class="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Estado del conductor *
+              </legend>
+              <div class="flex flex-wrap gap-x-4 gap-y-2">
+                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-border-default"
+                    [(ngModel)]="estadosobriedad"
+                    name="estadosobriedad"
+                  />
+                  Sobrio
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-border-default"
+                    [(ngModel)]="nivelatencion"
+                    name="nivelatencion"
+                  />
+                  Atento
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-border-default"
+                    [(ngModel)]="condicionfisica"
+                    name="condicionfisica"
+                  />
+                  Ileso
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-border-default"
+                    [(ngModel)]="usoseguridad"
+                    name="usoseguridad"
+                  />
+                  Con seguridad
+                </label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- Vehículo -->
+          <div class="rounded-md border border-border-default bg-bg-page/40 p-4">
+            <h3 class="m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <app-tabler-icon name="car" [size]="16" />
+              Vehículo
+            </h3>
+            <p class="m-0 mb-4 text-xs text-text-secondary">Datos del vehículo involucrado</p>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
+                Tipo de vehículo *
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="tipovehiculo"
+                  name="tipovehiculo"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Modelo
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="modelovehiculo"
+                  name="modelovehiculo"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Categoría de uso
+                <input
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="categoriausovehiculo"
+                  name="categoriausovehiculo"
+                />
+              </label>
+              <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Ejes
+                <input
+                  type="number"
+                  min="0"
+                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  [(ngModel)]="ejes"
+                  name="ejes"
+                />
+              </label>
+              <label class="inline-flex items-center gap-2 self-end pb-2 text-sm text-text-primary">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-border-default"
+                  [(ngModel)]="mercanciapeligrosa"
+                  name="mercanciapeligrosa"
+                />
+                Mercancía peligrosa
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border-default pt-4">
+          <button
+            type="button"
+            (click)="registrarConductor()"
+            [disabled]="guardando()"
+            class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+          >
+            Registrar conductor y vehículo
+          </button>
+        </div>
+        }
+
+        <div class="mt-6">
+          <h3 class="m-0 mb-3 text-sm font-semibold text-text-primary">Registrados en el caso</h3>
+          <ul class="m-0 list-none space-y-2 p-0" data-testid="conductores-lista">
+            @for (item of data()?.conductores ?? []; track item.idconductoraccidente) {
+              <li
+                class="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border-default px-3 py-3 text-sm"
+              >
+                <div class="grid min-w-0 flex-1 gap-1 sm:grid-cols-2">
+                  <div>
+                    <p class="m-0 text-[10px] font-medium uppercase tracking-wide text-text-secondary">
+                      Conductor
+                    </p>
+                    <p class="m-0 font-medium text-text-primary">
+                      {{ item.conductor.nombres }} {{ item.conductor.apellidos }}
+                    </p>
+                    <p class="m-0 text-xs text-text-secondary">
+                      ID {{ item.conductor.identificacion }} ·
+                      {{ estadoConductorLabelById(item.idestadoconductor) }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="m-0 text-[10px] font-medium uppercase tracking-wide text-text-secondary">
+                      Vehículo
+                    </p>
+                    <p class="m-0 font-medium text-text-primary">
+                      {{ item.vehiculo.tipovehiculo
+                      }}{{ item.vehiculo.modelovehiculo ? ' · ' + item.vehiculo.modelovehiculo : '' }}
+                    </p>
+                    <p class="m-0 text-xs text-text-secondary">
+                      @if (item.vehiculo.categoriausovehiculo) {
+                        {{ item.vehiculo.categoriausovehiculo }}
+                      }
+                      @if (item.vehiculo.mercanciapeligrosa) {
+                        · Mercancía peligrosa
+                      }
+                    </p>
+                  </div>
+                </div>
+                @if (!soloLectura()) {
+                  <button
+                    type="button"
+                    (click)="desactivarConductor(item)"
+                    class="text-xs font-medium text-alert-critical hover:underline"
+                  >
+                    Desactivar
+                  </button>
+                }
+              </li>
+            } @empty {
+              <li class="text-sm text-text-secondary">Sin conductores ni vehículos registrados.</li>
+            }
+          </ul>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-border-default bg-bg-surface p-6 lg:col-span-2">
+        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
+          Implicados no conductores
+        </h2>
+        @if (!soloLectura()) {
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Tipo *
+              <select
+                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                [(ngModel)]="tipoimplicado"
+                name="tipoimplicado"
+              >
+                <option value="">—</option>
+                <option value="Peaton">Peatón</option>
+                <option value="Pasajero">Pasajero</option>
+                <option value="Testigo">Testigo</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </label>
+            <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Estado *
+              <select
+                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                [(ngModel)]="estadoimplicado"
+                name="estadoimplicado"
+              >
+                <option value="">—</option>
+                <option value="Ileso">Ileso</option>
+                <option value="Lesionado">Lesionado</option>
+                <option value="Fallecido">Fallecido</option>
+                <option value="Desconocido">Desconocido</option>
+              </select>
+            </label>
+            <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Género
+              <input
+                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                [(ngModel)]="implicadoGenero"
+                name="implicadoGenero"
+              />
+            </label>
+            <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Edad
+              <input
+                type="number"
+                min="0"
+                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                [(ngModel)]="implicadoEdad"
+                name="implicadoEdad"
+              />
+            </label>
+          </div>
+          <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border-default pt-4">
+            <button
+              type="button"
+              (click)="registrarImplicado()"
+              [disabled]="guardando()"
+              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+            >
+              Registrar implicado
+            </button>
+          </div>
+        }
+        <ul class="mt-6 m-0 list-none space-y-2 p-0" data-testid="implicados-lista">
+          @for (item of data()?.implicados ?? []; track item.idimplicado) {
+            <li
+              class="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border-default px-3 py-3 text-sm"
+            >
+              <div>
+                <p class="m-0 font-medium text-text-primary">
+                  {{ item.tipoimplicado }}
+                </p>
+                <p class="m-0 text-xs text-text-secondary">
+                  {{ item.estadoimplicado }}
+                  @if (item.genero) {
+                    · {{ item.genero }}
+                  }
+                  @if (item.edad != null) {
+                    · {{ item.edad }} años
+                  }
+                </p>
+              </div>
+              @if (!soloLectura()) {
+                <button
+                  type="button"
+                  (click)="desactivarImplicado(item)"
+                  class="text-xs font-medium text-alert-critical hover:underline"
+                >
+                  Desactivar
+                </button>
+              }
+            </li>
+          } @empty {
+            <li class="text-sm text-text-secondary">Sin implicados no conductores registrados.</li>
+          }
+        </ul>
+      </section>
+    </div>
+  }
+</div>

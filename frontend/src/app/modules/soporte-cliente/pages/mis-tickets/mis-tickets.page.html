@@ -42,6 +42,15 @@
           <option value="operativo">Operativo</option>
         </select>
       </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Servicio afectado (opcional)
+        <select class="tsi-select" name="idservicio" [(ngModel)]="idservicio">
+          <option [ngValue]="null">— Sin especificar —</option>
+          @for (s of servicios(); track s.id) {
+            <option [ngValue]="s.id">{{ s.nombre }}</option>
+          }
+        </select>
+      </label>
       <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Enviar</button>
     </form>
   </details>

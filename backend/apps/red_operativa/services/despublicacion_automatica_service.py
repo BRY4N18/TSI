@@ -1,21 +1,20 @@
 """CU-O62 — Despublicación automática por pérdida total de cobertura.
 
-Servicio idempotente e invocable manualmente o por un job externo (cron).
-**Sin disparador automático conectado**: RN-REGON-005 documenta que no existe
-FK entre Dim_UnidadEmergencia y Dim_RegionOperativa, por lo que el conteo de
-unidades activas de una región no puede resolverse de forma confiable a nivel
-de esquema (ver plan.md Complexity Tracking, research.md Decision 4).
+Regla de cobertura (RN-REGON-005 resuelta):
+  Dim_RegionOperativaEstadoRegion → Dim_Condado → Dim_UnidadEmergencia(activo).
 
-El registro de la transición no tiene actor humano (RF-REGON-004.2):
-idusuario nunca se incluye en la respuesta ni se persiste en esta operación,
-porque no existe tabla de historial donde insertar esa marca — el cambio es
-solo el UPDATE de estadoregion.
+Solo despublica si el conteo de unidades activas en esa cobertura es 0.
+Invocable por Administrador o job/cron externo (POST .../despublicacion-automatica).
+Sin actor humano en la respuesta (RF-REGON-004).
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from core.repositories.red_operativa.cobertura_region_read_repository import (
+    CoberturaRegionReadRepository,
+)
 from core.repositories.red_operativa.region_operativa_repository import (
     RegionOperativaRepository,
 )
@@ -25,8 +24,13 @@ ESTADOS_ORIGEN_VALIDOS = ("Producción", "En_Alerta")
 
 
 class DespublicacionAutomaticaService:
-    def __init__(self, region_repo: RegionOperativaRepository | None = None):
+    def __init__(
+        self,
+        region_repo: RegionOperativaRepository | None = None,
+        cobertura_repo: CoberturaRegionReadRepository | None = None,
+    ):
         self.region_repo = region_repo or RegionOperativaRepository()
+        self.cobertura_repo = cobertura_repo or CoberturaRegionReadRepository()
 
     def ejecutar(self, idregionoperativa: int) -> dict[str, Any]:
         region = self.region_repo.find_by_id(idregionoperativa)
@@ -37,5 +41,17 @@ class DespublicacionAutomaticaService:
                 "Solo se puede despublicar automáticamente una región en "
                 "'Producción' o 'En_Alerta'"
             )
-        updated = self.region_repo.update(idregionoperativa, {"estadoregion": ESTADO_DESPUBLICADA})
-        return {"idregionoperativa": idregionoperativa, "estadoregion": updated["estadoregion"]}
+        activas = self.cobertura_repo.count_unidades_activas(idregionoperativa)
+        if activas > 0:
+            raise ValueError(
+                f"La región aún tiene {activas} unidad(es) activa(s) en cobertura; "
+                "no se puede despublicar automáticamente"
+            )
+        updated = self.region_repo.update(
+            idregionoperativa, {"estadoregion": ESTADO_DESPUBLICADA}
+        )
+        return {
+            "idregionoperativa": idregionoperativa,
+            "estadoregion": updated["estadoregion"],
+            "unidades_activas": 0,
+        }

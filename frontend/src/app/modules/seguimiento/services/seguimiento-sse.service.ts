@@ -40,18 +40,30 @@ export class SeguimientoSseService {
       let retryHandle: ReturnType<typeof setTimeout> | undefined;
       let currentSub: Subscription | null = null;
 
+      const programarReintento = () => {
+        if (!detenido) {
+          retryHandle = setTimeout(intentar, this.RECONEXION_MS);
+        }
+      };
+
       const intentar = () => {
         if (detenido) {
           return;
         }
         subscriber.next({ estado: 'reconnecting' });
-        currentSub = this.connect().subscribe({
+        currentSub = this.connect(() => {
+          // Conexión abierta (aunque solo lleguen heartbeats/comentarios SSE).
+          subscriber.next({ estado: 'live' });
+        }).subscribe({
           next: (evento) => subscriber.next({ estado: 'live', evento }),
           error: () => {
             subscriber.next({ estado: 'offline' });
-            if (!detenido) {
-              retryHandle = setTimeout(intentar, this.RECONEXION_MS);
-            }
+            programarReintento();
+          },
+          complete: () => {
+            // Nginx/upstream a veces cierra sin error → reintentar (no quedar en Conectando).
+            subscriber.next({ estado: 'offline' });
+            programarReintento();
           },
         });
       };
@@ -68,7 +80,7 @@ export class SeguimientoSseService {
     }).pipe(takeUntilDestroyed(destroyRef));
   }
 
-  connect(): Observable<SeguimientoSseEvent> {
+  connect(onOpen?: () => void): Observable<SeguimientoSseEvent> {
     return new Observable((subscriber) => {
       const controller = new AbortController();
       const token = this.authApi.getAccessToken();
@@ -81,6 +93,7 @@ export class SeguimientoSseService {
           if (!response.ok || !response.body) {
             throw new Error(`SSE request failed with status ${response.status}`);
           }
+          this.zone.run(() => onOpen?.());
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';

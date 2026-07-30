@@ -1,4 +1,4 @@
-"""CU-O21 registro de accidente."""
+"""CU-O21 registro de accidente (Fase 1 — solo datos a distancia)."""
 
 from __future__ import annotations
 
@@ -10,12 +10,6 @@ from apps.accidentes.services.validacion_accidente_service import (
     ValidacionAccidenteService,
 )
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
-from core.repositories.accidentes.elemento_climatico_repository import (
-    ElementoClimaticoRepository,
-)
-from core.repositories.accidentes.elemento_fisico_repository import (
-    ElementoFisicoRepository,
-)
 from core.repositories.accidentes.estado_accidente_repository import (
     EstadoAccidenteRepository,
 )
@@ -27,15 +21,11 @@ class RegistroAccidenteService:
         validacion: ValidacionAccidenteService | None = None,
         accidente_repo: AccidenteRepository | None = None,
         estado_repo: EstadoAccidenteRepository | None = None,
-        climatico_repo: ElementoClimaticoRepository | None = None,
-        fisico_repo: ElementoFisicoRepository | None = None,
         audit: AuditAccidenteService | None = None,
     ):
         self.validacion = validacion or ValidacionAccidenteService()
         self.accidente_repo = accidente_repo or AccidenteRepository()
         self.estado_repo = estado_repo or EstadoAccidenteRepository()
-        self.climatico_repo = climatico_repo or ElementoClimaticoRepository()
-        self.fisico_repo = fisico_repo or ElementoFisicoRepository()
         self.audit = audit or AuditAccidenteService()
 
     def registrar(
@@ -70,6 +60,8 @@ class RegistroAccidenteService:
             "idusuario": idusuario,
             "codigopostal": data.get("codigopostal"),
             "horainicio": data.get("horainicio"),
+            "idtiporeportado": data.get("idtiporeportado"),
+            "idreferenciaestacion": data.get("idreferenciaestacion"),
             "numvehiculos": data.get("numvehiculos"),
             "numvictimas": data.get("numvictimas"),
             "numheridos": data.get("numheridos"),
@@ -88,19 +80,8 @@ class RegistroAccidenteService:
             )
             estado_final = ESTADO_REPORTADO
 
-        if data.get("idperiododia") or data.get("idestadoclima"):
-            self.climatico_repo.upsert(
-                idaccidente=idaccidente,
-                idperiododia=data.get("idperiododia"),
-                idestadoclima=data.get("idestadoclima"),
-                idusuario=idusuario,
-            )
-        if data.get("idelementofisico"):
-            self.fisico_repo.upsert(
-                idaccidente=idaccidente,
-                idelementofisico=int(data["idelementofisico"]),
-                idusuario=idusuario,
-            )
+        # Clima / elementos físicos / conductores / implicados: solo Técnico en sitio
+        # (evidencia-unidad CU-O46). No se escriben en CU-O21.
 
         self.audit.log_action(action="crear", user_id=idusuario, idaccidente=idaccidente)
 

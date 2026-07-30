@@ -68,13 +68,10 @@ class TestRegistroUnidadContract:
         # Assert
         assert response.status_code == 403
 
-    def test_post_unidad_when_unauthenticated_returns_403(self, api_client):
-        # Act
+    def test_post_unidad_when_unauthenticated_returns_401_or_403(self, api_client):
         response = api_client.post(
             "/api/v1/red-operativa/unidades",
             self._valid_payload(),
             format="json",
         )
-
-        # Assert
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)

@@ -29,7 +29,7 @@ class TestReasignacionAlertaAdmin:
         # Assert
         assert result.get("alerta") is True
         assert result["reasignacion_iniciada"] is False
-        notas = [m for m in mock_kafka if m["payload"].get("tipo") == "alerta"]
+        notas = [m for m in mock_kafka if m["payload"].get("tipo") == "escalamiento_fallido"]
         assert len(notas) >= 1
         mock_sender.send.assert_called()
         call_kwargs = mock_sender.send.call_args.kwargs
@@ -54,4 +54,4 @@ class TestReasignacionAlertaAdmin:
 
         # Assert — fail-open
         assert result.get("alerta") is True
-        assert any(m["payload"].get("tipo") == "alerta" for m in mock_kafka)
+        assert any(m["payload"].get("tipo") == "escalamiento_fallido" for m in mock_kafka)

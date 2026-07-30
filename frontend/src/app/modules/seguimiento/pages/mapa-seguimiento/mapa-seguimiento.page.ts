@@ -88,6 +88,17 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
   standalone: true,
   imports: [TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Host sin altura → Leaflet inicia en 0×0 (área vacía; el badge "Conectando" sí se ve).
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+        height: calc(100vh - 4rem);
+        min-height: 0;
+      }
+    `,
+  ],
   template: `
     <div class="relative h-full w-full">
       <div #mapContainer class="absolute inset-0"></div>
@@ -190,6 +201,8 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
     this.map = L.map(this.mapContainer.nativeElement, { zoomControl: false }).setView(DEFAULT_CENTER, 12);
     this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+    // Tras layout flex del shell, el contenedor a veces mide 0 al primer paint.
+    queueMicrotask(() => this.map?.invalidateSize());
 
     effect(
       () => {

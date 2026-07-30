@@ -51,6 +51,7 @@ class UnidadEmergenciaRepository:
             "contactoproveedor": data.get("contactoproveedor"),
             "unidademergencia": data["unidademergencia"],
             "tipounidademergencia": data["tipounidademergencia"],
+            "idusuario": data.get("idusuario"),
             "activo": data.get("activo", True),
             "latitud": data.get("latitud"),
             "longitud": data.get("longitud"),
@@ -58,6 +59,15 @@ class UnidadEmergenciaRepository:
         }
         self.kafka.publish(self.TOPIC, payload)
         return payload
+
+    def list_by_cliente(self, idcliente: int, *, solo_activas: bool = False) -> list[dict[str, Any]]:
+        rows = self.pinot.query(
+            "SELECT * FROM Dim_UnidadEmergencia WHERE idcliente = %(idcliente)s",
+            {"idcliente": idcliente},
+        )
+        if solo_activas:
+            rows = [r for r in rows if r.get("activo")]
+        return sorted(rows, key=lambda r: r["idunidademergencia"])
 
     def update(self, idunidademergencia: int, data: dict[str, Any]) -> dict[str, Any] | None:
         existing = self.find_by_id(idunidademergencia)

@@ -19,6 +19,8 @@ class TestValidacionRegionService:
         assert result["estadoregion_actual"] == "En_Validación"
         region = service.region_repo.find_by_id(result["idregionoperativa"])
         assert region is not None
+        puente = service.puente_repo.list_by_region(result["idregionoperativa"])
+        assert any(int(p["idestadoregion"]) == 2 for p in puente)
 
     def test_ejecutar_inserta_validacion_siempre(self, mock_pinot, mock_kafka):
         # Arrange
@@ -135,3 +137,12 @@ class TestValidacionRegionService:
         # Act & Assert
         with pytest.raises(LookupError):
             service.ejecutar({"idregionoperativa": 999, "resultado": "Aprobada"}, idusuario=9)
+
+    def test_ejecutar_when_region_inactiva_raises(self, mock_pinot, mock_kafka):
+        # Arrange — Session 2026-07-21: reingreso salvo activo=false
+        service = ValidacionRegionService()
+        service.region_repo.update(1, {"activo": False, "estadoregion": "En_Validación"})
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="inactiva"):
+            service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)

@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { TicketApiService } from '../../services/ticket-api.service';
-import { Ticket } from '../../services/models/soporte.types';
+import { CatalogoItem, Ticket } from '../../services/models/soporte.types';
 
 @Component({
   selector: 'app-mis-tickets',
@@ -17,14 +17,20 @@ export class MisTicketsPage {
   private readonly api = inject(TicketApiService);
 
   readonly tickets = signal<Ticket[]>([]);
+  readonly servicios = signal<CatalogoItem[]>([]);
   readonly mensaje = signal('');
   readonly cargando = signal(false);
   asunto = '';
   descripcion = '';
   tipo = 'tecnico';
+  idservicio: number | null = null;
 
   constructor() {
     this.cargar();
+    this.api.listarServicios().subscribe({
+      next: (res) => this.servicios.set(res.data ?? []),
+      error: () => this.servicios.set([]),
+    });
   }
 
   labelEstado(estado: string): string {
@@ -50,12 +56,19 @@ export class MisTicketsPage {
       return;
     }
     this.api
-      .registrar({ idcliente: 1, asunto: this.asunto, descripcion: this.descripcion, tipo: this.tipo })
+      .registrar({
+        idcliente: 1,
+        asunto: this.asunto,
+        descripcion: this.descripcion,
+        tipo: this.tipo,
+        ...(this.idservicio != null ? { idservicio: this.idservicio } : {}),
+      })
       .subscribe({
         next: (res) => {
           this.mensaje.set(`Ticket #${res.data.id_reclamo} registrado (${res.data.estado})`);
           this.asunto = '';
           this.descripcion = '';
+          this.idservicio = null;
           this.cargar();
         },
         error: () => this.mensaje.set('Error al registrar el ticket'),

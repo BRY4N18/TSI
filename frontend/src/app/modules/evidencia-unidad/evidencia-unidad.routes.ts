@@ -22,6 +22,14 @@ export const EVIDENCIA_UNIDAD_ROUTES: Routes = [
       ),
   },
   {
+    path: 'accidentes/:idaccidente/enriquecimiento',
+    canActivate: [evidenciaGalleryGuard],
+    loadComponent: () =>
+      import('./pages/enriquecimiento-accidente/enriquecimiento-accidente.page').then(
+        (m) => m.EnriquecimientoAccidentePage,
+      ),
+  },
+  {
     path: 'flota',
     canActivate: [administradorFlotaGuard],
     loadComponent: () =>

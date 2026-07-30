@@ -88,3 +88,104 @@ class AuditEvidenciaService:
                 "details": extra or {},
             },
         )
+
+    def log_enriquecer_clima(self, *, user_id: int, idaccidente: str) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "enriquecer_clima",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+            },
+        )
+
+    def log_enriquecer_elemento_fisico(
+        self, *, user_id: int, idaccidente: str, idelementofisico: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "enriquecer_elemento_fisico",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "idelementofisico": idelementofisico,
+            },
+        )
+
+    def log_registrar_conductor_accidente(
+        self, *, user_id: int, idaccidente: str, idconductoraccidente: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "registrar_conductor_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "idconductoraccidente": idconductoraccidente,
+            },
+        )
+
+    def log_consultar_conductores_accidente(
+        self, *, user_id: int, idaccidente: str, count: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "consultar_conductores_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "count": count,
+            },
+        )
+
+    def log_desactivar_conductor_accidente(
+        self, *, user_id: int, idaccidente: str, idconductoraccidente: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "desactivar_conductor_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "idconductoraccidente": idconductoraccidente,
+            },
+        )
+
+    def log_registrar_implicado_accidente(
+        self, *, user_id: int, idaccidente: str, idimplicado: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "registrar_implicado_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "idimplicado": idimplicado,
+            },
+        )
+
+    def log_consultar_implicados_accidente(
+        self, *, user_id: int, idaccidente: str, count: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "consultar_implicados_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "count": count,
+            },
+        )
+
+    def log_desactivar_implicado_accidente(
+        self, *, user_id: int, idaccidente: str, idimplicado: int
+    ) -> None:
+        logger.info(
+            "evidencia_audit",
+            extra={
+                "action": "desactivar_implicado_accidente",
+                "idusuario": user_id,
+                "idaccidente": idaccidente,
+                "idimplicado": idimplicado,
+            },
+        )

@@ -61,3 +61,19 @@ class TestRegistrarTicketContract:
 
         # Assert
         assert response.status_code == 403
+
+    def test_registrar_when_idservicio_persists(self, api_client, cliente_auth_headers):
+        response = api_client.post(
+            "/api/v1/soporte/tickets",
+            {
+                "idcliente": 1,
+                "asunto": "API timeout",
+                "descripcion": "error 500 en endpoint de despacho",
+                "tipo": "tecnico",
+                "idservicio": 3,
+            },
+            format="json",
+            **cliente_auth_headers,
+        )
+        assert response.status_code == 201
+        assert response.json()["data"]["idservicio"] == 3

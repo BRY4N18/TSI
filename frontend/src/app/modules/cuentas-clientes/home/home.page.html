@@ -1,16 +1,82 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="cuentas-home">
   <header>
-    <h1 class="m-0 text-2xl font-bold text-text-primary">Cuentas y clientes</h1>
+    <h1 class="m-0 text-2xl font-bold text-text-primary">{{ tituloHub() }}</h1>
     <p class="m-0 mt-1 text-sm text-text-secondary">
       @if (profile; as p) {
         Sesión: {{ p.gmail }} · {{ p.roles.join(', ') || 'sin roles' }}
       } @else {
-        Portal de cuentas TSI
+        Portal TSI
       }
     </p>
   </header>
 
   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    @if (esUnidad()) {
+      <a
+        routerLink="/despacho/mi-despacho"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="radio" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Mi despacho</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Despachos asignados a mi unidad</p>
+      </a>
+      <a
+        routerLink="/seguimiento/mi-seguimiento"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="map" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Mi seguimiento</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">GPS y estado de mi misión activa</p>
+      </a>
+      <a
+        routerLink="/evidencia-unidad/disponibilidad"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="camera" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Disponibilidad</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Declarar disponibilidad (CU-O30)</p>
+      </a>
+    }
+
+    @if (esOperador()) {
+      <a
+        routerLink="/accidentes/registro"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="car-crash" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Registrar accidente</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Captura en tiempo real</p>
+      </a>
+      <a
+        routerLink="/despacho/monitoreo"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="radio" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Monitoreo de despacho</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Asignación y seguimiento de flota</p>
+      </a>
+      <a
+        routerLink="/seguimiento/mapa"
+        class="rounded-lg border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+      >
+        <div class="mb-2 text-accent-primary">
+          <app-tabler-icon name="map" [size]="22" />
+        </div>
+        <p class="m-0 font-semibold text-text-primary">Mapa de seguimiento</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Unidades en curso</p>
+      </a>
+    }
+
     @if (esAdmin()) {
       <a
         routerLink="/cuentas-clientes/gestion-cuenta"

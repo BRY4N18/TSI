@@ -1,11 +1,12 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
+import { ListaSeleccionStorage } from '../../lista-seleccion.storage';
 import { AccidenteApiService } from '../../services/accidente-api.service';
 import {
   AccidenteListItem,
@@ -29,6 +30,8 @@ export class ListaAccidentesPage implements OnInit {
   private readonly ubicacionCatalogo = inject(UbicacionCatalogoApiService);
   private readonly fb = inject(FormBuilder);
   private readonly authApi = inject(AuthApiService);
+  private readonly router = inject(Router);
+  private readonly listaSeleccion = inject(ListaSeleccionStorage);
 
   puedeRegistrar(): boolean {
     return this.authApi.hasAnyRole(['Operador', 'Administrador']);
@@ -46,6 +49,7 @@ export class ListaAccidentesPage implements OnInit {
   readonly accidentes = signal<AccidenteListItem[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly selectedId = signal<string | null>(null);
 
   readonly filtros = this.fb.group({
     idpais: [null as number | null],
@@ -58,6 +62,7 @@ export class ListaAccidentesPage implements OnInit {
   });
 
   ngOnInit(): void {
+    this.selectedId.set(this.listaSeleccion.get());
     this.cargar();
     this.ubicacionCatalogo.listarPaises().subscribe((paises) => this.paises.set(paises));
 
@@ -70,6 +75,32 @@ export class ListaAccidentesPage implements OnInit {
     });
 
     this.filtros.valueChanges.pipe(debounceTime(300)).subscribe(() => this.cargar());
+  }
+
+  esSeleccionado(idaccidente: string): boolean {
+    return this.selectedId() === idaccidente;
+  }
+
+  filaSeleccionadaClass(idaccidente: string): string {
+    const base = 'border-b border-border-default last:border-b-0';
+    return this.esSeleccionado(idaccidente)
+      ? `${base} bg-accent-primary/10 border-l-4 border-l-accent-primary`
+      : base;
+  }
+
+  cardSeleccionadaClass(idaccidente: string): string {
+    const base = 'rounded-lg border border-border-default bg-bg-surface p-4';
+    return this.esSeleccionado(idaccidente)
+      ? `${base} bg-accent-primary/10 border-l-4 border-l-accent-primary`
+      : base;
+  }
+
+  abrirCaso(idaccidente: string, focus: 'view' | 'edit' = 'view'): void {
+    this.listaSeleccion.set(idaccidente);
+    this.selectedId.set(idaccidente);
+    void this.router.navigate(['/accidentes', idaccidente], {
+      queryParams: focus === 'edit' ? { focus: 'edit' } : {},
+    });
   }
 
   severidadInfo(idseveridad: number): SeveridadInfo {

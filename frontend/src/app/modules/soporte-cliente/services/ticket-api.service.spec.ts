@@ -64,4 +64,14 @@ describe('TicketApiService', () => {
     expect(req.request.params.keys().length).toBe(0);
     req.flush({ data: { items: [] }, meta: {} });
   });
+
+  it('listarServicios_when_ok_returns_items', () => {
+    service.listarServicios().subscribe((res) => {
+      expect(res.data.length).toBe(1);
+      expect(res.data[0].nombre).toBe('API Despacho');
+    });
+    const req = http.expectOne('/api/v1/soporte/servicios');
+    expect(req.request.method).toBe('GET');
+    req.flush({ data: [{ id: 1, nombre: 'API Despacho' }], meta: {} });
+  });
 });

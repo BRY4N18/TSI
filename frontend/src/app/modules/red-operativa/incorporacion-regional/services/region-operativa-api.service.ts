@@ -58,4 +58,23 @@ export class RegionOperativaApiService {
       {},
     );
   }
+
+  listar(params?: {
+    cursor?: number;
+    limit?: number;
+    estadoregion?: string;
+  }): Observable<ApiEnvelope<{ items: RegionEstadoData[] }>> {
+    const q = new URLSearchParams();
+    if (params?.cursor != null) q.set('cursor', String(params.cursor));
+    if (params?.limit != null) q.set('limit', String(params.limit));
+    if (params?.estadoregion) q.set('estadoregion', params.estadoregion);
+    const qs = q.toString();
+    return this.http.get<ApiEnvelope<{ items: RegionEstadoData[] }>>(
+      `${this.baseUrl}${qs ? `?${qs}` : ''}`,
+    );
+  }
+
+  obtener(idregionoperativa: number): Observable<ApiEnvelope<RegionEstadoData>> {
+    return this.http.get<ApiEnvelope<RegionEstadoData>>(`${this.baseUrl}/${idregionoperativa}`);
+  }
 }

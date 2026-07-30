@@ -10,6 +10,8 @@ import {
   ConfirmarReporteRequest,
   DescartarCasoData,
   DescartarCasoRequest,
+  DeshacerDescarteData,
+  DeshacerFusionData,
   EscalarSeveridadData,
   EscalarSeveridadRequest,
   EstadoAccidente,
@@ -108,6 +110,13 @@ export class AccidenteApiService {
     );
   }
 
+  deshacerDescarte(idaccidente: string): Observable<ApiEnvelope<DeshacerDescarteData>> {
+    return this.http.post<ApiEnvelope<DeshacerDescarteData>>(
+      `${this.base}/${idaccidente}/deshacer-descarte`,
+      {},
+    );
+  }
+
   fusionar(
     idaccidenteDuplicado: string,
     body: FusionarReportesRequest,
@@ -115,6 +124,13 @@ export class AccidenteApiService {
     return this.http.post<ApiEnvelope<FusionarReportesData>>(
       `${this.base}/${idaccidenteDuplicado}/fusionar`,
       body,
+    );
+  }
+
+  deshacerFusion(idaccidenteDuplicado: string): Observable<ApiEnvelope<DeshacerFusionData>> {
+    return this.http.post<ApiEnvelope<DeshacerFusionData>>(
+      `${this.base}/${idaccidenteDuplicado}/deshacer-fusion`,
+      {},
     );
   }
 

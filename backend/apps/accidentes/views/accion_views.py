@@ -15,6 +15,8 @@ from apps.accidentes.services.confirmar_reporte_service import (
     ConflictError,
 )
 from apps.accidentes.services.descartar_caso_service import DescartarCasoService
+from apps.accidentes.services.deshacer_descarte_service import DeshacerDescarteService
+from apps.accidentes.services.deshacer_fusion_service import DeshacerFusionService
 from apps.accidentes.services.escalar_severidad_service import EscalarSeveridadService
 from apps.accidentes.services.fusionar_reportes_service import FusionarReportesService
 from core.api.response_envelope import error_response, success_response
@@ -50,6 +52,8 @@ class DescartarCasoView(APIView):
             )
         except ConflictError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
+        except ValueError as exc:
+            return error_response("bad_request", str(exc), "400", status_code=400)
         return success_response(data)
 
 
@@ -68,6 +72,34 @@ class FusionarReportesView(APIView):
             return error_response("conflict", str(exc), "409", status_code=409)
         except (KeyError, ValueError) as exc:
             return error_response("bad_request", str(exc), "400", status_code=400)
+        return success_response(data)
+
+
+class DeshacerDescarteView(APIView):
+    permission_classes = [IsAuthenticated401, OperadorEmergenciasPermission]
+
+    def post(self, request: Request, idaccidente: str) -> Response:
+        try:
+            data = DeshacerDescarteService().deshacer(
+                idaccidente=idaccidente,
+                idusuario=request.user.idusuario,
+            )
+        except ConflictError as exc:
+            return error_response("conflict", str(exc), "409", status_code=409)
+        return success_response(data)
+
+
+class DeshacerFusionView(APIView):
+    permission_classes = [IsAuthenticated401, OperadorEmergenciasPermission]
+
+    def post(self, request: Request, idaccidente: str) -> Response:
+        try:
+            data = DeshacerFusionService().deshacer(
+                idaccidente_duplicado=idaccidente,
+                idusuario=request.user.idusuario,
+            )
+        except ConflictError as exc:
+            return error_response("conflict", str(exc), "409", status_code=409)
         return success_response(data)
 
 

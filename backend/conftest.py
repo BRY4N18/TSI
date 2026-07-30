@@ -269,6 +269,91 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     ],
     "Dim_NotaAccidente": [],
     "Dim_EvidenciaFoto": [],
+    "Dim_ElementoClimaticosAccidente": [],
+    "Dim_ElementoFisicoAccidente": [],
+    "Dim_Conductor": [],
+    "Dim_Vehiculo": [],
+    "Fact_Conductor_Accidente": [],
+    "Dim_Implicado": [],
+    "Dim_PeriodosDias": [
+        {
+            "idperiododia": 1,
+            "amaneceranochecer": "Mañana",
+            "activo": True,
+        },
+        {
+            "idperiododia": 2,
+            "amaneceranochecer": "Tarde",
+            "activo": True,
+        },
+        {
+            "idperiododia": 3,
+            "amaneceranochecer": "Noche",
+            "activo": True,
+        },
+    ],
+    "Dim_EstadosClimas": [
+        {"idestadoclima": 1, "condicionclima": "Despejado", "activo": True},
+        {"idestadoclima": 2, "condicionclima": "Lluvia", "activo": True},
+        {"idestadoclima": 3, "condicionclima": "Niebla", "activo": True},
+    ],
+    "Dim_Elementos_Fisicos": [
+        {"idelementofisico": 1, "elementofisico": "Semáforo", "activo": True},
+        {"idelementofisico": 2, "elementofisico": "Señal de Pare", "activo": True},
+        {"idelementofisico": 3, "elementofisico": "Reductor", "activo": True},
+    ],
+    "Dim_Estado_Conductor": [
+        {
+            "idestadoconductor": idx,
+            "estadosobriedad": estadosobriedad,
+            "nivelatencion": nivelatencion,
+            "condicionfisica": condicionfisica,
+            "usoseguridad": usoseguridad,
+            "activo": True,
+        }
+        for idx, (estadosobriedad, nivelatencion, condicionfisica, usoseguridad) in enumerate(
+            (
+                (s, a, f, u)
+                for s in (True, False)
+                for a in (True, False)
+                for f in (True, False)
+                for u in (True, False)
+            ),
+            start=1,
+        )
+    ],
+    "Dim_TipoReportado": [
+        {"idtiporeportado": 1, "tiporeportado": "Llamada telefónica", "activo": True},
+        {"idtiporeportado": 2, "tiporeportado": "App móvil", "activo": True},
+        {"idtiporeportado": 3, "tiporeportado": "Integración API", "activo": True},
+        {"idtiporeportado": 4, "tiporeportado": "Cámara de tráfico", "activo": True},
+    ],
+    "Dim_ReferenciaEstacion": [
+        {
+            "idreferenciaestacion": 1,
+            "codigoaeropuerto": "MEX",
+            "zonahoraria": "America/Mexico_City",
+            "activo": True,
+        },
+        {
+            "idreferenciaestacion": 2,
+            "codigoaeropuerto": "CUN",
+            "zonahoraria": "America/Cancun",
+            "activo": True,
+        },
+        {
+            "idreferenciaestacion": 3,
+            "codigoaeropuerto": "GDL",
+            "zonahoraria": "America/Mexico_City",
+            "activo": True,
+        },
+        {
+            "idreferenciaestacion": 5,
+            "codigoaeropuerto": "TIJ",
+            "zonahoraria": "America/Tijuana",
+            "activo": True,
+        },
+    ],
     "Fact_HistorialEstadoUnidad": [],
     "Dim_UnidadEmergencia": [
         {
@@ -345,6 +430,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Dim_RegionOperativa": [
         {
             "idregionoperativa": 1,
+            "idestado": 1,
             "estadoregion": "Producción",
             "activo": True,
             "nombreregion": "Centro",
@@ -411,6 +497,29 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Dim_MetodoPago": [],
     "Fact_Factura": [],
     "Fact_Solicitud_Cambio_Plan": [],
+    "Dim_Servicio": [
+        {
+            "id_servicio": 1,
+            "nombre": "API Despacho",
+            "tipo": "api",
+            "descripcion": "Endpoints de despacho inteligente",
+            "activo": True,
+        },
+        {
+            "id_servicio": 2,
+            "nombre": "API Registro de accidentes",
+            "tipo": "api",
+            "descripcion": "CU-O21 y consulta de casos",
+            "activo": True,
+        },
+        {
+            "id_servicio": 3,
+            "nombre": "Portal Cliente",
+            "tipo": "portal",
+            "descripcion": "Acceso web corporativo",
+            "activo": True,
+        },
+    ],
     "Dim_Estado_Soporte": [
         {"id_estado_soporte": 1, "nombre": "Abierto", "descripcion": "Ticket registrado", "activo": True},
         {"id_estado_soporte": 2, "nombre": "Pendiente_de_clasificacion", "descripcion": "Sin clasificar", "activo": True},
@@ -493,9 +602,17 @@ _INITIAL_PINOT_STORE["Dim_Rol"].extend([
     {"idrol": 7, "rol": "GerenteVentas", "activo": True},
     {"idrol": 8, "rol": "GerenteCuentasPublicas", "activo": True},
     {"idrol": 9, "rol": "Sistema", "activo": True},
+    {
+        "idrol": 10,
+        "rol": "SupervisorSoporte",
+        "descripcion": "Receptor de escalado automático SLA (RN-TIC-005)",
+        "activo": True,
+    },
 ])
 _INITIAL_PINOT_STORE["Dim_Usuario_Rol"].extend([
-    {"idusuario": 20, "idrol": 7}, {"idusuario": 21, "idrol": 8},
+    {"idusuario": 20, "idrol": 7},
+    {"idusuario": 21, "idrol": 8},
+    {"idusuario": 2, "idrol": 10},  # Operador también actúa como supervisor SLA en tests
 ])
 _INITIAL_PINOT_STORE.update({
     "Dim_Prospecto": [],
@@ -671,6 +788,24 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "MAX(IDNOTAACCIDENTES)" in sql_upper:
         ids = [r["idnotaaccidentes"] for r in PINOT_STORE["Dim_NotaAccidente"]]
         return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDELEMENTOSFISICOSACCIDENTE)" in sql_upper:
+        ids = [
+            r["idelementosfisicosaccidente"]
+            for r in PINOT_STORE["Dim_ElementoFisicoAccidente"]
+        ]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDCONDUCTOR)" in sql_upper and "IDCONDUCTORACCIDENTE" not in sql_upper:
+        ids = [r["idconductor"] for r in PINOT_STORE["Dim_Conductor"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDVEHICULO)" in sql_upper:
+        ids = [r["idvehiculo"] for r in PINOT_STORE["Dim_Vehiculo"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDCONDUCTORACCIDENTE)" in sql_upper:
+        ids = [r["idconductoraccidente"] for r in PINOT_STORE["Fact_Conductor_Accidente"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDIMPLICADO)" in sql_upper:
+        ids = [r["idimplicado"] for r in PINOT_STORE["Dim_Implicado"]]
+        return [{"max_id": max(ids) if ids else 0}]
     if "MAX(IDHISTORIALESTADOSUNIDADESEMERGENCIAS)" in sql_upper:
         ids = [
             r["idhistorialestadosunidadesemergencias"]
@@ -700,6 +835,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         return [{"max_id": max(ids) if ids else 0}]
     if "MAX(IDVALIDACIONREGION)" in sql_upper:
         ids = [r["idvalidacionregion"] for r in PINOT_STORE["Dim_ValidacionRegion"]]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDREGIONOPERATIVAESTADOREGION)" in sql_upper:
+        ids = [
+            r.get("idregionoperativaestadoregion", 0)
+            for r in PINOT_STORE["Dim_RegionOperativaEstadoRegion"]
+        ]
         return [{"max_id": max(ids) if ids else 0}]
     if "MAX(IDHISTORIALUBICACION)" in sql_upper:
         ids = [
@@ -1117,6 +1258,126 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             return [e for e in PINOT_STORE["Dim_EvidenciaFoto"] if e["idaccidente"] == aid]
         return list(PINOT_STORE["Dim_EvidenciaFoto"])
 
+    if "FROM DIM_ELEMENTOCLIMATICOSACCIDENTE" in sql_upper:
+        aid = params.get("idaccidente")
+        if "WHERE IDACCIDENTE" in sql_upper:
+            return [
+                r for r in PINOT_STORE["Dim_ElementoClimaticosAccidente"]
+                if r["idaccidente"] == aid
+            ]
+        return list(PINOT_STORE["Dim_ElementoClimaticosAccidente"])
+
+    if "FROM DIM_ELEMENTOFISICOACCIDENTE" in sql_upper:
+        if "WHERE IDELEMENTOSFISICOSACCIDENTE" in sql_upper:
+            eid = params.get("id")
+            return [
+                r for r in PINOT_STORE["Dim_ElementoFisicoAccidente"]
+                if r["idelementosfisicosaccidente"] == eid
+            ]
+        aid = params.get("idaccidente")
+        if "WHERE IDACCIDENTE" in sql_upper:
+            return [
+                r for r in PINOT_STORE["Dim_ElementoFisicoAccidente"]
+                if r["idaccidente"] == aid
+            ]
+        return list(PINOT_STORE["Dim_ElementoFisicoAccidente"])
+
+    if "FROM DIM_PERIODOSDIAS" in sql_upper:
+        if "WHERE IDPERIODODIA" in sql_upper:
+            pid = params.get("id")
+            return [r for r in PINOT_STORE["Dim_PeriodosDias"] if r["idperiododia"] == pid]
+        return list(PINOT_STORE["Dim_PeriodosDias"])
+
+    if "FROM DIM_ESTADOSCLIMAS" in sql_upper:
+        if "WHERE IDESTADOCLIMA" in sql_upper:
+            cid = params.get("id")
+            return [r for r in PINOT_STORE["Dim_EstadosClimas"] if r["idestadoclima"] == cid]
+        return list(PINOT_STORE["Dim_EstadosClimas"])
+
+    if "FROM DIM_ELEMENTOS_FISICOS" in sql_upper:
+        if "WHERE IDELEMENTOFISICO" in sql_upper:
+            eid = params.get("id")
+            return [
+                r for r in PINOT_STORE["Dim_Elementos_Fisicos"]
+                if r["idelementofisico"] == eid
+            ]
+        return list(PINOT_STORE["Dim_Elementos_Fisicos"])
+
+    if "FROM DIM_ESTADO_CONDUCTOR" in sql_upper:
+        if "WHERE IDESTADOCONDUCTOR" in sql_upper:
+            eid = params.get("id")
+            return [
+                r for r in PINOT_STORE["Dim_Estado_Conductor"]
+                if r["idestadoconductor"] == eid
+            ]
+        return list(PINOT_STORE["Dim_Estado_Conductor"])
+
+    if "FROM DIM_TIPOREPORTADO" in sql_upper:
+        return [
+            {"id": r["idtiporeportado"], "nombre": r["tiporeportado"]}
+            for r in PINOT_STORE["Dim_TipoReportado"]
+            if r.get("activo", True)
+        ]
+
+    if "FROM DIM_REFERENCIAESTACION" in sql_upper:
+        return [
+            {
+                "id": r["idreferenciaestacion"],
+                "nombre": r["codigoaeropuerto"],
+                "zonahoraria": r.get("zonahoraria"),
+            }
+            for r in PINOT_STORE["Dim_ReferenciaEstacion"]
+            if r.get("activo", True)
+        ]
+
+    if "FROM DIM_CONDUCTOR" in sql_upper:
+        if "WHERE IDENTIFICACION" in sql_upper:
+            ident = params.get("identificacion")
+            return [
+                r for r in PINOT_STORE["Dim_Conductor"]
+                if r.get("identificacion") == ident
+            ]
+        if "WHERE IDCONDUCTOR" in sql_upper:
+            cid = params.get("id")
+            return [r for r in PINOT_STORE["Dim_Conductor"] if r["idconductor"] == cid]
+        return list(PINOT_STORE["Dim_Conductor"])
+
+    if "FROM DIM_VEHICULO" in sql_upper:
+        if "WHERE IDVEHICULO" in sql_upper:
+            vid = params.get("id")
+            return [r for r in PINOT_STORE["Dim_Vehiculo"] if r["idvehiculo"] == vid]
+        return list(PINOT_STORE["Dim_Vehiculo"])
+
+    if "FROM FACT_CONDUCTOR_ACCIDENTE" in sql_upper:
+        if "WHERE IDCONDUCTORACCIDENTE" in sql_upper:
+            cid = params.get("id")
+            return [
+                r for r in PINOT_STORE["Fact_Conductor_Accidente"]
+                if r["idconductoraccidente"] == cid
+            ]
+        aid = params.get("idaccidente")
+        if "WHERE IDACCIDENTE" in sql_upper:
+            return [
+                r for r in PINOT_STORE["Fact_Conductor_Accidente"]
+                if r["idaccidente"] == aid
+            ]
+        return list(PINOT_STORE["Fact_Conductor_Accidente"])
+
+    if "FROM DIM_IMPLICADO" in sql_upper:
+        if "WHERE IDIMPLICADO" in sql_upper:
+            iid = params.get("id")
+            return [
+                r for r in PINOT_STORE["Dim_Implicado"]
+                if r["idimplicado"] == iid
+            ]
+        aid = params.get("idaccidente")
+        if "WHERE IDACCIDENTE" in sql_upper:
+            return [
+                r for r in PINOT_STORE["Dim_Implicado"]
+                if r["idaccidente"] == aid
+            ]
+        return list(PINOT_STORE["Dim_Implicado"])
+
     if "FROM DIM_NOTAACCIDENTE" in sql_upper:
         aid = params.get("idaccidente")
         if "WHERE IDACCIDENTE" in sql_upper:
@@ -1137,6 +1398,19 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             return [
                 u for u in PINOT_STORE["Dim_UnidadEmergencia"]
                 if u.get("placa") == placa and u.get("activo")
+            ]
+        if "WHERE IDCLIENTE" in sql_upper:
+            cid = params.get("idcliente")
+            return [
+                u for u in PINOT_STORE["Dim_UnidadEmergencia"]
+                if u.get("idcliente") == cid
+            ]
+        if "IDCONDADO IN" in sql_upper:
+            idscondado = params.get("idscondado") or []
+            return [
+                u
+                for u in PINOT_STORE["Dim_UnidadEmergencia"]
+                if u.get("idcondado") in idscondado and u.get("activo")
             ]
         if "WHERE IDUSUARIO" in sql_upper:
             user_id = params.get("idusuario")
@@ -1204,7 +1478,16 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
 
     if "FROM DIM_ESTADO_SOPORTE" in sql_upper:
         nombre = params.get("nombre")
-        return [r for r in PINOT_STORE["Dim_Estado_Soporte"] if r["nombre"] == nombre]
+        if nombre:
+            return [r for r in PINOT_STORE["Dim_Estado_Soporte"] if r["nombre"] == nombre]
+        return list(PINOT_STORE["Dim_Estado_Soporte"])
+
+    if "FROM DIM_SERVICIO" in sql_upper:
+        return [
+            {"id": r["id_servicio"], "nombre": r["nombre"]}
+            for r in PINOT_STORE.get("Dim_Servicio", [])
+            if r.get("activo", True)
+        ]
 
     if "FROM FACT_SUSCRIPCION" in sql_upper:
         rows = list(PINOT_STORE["Fact_Suscripcion"])
@@ -1407,12 +1690,85 @@ def mock_kafka():
             topic.endswith("Dim_ElementoClimaticosAccidente_topic")
             or topic == "Dim_ElementoClimaticosAccidente_topic"
         ):
-            pass
+            rows = PINOT_STORE["Dim_ElementoClimaticosAccidente"]
+            existing_idx = next(
+                (
+                    i for i, r in enumerate(rows)
+                    if r["idelementoclimaticoaccidente"]
+                    == payload["idelementoclimaticoaccidente"]
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
         elif (
             topic.endswith("Dim_ElementoFisicoAccidente_topic")
             or topic == "Dim_ElementoFisicoAccidente_topic"
         ):
-            pass
+            rows = PINOT_STORE["Dim_ElementoFisicoAccidente"]
+            existing_idx = next(
+                (
+                    i for i, r in enumerate(rows)
+                    if r["idelementosfisicosaccidente"]
+                    == payload["idelementosfisicosaccidente"]
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Dim_Conductor_topic") or topic == "Dim_Conductor_topic":
+            rows = PINOT_STORE["Dim_Conductor"]
+            existing_idx = next(
+                (i for i, r in enumerate(rows) if r["idconductor"] == payload["idconductor"]),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Dim_Vehiculo_topic") or topic == "Dim_Vehiculo_topic":
+            rows = PINOT_STORE["Dim_Vehiculo"]
+            existing_idx = next(
+                (i for i, r in enumerate(rows) if r["idvehiculo"] == payload["idvehiculo"]),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif (
+            topic.endswith("Fact_Conductor_Accidente_topic")
+            or topic == "Fact_Conductor_Accidente_topic"
+        ):
+            rows = PINOT_STORE["Fact_Conductor_Accidente"]
+            existing_idx = next(
+                (
+                    i for i, r in enumerate(rows)
+                    if r["idconductoraccidente"] == payload["idconductoraccidente"]
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif topic.endswith("Dim_Implicado_topic") or topic == "Dim_Implicado_topic":
+            rows = PINOT_STORE["Dim_Implicado"]
+            existing_idx = next(
+                (
+                    i for i, r in enumerate(rows)
+                    if r["idimplicado"] == payload["idimplicado"]
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
         elif topic.endswith("Dim_NotaAccidente_topic") or topic == "Dim_NotaAccidente_topic":
             PINOT_STORE["Dim_NotaAccidente"].append(payload)
         elif topic.endswith("Dim_EvidenciaFoto_topic") or topic == "Dim_EvidenciaFoto_topic":
@@ -1541,6 +1897,28 @@ def mock_kafka():
                 regiones.append(payload)
         elif topic.endswith("Dim_ValidacionRegion_topic") or topic == "Dim_ValidacionRegion_topic":
             PINOT_STORE["Dim_ValidacionRegion"].append(payload)
+        elif (
+            topic.endswith("Dim_RegionOperativaEstadoRegion_topic")
+            or topic == "Dim_RegionOperativaEstadoRegion_topic"
+        ):
+            links = PINOT_STORE["Dim_RegionOperativaEstadoRegion"]
+            existing_idx = next(
+                (
+                    i
+                    for i, r in enumerate(links)
+                    if r.get("idregionoperativaestadoregion")
+                    == payload.get("idregionoperativaestadoregion")
+                    or (
+                        r.get("idregionoperativa") == payload.get("idregionoperativa")
+                        and r.get("idestadoregion") == payload.get("idestadoregion")
+                    )
+                ),
+                None,
+            )
+            if existing_idx is not None:
+                links[existing_idx] = {**links[existing_idx], **payload}
+            else:
+                links.append(payload)
         elif topic.endswith("Dim_Plan_topic") or topic == "Dim_Plan_topic":
             rows = PINOT_STORE["Dim_Plan"]
             idx = next((i for i, r in enumerate(rows) if r["idplan"] == payload["idplan"]), None)
@@ -1893,6 +2271,7 @@ def accidente_activo(mock_pinot, mock_kafka):
             "descripcion": "Caso evidencia test",
             "idcalle": 1,
             "idusuario": 2,
+            "numvehiculos": 5,
             "activo": True,
         }
     )
@@ -2071,6 +2450,27 @@ def proveedor_billing_auth_headers(proveedor_auth_headers):
 def admin_billing_auth_headers(admin_auth_headers):
     """Alias billing — Administrador."""
     return admin_auth_headers
+
+
+@pytest.fixture
+def director_estrategia_billing_auth_headers(mock_pinot, mock_kafka):
+    """RF-SUSF-001 — DirectorEstrategia JWT with active session."""
+    PINOT_STORE["Fact_Session"].append(
+        {
+            "idsession": 12,
+            "idusuario": 12,
+            "token": "session-token-12",
+            "refresh_token": "refresh-token-12",
+            "navegador": "pytest",
+            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahoracierresesion": None,
+            "estadosession": "Inicio sesion",
+        }
+    )
+    token = create_access_token(
+        user_id=12, roles=["DirectorEstrategia"], session_id=12
+    )
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 @pytest.fixture

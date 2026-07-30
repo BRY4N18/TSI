@@ -1,52 +1,170 @@
-<section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
-  <header class="grid gap-1.5">
-    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Catálogo</p>
-    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Planes activos</h2>
-    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
-      Precios y límites vigentes. La contratación se hace desde Mi suscripción o Cambio de plan.
+<section class="grid gap-6 pb-8 text-text-primary">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="m-0 text-sm text-text-secondary">
+      @if (esDirector()) {
+        {{ planes().length }} plan(es) en catálogo
+      } @else {
+        Planes publicados disponibles para contratación
+      }
     </p>
-  </header>
+    @if (esDirector()) {
+      <a
+        routerLink="/suscripciones/planes/nuevo"
+        class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+      >
+        Crear plan
+      </a>
+    }
+  </div>
 
   @if (loading()) {
-    <div class="grid gap-4 md:grid-cols-3" aria-busy="true">
-      @for (_ of [1, 2, 3]; track $index) {
-        <article class="grid gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5">
-          <div class="h-4 w-1/2 animate-pulse rounded-lg bg-border-default"></div>
-          <div class="h-8 w-1/3 animate-pulse rounded-lg bg-border-default"></div>
-          <div class="h-4 w-4/5 animate-pulse rounded-lg bg-border-default"></div>
-        </article>
-      }
+    <div class="rounded-lg border border-border-default bg-bg-surface p-5" aria-busy="true">
+      <div class="h-4 w-1/3 animate-pulse rounded-md bg-border-default"></div>
+      <div class="mt-4 h-24 animate-pulse rounded-md bg-border-default"></div>
     </div>
   } @else if (error()) {
     <div
-      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      class="grid justify-items-start gap-2 rounded-lg border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
       role="alert"
     >
       <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
       <button
         type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
         (click)="cargar()"
       >
         Reintentar
       </button>
     </div>
-  } @else {
-    <div class="grid gap-4 md:grid-cols-3">
-      @for (p of planes(); track p.idplan) {
-        <article class="grid content-start gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <h3 class="m-0 text-lg font-semibold">{{ p.nombre }}</h3>
-            <span [class]="infoBadge()">{{ p.nivel }}</span>
-          </div>
-          <p class="m-0 text-[1.75rem] font-bold">
-            {{ p.precio | currency: 'USD':'symbol':'1.2-2' }}
-            <span class="text-sm font-normal text-text-secondary">/ mes</span>
-          </p>
-          <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Límites</p>
-          <p class="m-0 text-sm text-text-secondary">{{ limitesTexto(p.limites) }}</p>
-        </article>
+  } @else if (planes().length === 0) {
+    <p
+      class="m-0 rounded-lg border border-dashed border-border-default bg-bg-surface px-5 py-10 text-center text-sm text-text-secondary"
+    >
+      No hay planes en el catálogo.
+      @if (esDirector()) {
+        <a
+          routerLink="/suscripciones/planes/nuevo"
+          class="ml-1 font-medium text-accent-primary no-underline hover:underline"
+          >Crear el primero</a
+        >
       }
-    </div>
+    </p>
+  } @else {
+    <section class="overflow-hidden rounded-lg border border-border-default bg-bg-surface">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead class="bg-bg-page">
+            <tr>
+              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Nombre
+              </th>
+              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Nivel
+              </th>
+              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Precio
+              </th>
+              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Límites
+              </th>
+              @if (esDirector()) {
+                <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Estado
+                </th>
+                <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Acciones
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of planes(); track p.idplan) {
+              <tr class="border-t border-border-default">
+                <td class="px-4 py-3 font-medium text-text-primary">{{ p.nombre }}</td>
+                <td class="px-4 py-3">
+                  <span [class]="infoBadge()">{{ p.nivel }}</span>
+                </td>
+                <td class="px-4 py-3 tabular-nums">
+                  {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }}
+                  <span class="text-text-secondary">/ mes</span>
+                </td>
+                <td class="px-4 py-3 text-text-secondary">{{ limitesTexto(p.limites) }}</td>
+                @if (esDirector()) {
+                  <td class="px-4 py-3">
+                    <span [class]="p.activo !== false ? okBadge() : warnBadge()">
+                      {{ p.activo !== false ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex flex-wrap gap-3">
+                      <a
+                        [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
+                        class="text-sm font-medium text-accent-primary no-underline hover:underline"
+                      >
+                        Editar
+                      </a>
+                      @if (p.activo !== false) {
+                        <button
+                          type="button"
+                          class="text-sm font-medium text-alert-critical hover:underline"
+                          (click)="pedirDesactivar(p)"
+                        >
+                          Desactivar
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="text-sm font-medium text-accent-primary hover:underline"
+                          (click)="reactivar(p)"
+                        >
+                          Reactivar
+                        </button>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
   }
 </section>
+
+@if (planPendienteDesactivar(); as plan) {
+  <div
+    class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="desactivar-plan-title"
+  >
+    <div class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl">
+      <h2 id="desactivar-plan-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
+        Desactivar plan
+      </h2>
+      <p class="m-0 mb-5 text-sm text-text-secondary">
+        «{{ plan.nombre }}» dejará de aparecer en el catálogo activo. Las suscripciones ya
+        contratadas no se cancelan.
+      </p>
+      <div class="flex flex-wrap justify-end gap-3">
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+          [disabled]="desactivando()"
+          (click)="cancelarDesactivar()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center rounded-md border border-alert-critical/45 px-4 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-55"
+          [disabled]="desactivando()"
+          (click)="confirmarDesactivar()"
+        >
+          {{ desactivando() ? 'Desactivando…' : 'Confirmar desactivación' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

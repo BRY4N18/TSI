@@ -10,7 +10,6 @@ from apps.red_operativa.services.proveedor_access_service import (
 )
 
 ROLE_ADMIN = "Administrador"
-ROLE_OPERADOR = "Operador"
 ROLE_DIRECTOR_TECNOLOGICO = "DirectorTecnologico"
 ROLE_CLIENTE = "Cliente"
 ROLE_PROVEEDOR = "Proveedor"
@@ -37,24 +36,13 @@ class IsProveedorFlota(BasePermission):
 
 
 class IsAdministradorRedOperativa(BasePermission):
-    """Deprecated for unit CRUD — kept for regional admin endpoints if referenced."""
+    """CU-O60 rechazo definitivo / O62 manual — Administrador de red operativa."""
 
     def has_permission(self, request, view) -> bool:
         user = request.user
         if not user or not getattr(user, "is_authenticated", False):
             return False
         return ROLE_ADMIN in getattr(user, "roles", [])
-
-
-class IsAdministradorOrOperador(BasePermission):
-    """Legacy read helper — unit detail now uses IsProveedorFlota."""
-
-    def has_permission(self, request, view) -> bool:
-        user = request.user
-        if not user or not getattr(user, "is_authenticated", False):
-            return False
-        roles = set(getattr(user, "roles", []))
-        return ROLE_ADMIN in roles or ROLE_OPERADOR in roles
 
 
 class IsDirectorTecnologico(BasePermission):

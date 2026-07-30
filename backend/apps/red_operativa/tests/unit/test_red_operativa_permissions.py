@@ -3,10 +3,7 @@ from types import SimpleNamespace
 import pytest
 from rest_framework.test import APIRequestFactory
 
-from apps.red_operativa.permissions import (
-    IsAdministradorOrOperador,
-    IsAdministradorRedOperativa,
-)
+from apps.red_operativa.permissions import IsAdministradorRedOperativa
 
 
 @pytest.mark.unit
@@ -35,11 +32,11 @@ class TestRedOperativaPermissions:
         # Assert
         assert result is False
 
-    def test_administrador_or_operador_when_unauthenticated_returns_false(self):
+    def test_administrador_red_operativa_when_unauthenticated_returns_false(self):
         # Arrange
         request = APIRequestFactory().get("/")
         request.user = SimpleNamespace(is_authenticated=False, roles=[])
-        perm = IsAdministradorOrOperador()
+        perm = IsAdministradorRedOperativa()
 
         # Act
         result = perm.has_permission(request, None)

@@ -21,6 +21,7 @@ export type TablerIconName =
   | 'bell'
   | 'map-pin'
   | 'eye'
+  | 'pencil'
   | 'alert-octagon'
   | 'alert-triangle'
   | 'alert-circle'
@@ -34,7 +35,9 @@ export type TablerIconName =
   | 'chevron-right'
   | 'sun'
   | 'moon'
-  | 'focus-2';
+  | 'focus-2'
+  | 'user'
+  | 'car';
 
 const ICON_PATHS: Record<TablerIconName, string[]> = {
   dashboard: [
@@ -94,6 +97,10 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
     'M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0',
     'M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6',
   ],
+  pencil: [
+    'M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4',
+    'M13.5 6.5l4 4',
+  ],
   'alert-octagon': [
     'M12.802 2.165l5.575 2.389c.48 .206 .863 .589 1.07 1.07l2.388 5.574c.22 .512 .22 1.092 0 1.604l-2.389 5.575c-.206 .48 -.589 .863 -1.07 1.07l-5.574 2.388c-.512 .22 -1.092 .22 -1.604 0l-5.575 -2.389a2.036 2.036 0 0 1 -1.07 -1.07l-2.388 -5.574a2.036 2.036 0 0 1 0 -1.604l2.389 -5.575c.206 -.48 .589 -.863 1.07 -1.07l5.574 -2.388a2.036 2.036 0 0 1 1.604 0',
     'M12 8v4',
@@ -125,6 +132,12 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
     'M16 4h2a2 2 0 0 1 2 2v2',
     'M16 20h2a2 2 0 0 0 2 -2v-2',
     'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0 -6',
+  ],
+  user: ['M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0', 'M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2'],
+  car: [
+    'M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+    'M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+    'M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m6 -10h-1',
   ],
 };
 

@@ -4,6 +4,8 @@ from django.urls import path
 
 from apps.red_operativa.views.region_views import (
     RegionDespublicacionAutomaticaView,
+    RegionDetalleView,
+    RegionListView,
     RegionRechazoDefinitivoView,
     RegionReevaluacionView,
     RegionValidacionHistorialView,
@@ -19,9 +21,19 @@ from apps.red_operativa.views.unidad_views import (
 
 urlpatterns = [
     path(
+        "red-operativa/regiones",
+        RegionListView.as_view(),
+        name="red-operativa-regiones",
+    ),
+    path(
         "red-operativa/regiones/validaciones",
         RegionValidacionView.as_view(),
         name="red-operativa-region-validaciones",
+    ),
+    path(
+        "red-operativa/regiones/<int:idregionoperativa>",
+        RegionDetalleView.as_view(),
+        name="red-operativa-region-detalle",
     ),
     path(
         "red-operativa/regiones/<int:idregionoperativa>/validaciones",

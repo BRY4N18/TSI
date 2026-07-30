@@ -30,13 +30,28 @@ class SincronizarEvidenciaService:
         notas_json: str | None,
         fotos_metadata_json: str | None,
         fotos_archivos: list[tuple[bytes, str]],
+        enriquecimiento_json: str | None = None,
     ) -> dict[str, Any]:
+        from apps.accidentes.services.enriquecimiento_clima_service import (
+            EnriquecimientoClimaService,
+        )
+        from apps.accidentes.services.enriquecimiento_conductor_service import (
+            EnriquecimientoConductorService,
+        )
+        from apps.accidentes.services.enriquecimiento_elemento_fisico_service import (
+            EnriquecimientoElementoFisicoService,
+        )
+        from apps.accidentes.services.enriquecimiento_implicado_service import (
+            EnriquecimientoImplicadoService,
+        )
+
         resultados: list[dict[str, Any]] = []
         sincronizados = 0
         pendientes = 0
 
         notas = json.loads(notas_json) if notas_json else []
         fotos_meta = json.loads(fotos_metadata_json) if fotos_metadata_json else []
+        enriquecimiento = json.loads(enriquecimiento_json) if enriquecimiento_json else {}
 
         for nota_item in notas:
             local_id = nota_item["local_id"]
@@ -119,6 +134,85 @@ class SincronizarEvidenciaService:
                         "urlevidenciafoto": None,
                         "error": str(exc),
                     }
+                )
+
+        clima = enriquecimiento.get("clima")
+        if clima:
+            local_id = clima.get("local_id", "clima")
+            try:
+                EnriquecimientoClimaService().upsert(
+                    idaccidente=idaccidente,
+                    idusuario=idusuario,
+                    idperiododia=clima.get("idperiododia"),
+                    idestadoclima=clima.get("idestadoclima"),
+                )
+                sincronizados += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": True, "error": None}
+                )
+            except Exception as exc:
+                pendientes += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": False, "error": str(exc)}
+                )
+
+        for item in enriquecimiento.get("elementos_fisicos") or []:
+            local_id = item.get("local_id", f"fisico-{item.get('idelementofisico')}")
+            try:
+                EnriquecimientoElementoFisicoService().agregar(
+                    idaccidente=idaccidente,
+                    idelementofisico=int(item["idelementofisico"]),
+                    idusuario=idusuario,
+                )
+                sincronizados += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": True, "error": None}
+                )
+            except Exception as exc:
+                pendientes += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": False, "error": str(exc)}
+                )
+
+        for item in enriquecimiento.get("conductores") or []:
+            local_id = item.get("local_id", "conductor")
+            try:
+                EnriquecimientoConductorService().registrar(
+                    idaccidente=idaccidente,
+                    idusuario=idusuario,
+                    conductor=item["conductor"],
+                    idestadoconductor=int(item["idestadoconductor"]),
+                    vehiculo=item["vehiculo"],
+                )
+                sincronizados += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": True, "error": None}
+                )
+            except Exception as exc:
+                pendientes += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": False, "error": str(exc)}
+                )
+
+        for item in enriquecimiento.get("implicados") or []:
+            local_id = item.get("local_id", "implicado")
+            try:
+                EnriquecimientoImplicadoService().registrar(
+                    idaccidente=idaccidente,
+                    idusuario=idusuario,
+                    tipoimplicado=item["tipoimplicado"],
+                    estadoimplicado=item["estadoimplicado"],
+                    genero=item.get("genero"),
+                    edad=item.get("edad"),
+                )
+                sincronizados += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": True, "error": None}
+                )
+            except Exception as exc:
+                pendientes += 1
+                resultados.append(
+                    {"local_id": local_id, "sincronizado": False, "error": str(exc)}
                 )
 
         self.audit.log_sync_evidencia(

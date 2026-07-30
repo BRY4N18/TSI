@@ -23,6 +23,7 @@ function fillRequiredFields(component: RegistroAccidentePage): void {
     numvictimas: 0,
     numfallecidos: 0,
     idtiporeportado: null,
+    idreferenciaestacion: null,
     registroRetrospectivo: false,
     justificacionRetrospectiva: '',
   });
@@ -41,6 +42,7 @@ describe('RegistroAccidentePage', () => {
       'registrar',
       'confirmarReporte',
       'fusionar',
+      'deshacerFusion',
     ]);
     geoApi = jasmine.createSpyObj('GeocodificacionApiService', ['sugerir']);
     geoApi.sugerir.and.returnValue(
@@ -52,8 +54,19 @@ describe('RegistroAccidentePage', () => {
       'listarCondados',
       'listarCiudades',
       'listarCalles',
+      'listarTiposReportado',
+      'listarReferenciasEstacion',
     ]);
     catalogoApi.listarPaises.and.returnValue(of([]));
+    catalogoApi.listarTiposReportado.and.returnValue(
+      of([
+        { id: 1, nombre: 'Llamada telefónica' },
+        { id: 2, nombre: 'App móvil' },
+      ]),
+    );
+    catalogoApi.listarReferenciasEstacion.and.returnValue(
+      of([{ id: 1, nombre: 'MEX (America/Mexico_City)' }]),
+    );
 
     await TestBed.configureTestingModule({
       imports: [RegistroAccidentePage],
@@ -324,6 +337,39 @@ describe('RegistroAccidentePage', () => {
 
       // Assert
       expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    });
+
+    it('descartarBorradorLocal_with_confirm_clears_draft_and_resets_form', () => {
+      // Arrange
+      spyOn(window, 'confirm').and.returnValue(true);
+      component.form.controls.descripcion.setValue('borrador viejo');
+      component.draftRestored.set(true);
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(component.form.getRawValue()));
+
+      // Act
+      component.descartarBorradorLocal();
+
+      // Assert
+      expect(window.confirm).toHaveBeenCalledWith('¿Descartar el borrador y empezar de nuevo?');
+      expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+      expect(component.draftRestored()).toBe(false);
+      expect(component.form.controls.descripcion.value).toBe('');
+    });
+
+    it('descartarBorradorLocal_when_cancel_keeps_draft', () => {
+      // Arrange
+      spyOn(window, 'confirm').and.returnValue(false);
+      component.form.controls.descripcion.setValue('borrador viejo');
+      component.draftRestored.set(true);
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ descripcion: 'borrador viejo' }));
+
+      // Act
+      component.descartarBorradorLocal();
+
+      // Assert
+      expect(component.draftRestored()).toBe(true);
+      expect(component.form.controls.descripcion.value).toBe('borrador viejo');
+      expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
     });
 
     it(

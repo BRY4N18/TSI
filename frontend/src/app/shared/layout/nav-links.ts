@@ -10,11 +10,10 @@ export interface NavLink {
 }
 
 /**
- * Fuente de verdad de qué módulos ve cada rol en el sidebar (design-system.md
- * §5 "Regla de sidebar por rol"). El contenido concreto rol→módulo todavía no
- * vive en `.specify/docs/architecture/module-map.md` (ese doc solo cubre
- * spec→CU→tablas), así que este array sigue siendo la única fuente hasta que
- * se documente ahí.
+ * Fuente de verdad de qué módulos ve cada rol en el sidebar (design-system /
+ * Interaction Capability). Matriz documentada también en
+ * `.specify/docs/architecture/module-map.md` § "Matriz rol → navegación UI".
+ * Código canónico: este array.
  */
 export const NAV_LINKS: NavLink[] = [
   {
@@ -106,6 +105,30 @@ export const NAV_LINKS: NavLink[] = [
     group: 'Evidencia y flota',
   },
   {
+    label: 'Mis unidades',
+    description: 'Alta, edición y baja de la flota del proveedor',
+    path: '/red-operativa/alta-unidades/catalogo',
+    roles: ['Cliente', 'Proveedor'],
+    icon: 'car',
+    group: 'Red operativa',
+  },
+  {
+    label: 'Regiones operativas',
+    description: 'Catálogo, validación y reevaluación de regiones',
+    path: '/red-operativa/incorporacion-regional/catalogo',
+    roles: ['Administrador', 'DirectorTecnologico'],
+    icon: 'map',
+    group: 'Red operativa',
+  },
+  {
+    label: 'Validación de región',
+    description: 'Protocolo de onboarding y remediación de regiones',
+    path: '/red-operativa/incorporacion-regional/validacion',
+    roles: ['Administrador', 'DirectorTecnologico'],
+    icon: 'map-pin',
+    group: 'Red operativa',
+  },
+  {
     label: 'Gestión de cuenta',
     description: 'Usuarios, roles y perfil corporativo de clientes',
     path: '/cuentas-clientes/gestion-cuenta',
@@ -181,7 +204,7 @@ export const NAV_LINKS: NavLink[] = [
     label: 'Catálogo de planes',
     description: 'Ver planes activos y límites',
     path: '/suscripciones/catalogo-planes',
-    roles: ['Cliente', 'Proveedor', 'Administrador'],
+    roles: ['Cliente', 'Proveedor', 'Administrador', 'DirectorEstrategia'],
     icon: 'dashboard',
     group: 'Suscripciones',
   },

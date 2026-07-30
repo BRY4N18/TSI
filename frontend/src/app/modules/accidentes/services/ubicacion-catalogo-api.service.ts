@@ -5,8 +5,8 @@ import { Observable, map } from 'rxjs';
 import { ApiEnvelope, CatalogoItem } from './models/accidente.types';
 
 /**
- * Catálogo geográfico en cascada (RF-REG-006 punto 3, Escenario 5).
- * Contrato: specs/003-operational/Emergencias/registro-accidente/contracts/registro-accidente.openapi.yaml
+ * Catálogos de registro (geográficos + tipo reporte + estación + unidades).
+ * Contrato: specs/.../registro-accidente/contracts/registro-accidente.openapi.yaml
  */
 @Injectable({ providedIn: 'root' })
 export class UbicacionCatalogoApiService {
@@ -44,6 +44,24 @@ export class UbicacionCatalogoApiService {
     const params = new HttpParams().set('idciudad', String(idciudad));
     return this.http
       .get<ApiEnvelope<CatalogoItem[]>>(`${this.base}/calles`, { params })
+      .pipe(map((res) => res.data));
+  }
+
+  listarTiposReportado(): Observable<CatalogoItem[]> {
+    return this.http
+      .get<ApiEnvelope<CatalogoItem[]>>(`${this.base}/tipos-reportado`)
+      .pipe(map((res) => res.data));
+  }
+
+  listarReferenciasEstacion(): Observable<CatalogoItem[]> {
+    return this.http
+      .get<ApiEnvelope<CatalogoItem[]>>(`${this.base}/referencias-estacion`)
+      .pipe(map((res) => res.data));
+  }
+
+  listarUnidadesEmergencia(): Observable<CatalogoItem[]> {
+    return this.http
+      .get<ApiEnvelope<CatalogoItem[]>>(`${this.base}/unidades-emergencia`)
       .pipe(map((res) => res.data));
   }
 }

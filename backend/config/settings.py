@@ -149,6 +149,10 @@ KAFKA_TOPICS = {
     "accidente_estado": "Fact_AccidenteTipoEstadoAccidente_topic",
     "elemento_climatico_accidente": "Dim_ElementoClimaticosAccidente_topic",
     "elemento_fisico_accidente": "Dim_ElementoFisicoAccidente_topic",
+    "conductor": "Dim_Conductor_topic",
+    "vehiculo": "Dim_Vehiculo_topic",
+    "conductor_accidente": "Fact_Conductor_Accidente_topic",
+    "implicado": "Dim_Implicado_topic",
     "nota_accidente": "Dim_NotaAccidente_topic",
     "evidencia_foto": "Dim_EvidenciaFoto_topic",
     "historial_estado_unidad": "Fact_HistorialEstadoUnidad_topic",
@@ -168,6 +172,8 @@ KAFKA_TOPICS = {
     "baja_unidad": "Fact_BajaUnidad_topic",
     "region_operativa_snapshot": "Dim_RegionOperativa_topic",
     "validacion_region_snapshot": "Dim_ValidacionRegion_topic",
+    "region_operativa_estado_region": "Dim_RegionOperativaEstadoRegion_topic",
+    "estado_region": "Dim_EstadoRegion_topic",
     "prospecto": "Dim_Prospecto_topic",
     "asignacion": "Fact_Asignacion_topic",
     "pipeline": "Fact_Pipeline_topic",
@@ -180,10 +186,26 @@ KAFKA_TOPICS = {
     "solicitud_cambio_plan": "Fact_Solicitud_Cambio_Plan_topic",
 }
 
+# --- Seguimiento (config compartida — no tabla de dominio del módulo) ---
+# Fuente normativa Fase 4: flujoscorreguidos/flujo-emergencias-canonico.md
+SEGUIMIENTO_PARAMETROS = {
+    "gps_umbral_senal_perdida_seg": int(os.environ.get("GPS_UMBRAL_SENAL_PERDIDA_SEG", "60")),
+    "gps_job_intervalo_seg": int(os.environ.get("GPS_JOB_INTERVALO_SEG", "30")),
+    "geofence_radio_metros": int(os.environ.get("GEOFENCE_RADIO_METROS", "100")),
+    "geofence_histeresis_seg": int(os.environ.get("GEOFENCE_HISTERESIS_SEG", "30")),
+    "gps_retencion_dias": int(os.environ.get("GPS_RETENCION_DIAS", "90")),
+}
+# Alias histórico (clave con tilde en Pinot payload)
+SEGUIMIENTO_PARAMETROS["geofence_histéresis_seg"] = SEGUIMIENTO_PARAMETROS[
+    "geofence_histeresis_seg"
+]
+
 # --- Soporte al cliente (Gestión de Tickets) ---
-# RN-TIC-005 (clarificación Session 2026-07-21): rol fijo "Supervisor de Soporte",
-# sin gestión de turnos — un único usuario responsable configurado aquí.
-SOPORTE_SUPERVISOR_USER_ID = int(os.environ.get("SOPORTE_SUPERVISOR_USER_ID", "2"))
+# RN-TIC-005: el supervisor se resuelve por rol SupervisorSoporte en Dim_Usuario_Rol.
+# SOPORTE_SUPERVISOR_USER_ID es opcional: preferencia si hay varios usuarios con el rol,
+# o fallback si aún nadie tiene el rol asignado.
+_soporte_supervisor_raw = os.environ.get("SOPORTE_SUPERVISOR_USER_ID", "").strip()
+SOPORTE_SUPERVISOR_USER_ID = int(_soporte_supervisor_raw) if _soporte_supervisor_raw else None
 
 # --- SMTP (Gmail / notificaciones cuenta) ---
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

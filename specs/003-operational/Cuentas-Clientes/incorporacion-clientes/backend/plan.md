@@ -1,0 +1,147 @@
+# Implementation Plan: Incorporación de Clientes
+
+> **Capa Speckit:** `backend/` — dominio, API, RF/RN/CA.
+> **Indice del modulo:** [`../incorporacion-clientes.md`](../incorporacion-clientes.md).
+> **UI (Interaction Capability):** [`../frontend/spec.md`](../frontend/spec.md) — stub Fase A; no duplicar OpenAPI/data-model en FE.
+
+
+**Branch**: `003-operational-cuentas-clientes-incorporacion-clientes` | **Date**: 2026-07-09 | **Spec**: `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/backend/spec.md`
+
+**Input**: Feature specification from `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/backend/spec.md`
+
+## Summary
+
+**Actualización 2026-07-25:** Phase 10 — O01/O12 **retirados** (410); O16 + email SMTP + soft-anular `Rechazado_Anulado`; O08 UI en solicitudes/wizard; login permitido en pendiente. Ver `spec.md` Session 2026-07-25.
+
+Plan original (2026-07-09): alta/configuración/onboarding (antes O01, O12, O02, O09, O08) contract-first.
+
+## Traceability
+
+- **Objetivo Operacional (OP)**: OP-TSI-ONB-01.
+- **UC cubiertos (canónicos)**: CU-O14, CU-O16 (aprobar/rechazar/anular), CU-O02, CU-O09, CU-O08.
+- **Retirados (410)**: CU-O01, CU-O12.
+- **Delta 2026-07-25**: soft-anular; email O16; hard-kill O01/O12; login OK en pendiente.
+
+## Technical Context
+
+**Language/Version**: Python 3.11 (backend), TypeScript 5.x (frontend Angular 17+)
+
+**Primary Dependencies**: Django 5 + DRF + JWT RS256, Kafka producer, Azure Blob (logo), SMTP (`core/notificaciones`), Angular standalone + RxJS
+
+**Storage**: Apache Pinot (lectura) + Kafka (escritura de `Dim_Cliente`, `Dim_Usuarios`, `Dim_Credencial`, `Dim_Usuario_Rol`, `Fact_Onboarding`, `Dim_Preferencias_Cliente`)
+
+**Testing**: pytest/APITestCase (backend contract + service), Jasmine (Angular services/guards)
+
+**Target Platform**: Linux containerizado (backend) + SPA web (frontend)
+
+**Project Type**: Aplicación web (backend + frontend)
+
+**Performance Goals**: Autorregistro O14 < 3 min usuario (RNF-ONB-001); p95 autorregistro API ≤ 800 ms; p95 etapa onboarding ≤ 500 ms; onboarding 24/7 (RNF-ONB-002)
+
+**Constraints**: `/api/v1/`, envelope estándar, `Idempotency-Key` en escrituras, sin INSERT/UPDATE directo a Pinot, scope Cliente vía `admin_local_id`
+
+**Scale/Scope**: Módulo prerequisito de gestion-cuentas; actores Administrador y Cliente (admin local)
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+- Functional Suitability: PASS — O14/O16/O02/O09/O08; O01/O12 retirados (410); CA-ONB-001..011.
+- Reliability: PASS — progreso persistido en Fact_Onboarding; reanudación sin pérdida (RN-ONB-005).
+- Performance Efficiency: PASS — RNF-ONB-001/002 explicitados; objetivos p95 O14/onboarding.
+- Interaction Capability: PASS — design-system tokens + HTML separado; wizard con guards (CA-ONB-011).
+- Security: PASS — JWT + sesión; O16 solo Administrador; scope por `admin_local_id`; O01/O12 410.
+- Compatibility: PASS — contrato OpenAPI versionado; reutiliza patrones auth y gestion-cuentas (logo Blob).
+- Maintainability: PASS — capas Vista→Servicio→Repositorio; tipos TS alineados al contrato.
+- Flexibility: PASS — etapas opcionales por plan diferidas; SMTP por env.
+- Safety: PASS — soft-anular sin borrado físico; credenciales temporales con cambio forzado.
+
+Post-Design Gate: PASS (sin violaciones ni excepciones abiertas).
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/003-operational/Cuentas-Clientes/incorporacion-clientes/backend/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+│   └── incorporacion-clientes.openapi.yaml
+└── tasks.md                    # generado por /speckit-tasks
+```
+
+### Source Code (repository root)
+
+```text
+backend/
+├── apps/cuentas_clientes/
+│   ├── views/
+│   │   └── onboarding_views.py           # O14, O16, O02/O09, O08; O01/O12 → 410
+│   ├── services/
+│   │   ├── autorregistro_proveedor_service.py  # CU-O14
+│   │   ├── aprobacion_proveedor_service.py     # CU-O16 (+ anular)
+│   │   ├── onboarding_service.py               # CU-O02, O09
+│   │   ├── invitacion_service.py               # CU-O08
+│   │   └── onboarding_notificacion_service.py  # O14/O16/O08 SMTP
+│   ├── management/commands/
+│   │   └── send_onboarding_reminders.py  # RN-ONB-004
+│   └── tests/
+│       ├── api/                          # Contract tests por endpoint
+│       └── services/
+└── core/
+    ├── repositories/cuentas_clientes/
+    │   ├── cliente_repository.py         # extender create/find_by_admin_local
+    │   ├── onboarding_repository.py      # Fact_Onboarding
+    │   ├── user_repository.py            # reutilizar
+    │   ├── credential_repository.py      # reutilizar
+    │   ├── role_repository.py            # reutilizar
+    │   └── preferencias_cliente_repository.py
+    └── notificaciones/
+
+frontend/src/app/
+├── modules/cuentas-clientes/incorporacion-clientes/
+│   ├── models/
+│   │   └── incorporacion-cliente.contract.ts
+│   ├── services/
+│   │   ├── incorporacion-cliente-api.service.ts
+│   │   └── onboarding-facade.service.ts
+│   ├── guards/
+│   │   ├── admin-local-onboarding.guard.ts
+│   │   ├── onboarding-pendiente.guard.ts
+│   │   └── onboarding-completado.guard.ts
+│   └── pages/
+│       ├── autorregistro/                # Público: O14 (+ HTML design-system)
+│       ├── aprobacion-solicitudes/       # Admin: O16 + O08
+│       └── onboarding-wizard/            # Cliente: O02 + O08
+└── core/guards/
+    └── administrador.guard.ts            # reutilizar
+```
+
+**Structure Decision**: Misma app Django `cuentas_clientes` y módulo Angular `cuentas-clientes`; subcarpeta `incorporacion-clientes/` separada de `gestion-cuenta/`. Añadir `Fact_Onboarding_topic` a `KAFKA_TOPICS` en `settings.py`. Refactorizar `CuentaUsuarioRepository` para alinear membresía con clarificación spec.
+
+## Implementation Order (contract-first)
+
+1. **Contrato OpenAPI** (`contracts/incorporacion-clientes.openapi.yaml`) — fuente de verdad.
+2. **Backend**: repositorios → servicios → vistas DRF + permisos + tests de contrato + topic Kafka onboarding.
+3. **Frontend**: modelos TS → `IncorporacionClienteApiService` → guards → páginas wizard.
+4. **Job recordatorios**: management command + documentación cron en quickstart.
+5. **Alineación gestion-cuentas**: refactor `CuentaUsuarioRepository` a `admin_local_id`.
+
+## Complexity Tracking
+
+| Violación / deuda | Justificación | Mitigación |
+|-------------------|---------------|------------|
+| `CuentaUsuarioRepository` usa `Dim_Usuario_Cliente` hoy | Implementado antes de clarificación RN-ONB-007 | Refactor en tarea de alineación post-onboarding |
+| Etapas opcionales por plan sin catálogo | Fuera de alcance spec §13 | Hook en `OnboardingService` para extensión futura |
+| Servicios `registro_cuenta` / `configuracion_cuenta` residuales | O01/O12 retirados en HTTP | Vistas 410; servicios no llamados; tests service skipped |
+
+## Phase 10 (2026-07-25) — Cierre gaps
+
+1. Hard-kill O01/O12 (410 + FE sin rutas).
+2. Soft-anular + email O16 + tests.
+3. Reubicar UI O08 (solicitudes + wizard).
+4. Sync spec / plan / tasks / OpenAPI 1.2.0 / quickstart / traceability.
+5. Remediation analyze: UI design-system (T106–T107), orphans FE (T108), p95 O14 (T109), check-prerequisites (T110).

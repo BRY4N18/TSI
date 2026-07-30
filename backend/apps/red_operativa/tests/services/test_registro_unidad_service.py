@@ -77,3 +77,22 @@ class TestRegistroUnidadService:
         # Act & Assert
         with pytest.raises(ProveedorAccessError):
             service.registrar(self._valid_data(), user_id=1, roles=["Administrador"])
+
+    def test_registrar_when_gmail_liga_idusuario(self, mock_pinot, mock_kafka, pinot_store):
+        service = RegistroUnidadService()
+        result = service.registrar(
+            self._valid_data(placa="SVC-GMAIL", gmail="unidad-svc@test.com"),
+            **PROVEEDOR,
+        )
+        assert result.get("idusuario") is not None
+        assert result.get("usuario_creado") is True
+        stored = next(
+            (
+                u
+                for u in pinot_store["Dim_UnidadEmergencia"]
+                if u.get("placa") == "SVC-GMAIL"
+            ),
+            None,
+        )
+        assert stored is not None
+        assert stored.get("idusuario") == result["idusuario"]

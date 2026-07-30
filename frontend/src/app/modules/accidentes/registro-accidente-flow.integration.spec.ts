@@ -23,6 +23,7 @@ function fillValidForm(component: RegistroAccidentePage, descripcion: string): v
     numvictimas: 0,
     numfallecidos: 0,
     idtiporeportado: null,
+    idreferenciaestacion: null,
     registroRetrospectivo: false,
     justificacionRetrospectiva: '',
   });

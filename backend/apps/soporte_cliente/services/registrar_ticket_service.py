@@ -59,6 +59,7 @@ class RegistrarTicketService:
         descripcion: str,
         tipo: str,
         idaccidente: str | None = None,
+        idservicio: int | None = None,
         idusuario: int | None = None,
         adjuntos: list[tuple[bytes, str]] | None = None,
     ) -> dict:
@@ -66,19 +67,25 @@ class RegistrarTicketService:
             tipo=tipo, asunto=asunto, descripcion=descripcion, idaccidente=idaccidente
         )
 
+        base_fields: dict = {
+            "idcliente": idcliente,
+            "asunto": asunto,
+            "descripcion": descripcion,
+            "tipo": tipo,
+            "cierreconfirmadocliente": False,
+        }
+        if idservicio is not None:
+            base_fields["idservicio"] = int(idservicio)
+
         if clasificacion is None:
             reclamo = self.reclamo_repo.create(
                 {
-                    "idcliente": idcliente,
-                    "asunto": asunto,
-                    "descripcion": descripcion,
-                    "tipo": tipo,
+                    **base_fields,
                     "tipo_incidencia": None,
                     "prioridad": None,
                     "estado": ESTADO_PENDIENTE_DE_CLASIFICACION,
                     "idslaconfig": None,
                     "sla_status": None,
-                    "cierreconfirmadocliente": False,
                 }
             )
         else:
@@ -89,14 +96,10 @@ class RegistrarTicketService:
             )
             reclamo = self.reclamo_repo.create(
                 {
-                    "idcliente": idcliente,
-                    "asunto": asunto,
-                    "descripcion": descripcion,
-                    "tipo": tipo,
+                    **base_fields,
                     "tipo_incidencia": clasificacion["tipo_incidencia"],
                     "prioridad": clasificacion["prioridad"],
                     "estado": ESTADO_ABIERTO,
-                    "cierreconfirmadocliente": False,
                     "idslaconfig": None,
                     "sla_primera_respuesta": None,
                     "sla_resolucion": None,

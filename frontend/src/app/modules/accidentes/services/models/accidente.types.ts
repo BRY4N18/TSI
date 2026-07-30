@@ -39,10 +39,8 @@ export interface RegistrarAccidenteRequest {
   numfallecidos?: number;
   distanciamillas?: number;
   duracionminutos?: number;
-  idperiododia?: number;
-  idestadoclima?: number;
-  idelementofisico?: number;
   idtiporeportado?: number;
+  idreferenciaestacion?: number;
 }
 
 export interface RegistrarAccidenteData {
@@ -141,6 +139,12 @@ export interface DescartarCasoData {
   estado: EstadoAccidente;
 }
 
+export interface DeshacerDescarteData {
+  message: string;
+  idaccidente: string;
+  estado: EstadoAccidente;
+}
+
 export interface FusionarReportesRequest {
   idaccidenteprincipal: string;
   confirmacion: boolean;
@@ -153,12 +157,19 @@ export interface FusionarReportesData {
   estado_duplicado: EstadoAccidente;
 }
 
+export interface DeshacerFusionData {
+  message: string;
+  idaccidente: string;
+  estado: EstadoAccidente;
+}
+
 export interface EscalarSeveridadRequest {
   idseveridad: 1 | 2 | 3 | 4;
   numheridos?: number;
   numfallecidos?: number;
   descripcion?: string;
   nota: string;
+  idunidademergencia_adicional?: number;
 }
 
 export interface EscalarSeveridadData {

@@ -177,3 +177,167 @@ export interface OfflineNotaRecord {
   tipo: TipoNotaCampo;
   fechahora: number;
 }
+
+export interface UpsertClimaAccidenteRequest {
+  idperiododia?: number | null;
+  idestadoclima?: number | null;
+}
+
+export interface ClimaAccidenteData {
+  idelementoclimaticoaccidente?: number;
+  idaccidente: string;
+  idperiododia: number | null;
+  idestadoclima: number | null;
+  activo: boolean;
+  fecha_actualizacion?: number;
+}
+
+export interface ElementoFisicoAccidenteItem {
+  idelementosfisicosaccidente: number;
+  idaccidente: string;
+  idelementofisico: number;
+  elementofisico?: string;
+  activo: boolean;
+  fecha_actualizacion?: number;
+}
+
+export interface ConductorPayload {
+  identificacion: string;
+  nombres: string;
+  apellidos: string;
+  genero?: string | null;
+  tipolicencia?: string | null;
+  estadolicencia?: string | null;
+  ciudadresidencia?: string | null;
+  aniosexperiencia?: number | null;
+}
+
+export interface VehiculoPayload {
+  idvehiculo?: number;
+  tipovehiculo: string;
+  modelovehiculo?: string | null;
+  categoriausovehiculo?: string | null;
+  mercanciapeligrosa?: boolean | null;
+  ejes?: number | null;
+}
+
+export interface RegistrarConductorAccidenteRequest {
+  conductor: ConductorPayload;
+  idestadoconductor: number;
+  vehiculo: VehiculoPayload;
+}
+
+export interface ConductorAccidenteItem {
+  idconductoraccidente: number;
+  idaccidente: string;
+  idconductor: number;
+  idestadoconductor: number;
+  idvehiculo: number;
+  activo: boolean;
+  fecha_actualizacion?: number;
+  conductor: ConductorPayload;
+  vehiculo: VehiculoPayload;
+}
+
+export interface EnriquecimientoAccidenteData {
+  idaccidente: string;
+  clima: ClimaAccidenteData | null;
+  elementos_fisicos: ElementoFisicoAccidenteItem[];
+  conductores: ConductorAccidenteItem[];
+  implicados: ImplicadoItem[];
+}
+
+export type TipoImplicado = 'Peaton' | 'Pasajero' | 'Testigo' | 'Otro';
+export type EstadoImplicado = 'Ileso' | 'Lesionado' | 'Fallecido' | 'Desconocido';
+
+export interface RegistrarImplicadoRequest {
+  tipoimplicado: TipoImplicado;
+  estadoimplicado: EstadoImplicado;
+  genero?: string | null;
+  edad?: number | null;
+}
+
+export interface ImplicadoItem {
+  idimplicado: number;
+  idaccidente: string;
+  tipoimplicado: string;
+  estadoimplicado: string;
+  genero?: string | null;
+  edad?: number | null;
+  activo: boolean;
+  fecha_actualizacion?: number;
+}
+
+export interface CatalogoItem {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface CatalogoListData {
+  items: CatalogoItem[];
+}
+
+export interface OfflineClimaRecord {
+  local_id: string;
+  idaccidente: string;
+  idperiododia: number | null;
+  idestadoclima: number | null;
+  fechahora: number;
+}
+
+export interface OfflineFisicoRecord {
+  local_id: string;
+  idaccidente: string;
+  idelementofisico: number;
+  fechahora: number;
+}
+
+/** PII cifrada at-rest (AES-GCM); nunca persistir identificacion/nombres/apellidos en claro. */
+export interface OfflineConductorRecord {
+  local_id: string;
+  idaccidente: string;
+  idestadoconductor: number;
+  tipovehiculo: string;
+  modelovehiculo?: string | null;
+  ciphertext: string;
+  iv: string;
+  fechahora: number;
+}
+
+/** Offline sin PII — ontología Dim_Implicado (Decision 13). */
+export interface OfflineImplicadoRecord {
+  local_id: string;
+  idaccidente: string;
+  tipoimplicado: TipoImplicado;
+  estadoimplicado: EstadoImplicado;
+  genero?: string | null;
+  edad?: number | null;
+  fechahora: number;
+}
+
+export interface DecryptedConductorPendiente {
+  local_id: string;
+  idaccidente: string;
+  idestadoconductor: number;
+  conductor: ConductorPayload;
+  vehiculo: VehiculoPayload;
+  fechahora: number;
+}
+
+export interface DecryptedImplicadoPendiente {
+  local_id: string;
+  idaccidente: string;
+  payload: RegistrarImplicadoRequest;
+  fechahora: number;
+}
+
+export interface SincronizarEnriquecimientoPayload {
+  clima?: OfflineClimaRecord;
+  elementos_fisicos?: OfflineFisicoRecord[];
+  conductores?: Array<{
+    local_id: string;
+    conductor: ConductorPayload;
+    idestadoconductor: number;
+    vehiculo: VehiculoPayload;
+  }>;
+  implicados?: Array<{ local_id: string } & RegistrarImplicadoRequest>;
+}

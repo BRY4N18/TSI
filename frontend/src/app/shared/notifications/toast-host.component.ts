@@ -34,6 +34,15 @@ const TONE_ICON: Record<ToastTone, TablerIconName> = {
         >
           <app-tabler-icon [name]="toneIcon[t.tone]" [size]="18" />
           <span class="flex-1 text-text-primary">{{ t.message }}</span>
+          @if (t.actionLabel && t.onAction) {
+            <button
+              type="button"
+              class="shrink-0 text-sm font-semibold uppercase tracking-wide text-accent-primary hover:text-accent-hover"
+              (click)="t.onAction()"
+            >
+              {{ t.actionLabel }}
+            </button>
+          }
           <button
             type="button"
             class="text-text-secondary hover:text-text-primary"

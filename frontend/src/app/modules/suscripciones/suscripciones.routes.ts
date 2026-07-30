@@ -1,7 +1,9 @@
 import { Routes } from '@angular/router';
 
 import { adminBillingGuard } from './guards/admin-billing.guard';
+import { directorEstrategiaBillingGuard } from './guards/director-estrategia-billing.guard';
 import { proveedorBillingGuard } from './guards/proveedor-billing.guard';
+import { suscripcionesHomeRedirect } from './guards/suscripciones-home.redirect';
 
 export const SUSCRIPCIONES_ROUTES: Routes = [
   {
@@ -41,6 +43,18 @@ export const SUSCRIPCIONES_ROUTES: Routes = [
           import('./pages/catalogo-planes/catalogo-planes.page').then((m) => m.CatalogoPlanesPage),
       },
       {
+        path: 'planes/nuevo',
+        canActivate: [directorEstrategiaBillingGuard],
+        loadComponent: () =>
+          import('./pages/plan-form/plan-form.page').then((m) => m.PlanFormPage),
+      },
+      {
+        path: 'planes/:idplan/editar',
+        canActivate: [directorEstrategiaBillingGuard],
+        loadComponent: () =>
+          import('./pages/plan-form/plan-form.page').then((m) => m.PlanFormPage),
+      },
+      {
         path: 'aprobaciones-downgrade',
         canActivate: [adminBillingGuard],
         loadComponent: () =>
@@ -48,7 +62,7 @@ export const SUSCRIPCIONES_ROUTES: Routes = [
             (m) => m.AprobacionesDowngradePage,
           ),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'mi-suscripcion' },
+      { path: '', pathMatch: 'full', canActivate: [suscripcionesHomeRedirect] },
     ],
   },
 ];

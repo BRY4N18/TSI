@@ -58,6 +58,13 @@ export class UnidadEmergenciaFacadeService {
     return this.wrap(this.api.reactivar(idunidademergencia));
   }
 
+  listar(): Observable<OperationResult<UnidadEmergenciaData[]>> {
+    return this.api.listar().pipe(
+      map((res) => ({ ok: true, data: res.data?.items ?? [] }) as OperationResult<UnidadEmergenciaData[]>),
+      catchError((err) => of({ ok: false, error: this.extractError(err) })),
+    );
+  }
+
   private wrap<T>(source: Observable<ApiEnvelope<T>>): Observable<OperationResult<T>> {
     return source.pipe(
       map((res) => ({ ok: true, data: res.data }) as OperationResult<T>),

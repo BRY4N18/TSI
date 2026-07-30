@@ -24,7 +24,7 @@ class TestImportacionLoteUnidadService:
         fila.update(overrides)
         return fila
 
-    def test_importar_when_todas_validas_inserta_todas(self, mock_pinot, mock_kafka):
+    def test_importar_when_todas_validas_inserta_todas(self, mock_pinot, mock_kafka, pinot_store):
         # Arrange
         service = ImportacionLoteUnidadService()
         filas = [
@@ -38,6 +38,9 @@ class TestImportacionLoteUnidadService:
         assert result["insertadas"] == 3
         assert result["usuarios_creados"] == 3
         assert result["fallidas"] == []
+        for u in pinot_store["Dim_UnidadEmergencia"]:
+            if str(u.get("placa", "")).startswith("LOTE-"):
+                assert u.get("idusuario") is not None
 
     def test_importar_when_una_fila_invalida_no_inserta_ninguna(self, mock_pinot, mock_kafka):
         # Arrange
@@ -90,3 +93,42 @@ class TestImportacionLoteUnidadService:
             if u.get("placa", "").startswith("LOTE-C") and u.get("activo")
         ]
         assert activas_nuevas == []
+
+    def test_importar_when_credencial_falla_gmails_quedan_reutilizables(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Arrange — compensación desactiva usuarios; reintento no debe chocar por gmail
+        service = ImportacionLoteUnidadService()
+        service.credential_repo = MagicMock()
+        service.credential_repo.create_temporary.side_effect = RuntimeError("smtp/cred fail")
+        filas = [
+            self._fila_valida(placa="LOTE-R1", gmail="retry1@test.com"),
+            self._fila_valida(placa="LOTE-R2", gmail="retry2@test.com"),
+        ]
+
+        # Act
+        failed = service.importar(filas, **PROVEEDOR)
+        service.credential_repo.create_temporary.side_effect = None
+        service.credential_repo.create_temporary.return_value = {"idcredencial": 1}
+        retried = service.importar(filas, **PROVEEDOR)
+
+        # Assert
+        assert failed["insertadas"] == 0
+        assert retried["insertadas"] == 2
+        assert retried["usuarios_creados"] == 2
+        assert retried["fallidas"] == []
+
+    def test_importar_when_rol_unidad_ausente_no_inserta(self, mock_pinot, mock_kafka):
+        # Arrange
+        service = ImportacionLoteUnidadService()
+        service.role_repo = MagicMock()
+        service.role_repo.find_role_by_name.return_value = None
+        filas = [self._fila_valida(placa="LOTE-NR", gmail="nr@test.com")]
+
+        # Act
+        result = service.importar(filas, **PROVEEDOR)
+
+        # Assert
+        assert result["insertadas"] == 0
+        assert result["usuarios_creados"] == 0
+        assert "Unidad" in result["fallidas"][0]["motivo"]

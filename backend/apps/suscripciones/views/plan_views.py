@@ -5,20 +5,23 @@ from __future__ import annotations
 from rest_framework.views import APIView
 
 from apps.suscripciones.idempotency import get_cached_response, store_response
-from apps.suscripciones.permissions import IsAdministradorBilling, IsProveedorOrAdminBilling
+from apps.suscripciones.permissions import (
+    IsCatalogoPlanesReader,
+    IsDirectorEstrategiaBilling,
+)
 from apps.suscripciones.services.catalogo_plan_service import (
     CatalogoPlanError,
     CatalogoPlanService,
 )
-from apps.suscripciones.throttles import AdminBillingThrottle, ProveedorBillingWriteThrottle
+from apps.suscripciones.throttles import AdminBillingThrottle
 from core.api.response_envelope import error_response, success_response
 
 
 class PlanListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAdministradorBilling()]
-        return [IsProveedorOrAdminBilling()]
+            return [IsDirectorEstrategiaBilling()]
+        return [IsCatalogoPlanesReader()]
 
     def get_throttles(self):
         if self.request.method == "POST":
@@ -26,7 +29,13 @@ class PlanListCreateView(APIView):
         return []
 
     def get(self, request):
-        planes = CatalogoPlanService().listar(solo_activos=True)
+        raw = request.query_params.get("solo_activos", "true")
+        solo_activos = str(raw).lower() not in {"0", "false", "no"}
+        # Solo Director puede pedir el catálogo completo (incl. inactivos).
+        roles = list(getattr(request.user, "roles", []) or [])
+        if "DirectorEstrategia" not in roles:
+            solo_activos = True
+        planes = CatalogoPlanService().listar(solo_activos=solo_activos)
         return success_response(planes)
 
     def post(self, request):
@@ -43,7 +52,7 @@ class PlanListCreateView(APIView):
 
 
 class PlanDetailView(APIView):
-    permission_classes = [IsAdministradorBilling]
+    permission_classes = [IsDirectorEstrategiaBilling]
     throttle_classes = [AdminBillingThrottle]
 
     def patch(self, request, idplan: int):

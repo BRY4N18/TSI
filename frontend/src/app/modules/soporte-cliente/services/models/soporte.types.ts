@@ -55,12 +55,18 @@ export interface TransicionTicketData {
   agente_asignado?: number | null;
 }
 
+export interface CatalogoItem {
+  id: number;
+  nombre: string;
+}
+
 export interface RegistrarTicketRequest {
   idcliente: number;
   asunto: string;
   descripcion: string;
   tipo: string;
   idaccidente?: string;
+  idservicio?: number;
 }
 
 export interface SLAConfig {

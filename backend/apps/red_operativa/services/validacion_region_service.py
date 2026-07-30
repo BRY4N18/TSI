@@ -4,12 +4,18 @@ Revisión manual (sin checklist técnico automatizado, ver Clarifications del
 spec) — el sistema solo persiste el resultado declarado por el Administrador
 o el Director Tecnológico en Dim_ValidacionRegion, y transiciona
 Dim_RegionOperativa.estadoregion cuando el resultado es 'Aprobada'.
+
+En alta de región también escribe el puente Dim_RegionOperativaEstadoRegion
+(idestado de la región → idestadoregion) para cobertura en Emergencias.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from core.repositories.red_operativa.region_operativa_estado_region_repository import (
+    RegionOperativaEstadoRegionRepository,
+)
 from core.repositories.red_operativa.region_operativa_repository import (
     ESTADO_EN_VALIDACION,
     RegionOperativaRepository,
@@ -28,9 +34,11 @@ class ValidacionRegionService:
         self,
         region_repo: RegionOperativaRepository | None = None,
         validacion_repo: ValidacionRegionRepository | None = None,
+        puente_repo: RegionOperativaEstadoRegionRepository | None = None,
     ):
         self.region_repo = region_repo or RegionOperativaRepository()
         self.validacion_repo = validacion_repo or ValidacionRegionRepository()
+        self.puente_repo = puente_repo or RegionOperativaEstadoRegionRepository()
 
     def ejecutar(self, data: dict[str, Any], *, idusuario: int) -> dict[str, Any]:
         resultado = data.get("resultado")
@@ -49,10 +57,26 @@ class ValidacionRegionService:
                 }
             )
             idregionoperativa = region["idregionoperativa"]
+            # Puente geo: idestado de la región = Dim_EstadoRegion.idestadoregion
+            self.puente_repo.ensure_link(
+                idregionoperativa=idregionoperativa,
+                idestadoregion=int(data["idestado"]),
+                nombreregion=data["nombreregion"],
+            )
         else:
             region = self.region_repo.find_by_id(idregionoperativa)
             if not region:
                 raise LookupError("Región no encontrada")
+            if not region.get("activo", True):
+                raise ValueError(
+                    "La región está inactiva (activo=false); no admite reingreso a CU-O55"
+                )
+            if region.get("idestado") is not None:
+                self.puente_repo.ensure_link(
+                    idregionoperativa=idregionoperativa,
+                    idestadoregion=int(region["idestado"]),
+                    nombreregion=region.get("nombreregion"),
+                )
 
         validacion = self.validacion_repo.create(
             {

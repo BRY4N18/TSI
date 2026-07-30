@@ -67,7 +67,7 @@ class ReasignacionDespachoService:
         return {"reasignacion_iniciada": result is not None, "despacho": result}
 
     def _alerta_critica(self, idaccidente: str, idusuario: int) -> None:
-        self.notas.create_alerta(
+        self.notas.create_escalamiento_fallido(
             idaccidente=idaccidente,
             idusuario=idusuario,
             nota="Sin unidades disponibles. Requiere intervención manual.",

@@ -1,0 +1,131 @@
+<div class="grid gap-6 pb-8 text-text-primary">
+  <header class="grid gap-2">
+    <a
+      routerLink="/suscripciones/catalogo-planes"
+      class="inline-flex w-fit items-center gap-1 text-sm font-medium text-accent-primary no-underline hover:underline"
+    >
+      ← Volver al catálogo
+    </a>
+  <h1 class="m-0 text-[1.75rem] font-bold leading-tight">
+    {{ esEdicion() ? 'Editar plan' : 'Nuevo plan' }}
+  </h1>
+  <p class="m-0 max-w-xl text-sm leading-normal text-text-secondary">
+    @if (esEdicion()) {
+      Actualiza precio, nivel y límites. Las suscripciones ya contratadas no se cancelan al editar.
+    } @else {
+      Define el plan comercial que verán los clientes en el catálogo.
+    }
+  </p>
+  </header>
+
+  @if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-lg border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg px-4 py-3"
+      role="alert"
+    >
+      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="rounded-lg border border-border-default bg-bg-surface p-6" aria-busy="true">
+      <div class="h-4 w-1/3 animate-pulse rounded-md bg-border-default"></div>
+      <div class="mt-4 h-32 animate-pulse rounded-md bg-border-default"></div>
+    </div>
+  } @else {
+    <form
+      class="grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6"
+      [formGroup]="form"
+      (ngSubmit)="guardar()"
+      novalidate
+    >
+      <section class="grid gap-4">
+        <h3 class="m-0 text-base font-semibold">Datos del plan</h3>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Nombre</span>
+            <input
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              [class.border-alert-critical]="isInvalid('nombre')"
+              formControlName="nombre"
+              autocomplete="off"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Precio (USD/mes)</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              [class.border-alert-critical]="isInvalid('precio')"
+              formControlName="precio"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Nivel</span>
+            <select
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none"
+              formControlName="nivel"
+            >
+              @for (n of niveles; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="grid gap-4 border-t border-border-default pt-6">
+        <h3 class="m-0 text-base font-semibold">Límites de uso</h3>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Unidades máx.</span>
+            <input
+              type="number"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              formControlName="unidades_max"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Usuarios máx.</span>
+            <input
+              type="number"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              formControlName="usuarios_max"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">API calls / mes</span>
+            <input
+              type="number"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              formControlName="api_calls_mes"
+            />
+          </label>
+        </div>
+      </section>
+
+      <div class="flex flex-wrap gap-3 border-t border-border-default pt-6">
+        <button
+          type="submit"
+          class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
+          [disabled]="enviando() || form.invalid"
+        >
+          {{
+            enviando() ? 'Guardando…' : esEdicion() ? 'Guardar cambios' : 'Publicar plan'
+          }}
+        </button>
+        <a
+          routerLink="/suscripciones/catalogo-planes"
+          class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-5 text-sm font-medium text-text-secondary no-underline hover:bg-bg-page"
+        >
+          Cancelar
+        </a>
+      </div>
+    </form>
+  }
+</div>

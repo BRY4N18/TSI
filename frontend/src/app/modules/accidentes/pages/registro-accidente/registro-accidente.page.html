@@ -2,12 +2,20 @@
   <h1 class="m-0 mb-6 text-2xl font-bold text-text-primary">Registro de accidente</h1>
 
   @if (draftRestored()) {
-    <p
-      class="mb-4 rounded-md border border-alert-info bg-alert-info-bg px-4 py-3 text-sm text-alert-info"
+    <div
+      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-alert-info bg-alert-info-bg px-4 py-3 text-sm text-alert-info"
       data-testid="draft-restored"
     >
-      Se restauró un borrador guardado localmente (RNF-REG-006).
-    </p>
+      <p class="m-0">Se restauró un borrador guardado localmente (RNF-REG-006).</p>
+      <button
+        type="button"
+        data-testid="btn-descartar-borrador"
+        class="rounded-md border border-alert-info px-3 py-1.5 text-sm font-medium text-alert-info hover:bg-alert-info-bg"
+        (click)="descartarBorradorLocal()"
+      >
+        Descartar borrador
+      </button>
+    </div>
   }
 
   @if (advertencias().length) {
@@ -362,20 +370,37 @@
 
         <section class="rounded-lg border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Origen del reporte</h2>
-          <div class="grid gap-1.5">
-            <label for="idtiporeportado" class="text-sm font-medium text-text-secondary"
-              >Tipo de reporte</label
-            >
-            <select
-              id="idtiporeportado"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-              formControlName="idtiporeportado"
-            >
-              <option [value]="null">— Sin especificar —</option>
-              @for (t of tiposReportado; track t.value) {
-                <option [value]="t.value">{{ t.label }}</option>
-              }
-            </select>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="grid gap-1.5">
+              <label for="idtiporeportado" class="text-sm font-medium text-text-secondary"
+                >Tipo de reporte</label
+              >
+              <select
+                id="idtiporeportado"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                formControlName="idtiporeportado"
+              >
+                <option [ngValue]="null">— Sin especificar —</option>
+                @for (t of tiposReportado(); track t.id) {
+                  <option [ngValue]="t.id">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="grid gap-1.5">
+              <label for="idreferenciaestacion" class="text-sm font-medium text-text-secondary"
+                >Estación de referencia (opcional)</label
+              >
+              <select
+                id="idreferenciaestacion"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                formControlName="idreferenciaestacion"
+              >
+                <option [ngValue]="null">— Sin especificar —</option>
+                @for (e of referenciasEstacion(); track e.id) {
+                  <option [ngValue]="e.id">{{ e.nombre }}</option>
+                }
+              </select>
+            </div>
           </div>
         </section>
 

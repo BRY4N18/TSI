@@ -13,9 +13,15 @@ describe('EvidenciaApiService', () => {
   beforeEach(() => {
     offlineStore = jasmine.createSpyObj<EvidenciaOfflineStoreService>(
       'EvidenciaOfflineStoreService',
-      ['listarPendientes', 'eliminarFoto', 'eliminarNota'],
+      ['listarPendientes', 'eliminarFoto', 'eliminarNota', 'listarEnriquecimientoPendiente'],
     );
     offlineStore.listarPendientes.and.resolveTo({ fotos: [], notas: [] });
+    offlineStore.listarEnriquecimientoPendiente.and.resolveTo({
+      clima: null,
+      elementos_fisicos: [],
+      conductores: [],
+      implicados: [],
+    });
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],

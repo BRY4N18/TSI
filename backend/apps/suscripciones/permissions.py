@@ -1,4 +1,4 @@
-"""DRF permissions — Proveedor / Administrador billing."""
+"""DRF permissions — Proveedor / Administrador / DirectorEstrategia billing."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from apps.red_operativa.services.proveedor_access_service import (
 ROLE_ADMIN = "Administrador"
 ROLE_CLIENTE = "Cliente"
 ROLE_PROVEEDOR = "Proveedor"
+ROLE_DIRECTOR_ESTRATEGIA = "DirectorEstrategia"
 
 
 class IsProveedorCuenta(BasePermission):
@@ -42,8 +43,29 @@ class IsAdministradorBilling(BasePermission):
         return ROLE_ADMIN in getattr(user, "roles", [])
 
 
+class IsDirectorEstrategiaBilling(BasePermission):
+    """RF-SUSF-001 — mutaciones Dim_Plan."""
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        return ROLE_DIRECTOR_ESTRATEGIA in getattr(user, "roles", [])
+
+
 class IsProveedorOrAdminBilling(BasePermission):
     def has_permission(self, request, view) -> bool:
+        if IsAdministradorBilling().has_permission(request, view):
+            return True
+        return IsProveedorCuenta().has_permission(request, view)
+
+
+class IsCatalogoPlanesReader(BasePermission):
+    """GET catálogo: Proveedor, Administrador o DirectorEstrategia."""
+
+    def has_permission(self, request, view) -> bool:
+        if IsDirectorEstrategiaBilling().has_permission(request, view):
+            return True
         if IsAdministradorBilling().has_permission(request, view):
             return True
         return IsProveedorCuenta().has_permission(request, view)

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import {
   ApiEnvelope,
+  CatalogoItem,
   DashboardSoporteData,
   RegistrarTicketRequest,
   Ticket,
@@ -108,5 +109,9 @@ export class TicketApiService {
 
   dashboard(): Observable<ApiEnvelope<DashboardSoporteData>> {
     return this.http.get<ApiEnvelope<DashboardSoporteData>>('/api/v1/soporte/dashboard');
+  }
+
+  listarServicios(): Observable<ApiEnvelope<CatalogoItem[]>> {
+    return this.http.get<ApiEnvelope<CatalogoItem[]>>('/api/v1/soporte/servicios');
   }
 }

@@ -6,6 +6,8 @@ export interface ToastMessage {
   id: number;
   message: string;
   tone: ToastTone;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export interface AlertMessage {
@@ -21,10 +23,11 @@ const AUTO_DISMISS_MS: Record<ToastTone, number> = {
   info: 5000,
 };
 
+const ACTION_TOAST_MS = 8000;
+
 /**
  * Sistema de feedback global (Toast/Alert) según design-system.md §5.
- * Snackbar con [Deshacer] queda pendiente hasta que exista un endpoint de
- * reversión para descarte (CU-O32) / fusión (CU-O41) — ver tasks.md.
+ * Snackbar con [Deshacer] para CU-O32 / CU-O41 vía `toastWithAction`.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -37,6 +40,29 @@ export class NotificationService {
     const id = this.nextId++;
     this.toasts.update((list) => [...list, { id, message, tone }]);
     setTimeout(() => this.dismissToast(id), AUTO_DISMISS_MS[tone]);
+  }
+
+  toastWithAction(
+    message: string,
+    tone: ToastTone,
+    actionLabel: string,
+    onAction: () => void,
+  ): void {
+    const id = this.nextId++;
+    this.toasts.update((list) => [
+      ...list,
+      {
+        id,
+        message,
+        tone,
+        actionLabel,
+        onAction: () => {
+          this.dismissToast(id);
+          onAction();
+        },
+      },
+    ]);
+    setTimeout(() => this.dismissToast(id), ACTION_TOAST_MS);
   }
 
   dismissToast(id: number): void {

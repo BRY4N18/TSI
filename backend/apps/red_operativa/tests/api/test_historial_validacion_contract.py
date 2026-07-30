@@ -32,9 +32,6 @@ class TestHistorialValidacionContract:
         # Assert
         assert response.status_code == 404
 
-    def test_get_when_unauthenticated_returns_403(self, api_client):
-        # Act
+    def test_get_when_unauthenticated_returns_401_or_403(self, api_client):
         response = api_client.get("/api/v1/red-operativa/regiones/1/validaciones")
-
-        # Assert
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)

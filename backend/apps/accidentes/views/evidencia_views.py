@@ -117,6 +117,7 @@ class SincronizarEvidenciaView(APIView):
     def post(self, request: Request, idaccidente: str) -> Response:
         notas_json = request.data.get("notas")
         fotos_metadata_json = request.data.get("fotos_metadata")
+        enriquecimiento_json = request.data.get("enriquecimiento")
         fotos_files = request.FILES.getlist("fotos")
 
         archivos: list[tuple[bytes, str]] = []
@@ -130,9 +131,15 @@ class SincronizarEvidenciaView(APIView):
                 notas_json=notas_json,
                 fotos_metadata_json=fotos_metadata_json,
                 fotos_archivos=archivos,
+                enriquecimiento_json=enriquecimiento_json,
             )
         except json.JSONDecodeError:
-            return error_response("bad_request", "JSON inválido en notas o fotos_metadata", "400", status_code=400)
+            return error_response(
+                "bad_request",
+                "JSON inválido en notas, fotos_metadata o enriquecimiento",
+                "400",
+                status_code=400,
+            )
         except LookupError:
             return error_response("not_found", "Accidente no encontrado", "404", status_code=404)
 

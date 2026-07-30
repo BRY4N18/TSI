@@ -17,6 +17,7 @@ export interface UnidadEmergenciaData {
   contactoproveedor: string | null;
   unidademergencia: string;
   tipounidademergencia: TipoUnidadEmergencia;
+  idusuario?: number | null;
   activo: boolean;
   latitud: number | null;
   longitud: number | null;
@@ -37,6 +38,7 @@ export interface UnidadCreateRequest {
   unidademergencia: string;
   tipounidademergencia: TipoUnidadEmergencia;
   activo?: boolean;
+  /** Opcional: crea login Unidad + liga idusuario (CU-O30). */
   gmail?: string;
   /** @deprecated Ignorado — se resuelve del JWT */
   idcliente?: number;

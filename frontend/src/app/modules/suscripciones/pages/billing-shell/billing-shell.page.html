@@ -1,33 +1,43 @@
 <section class="mx-auto grid max-w-6xl gap-5 px-5 py-5 pb-10 text-text-primary">
-  <header class="grid gap-1.5">
-    <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Facturación</p>
-    <h1 class="m-0 text-[1.75rem] font-bold">Suscripciones</h1>
-    <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
-      Gestiona tu plan, método de cobro, facturas y solicitudes de cambio desde un solo lugar.
-    </p>
-  </header>
+  @if (showModuleHeader()) {
+    <header class="grid gap-1.5">
+      <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Facturación</p>
+      <h1 class="m-0 text-[1.75rem] font-bold">
+        {{ isDirectorOnly() ? 'Planes de suscripción' : 'Suscripciones' }}
+      </h1>
+      <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
+        @if (isDirectorOnly()) {
+          Catálogo comercial: crear, editar y desactivar planes publicados.
+        } @else {
+          Gestiona tu plan, método de cobro, facturas y solicitudes de cambio desde un solo lugar.
+        }
+      </p>
+    </header>
+  }
 
-  <nav
-    class="flex flex-wrap gap-2 rounded-[10px] border border-border-default bg-bg-surface p-1.5"
-    aria-label="Secciones de suscripciones"
-  >
-    @for (tab of tabs(); track tab.path) {
-      <a
-        class="inline-flex min-h-10 items-center rounded-lg px-3.5 py-1.5 text-sm font-medium no-underline transition-colors"
-        [routerLink]="tab.path"
-        routerLinkActive
-        #rla="routerLinkActive"
-        [routerLinkActiveOptions]="{ exact: true }"
-        [ngClass]="
-          rla.isActive
-            ? 'bg-accent-primary text-white'
-            : 'text-text-secondary hover:bg-accent-primary/10 hover:text-text-primary'
-        "
-      >
-        {{ tab.label }}
-      </a>
-    }
-  </nav>
+  @if (showTabs()) {
+    <nav
+      class="flex flex-wrap gap-2 rounded-[10px] border border-border-default bg-bg-surface p-1.5"
+      aria-label="Secciones de suscripciones"
+    >
+      @for (tab of tabs(); track tab.path) {
+        <a
+          class="inline-flex min-h-10 items-center rounded-lg px-3.5 py-1.5 text-sm font-medium no-underline transition-colors"
+          [routerLink]="tab.path"
+          routerLinkActive
+          #rla="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [ngClass]="
+            rla.isActive
+              ? 'bg-accent-primary text-white'
+              : 'text-text-secondary hover:bg-accent-primary/10 hover:text-text-primary'
+          "
+        >
+          {{ tab.label }}
+        </a>
+      }
+    </nav>
+  }
 
   <div class="min-h-48">
     <router-outlet />

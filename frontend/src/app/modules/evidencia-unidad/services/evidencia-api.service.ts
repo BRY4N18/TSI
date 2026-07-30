@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from, map, switchMap } from 'rxjs';
 
 import { EvidenciaOfflineStoreService } from './evidencia-offline-store.service';
+import { EnriquecimientoApiService } from './enriquecimiento-api.service';
 import {
   ApiEnvelope,
   EvidenciaFotoData,
@@ -24,6 +25,7 @@ import {
 export class EvidenciaApiService {
   private readonly http = inject(HttpClient);
   private readonly offlineStore = inject(EvidenciaOfflineStoreService);
+  private readonly enriquecimientoApi = inject(EnriquecimientoApiService);
 
   private evidenciasBase(idaccidente: string): string {
     return `/api/v1/accidentes/${idaccidente}/evidencias`;
@@ -117,43 +119,66 @@ export class EvidenciaApiService {
 
   sincronizarPendientes(idaccidente: string): Observable<ApiEnvelope<SincronizarEvidenciaData>> {
     return from(this.offlineStore.listarPendientes(idaccidente)).pipe(
-      switchMap(({ fotos, notas }) => {
-        const form = new FormData();
-        const notasPayload: SincronizarNotaPendiente[] = notas.map((nota) => ({
-          local_id: nota.local_id,
-          nota: nota.nota,
-          tipo: nota.tipo,
-          fechahora: nota.fechahora,
-        }));
-        const fotosMeta: SincronizarFotoMetadata[] = fotos.map((foto) => ({
-          local_id: foto.local_id,
-          fechahora: foto.fechahora,
-        }));
+      switchMap(({ fotos, notas }) =>
+        this.enriquecimientoApi.buildEnriquecimientoFormField(idaccidente).pipe(
+          switchMap((enriquecimientoJson) => {
+            const form = new FormData();
+            const notasPayload: SincronizarNotaPendiente[] = notas.map((nota) => ({
+              local_id: nota.local_id,
+              nota: nota.nota,
+              tipo: nota.tipo,
+              fechahora: nota.fechahora,
+            }));
+            const fotosMeta: SincronizarFotoMetadata[] = fotos.map((foto) => ({
+              local_id: foto.local_id,
+              fechahora: foto.fechahora,
+            }));
 
-        if (notasPayload.length) {
-          form.append('notas', JSON.stringify(notasPayload));
-        }
-        if (fotosMeta.length) {
-          form.append('fotos_metadata', JSON.stringify(fotosMeta));
-          fotos.forEach((foto) => {
-            form.append(
-              'fotos',
-              new File([foto.blob], `${foto.local_id}.jpg`, { type: foto.content_type }),
-            );
-          });
-        }
+            if (notasPayload.length) {
+              form.append('notas', JSON.stringify(notasPayload));
+            }
+            if (fotosMeta.length) {
+              form.append('fotos_metadata', JSON.stringify(fotosMeta));
+              fotos.forEach((foto) => {
+                form.append(
+                  'fotos',
+                  new File([foto.blob], `${foto.local_id}.jpg`, { type: foto.content_type }),
+                );
+              });
+            }
+            if (enriquecimientoJson) {
+              form.append('enriquecimiento', enriquecimientoJson);
+            }
 
-        return this.http
-          .post<ApiEnvelope<SincronizarEvidenciaData>>(
-            `${this.evidenciasBase(idaccidente)}/sincronizar`,
-            form,
-          )
-          .pipe(
-            switchMap((response) =>
-              from(this.limpiarSincronizados(response.data.resultados)).pipe(map(() => response)),
-            ),
-          );
-      }),
+            if (!notasPayload.length && !fotosMeta.length && !enriquecimientoJson) {
+              return from(
+                Promise.resolve({
+                  data: { sincronizados: 0, pendientes: 0, resultados: [] },
+                  meta: { pagination: null },
+                } as ApiEnvelope<SincronizarEvidenciaData>),
+              );
+            }
+
+            return this.http
+              .post<ApiEnvelope<SincronizarEvidenciaData>>(
+                `${this.evidenciasBase(idaccidente)}/sincronizar`,
+                form,
+              )
+              .pipe(
+                switchMap((response) =>
+                  from(this.limpiarSincronizados(response.data.resultados)).pipe(
+                    switchMap(() =>
+                      this.enriquecimientoApi.limpiarEnriquecimientoSincronizado(
+                        response.data.resultados,
+                      ),
+                    ),
+                    map(() => response),
+                  ),
+                ),
+              );
+          }),
+        ),
+      ),
     );
   }
 

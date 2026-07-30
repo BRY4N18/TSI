@@ -1,6 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
@@ -26,7 +35,7 @@ import { IntentoDespacho } from '../../../despacho/services/models/despacho.type
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detalle-accidente.page.html',
 })
-export class DetalleAccidentePage implements OnInit {
+export class DetalleAccidentePage implements OnInit, AfterViewInit {
   private readonly api = inject(AccidenteApiService);
   private readonly evidenciaApi = inject(EvidenciaApiService);
   private readonly despachoApi = inject(DespachoApiService);
@@ -34,9 +43,15 @@ export class DetalleAccidentePage implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly authApi = inject(AuthApiService);
 
+  @ViewChild('impactoSection') impactoSection?: ElementRef<HTMLElement>;
+
   readonly accidente = signal<AccidenteDetalle | null>(null);
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
+  readonly saving = signal(false);
+  /** `true` = modo Editar (`?focus=edit`); `false` = modo Detalles (solo lectura). */
+  readonly focusEdit = signal(false);
+
   numvehiculos = 0;
   numheridos = 0;
   numfallecidos = 0;
@@ -50,7 +65,15 @@ export class DetalleAccidentePage implements OnInit {
   readonly despachoTono = estadoDespachoTono;
 
   ngOnInit(): void {
+    const focus = this.route.snapshot.queryParamMap.get('focus');
+    this.focusEdit.set(focus === 'edit');
     this.cargar();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.focusEdit()) {
+      queueMicrotask(() => this.scrollToImpacto());
+    }
   }
 
   severidad(idseveridad: number): SeveridadInfo {
@@ -68,8 +91,24 @@ export class DetalleAccidentePage implements OnInit {
     return this.authApi.hasAnyRole(['Operador', 'Despacho', 'Administrador']);
   }
 
+  esModoEditar(): boolean {
+    return this.focusEdit();
+  }
+
+  tituloModo(): string {
+    return this.esModoEditar() ? 'Editar caso' : 'Detalles';
+  }
+
   private idaccidente(): string {
     return this.route.snapshot.paramMap.get('idaccidente') ?? '';
+  }
+
+  private scrollToImpacto(): void {
+    this.impactoSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const firstInput = this.impactoSection?.nativeElement.querySelector<HTMLElement>(
+      'input, textarea',
+    );
+    firstInput?.focus();
   }
 
   cargar(): void {
@@ -86,6 +125,9 @@ export class DetalleAccidentePage implements OnInit {
         this.cargarEvidencias();
         if (this.puedeVerDespacho()) {
           this.cargarUnidades();
+        }
+        if (this.focusEdit()) {
+          queueMicrotask(() => this.scrollToImpacto());
         }
       },
       error: () => {
@@ -125,6 +167,10 @@ export class DetalleAccidentePage implements OnInit {
   }
 
   guardar(): void {
+    if (!this.esModoEditar() || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
     this.api
       .actualizar(this.idaccidente(), {
         numvehiculos: this.numvehiculos,
@@ -134,10 +180,12 @@ export class DetalleAccidentePage implements OnInit {
       })
       .subscribe({
         next: () => {
+          this.saving.set(false);
           this.notifications.toast('Actualizado', 'success');
           this.cargar();
         },
         error: (err: HttpErrorResponse) => {
+          this.saving.set(false);
           const detail = typeof err.error?.detail === 'string' ? err.error.detail : null;
           this.notifications.alert(detail ?? 'No se pudo guardar el cambio.', 'Error al actualizar');
         },
@@ -145,12 +193,25 @@ export class DetalleAccidentePage implements OnInit {
   }
 
   descartar(): void {
-    this.api.descartar(this.idaccidente(), { motivo: 'Descartado por operador' }).subscribe({
+    const id = this.idaccidente();
+    this.api.descartar(id, { motivo: 'Descartado por operador' }).subscribe({
       next: () => {
-        this.notifications.toast('Caso descartado', 'success');
+        this.notifications.toastWithAction('Caso descartado', 'success', 'Deshacer', () => {
+          this.api.deshacerDescarte(id).subscribe({
+            next: (res) => {
+              this.notifications.toast(res.data.message, 'info');
+              this.cargar();
+            },
+            error: () =>
+              this.notifications.alert('No se pudo deshacer el descarte.', 'Error al deshacer'),
+          });
+        });
         this.cargar();
       },
-      error: () => this.notifications.alert('No se pudo descartar el caso.', 'Error al descartar'),
+      error: (err: HttpErrorResponse) => {
+        const detail = typeof err.error?.detail === 'string' ? err.error.detail : null;
+        this.notifications.alert(detail ?? 'No se pudo descartar el caso.', 'Error al descartar');
+      },
     });
   }
 }

@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.red_operativa.idempotency import get_cached_response, store_response
 from apps.red_operativa.permissions import IsProveedorFlota
 from apps.red_operativa.services.baja_unidad_service import BajaUnidadService
 from apps.red_operativa.services.edicion_unidad_service import EdicionUnidadService
@@ -25,7 +26,6 @@ from core.repositories.red_operativa.unidad_emergencia_repository import (
     UnidadEmergenciaRepository,
 )
 
-
 def _roles(request: Request) -> list[str]:
     return list(getattr(request.user, "roles", []) or [])
 
@@ -34,7 +34,25 @@ class UnidadListCreateView(APIView):
     permission_classes = [IsAuthenticated401, IsProveedorFlota]
     parser_classes = [JSONParser]
 
+    def get(self, request: Request) -> Response:
+        from apps.red_operativa.services.proveedor_access_service import (
+            ProveedorAccessService,
+        )
+
+        try:
+            cliente = ProveedorAccessService().resolve_cliente_activo(
+                user_id=request.user.idusuario,
+                roles=_roles(request),
+            )
+        except ProveedorAccessError as exc:
+            return error_response("forbidden", str(exc), "403", status_code=403)
+        items = UnidadEmergenciaRepository().list_by_cliente(cliente["idcliente"])
+        return success_response({"items": items})
+
     def post(self, request: Request) -> Response:
+        cached = get_cached_response(request, "unidad_create")
+        if cached is not None:
+            return cached
         try:
             data = RegistroUnidadService().registrar(
                 dict(request.data),
@@ -47,14 +65,18 @@ class UnidadListCreateView(APIView):
             return error_response("bad_request", str(exc), "400", status_code=400)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(
+        response = success_response(
             {
                 "idunidademergencia": data["idunidademergencia"],
                 "placa": data["placa"],
                 "activo": data["activo"],
+                "idusuario": data.get("idusuario"),
+                "usuario_creado": bool(data.get("usuario_creado")),
             },
             status_code=status.HTTP_201_CREATED,
         )
+        store_response(request, "unidad_create", response)
+        return response
 
 
 class UnidadDetailView(APIView):

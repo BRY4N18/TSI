@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { AccidenteApiService } from '../../services/accidente-api.service';
+import { CatalogoItem } from '../../services/models/accidente.types';
+import { UbicacionCatalogoApiService } from '../../services/ubicacion-catalogo-api.service';
 import { SEVERIDADES } from '../../severidad.constants';
 
 @Component({
@@ -40,6 +42,22 @@ import { SEVERIDADES } from '../../severidad.constants';
               [(ngModel)]="numheridos"
               name="numheridos"
             />
+          </div>
+          <div class="grid gap-1.5 sm:col-span-2">
+            <label for="escalarUnidadAdicional" class="text-sm font-medium text-text-secondary"
+              >Unidad adicional (opcional)</label
+            >
+            <select
+              id="escalarUnidadAdicional"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              [(ngModel)]="idunidademergenciaAdicional"
+              name="idunidademergencia_adicional"
+            >
+              <option [ngValue]="null">— Sin unidad adicional —</option>
+              @for (u of unidades(); track u.id) {
+                <option [ngValue]="u.id">{{ u.nombre }}</option>
+              }
+            </select>
           </div>
           <div class="grid gap-1.5 sm:col-span-2">
             <label for="escalarNota" class="text-sm font-medium text-text-secondary">Nota (obligatoria)</label>
@@ -96,19 +114,29 @@ import { SEVERIDADES } from '../../severidad.constants';
     </section>
   `,
 })
-export class EscalarSeveridadPanel {
+export class EscalarSeveridadPanel implements OnInit {
   private readonly api = inject(AccidenteApiService);
+  private readonly catalogoApi = inject(UbicacionCatalogoApiService);
   private readonly notifications = inject(NotificationService);
 
   readonly idaccidente = input.required<string>();
   readonly severidades = SEVERIDADES;
+  readonly unidades = signal<CatalogoItem[]>([]);
 
   idseveridad: 1 | 2 | 3 | 4 = 3;
   numheridos = 0;
+  idunidademergenciaAdicional: number | null = null;
   nota = '';
 
   readonly confirmando = signal(false);
   readonly enviando = signal(false);
+
+  ngOnInit(): void {
+    this.catalogoApi.listarUnidadesEmergencia().subscribe({
+      next: (items) => this.unidades.set(items),
+      error: () => this.unidades.set([]),
+    });
+  }
 
   severidadLabel(): string {
     return this.severidades.find((s) => s.value === this.idseveridad)?.label ?? String(this.idseveridad);
@@ -128,6 +156,9 @@ export class EscalarSeveridadPanel {
         idseveridad: this.idseveridad,
         numheridos: this.numheridos,
         nota: this.nota,
+        ...(this.idunidademergenciaAdicional
+          ? { idunidademergencia_adicional: this.idunidademergenciaAdicional }
+          : {}),
       })
       .subscribe({
         next: () => {

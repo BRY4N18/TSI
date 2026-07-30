@@ -60,6 +60,28 @@ class NotaAccidenteRepository:
         self.kafka.publish(self.TOPIC, payload)
         return payload
 
+    def create_escalamiento_fallido(
+        self,
+        *,
+        idaccidente: str,
+        idusuario: int,
+        nota: str,
+    ) -> dict[str, Any]:
+        now = int(datetime.now(timezone.utc).timestamp() * 1000)
+        payload = {
+            "idnotaaccidentes": hash((idaccidente, now, "escalamiento_fallido")) % 1_000_000,
+            "idaccidente": idaccidente,
+            "idusuario": idusuario,
+            "nota": nota,
+            "tipo": "escalamiento_fallido",
+            "sincronizado": True,
+            "activo": True,
+            "fechahora": now,
+            "fecha_actualizacion": now,
+        }
+        self.kafka.publish(self.TOPIC, payload)
+        return payload
+
     def create_alerta(
         self,
         *,

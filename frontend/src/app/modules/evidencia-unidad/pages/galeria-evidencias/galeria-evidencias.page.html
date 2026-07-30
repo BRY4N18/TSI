@@ -10,7 +10,9 @@
   <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
       <div class="flex items-center gap-2">
-        <h1 class="m-0 text-2xl font-bold text-text-primary">Galería de evidencias</h1>
+        <h1 class="m-0 text-2xl font-bold text-text-primary">
+          {{ soloLectura() ? 'Galería de evidencias (solo lectura)' : 'Galería de evidencias' }}
+        </h1>
         <span class="flex items-center gap-1.5 text-xs font-medium text-text-secondary" data-testid="conexion">
           <span
             class="h-2 w-2 rounded-full"
@@ -32,14 +34,17 @@
           {{ items().length }} elemento(s)
         </span>
       }
-      <button
-        type="button"
-        (click)="mostrarSubida.set(!mostrarSubida())"
-        class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
-      >
-        <app-tabler-icon name="camera" [size]="16" />
-        Subir evidencia
-      </button>
+      @if (!soloLectura()) {
+        <button
+          type="button"
+          data-testid="btn-subir-evidencia"
+          (click)="mostrarSubida.set(!mostrarSubida())"
+          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+        >
+          <app-tabler-icon name="camera" [size]="16" />
+          Subir evidencia
+        </button>
+      }
       <button
         type="button"
         (click)="recargar()"
@@ -48,23 +53,26 @@
         <app-tabler-icon name="refresh" [size]="16" />
         Recargar
       </button>
-      <button
-        type="button"
-        (click)="sincronizar()"
-        [disabled]="sincronizando()"
-        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        @if (sincronizando()) {
-          <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
-          Sincronizando…
-        } @else {
-          Sincronizar pendientes
-        }
-      </button>
+      @if (!soloLectura()) {
+        <button
+          type="button"
+          data-testid="btn-sincronizar"
+          (click)="sincronizar()"
+          [disabled]="sincronizando()"
+          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          @if (sincronizando()) {
+            <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
+            Sincronizando…
+          } @else {
+            Sincronizar pendientes
+          }
+        </button>
+      }
     </div>
   </div>
 
-  @if (mostrarSubida()) {
+  @if (!soloLectura() && mostrarSubida()) {
     <app-evidencia-captura-modal
       [idaccidente]="idaccidente"
       (cerrar)="mostrarSubida.set(false)"
@@ -100,14 +108,16 @@
         <div class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center">
           <app-tabler-icon name="camera" [size]="28" />
           <p class="m-0 text-sm text-text-secondary">Sin evidencia fotográfica todavía.</p>
-          <button
-            type="button"
-            (click)="mostrarSubida.set(true)"
-            class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
-          >
-            <app-tabler-icon name="camera" [size]="16" />
-            Subir evidencia
-          </button>
+          @if (!soloLectura()) {
+            <button
+              type="button"
+              (click)="mostrarSubida.set(true)"
+              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+            >
+              <app-tabler-icon name="camera" [size]="16" />
+              Subir evidencia
+            </button>
+          }
         </div>
       } @else {
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="galeria">

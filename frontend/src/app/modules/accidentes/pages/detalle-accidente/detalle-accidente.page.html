@@ -31,21 +31,47 @@
     </div>
   } @else if (accidente()) {
     @let a = accidente()!;
-    <div class="mt-4 flex items-center justify-between">
-      <h1 class="m-0 text-2xl font-bold text-text-primary">{{ a.idaccidente }}</h1>
-      <span
-        class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold"
-        [class.bg-alert-success-bg]="estado(a.estado_actual).tone === 'success'"
-        [class.text-alert-success]="estado(a.estado_actual).tone === 'success'"
-        [class.bg-alert-warning-bg]="estado(a.estado_actual).tone === 'warning'"
-        [class.text-alert-warning]="estado(a.estado_actual).tone === 'warning'"
-        [class.bg-alert-urgent-bg]="estado(a.estado_actual).tone === 'urgent'"
-        [class.text-alert-urgent]="estado(a.estado_actual).tone === 'urgent'"
-        [class.bg-alert-info-bg]="estado(a.estado_actual).tone === 'info'"
-        [class.text-alert-info]="estado(a.estado_actual).tone === 'info'"
-      >
-        {{ estado(a.estado_actual).label }}
-      </span>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="m-0 text-sm font-medium text-text-secondary" data-testid="modo-titulo">
+          {{ tituloModo() }}
+        </p>
+        <div class="mt-1 flex flex-wrap items-center gap-3">
+          <h1 class="m-0 text-2xl font-bold text-text-primary">{{ a.idaccidente }}</h1>
+          <span
+            class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold"
+            [class.bg-alert-success-bg]="estado(a.estado_actual).tone === 'success'"
+            [class.text-alert-success]="estado(a.estado_actual).tone === 'success'"
+            [class.bg-alert-warning-bg]="estado(a.estado_actual).tone === 'warning'"
+            [class.text-alert-warning]="estado(a.estado_actual).tone === 'warning'"
+            [class.bg-alert-urgent-bg]="estado(a.estado_actual).tone === 'urgent'"
+            [class.text-alert-urgent]="estado(a.estado_actual).tone === 'urgent'"
+            [class.bg-alert-info-bg]="estado(a.estado_actual).tone === 'info'"
+            [class.text-alert-info]="estado(a.estado_actual).tone === 'info'"
+          >
+            {{ estado(a.estado_actual).label }}
+          </span>
+        </div>
+      </div>
+      @if (esModoEditar()) {
+        <button
+          type="button"
+          data-testid="btn-save-header"
+          class="inline-flex min-h-11 items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-60"
+          [disabled]="saving()"
+          (click)="guardar()"
+        >
+          @if (saving()) {
+            <span
+              class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+              aria-hidden="true"
+            ></span>
+            Guardando…
+          } @else {
+            Guardar cambios
+          }
+        </button>
+      }
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -88,7 +114,11 @@
           </dl>
         </section>
 
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section
+          #impactoSection
+          id="impacto"
+          class="rounded-lg border border-border-default bg-bg-surface p-6"
+        >
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Impacto</h2>
           <form (ngSubmit)="guardar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="grid gap-1.5">
@@ -99,9 +129,11 @@
                 id="numvehiculos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 [(ngModel)]="numvehiculos"
                 name="numvehiculos"
+                [disabled]="!esModoEditar()"
+                [attr.readonly]="esModoEditar() ? null : true"
               />
             </div>
             <div class="grid gap-1.5">
@@ -110,9 +142,11 @@
                 id="numheridos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 [(ngModel)]="numheridos"
                 name="numheridos"
+                [disabled]="!esModoEditar()"
+                [attr.readonly]="esModoEditar() ? null : true"
               />
             </div>
             <div class="grid gap-1.5">
@@ -121,9 +155,11 @@
                 id="numfallecidos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 [(ngModel)]="numfallecidos"
                 name="numfallecidos"
+                [disabled]="!esModoEditar()"
+                [attr.readonly]="esModoEditar() ? null : true"
               />
             </div>
             <div class="grid gap-1.5 sm:col-span-2">
@@ -131,18 +167,12 @@
               <textarea
                 id="descripcion"
                 rows="3"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70"
                 [(ngModel)]="descripcion"
                 name="descripcion"
+                [disabled]="!esModoEditar()"
+                [attr.readonly]="esModoEditar() ? null : true"
               ></textarea>
-            </div>
-            <div class="flex items-end sm:col-span-2">
-              <button
-                type="submit"
-                class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
-              >
-                Guardar cambios
-              </button>
             </div>
           </form>
         </section>
@@ -157,6 +187,7 @@
             }
             <a
               [routerLink]="['/evidencia-unidad/accidentes', a.idaccidente, 'galeria']"
+              [queryParams]="esModoEditar() ? {} : { mode: 'view' }"
               class="text-sm font-medium text-accent-primary hover:underline"
             >
               Ver galería completa →
@@ -177,6 +208,34 @@
               }
             </div>
           }
+        </section>
+
+        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="m-0 text-base font-semibold text-text-primary">Datos del siniestro</h2>
+              <p class="m-0 mt-1 text-sm text-text-secondary">
+                Clima, elementos físicos y conductores/vehículos en sitio.
+              </p>
+            </div>
+            @if (esModoEditar()) {
+              <a
+                [routerLink]="['/evidencia-unidad/accidentes', a.idaccidente, 'enriquecimiento']"
+                class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover"
+              >
+                Completar en sitio
+              </a>
+            } @else {
+              <a
+                [routerLink]="['/evidencia-unidad/accidentes', a.idaccidente, 'enriquecimiento']"
+                [queryParams]="{ mode: 'view' }"
+                class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2.5 text-sm font-semibold text-text-primary hover:bg-bg-page"
+                data-testid="link-ver-siniestro"
+              >
+                Ver datos del siniestro
+              </a>
+            }
+          </div>
         </section>
 
         @if (a.estado_actual === 'BORRADOR') {

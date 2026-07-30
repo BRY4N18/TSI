@@ -9,6 +9,7 @@ describe('EVIDENCIA_UNIDAD_ROUTES', () => {
     // Assert
     expect(paths).toContain('disponibilidad');
     expect(paths).toContain('accidentes/:idaccidente/galeria');
+    expect(paths).toContain('accidentes/:idaccidente/enriquecimiento');
     expect(paths).toContain('flota');
   });
 });

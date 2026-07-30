@@ -26,6 +26,8 @@ export class GaleriaEvidenciasPage implements OnInit {
   readonly connectivity = inject(ConnectivityService);
 
   idaccidente = '';
+  /** Solo consulta cuando se abre desde Detalles (`?mode=view`). */
+  readonly soloLectura = signal(false);
   readonly items = signal<EvidenciaItem[]>([]);
   readonly error = signal('');
   readonly cargando = signal(true);
@@ -54,6 +56,7 @@ export class GaleriaEvidenciasPage implements OnInit {
 
   ngOnInit(): void {
     this.idaccidente = this.route.snapshot.paramMap.get('idaccidente') ?? '';
+    this.soloLectura.set(this.route.snapshot.queryParamMap.get('mode') === 'view');
     this.syncScheduler.registrarCaso(this.idaccidente);
     this.recargar();
   }

@@ -10,12 +10,14 @@ from apps.soporte_cliente.views import (
     ResolverTicketView,
     SLAConfigDetalleView,
     SLAConfigView,
+    ServiciosCatalogoView,
     TicketDetalleView,
     TicketsView,
     TomarTicketView,
 )
 
 urlpatterns = [
+    path("soporte/servicios", ServiciosCatalogoView.as_view()),
     path("soporte/tickets", TicketsView.as_view()),
     path("soporte/tickets/<int:id_reclamo>", TicketDetalleView.as_view()),
     path("soporte/tickets/<int:id_reclamo>/clasificar", ClasificarTicketManualView.as_view()),

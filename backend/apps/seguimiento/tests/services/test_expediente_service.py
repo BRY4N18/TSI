@@ -31,6 +31,10 @@ class TestExpedienteService:
         assert result is not None
         assert result["accidente"]["idaccidente"] == accidente_activo
         assert "despachos" in result
+        assert "notificaciones_despacho" in result
+        assert "enriquecimiento" in result
+        assert "implicados" in result["enriquecimiento"]
+        assert "geografia" in result
 
     def test_obtener_when_condado_no_permitido_returns_none(
         self,

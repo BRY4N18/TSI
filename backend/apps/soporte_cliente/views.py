@@ -15,6 +15,7 @@ from apps.soporte_cliente.permissions import (
     IsSoporteAgenteOrCliente,
     IsSoporteAgenteOrNivelEscalado,
 )
+from apps.soporte_cliente.services.catalogo_servicio_service import CatalogoServicioService
 from apps.soporte_cliente.services.cliente_lookup_service import ClienteLookupService
 from apps.soporte_cliente.services.comentar_ticket_service import ComentarTicketService
 from apps.soporte_cliente.services.configurar_sla_service import ConfigurarSLAService
@@ -28,6 +29,15 @@ from apps.soporte_cliente.services.tomar_ticket_service import TomarTicketServic
 from core.api.response_envelope import error_response, success_response
 from core.auth.permissions import IsAuthenticated401
 from core.repositories.soporte.reclamo_repository import ReclamoRepository
+
+
+class ServiciosCatalogoView(APIView):
+    """GET catálogo Dim_Servicio activos (CU-O91 idservicio opcional)."""
+
+    permission_classes = [IsAuthenticated401, IsSoporteAgenteOrCliente]
+
+    def get(self, request: Request) -> Response:
+        return success_response(CatalogoServicioService().listar())
 
 
 class TicketsView(APIView):
@@ -75,12 +85,26 @@ class TicketsView(APIView):
             for f in request.FILES.getlist("adjuntos")
         ]
 
+        raw_servicio = request.data.get("idservicio")
+        idservicio = None
+        if raw_servicio not in (None, ""):
+            try:
+                idservicio = int(raw_servicio)
+            except (TypeError, ValueError):
+                return error_response(
+                    "bad_request",
+                    "idservicio debe ser entero",
+                    "400",
+                    status_code=400,
+                )
+
         data = RegistrarTicketService().registrar(
             idcliente=int(idcliente),
             asunto=str(asunto),
             descripcion=str(descripcion),
             tipo=str(tipo),
             idaccidente=request.data.get("idaccidente"),
+            idservicio=idservicio,
             idusuario=request.user.idusuario,
             adjuntos=archivos,
         )

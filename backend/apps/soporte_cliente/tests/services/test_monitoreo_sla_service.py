@@ -69,4 +69,4 @@ class TestMonitoreoSLAService:
         assert resultado["escalados"] == 1
         assert actualizado["sla_status"] == "incumplido"
         assert actualizado["estado"] == "Escalado"
-        assert actualizado["id_agente_asignado"] == 2  # SOPORTE_SUPERVISOR_USER_ID default
+        assert actualizado["id_agente_asignado"] == 2  # usuario con rol SupervisorSoporte

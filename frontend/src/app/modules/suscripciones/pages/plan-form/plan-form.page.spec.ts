@@ -1,0 +1,53 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { provideRouter, ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
+
+import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { PlanApiService } from '../../services/plan-api.service';
+import { PlanFormPage } from './plan-form.page';
+
+describe('PlanFormPage', () => {
+  let fixture: ComponentFixture<PlanFormPage>;
+  let page: PlanFormPage;
+  let planApi: jasmine.SpyObj<PlanApiService>;
+
+  beforeEach(async () => {
+    planApi = jasmine.createSpyObj('PlanApiService', ['crear', 'actualizar', 'listar']);
+    planApi.crear.and.returnValue(of({ data: { idplan: 9, nombre: 'Nuevo' } }));
+
+    await TestBed.configureTestingModule({
+      imports: [PlanFormPage, ReactiveFormsModule],
+      providers: [
+        provideRouter([]),
+        { provide: PlanApiService, useValue: planApi },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => null } } },
+        },
+        {
+          provide: NotificationService,
+          useValue: { toast: jasmine.createSpy('toast') },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PlanFormPage);
+    page = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('creates a plan on publish', () => {
+    expect(page.esEdicion()).toBe(false);
+    page.form.setValue({
+      nombre: 'Plan Demo',
+      precio: 49,
+      nivel: 'Básico',
+      unidades_max: 5,
+      usuarios_max: 3,
+      api_calls_mes: 1000,
+    });
+    page.guardar();
+    expect(planApi.crear).toHaveBeenCalled();
+  });
+});

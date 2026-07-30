@@ -1,4 +1,4 @@
-"""CU-O40 escalar severidad."""
+"""CU-O40 escalar severidad — puede disparar CU-O38 (despacho múltiple)."""
 
 from __future__ import annotations
 
@@ -27,12 +27,23 @@ class EscalarSeveridadService:
         despacho_repo: DespachoReadRepository | None = None,
         nota_repo: NotaAccidenteRepository | None = None,
         audit: AuditAccidenteService | None = None,
+        coordinacion_factory=None,
     ):
         self.accidente_repo = accidente_repo or AccidenteRepository()
         self.estado_repo = estado_repo or EstadoAccidenteRepository()
         self.despacho_repo = despacho_repo or DespachoReadRepository()
         self.nota_repo = nota_repo or NotaAccidenteRepository()
         self.audit = audit or AuditAccidenteService()
+        self._coordinacion_factory = coordinacion_factory
+
+    def _coordinacion(self):
+        if self._coordinacion_factory:
+            return self._coordinacion_factory()
+        from apps.despacho.services.coordinacion_multiple_service import (
+            CoordinacionMultipleService,
+        )
+
+        return CoordinacionMultipleService()
 
     def escalar(self, *, idaccidente: str, data: dict[str, Any], idusuario: int) -> dict:
         estado = self.estado_repo.get_current_estado(idaccidente)
@@ -63,9 +74,28 @@ class EscalarSeveridadService:
         )
         self.audit.log_action(action="escalar", user_id=idusuario, idaccidente=idaccidente)
 
-        return {
+        result: dict[str, Any] = {
             "message": "Severidad escalada exitosamente",
             "idaccidente": idaccidente,
             "idseveridad": data["idseveridad"],
             "estado": estado,
+            "despacho_adicional": None,
         }
+
+        # CU-O40 → puede disparar CU-O38 si se indica unidad adicional
+        idunidad = data.get("idunidademergencia_adicional")
+        if idunidad is not None:
+            try:
+                coord = self._coordinacion().coordinar(
+                    idaccidente=idaccidente,
+                    idunidademergencia=int(idunidad),
+                    idusuario=idusuario,
+                )
+                result["despacho_adicional"] = coord
+                result["message"] = (
+                    "Severidad escalada y despacho múltiple coordinado (CU-O38)"
+                )
+            except ValueError as exc:
+                raise ValueError(f"Escalamiento OK pero CU-O38 falló: {exc}") from exc
+
+        return result

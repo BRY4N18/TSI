@@ -7,6 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.red_operativa.idempotency import get_cached_response, store_response
 from apps.red_operativa.permissions import (
     IsAdministradorOrDirectorTecnologico,
     IsAdministradorRedOperativa,
@@ -24,6 +25,33 @@ from core.repositories.red_operativa.region_operativa_repository import (
 )
 
 
+class RegionListView(APIView):
+    """GET /red-operativa/regiones."""
+
+    permission_classes = [IsAdministradorOrDirectorTecnologico]
+
+    def get(self, request: Request) -> Response:
+        cursor = int(request.query_params.get("cursor") or 0)
+        limit = int(request.query_params.get("limit") or 20)
+        estadoregion = request.query_params.get("estadoregion") or None
+        items = RegionOperativaRepository().list(
+            cursor=cursor, limit=limit, estadoregion=estadoregion
+        )
+        return success_response({"items": items})
+
+
+class RegionDetalleView(APIView):
+    """GET /red-operativa/regiones/{id}."""
+
+    permission_classes = [IsAdministradorOrDirectorTecnologico]
+
+    def get(self, request: Request, idregionoperativa: int) -> Response:
+        region = RegionOperativaRepository().find_by_id(idregionoperativa)
+        if not region:
+            return error_response("not_found", "Región no encontrada", "404", status_code=404)
+        return success_response(region)
+
+
 class RegionValidacionView(APIView):
     """POST /red-operativa/regiones/validaciones (CU-O55)."""
 
@@ -31,6 +59,9 @@ class RegionValidacionView(APIView):
     parser_classes = [JSONParser]
 
     def post(self, request: Request) -> Response:
+        cached = get_cached_response(request, "region_validacion")
+        if cached is not None:
+            return cached
         try:
             data = ValidacionRegionService().ejecutar(
                 dict(request.data), idusuario=request.user.idusuario
@@ -39,7 +70,9 @@ class RegionValidacionView(APIView):
             return error_response("not_found", "Región no encontrada", "404", status_code=404)
         except (KeyError, ValueError) as exc:
             return error_response("bad_request", str(exc), "400", status_code=400)
-        return success_response(data)
+        response = success_response(data)
+        store_response(request, "region_validacion", response)
+        return response
 
 
 class RegionValidacionHistorialView(APIView):
@@ -61,32 +94,42 @@ class RegionRechazoDefinitivoView(APIView):
     parser_classes = [JSONParser]
 
     def post(self, request: Request, idregionoperativa: int) -> Response:
+        cached = get_cached_response(request, f"rechazo_definitivo:{idregionoperativa}")
+        if cached is not None:
+            return cached
         try:
             data = RemediacionRegionService().rechazo_definitivo(idregionoperativa)
         except LookupError:
             return error_response("not_found", "Región no encontrada", "404", status_code=404)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(data)
+        response = success_response(data)
+        store_response(request, f"rechazo_definitivo:{idregionoperativa}", response)
+        return response
 
 
 class RegionDespublicacionAutomaticaView(APIView):
     """POST /red-operativa/regiones/{id}/despublicacion-automatica (CU-O62).
 
-    Invocable manualmente (Administrador) o por un job externo — sin disparador
-    automático conectado, ver RN-REGON-005 y research.md Decision 4.
+    Invocable manualmente (Administrador) o por job/cron cuando cobertura = 0
+    (puente geo → condados → unidades activas).
     """
 
     permission_classes = [IsAdministradorRedOperativa]
 
     def post(self, request: Request, idregionoperativa: int) -> Response:
+        cached = get_cached_response(request, f"despublicacion:{idregionoperativa}")
+        if cached is not None:
+            return cached
         try:
             data = DespublicacionAutomaticaService().ejecutar(idregionoperativa)
         except LookupError:
             return error_response("not_found", "Región no encontrada", "404", status_code=404)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(data)
+        response = success_response(data)
+        store_response(request, f"despublicacion:{idregionoperativa}", response)
+        return response
 
 
 class RegionReevaluacionView(APIView):
@@ -96,6 +139,9 @@ class RegionReevaluacionView(APIView):
     parser_classes = [JSONParser]
 
     def post(self, request: Request, idregionoperativa: int) -> Response:
+        cached = get_cached_response(request, f"reevaluacion:{idregionoperativa}")
+        if cached is not None:
+            return cached
         estadoregion = request.data.get("estadoregion")
         motivo = request.data.get("motivo")
         if not estadoregion or not motivo:
@@ -104,7 +150,10 @@ class RegionReevaluacionView(APIView):
             )
         try:
             data = ReevaluacionRegionService().reevaluar(
-                idregionoperativa, estadoregion_nuevo=estadoregion, motivo=motivo
+                idregionoperativa,
+                estadoregion_nuevo=estadoregion,
+                motivo=motivo,
+                idusuario=request.user.idusuario,
             )
         except LookupError:
             return error_response("not_found", "Región no encontrada", "404", status_code=404)
@@ -112,4 +161,6 @@ class RegionReevaluacionView(APIView):
             return error_response("bad_request", str(exc), "400", status_code=400)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        return success_response(data)
+        response = success_response(data)
+        store_response(request, f"reevaluacion:{idregionoperativa}", response)
+        return response

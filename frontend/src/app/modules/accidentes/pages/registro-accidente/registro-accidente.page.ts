@@ -34,13 +34,6 @@ import { SEVERIDADES } from '../../severidad.constants';
 import { DuplicadoFusionDialog } from './duplicado-fusion.dialog';
 import { RegistroAccidenteDraftService } from './registro-accidente-draft.service';
 
-const TIPOS_REPORTADO = [
-  { value: 1, label: 'Llamada telefónica' },
-  { value: 2, label: 'App móvil' },
-  { value: 3, label: 'Integración API' },
-  { value: 4, label: 'Cámara de tráfico' },
-];
-
 const GEOCODE_DEBOUNCE_MS = 500;
 const DRAFT_DEBOUNCE_MS = 500;
 
@@ -82,7 +75,8 @@ export class RegistroAccidentePage {
   private readonly draftService = inject(RegistroAccidenteDraftService);
 
   readonly severidades = SEVERIDADES;
-  readonly tiposReportado = TIPOS_REPORTADO;
+  readonly tiposReportado = signal<CatalogoItem[]>([]);
+  readonly referenciasEstacion = signal<CatalogoItem[]>([]);
 
   readonly loading = signal(false);
   readonly geocodificando = signal(false);
@@ -97,6 +91,7 @@ export class RegistroAccidentePage {
   readonly syncStatus = signal<SyncStatus>(navigator.onLine ? 'live' : 'offline');
   readonly draftRestored = signal(false);
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private skipDraftSave = false;
 
   // Cascada manual de ubicación (RF-REG-006 punto 3, Escenario 5).
   // Solo sirve para ayudar al Operador a encontrar el idcalle correcto; lo único
@@ -129,6 +124,7 @@ export class RegistroAccidentePage {
       numvictimas: [0],
       numfallecidos: [0],
       idtiporeportado: [null as number | null],
+      idreferenciaestacion: [null as number | null],
       registroRetrospectivo: [false],
       justificacionRetrospectiva: [''],
     },
@@ -137,11 +133,24 @@ export class RegistroAccidentePage {
 
   constructor() {
     this.ubicacionCatalogo.listarPaises().subscribe((paises) => this.cascadaPaises.set(paises));
+    this.ubicacionCatalogo.listarTiposReportado().subscribe({
+      next: (items) => this.tiposReportado.set(items),
+      error: () => this.tiposReportado.set([]),
+    });
+    this.ubicacionCatalogo.listarReferenciasEstacion().subscribe({
+      next: (items) => this.referenciasEstacion.set(items),
+      error: () => this.referenciasEstacion.set([]),
+    });
     this.restaurarBorrador();
 
     this.form.valueChanges
       .pipe(debounceTime(DRAFT_DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => this.draftService.guardar(value));
+      .subscribe((value) => {
+        if (this.skipDraftSave) {
+          return;
+        }
+        this.draftService.guardar(value);
+      });
 
     const onOnline = () => {
       this.syncStatus.set('reconnecting');
@@ -175,6 +184,43 @@ export class RegistroAccidentePage {
   private limpiarBorrador(): void {
     this.draftService.limpiar();
     this.draftRestored.set(false);
+  }
+
+  /** RNF-REG-006: descarta el borrador local tras confirmación en lenguaje de usuario. */
+  descartarBorradorLocal(): void {
+    if (!window.confirm('¿Descartar el borrador y empezar de nuevo?')) {
+      return;
+    }
+    this.skipDraftSave = true;
+    this.form.reset({
+      latitudinicio: 0,
+      longitudinicio: 0,
+      fechahoraaccidente: this.defaultDatetimeLocal(),
+      idseveridad: 2,
+      descripcion: '',
+      idcalle: 0,
+      codigopostal: '',
+      numvehiculos: 0,
+      numheridos: 0,
+      numvictimas: 0,
+      numfallecidos: 0,
+      idtiporeportado: null,
+      idreferenciaestacion: null,
+      registroRetrospectivo: false,
+      justificacionRetrospectiva: '',
+    });
+    this.cascadaPais.set(null);
+    this.cascadaEstado.set(null);
+    this.cascadaCondado.set(null);
+    this.cascadaCiudad.set(null);
+    this.cascadaEstados.set([]);
+    this.cascadaCondados.set([]);
+    this.cascadaCiudades.set([]);
+    this.cascadaCalles.set([]);
+    this.limpiarBorrador();
+    queueMicrotask(() => {
+      this.skipDraftSave = false;
+    });
   }
 
   isInvalid(controlName: keyof typeof this.form.controls): boolean {
@@ -283,6 +329,7 @@ export class RegistroAccidentePage {
       numvictimas: raw.numvictimas || undefined,
       numfallecidos: raw.numfallecidos || undefined,
       idtiporeportado: raw.idtiporeportado ?? undefined,
+      idreferenciaestacion: raw.idreferenciaestacion ?? undefined,
       registroRetrospectivo: raw.registroRetrospectivo || undefined,
       justificacionRetrospectiva: raw.justificacionRetrospectiva || undefined,
     };
@@ -336,7 +383,24 @@ export class RegistroAccidentePage {
       })
       .subscribe({
         next: (res) => {
-          this.notifications.toast(res.data.message, 'success');
+          const idDuplicado = res.data.idaccidente_duplicado;
+          this.notifications.toastWithAction(
+            res.data.message,
+            'success',
+            'Deshacer',
+            () => {
+              this.accidenteApi.deshacerFusion(idDuplicado).subscribe({
+                next: (undo) => {
+                  this.notifications.toast(undo.data.message, 'info');
+                },
+                error: () =>
+                  this.notifications.alert(
+                    'No se pudo deshacer la fusión.',
+                    'Error al deshacer',
+                  ),
+              });
+            },
+          );
           this.duplicadoConflicto.set(null);
         },
         error: () => this.notifications.alert('No se pudo fusionar los reportes.', 'Error al fusionar'),

@@ -68,7 +68,9 @@ class EstadoAccidenteRepository:
             row["estado"] = ESTADO_NAMES.get(int(row["idtipoestadoincidente"]))
         return rows
 
-    def append_estado(self, *, idaccidente: str, estado: str, idusuario: int) -> dict[str, Any]:
+    def append_estado(
+        self, *, idaccidente: str, estado: str, idusuario: int, motivo: str | None = None
+    ) -> dict[str, Any]:
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         history = self.get_history(idaccidente)
         if history and history[-1].get("fechahoramodificado", 0) >= now:
@@ -82,6 +84,8 @@ class EstadoAccidenteRepository:
             "fecha_actualizacion": now,
             "activo": True,
         }
+        if motivo is not None:
+            payload["motivo"] = motivo
         self.kafka.publish(self.TOPIC, payload)
         payload["estado"] = estado
         return payload

@@ -7,6 +7,7 @@ import {
   ApiEnvelope,
   RechazoDefinitivoData,
   RegionEstadoData,
+  RegionOperativaData,
   ValidacionHistorialItem,
   ValidacionRegionData,
   ValidacionRegionRequest,
@@ -58,6 +59,19 @@ export class RegionOperativaFacadeService {
     idregionoperativa: number,
   ): Observable<OperationResult<RegionEstadoData>> {
     return this.wrap(this.api.despublicarAutomaticamente(idregionoperativa));
+  }
+
+  listar(): Observable<OperationResult<RegionOperativaData[]>> {
+    return this.api.listar().pipe(
+      map(
+        (res) =>
+          ({
+            ok: true,
+            data: (res.data?.items ?? []) as RegionOperativaData[],
+          }) as OperationResult<RegionOperativaData[]>,
+      ),
+      catchError((err) => of({ ok: false, error: this.extractError(err) })),
+    );
   }
 
   private wrap<T>(source: Observable<ApiEnvelope<T>>): Observable<OperationResult<T>> {

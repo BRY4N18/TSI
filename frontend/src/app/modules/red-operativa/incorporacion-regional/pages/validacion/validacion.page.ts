@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
+import { AuthApiService } from '../../../../cuentas-clientes/auth/services/auth-api.service';
 import { RegionOperativaFacadeService } from '../../services/region-operativa-facade.service';
 import {
   EstadoRegion,
@@ -174,19 +176,21 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
           }
 
           <div class="border-t border-border-default pt-4">
-            <h3 class="mb-2 text-sm font-semibold text-text-primary">Rechazo definitivo</h3>
-            <button
-              type="button"
-              (click)="rechazarDefinitivamente()"
-              class="rounded-md border border-alert-critical px-5 py-2.5 font-medium text-alert-critical transition-colors hover:bg-alert-critical-bg"
-            >
-              Marcar rechazo definitivo
-            </button>
-            @if (mensajeRechazo) {
-              <p role="status" class="mt-2 flex items-center gap-2 text-sm text-text-secondary">
-                <app-tabler-icon name="info-circle" [size]="16" />
-                {{ mensajeRechazo }}
-              </p>
+            @if (esAdministrador) {
+              <h3 class="mb-2 text-sm font-semibold text-text-primary">Rechazo definitivo</h3>
+              <button
+                type="button"
+                (click)="rechazarDefinitivamente()"
+                class="rounded-md border border-alert-critical px-5 py-2.5 font-medium text-alert-critical transition-colors hover:bg-alert-critical-bg"
+              >
+                Marcar rechazo definitivo
+              </button>
+              @if (mensajeRechazo) {
+                <p role="status" class="mt-2 flex items-center gap-2 text-sm text-text-secondary">
+                  <app-tabler-icon name="info-circle" [size]="16" />
+                  {{ mensajeRechazo }}
+                </p>
+              }
             }
           </div>
         </section>
@@ -194,8 +198,12 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
     </div>
   `,
 })
-export class ValidacionPage {
+export class ValidacionPage implements OnInit {
   private readonly facade = inject(RegionOperativaFacadeService);
+  private readonly authApi = inject(AuthApiService);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly esAdministrador = this.authApi.hasRole('Administrador');
 
   idregionoperativa: number | null = null;
   idestado: number | null = null;
@@ -207,6 +215,14 @@ export class ValidacionPage {
   mensajeRechazo: string | null = null;
   estadoregionActual: EstadoRegion | null = null;
   historial: ValidacionHistorialItem[] = [];
+
+  ngOnInit(): void {
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
+    if (Number.isFinite(id) && id > 0) {
+      this.idregionoperativa = id;
+      this.cargarHistorial();
+    }
+  }
 
   estadoBadgeClass(estado: EstadoRegion): string {
     return ESTADO_BADGE_CLASSES[estado];

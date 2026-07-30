@@ -66,4 +66,8 @@ export class UnidadEmergenciaApiService {
       {},
     );
   }
+
+  listar(): Observable<ApiEnvelope<{ items: UnidadEmergenciaData[] }>> {
+    return this.http.get<ApiEnvelope<{ items: UnidadEmergenciaData[] }>>(this.baseUrl);
+  }
 }

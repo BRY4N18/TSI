@@ -24,7 +24,26 @@ export class HomePage {
     return this.auth.hasRole('Cliente');
   }
 
+  esUnidad(): boolean {
+    return this.auth.hasRole('Unidad');
+  }
+
+  esOperador(): boolean {
+    return this.auth.hasRole('Operador');
+  }
+
   esSoporte(): boolean {
-    return this.auth.hasAnyRole(['Soporte', 'DesarrolladorAPIs', 'DirectorTecnologico', 'Administrador']);
+    return this.auth.hasAnyRole([
+      'Soporte',
+      'DesarrolladorAPIs',
+      'DirectorTecnologico',
+      'Administrador',
+    ]);
+  }
+
+  tituloHub(): string {
+    if (this.esUnidad()) return 'Unidad de emergencia';
+    if (this.esOperador()) return 'Operaciones de emergencia';
+    return 'Cuentas y clientes';
   }
 }

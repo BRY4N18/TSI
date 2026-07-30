@@ -1,10 +1,13 @@
-"""Expediente completo — operador y cliente (RF-SEG-006)."""
+"""Expediente completo — operador y cliente (RF-SEG-006 / CU-O29)."""
 
 from __future__ import annotations
 
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO
+from apps.accidentes.services.consulta_enriquecimiento_service import (
+    ConsultaEnriquecimientoService,
+)
 from apps.seguimiento.services.historial_emergencias_service import (
     HistorialEmergenciasService,
 )
@@ -30,6 +33,7 @@ class ExpedienteService:
         geografia: GeografiaRepository | None = None,
         historial_svc: HistorialEmergenciasService | None = None,
         pinot: PinotClient | None = None,
+        enriquecimiento_svc: ConsultaEnriquecimientoService | None = None,
     ):
         self.accidentes = accidente_repo or AccidenteRepository()
         self.estado = estado_repo or EstadoAccidenteRepository()
@@ -38,6 +42,7 @@ class ExpedienteService:
         self.geografia = geografia or GeografiaRepository()
         self.historial = historial_svc or HistorialEmergenciasService()
         self.pinot = pinot or PinotClient()
+        self.enriquecimiento = enriquecimiento_svc or ConsultaEnriquecimientoService()
 
     def obtener(
         self,
@@ -52,12 +57,14 @@ class ExpedienteService:
         est = self.estado.get_current_estado(idaccidente)
         if requiere_cerrado and est != ESTADO_CERRADO:
             return None
-        if condados_permitidos is not None:
-            idcalle = acc.get("idcalle")
-            if idcalle is None:
-                return None
+
+        idcondado = None
+        idcalle = acc.get("idcalle")
+        if idcalle is not None:
             idcondado = self.geografia.resolve_condado_from_idcalle(int(idcalle))
-            if idcondado not in condados_permitidos:
+
+        if condados_permitidos is not None:
+            if idcalle is None or idcondado not in condados_permitidos:
                 return None
 
         despachos_detalle = []
@@ -78,6 +85,11 @@ class ExpedienteService:
             "SELECT * FROM Dim_EvidenciaFoto WHERE idaccidente = %(idaccidente)s",
             {"idaccidente": idaccidente},
         )
+        notificaciones = self.pinot.query(
+            "SELECT * FROM Fact_NotificacionDespacho WHERE idaccidente = %(idaccidente)s",
+            {"idaccidente": idaccidente},
+        )
+
         gps_rows = []
         for d in self.despachos.list_by_accidente(idaccidente):
             uid = int(d["idunidademergencia"])
@@ -90,12 +102,33 @@ class ExpedienteService:
             )
             gps_rows.extend(puntos)
 
+        try:
+            enriquecimiento = self.enriquecimiento.obtener(idaccidente)
+        except LookupError:
+            enriquecimiento = {
+                "idaccidente": idaccidente,
+                "clima": None,
+                "elementos_fisicos": [],
+                "conductores": [],
+                "implicados": [],
+            }
+
+        geo = None
+        if idcalle is not None:
+            geo = {
+                "idcalle": int(idcalle),
+                "idcondado": idcondado,
+            }
+
         return {
             "accidente": acc,
             "estado_actual": est,
             "historial_estados_caso": self.estado.get_history(idaccidente),
             "despachos": despachos_detalle,
+            "notificaciones_despacho": notificaciones,
             "notas": notas,
             "evidencias": evidencias,
+            "enriquecimiento": enriquecimiento,
+            "geografia": geo,
             "trayectoria_gps": gps_rows,
         }

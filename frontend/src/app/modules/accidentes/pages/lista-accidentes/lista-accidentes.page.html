@@ -157,11 +157,12 @@
       </thead>
       <tbody>
         @for (a of accidentes(); track a.idaccidente) {
-          <tr class="border-b border-border-default last:border-b-0">
+          <tr
+            [class]="filaSeleccionadaClass(a.idaccidente)"
+            [attr.data-testid]="esSeleccionado(a.idaccidente) ? 'row-selected' : null"
+          >
             <td class="px-4 py-3 text-sm">
-              <a [routerLink]="['/accidentes', a.idaccidente]" class="font-semibold text-accent-primary hover:underline">
-                {{ a.idaccidente }}
-              </a>
+              <span class="font-semibold text-text-primary">{{ a.idaccidente }}</span>
             </td>
             <td class="whitespace-nowrap px-4 py-3 text-sm text-text-secondary">
               {{ a.fechahoraaccidente | date: 'dd/MM/yyyy — HH:mm:ss' }}
@@ -197,14 +198,27 @@
               </span>
             </td>
             <td class="px-4 py-3 text-right">
-              <a
-                [routerLink]="['/accidentes', a.idaccidente]"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                aria-label="Ver detalles"
-                title="Ver detalles"
-              >
-                <app-tabler-icon name="eye" [size]="18" />
-              </a>
+              <div class="inline-flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
+                  aria-label="Ver detalles"
+                  title="Ver detalles"
+                  (click)="abrirCaso(a.idaccidente, 'view')"
+                >
+                  <app-tabler-icon name="eye" [size]="18" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
+                  aria-label="Editar caso"
+                  title="Editar caso"
+                  data-testid="btn-edit"
+                  (click)="abrirCaso(a.idaccidente, 'edit')"
+                >
+                  <app-tabler-icon name="pencil" [size]="18" />
+                </button>
+              </div>
             </td>
           </tr>
         }
@@ -218,19 +232,32 @@
     <!-- Mobile: cards apiladas -->
     <div class="grid gap-3 md:hidden">
       @for (a of accidentes(); track a.idaccidente) {
-        <div class="rounded-lg border border-border-default bg-bg-surface p-4">
-          <div class="mb-2 flex items-center justify-between">
-            <a [routerLink]="['/accidentes', a.idaccidente]" class="text-sm font-semibold text-accent-primary hover:underline">
-              {{ a.idaccidente }}
-            </a>
-            <a
-              [routerLink]="['/accidentes', a.idaccidente]"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-              aria-label="Ver detalles"
-              title="Ver detalles"
-            >
-              <app-tabler-icon name="eye" [size]="18" />
-            </a>
+        <div
+          [class]="cardSeleccionadaClass(a.idaccidente)"
+          [attr.data-testid]="esSeleccionado(a.idaccidente) ? 'card-selected' : null"
+        >
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="text-sm font-semibold text-text-primary">{{ a.idaccidente }}</span>
+            <div class="inline-flex items-center gap-1">
+              <button
+                type="button"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
+                aria-label="Ver detalles"
+                title="Ver detalles"
+                (click)="abrirCaso(a.idaccidente, 'view')"
+              >
+                <app-tabler-icon name="eye" [size]="18" />
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
+                aria-label="Editar caso"
+                title="Editar caso"
+                (click)="abrirCaso(a.idaccidente, 'edit')"
+              >
+                <app-tabler-icon name="pencil" [size]="18" />
+              </button>
+            </div>
           </div>
           <dl class="grid gap-1 text-sm">
             <div class="flex justify-between gap-2">

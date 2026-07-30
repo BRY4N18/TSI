@@ -50,6 +50,19 @@ class ImportacionLoteUnidadService:
         cliente = self.access.resolve_cliente_activo(user_id=user_id, roles=roles)
         idcliente = cliente["idcliente"]
 
+        unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
+        if not unidad_role or not unidad_role.get("activo", True):
+            return {
+                "insertadas": 0,
+                "usuarios_creados": 0,
+                "fallidas": [
+                    {
+                        "fila": 0,
+                        "motivo": f"Rol '{UNIDAD_ROLE}' no configurado o inactivo",
+                    }
+                ],
+            }
+
         placas_en_archivo: set[str] = set()
         gmails_en_archivo: set[str] = set()
         fallidas: list[dict[str, Any]] = []
@@ -67,7 +80,8 @@ class ImportacionLoteUnidadService:
                     raise KeyError("gmail invalido o faltante")
                 if gmail in gmails_en_archivo:
                     raise ValueError(f"gmail {gmail} duplicado dentro del archivo")
-                if self.user_repo.find_by_gmail(gmail):
+                existing_user = self.user_repo.find_by_gmail(gmail)
+                if existing_user and existing_user.get("activo", True):
                     raise ValueError(f"Correo ya registrado: {gmail}")
 
                 self.registro_service._validar(payload)
@@ -88,27 +102,20 @@ class ImportacionLoteUnidadService:
         if fallidas:
             return {"insertadas": 0, "usuarios_creados": 0, "fallidas": fallidas}
 
-        unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
         creadas: list[tuple[int, int]] = []
         try:
             for payload in preparadas:
                 gmail = payload.pop("gmail")
                 unidad = self.registro_service.unidad_repo.create(payload)
-                user = self.user_repo.create(
-                    {
-                        "nombres": payload.get("unidademergencia", "Unidad"),
-                        "apellidos": payload.get("placa", ""),
-                        "gmail": gmail,
-                        "activo": True,
-                    }
+                user = self._crear_o_reactivar_usuario(gmail, payload)
+                # Ligar login → unidad para CU-O30 (find_by_usuario)
+                self.registro_service.unidad_repo.update(
+                    unidad["idunidademergencia"], {"idusuario": user["idusuario"]}
                 )
                 creadas.append((unidad["idunidademergencia"], user["idusuario"]))
                 temp_password = secrets.token_urlsafe(12)
                 self.credential_repo.create_temporary(user["idusuario"], temp_password)
-                if unidad_role:
-                    self.role_repo.assign_role_to_user(
-                        user["idusuario"], unidad_role["idrol"]
-                    )
+                self.role_repo.assign_role_to_user(user["idusuario"], unidad_role["idrol"])
                 self.notificacion.notify_invitacion(
                     cliente_id=idcliente,
                     user_id=user["idusuario"],
@@ -127,3 +134,24 @@ class ImportacionLoteUnidadService:
 
         n = len(preparadas)
         return {"insertadas": n, "usuarios_creados": n, "fallidas": []}
+
+    def _crear_o_reactivar_usuario(self, gmail: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Reusa usuario inactivo (p. ej. compensación de lote fallido) para no bloquear gmail."""
+        existing = self.user_repo.find_by_gmail(gmail)
+        nombres = payload.get("unidademergencia", "Unidad")
+        apellidos = payload.get("placa", "")
+        if existing and not existing.get("activo", True):
+            reactivated = self.user_repo.update(
+                existing["idusuario"],
+                {"nombres": nombres, "apellidos": apellidos, "activo": True},
+            )
+            assert reactivated is not None
+            return reactivated
+        return self.user_repo.create(
+            {
+                "nombres": nombres,
+                "apellidos": apellidos,
+                "gmail": gmail,
+                "activo": True,
+            }
+        )
