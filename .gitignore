@@ -43,20 +43,21 @@ Thumbs.db
 # JWT keys (generated locally for dev)
 backend/config/keys/*.pem
 
-# Tooling / local-only folders (not published to GitHub)
+# Local agent/IDE noise (Speckit skills under .claude/skills are tracked)
 .agents/
-.claude/
+.claude/settings.local.json
 .cursor/
-.specify/
+
+# Heavy / generated local data (not source)
 database/
 e2e/
-
-# Root config files (not published to GitHub)
-/docker/
-/skills-lock.json
 frontend/chrome/
 
-#Otros
+# Root lock / drafts (not runtime source)
+/skills-lock.json
 /bocetos-dashboards/
 /informestacticos
 /flujoscorreguidos
+
+# Note: `specs/`, `.specify/` and `docker/` ARE tracked.
+# OSRM map binaries stay out via `docker/osrm/.gitignore` (data/*).

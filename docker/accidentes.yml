@@ -1,0 +1,44 @@
+name: accidentes
+
+services:
+  osrm:
+    image: osrm/osrm-backend
+    container_name: accidentes-osrm
+    command: osrm-routed --algorithm mld /data/region.osrm
+    volumes:
+      - ./osrm/data:/data
+    networks:
+      - pipeline-net
+    restart: unless-stopped
+
+  django:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: accidentes-django
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - osrm
+    networks:
+      - pipeline-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: accidentes-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - django
+    networks:
+      - pipeline-net
+    restart: unless-stopped
+
+networks:
+  pipeline-net:
+    external: true
