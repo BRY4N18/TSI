@@ -24,6 +24,19 @@ import {
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
+import {
+  LIST_ACTION_ICON_BTN_CLASS,
+  LIST_MOBILE_CARD_CLASS,
+  LIST_ROW_CLASS,
+  LIST_TABLE_CLASS,
+  LIST_TABLE_TD_CLASS,
+  LIST_TABLE_TD_PRIMARY_CLASS,
+  LIST_TABLE_TH_CLASS,
+  LIST_TABLE_TH_RIGHT_CLASS,
+} from '../../../../shared/ui/list-states/list-table.styles';
 import {
   NivelPlan,
   Plan,
@@ -41,7 +54,16 @@ type EstadoFiltro = 'todas' | 'activo' | 'inactivo';
 @Component({
   selector: 'app-catalogo-planes-suscripciones',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, TablerIconComponent],
+  imports: [
+    CommonModule,
+    CurrencyPipe,
+    FormsModule,
+    RouterLink,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './catalogo-planes.page.html',
 })
@@ -53,6 +75,15 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly load$ = new Subject<{ resetCursor: boolean }>();
   private readonly textoFiltro$ = new Subject<string>();
+
+  readonly tableClass = LIST_TABLE_CLASS;
+  readonly thClass = LIST_TABLE_TH_CLASS;
+  readonly thRightClass = LIST_TABLE_TH_RIGHT_CLASS;
+  readonly tdClass = LIST_TABLE_TD_CLASS;
+  readonly tdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
+  readonly rowClass = LIST_ROW_CLASS;
+  readonly actionBtnClass = LIST_ACTION_ICON_BTN_CLASS;
+  readonly mobileCardClass = LIST_MOBILE_CARD_CLASS;
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);

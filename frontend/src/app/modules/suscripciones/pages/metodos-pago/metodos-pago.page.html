@@ -15,47 +15,34 @@
   }
 
   @if (loading()) {
-    <div class="rounded-[10px] border border-border-default bg-bg-surface p-5" aria-busy="true">
-      <div class="h-4 w-1/2 animate-pulse rounded-lg bg-border-default"></div>
-    </div>
+    <app-list-loading-skeleton />
   } @else if (error()) {
-    <div
-      class="grid justify-items-start gap-2 rounded-[10px] border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
-      role="alert"
-    >
-      <h3 class="m-0 text-lg font-semibold">Error</h3>
-      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
-        (click)="cargar()"
-      >
-        Reintentar
-      </button>
-    </div>
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
   } @else {
     <section class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
       <h3 class="m-0 text-lg font-semibold">Métodos registrados</h3>
       @if (items().length === 0) {
-        <p class="mt-3 m-0 text-sm text-text-secondary">Aún no hay métodos.</p>
+        <div class="mt-3">
+          <app-list-empty-state message="Aún no hay métodos." icon="list" />
+        </div>
       } @else {
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
+        <div class="mt-4">
+          <table [class]="tableClass">
             <thead>
-              <tr>
-                <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Tipo</th>
-                <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Últimos dígitos</th>
-                <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Expiración</th>
-                <th class="border-b border-border-default px-2.5 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-secondary">Estado</th>
+              <tr class="bg-bg-page">
+                <th [class]="thClass">Tipo</th>
+                <th [class]="thClass">Últimos dígitos</th>
+                <th [class]="thClass">Expiración</th>
+                <th [class]="thClass">Estado</th>
               </tr>
             </thead>
             <tbody>
               @for (m of items(); track m.idmetodopago) {
-                <tr>
-                  <td class="border-b border-border-default px-2.5 py-3 align-top">{{ m.tipo }}</td>
-                  <td class="border-b border-border-default px-2.5 py-3 align-top">···· {{ m.ultimosdigitos }}</td>
-                  <td class="border-b border-border-default px-2.5 py-3 align-top">{{ m.fechaexpiracion || '—' }}</td>
-                  <td class="border-b border-border-default px-2.5 py-3 align-top">
+                <tr [class]="rowClass">
+                  <td [class]="tdPrimaryClass">{{ m.tipo }}</td>
+                  <td [class]="tdClass">···· {{ m.ultimosdigitos }}</td>
+                  <td [class]="tdClass">{{ m.fechaexpiracion || '—' }}</td>
+                  <td [class]="tdClass">
                     <span [class]="m.activo ? badgeOk() : badgeNeutral()">
                       {{ m.activo ? 'Activo' : 'Inactivo' }}
                     </span>
@@ -64,6 +51,29 @@
               }
             </tbody>
           </table>
+
+          <div class="mt-3 grid gap-3 md:hidden">
+            @for (m of items(); track m.idmetodopago) {
+              <div [class]="mobileCardClass">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <span class="text-sm font-semibold text-text-primary">{{ m.tipo }}</span>
+                  <span [class]="m.activo ? badgeOk() : badgeNeutral()">
+                    {{ m.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+                <dl class="grid gap-1 text-sm">
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-secondary">Últimos dígitos</dt>
+                    <dd class="font-medium text-text-primary">···· {{ m.ultimosdigitos }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-secondary">Expiración</dt>
+                    <dd class="font-medium text-text-primary">{{ m.fechaexpiracion || '—' }}</dd>
+                  </div>
+                </dl>
+              </div>
+            }
+          </div>
         </div>
       }
     </section>

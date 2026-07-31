@@ -144,7 +144,8 @@ Fuente de código: `frontend/src/app/shared/layout/nav-links.ts` +
 | **Unidad** | `/despacho/mi-despacho` | Despacho: Mi despacho · Seguimiento: Mi seguimiento · Evidencia: Disponibilidad (CU-O30) |
 | **Operador** | `/accidentes/lista` | Emergencias: Registrar/Lista · Despacho: Monitoreo · Seguimiento: Mapa/Historial |
 | **Despacho** | `/despacho/monitoreo` | Despacho: Monitoreo · Seguimiento: Mapa/Historial · Evidencia: Flota |
-| **Administrador** | `/cuentas-clientes` | Emergencias + Despacho + Seguimiento + Flota + Red operativa + Admin + Suscripciones (aprobaciones; catálogo solo lectura) |
+| **Administrador** | `/cuentas-clientes` | Ventas CRM (Prospectos/Pipeline/Entrada directa) · Despacho: Parámetros · Red operativa · Admin · Soporte: Config SLA · Suscripciones — sin Emergencias/Monitoreo/Seguimiento/Flota/Cola soporte |
+| **GerenteVentas** | `/ventas-crm/prospectos` | Ventas CRM: Prospectos · Pipeline (sin Entrada directa) |
 | **DirectorEstrategia** | `/suscripciones/catalogo-planes` | Suscripciones: Catálogo (CRUD `Dim_Plan`, RF-SUSF-001) |
 | **DirectorTecnologico** | `/red-operativa/incorporacion-regional/catalogo` | Despacho parámetros · Regiones · Soporte |
 | **Proveedor** / **Cliente** (flota) | Proveedor → catálogo unidades; Cliente → mis-tickets | Red operativa: Mis unidades · Seguimiento: Mis expedientes (Cliente) · Suscripciones propias |

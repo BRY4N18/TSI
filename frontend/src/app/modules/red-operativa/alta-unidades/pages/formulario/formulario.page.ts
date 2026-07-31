@@ -9,11 +9,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { timer } from 'rxjs';
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
+import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list-table.styles';
+import { AuthApiService } from '../../../../cuentas-clientes/auth/services/auth-api.service';
+import { CatalogoItem } from '../../../../accidentes/services/models/accidente.types';
+import { UbicacionCatalogoApiService } from '../../../../accidentes/services/ubicacion-catalogo-api.service';
 import { ListaSeleccionStorage } from '../../lista-seleccion.storage';
 import { UnidadEmergenciaFacadeService } from '../../services/unidad-emergencia-facade.service';
 import {
@@ -58,10 +62,18 @@ const FORM_VACIO: UnidadFormState = {
 @Component({
   selector: 'app-alta-unidades-formulario-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TablerIconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TablerIconComponent],
   template: `
-    <div class="mx-auto w-full max-w-3xl space-y-6 p-6" data-testid="formulario-page">
-      <header class="flex flex-wrap items-start justify-between gap-3">
+    <div [class]="pageShellClass" data-testid="formulario-page">
+      <a
+        routerLink="/red-operativa/alta-unidades/catalogo"
+        class="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+      >
+        <app-tabler-icon name="arrow-left" [size]="16" />
+        Volver al catálogo
+      </a>
+
+      <header class="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 class="text-[28px] font-bold text-text-primary">
             {{ mode === 'create' ? 'Nueva unidad' : 'Editar unidad' }}
@@ -97,36 +109,70 @@ const FORM_VACIO: UnidadFormState = {
       </header>
 
       @if (cargando) {
-        <p class="text-sm text-text-secondary">Cargando unidad…</p>
+        <p class="mt-6 text-sm text-text-secondary">Cargando unidad…</p>
       } @else {
         <form
-          class="grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+          class="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
           (ngSubmit)="guardar()"
         >
-          @if (mode === 'edit' && form.idcliente != null) {
-            <label class="block sm:col-span-2">
-              <span class="mb-1 block text-sm font-medium text-text-secondary">Cliente (dueño)</span>
-              <input
-                type="number"
-                [ngModel]="form.idcliente"
-                name="idcliente"
-                disabled
-                class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 text-text-secondary opacity-80"
-              />
-            </label>
+          @if (mode === 'edit') {
+            <div class="block sm:col-span-2">
+              <span class="mb-1 block text-sm font-medium text-text-secondary">Dueño</span>
+              <p class="text-sm text-text-primary">{{ duenioLabel }}</p>
+            </div>
           }
 
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Condado (ID)</span>
-            <input
+          <div class="block">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">País</span>
+            <select
               #primerCampo
-              type="number"
-              [(ngModel)]="form.idcondado"
-              name="idcondado"
-              required
+              [ngModel]="cascadaPais"
+              (ngModelChange)="onPaisChange($event)"
+              name="cascadaPais"
+              data-testid="select-pais"
               class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
-            />
-          </label>
+            >
+              <option [ngValue]="null">— Selecciona —</option>
+              @for (p of paises; track p.id) {
+                <option [ngValue]="p.id">{{ p.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="block">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">Estado / región</span>
+            <select
+              [ngModel]="cascadaEstado"
+              (ngModelChange)="onEstadoChange($event)"
+              name="cascadaEstado"
+              data-testid="select-estado"
+              [disabled]="!cascadaPais"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option [ngValue]="null">— Selecciona —</option>
+              @for (e of estados; track e.id) {
+                <option [ngValue]="e.id">{{ e.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="block sm:col-span-2">
+            <span class="mb-1 block text-sm font-medium text-text-secondary">Condado</span>
+            <select
+              [ngModel]="form.idcondado"
+              (ngModelChange)="onCondadoChange($event)"
+              name="idcondado"
+              data-testid="select-condado"
+              required
+              [disabled]="!cascadaEstado"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option [ngValue]="null">— Selecciona —</option>
+              @for (c of condados; track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
+          </div>
 
           <label class="block">
             <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo de propiedad</span>
@@ -239,7 +285,7 @@ const FORM_VACIO: UnidadFormState = {
         @if (requiereConfirmacionCritica) {
           <div
             role="alert"
-            class="space-y-3 rounded-md border-l-4 border-alert-warning bg-alert-warning-bg px-4 py-3 text-sm text-alert-warning"
+            class="mt-4 space-y-3 rounded-md border-l-4 border-alert-warning bg-alert-warning-bg px-4 py-3 text-sm text-alert-warning"
           >
             <div class="flex items-center gap-2">
               <app-tabler-icon name="alert-triangle" [size]="18" />
@@ -258,7 +304,7 @@ const FORM_VACIO: UnidadFormState = {
         @if (invitacionPendiente && form.idunidademergencia) {
           <div
             role="alert"
-            class="flex flex-wrap items-center justify-between gap-3 rounded-md border-l-4 border-alert-warning bg-alert-warning-bg px-4 py-3 text-sm text-alert-warning"
+            class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border-l-4 border-alert-warning bg-alert-warning-bg px-4 py-3 text-sm text-alert-warning"
             data-testid="invitacion-error-banner"
           >
             <span>{{ invitacionErrorMsg }}</span>
@@ -277,7 +323,7 @@ const FORM_VACIO: UnidadFormState = {
         @if (errorMensaje) {
           <div
             role="alert"
-            class="flex items-center gap-2 rounded-md border-l-4 border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
+            class="mt-4 flex items-center gap-2 rounded-md border-l-4 border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
           >
             <app-tabler-icon name="alert-triangle" [size]="18" />
             <span>{{ errorMensaje }}</span>
@@ -294,8 +340,12 @@ export class FormularioPage implements OnInit, AfterViewInit {
   private readonly notifications = inject(NotificationService);
   private readonly listaSeleccion = inject(ListaSeleccionStorage);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ubicacionCatalogo = inject(UbicacionCatalogoApiService);
+  private readonly auth = inject(AuthApiService);
 
-  @ViewChild('primerCampo') private primerCampo?: ElementRef<HTMLInputElement>;
+  @ViewChild('primerCampo') private primerCampo?: ElementRef<HTMLSelectElement>;
+
+  readonly pageShellClass = LIST_PAGE_SHELL_CLASS;
 
   mode: FormMode = 'create';
   form: UnidadFormState = { ...FORM_VACIO };
@@ -306,6 +356,15 @@ export class FormularioPage implements OnInit, AfterViewInit {
   requiereConfirmacionCritica = false;
   invitacionPendiente = false;
   invitacionErrorMsg = '';
+  duenioLabel = 'Cuenta de tu sesión';
+
+  // Cascada País → Estado/Región → Condado (solo UX de selección; el payload
+  // sigue enviando idcondado, sin cambios de contrato con el backend).
+  cascadaPais: number | null = null;
+  cascadaEstado: number | null = null;
+  paises: CatalogoItem[] = [];
+  estados: CatalogoItem[] = [];
+  condados: CatalogoItem[] = [];
 
   ngOnInit(): void {
     const dataMode = this.route.snapshot.data['mode'] as FormMode | undefined;
@@ -314,6 +373,7 @@ export class FormularioPage implements OnInit, AfterViewInit {
 
     if (this.mode === 'create') {
       this.form = { ...FORM_VACIO };
+      this.cargarPaises();
       return;
     }
 
@@ -343,6 +403,8 @@ export class FormularioPage implements OnInit, AfterViewInit {
           latitud: u.latitud,
           longitud: u.longitud,
         };
+        this.duenioLabel = this.auth.getProfile()?.gmail ?? 'Cuenta de tu sesión';
+        this.resolverCascadaPorCondado(u.idcondado);
         queueMicrotask(() => this.focusPrimerCampo());
       } else {
         this.errorMensaje = result.error ?? 'No se pudo cargar la unidad';
@@ -357,6 +419,75 @@ export class FormularioPage implements OnInit, AfterViewInit {
 
   cancelar(): void {
     void this.router.navigate(['/red-operativa/alta-unidades/catalogo']);
+  }
+
+  onPaisChange(idpais: number | null): void {
+    this.cascadaPais = idpais;
+    this.cascadaEstado = null;
+    this.estados = [];
+    this.condados = [];
+    this.form.idcondado = null;
+    if (idpais) {
+      this.ubicacionCatalogo.listarEstados(idpais).subscribe((estados) => {
+        this.estados = estados;
+        this.cdr.markForCheck();
+      });
+    }
+  }
+
+  onEstadoChange(idestado: number | null): void {
+    this.cascadaEstado = idestado;
+    this.condados = [];
+    this.form.idcondado = null;
+    if (idestado) {
+      this.ubicacionCatalogo.listarCondados(idestado).subscribe((condados) => {
+        this.condados = condados;
+        this.cdr.markForCheck();
+      });
+    }
+  }
+
+  onCondadoChange(idcondado: number | null): void {
+    this.form.idcondado = idcondado;
+  }
+
+  private cargarPaises(): void {
+    this.ubicacionCatalogo.listarPaises().subscribe({
+      next: (paises) => {
+        this.paises = paises;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.paises = [];
+      },
+    });
+  }
+
+  /**
+   * Resuelve país/estado a los que pertenece un idcondado ya asignado (modo edición),
+   * para pre-seleccionar la cascada en vez de mostrar solo el ID crudo.
+   * Recorre país→estados→condados buscando coincidencia (catálogo geográfico acotado).
+   */
+  private resolverCascadaPorCondado(idcondado: number): void {
+    this.ubicacionCatalogo.listarPaises().subscribe((paises) => {
+      this.paises = paises;
+      for (const pais of paises) {
+        this.ubicacionCatalogo.listarEstados(pais.id).subscribe((estados) => {
+          for (const estado of estados) {
+            this.ubicacionCatalogo.listarCondados(estado.id).subscribe((condados) => {
+              const match = condados.find((c) => c.id === idcondado);
+              if (match) {
+                this.cascadaPais = pais.id;
+                this.cascadaEstado = estado.id;
+                this.estados = estados;
+                this.condados = condados;
+                this.cdr.markForCheck();
+              }
+            });
+          }
+        });
+      }
+    });
   }
 
   guardar(confirmarEdicionCritica = false): void {

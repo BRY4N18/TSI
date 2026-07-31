@@ -3,6 +3,17 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
+import {
+  LIST_MOBILE_CARD_CLASS,
+  LIST_ROW_CLASS,
+  LIST_TABLE_CLASS,
+  LIST_TABLE_TD_CLASS,
+  LIST_TABLE_TD_PRIMARY_CLASS,
+  LIST_TABLE_TH_CLASS,
+} from '../../../../../shared/ui/list-states/list-table.styles';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
 import { BusinessRole, BusinessUser } from '../../../auth/services/auth-api.types';
 import { UserRoleAdminService } from '../../../auth/services/user-role-admin.service';
@@ -10,7 +21,14 @@ import { UserRoleAdminService } from '../../../auth/services/user-role-admin.ser
 @Component({
   selector: 'app-gestion-cuenta-hub',
   standalone: true,
-  imports: [FormsModule, RouterLink, TablerIconComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hub.page.html',
 })
@@ -24,6 +42,13 @@ export class GestionCuentaHubPage implements OnInit {
   readonly cargando = signal(false);
   readonly mensaje = signal('');
   readonly error = signal('');
+
+  readonly listTableClass = LIST_TABLE_CLASS;
+  readonly listTableThClass = LIST_TABLE_TH_CLASS;
+  readonly listTableTdClass = LIST_TABLE_TD_CLASS;
+  readonly listTableTdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
+  readonly listRowClass = LIST_ROW_CLASS;
+  readonly listMobileCardClass = LIST_MOBILE_CARD_CLASS;
 
   idclienteDestino = 1;
   assignUserId: number | null = null;

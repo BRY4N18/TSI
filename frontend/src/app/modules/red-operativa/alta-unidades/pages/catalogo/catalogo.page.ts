@@ -16,6 +16,20 @@ import {
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
+import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
+import {
+  LIST_ACTION_ICON_BTN_CLASS,
+  LIST_FILTER_CONTROL_CLASS,
+  LIST_MOBILE_CARD_CLASS,
+  LIST_ROW_CLASS,
+  LIST_TABLE_CLASS,
+  LIST_TABLE_TD_CLASS,
+  LIST_TABLE_TD_PRIMARY_CLASS,
+  LIST_TABLE_TH_CLASS,
+  LIST_TABLE_TH_RIGHT_CLASS,
+} from '../../../../../shared/ui/list-states/list-table.styles';
 import { ListaSeleccionStorage } from '../../lista-seleccion.storage';
 import { UnidadEmergenciaFacadeService } from '../../services/unidad-emergencia-facade.service';
 import {
@@ -50,7 +64,14 @@ interface ReactivarDialogState {
 @Component({
   selector: 'app-red-operativa-catalogo-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TablerIconComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   template: `
     <div class="mx-auto w-full max-w-5xl space-y-6 p-6">
       <header class="flex flex-wrap items-start justify-between gap-3">
@@ -97,7 +118,7 @@ interface ReactivarDialogState {
               (ngModelChange)="onFiltroTexto()"
               placeholder="Placa o nombre"
               data-testid="filtro-q"
-              class="w-full rounded-md border border-border-default px-3.5 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+              [class]="listFilterControlClass"
             />
           </label>
           <label class="block">
@@ -107,7 +128,7 @@ interface ReactivarDialogState {
               [(ngModel)]="filtroEstado"
               (change)="onFiltroSelect()"
               data-testid="filtro-estado"
-              class="w-full rounded-md border border-border-default px-3.5 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+              [class]="listFilterControlClass"
             >
               <option value="todas">Todas</option>
               <option value="activa">Activa</option>
@@ -121,7 +142,7 @@ interface ReactivarDialogState {
               [(ngModel)]="filtroTipo"
               (change)="onFiltroSelect()"
               data-testid="filtro-tipo"
-              class="w-full rounded-md border border-border-default px-3.5 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+              [class]="listFilterControlClass"
             >
               <option value="">Todos</option>
               @for (t of tiposUnidad; track t) {
@@ -132,32 +153,18 @@ interface ReactivarDialogState {
         </div>
 
         @if (loading && unidades.length === 0 && !unidadesError) {
-          <div class="space-y-2" data-testid="loading-skeleton">
-            @for (i of [1, 2, 3]; track i) {
-              <div class="h-12 animate-pulse rounded-md bg-bg-page"></div>
-            }
-          </div>
+          <app-list-loading-skeleton [count]="3" />
         } @else if (unidadesError && unidades.length === 0) {
-          <div class="space-y-3" role="alert" data-testid="lista-error">
-            <p class="text-sm text-alert-critical">{{ unidadesError }}</p>
-            <button
-              type="button"
-              data-testid="btn-reintentar-lista"
-              (click)="cargarUnidades()"
-              class="rounded-md border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary"
-            >
-              Reintentar
-            </button>
-          </div>
+          <app-list-error-state [message]="unidadesError" (retry)="cargarUnidades()" />
         } @else if (!loading && unidades.length === 0) {
-          <div class="space-y-3 py-4 text-center" data-testid="lista-vacia">
-            <p class="text-sm text-text-secondary">
-              {{
-                tieneFiltros
-                  ? 'No hay unidades que coincidan con los filtros.'
-                  : 'Aún no hay unidades registradas.'
-              }}
-            </p>
+          <app-list-empty-state
+            icon="car"
+            [message]="
+              tieneFiltros
+                ? 'No hay unidades que coincidan con los filtros.'
+                : 'Aún no hay unidades registradas.'
+            "
+          >
             @if (!tieneFiltros) {
               <button
                 type="button"
@@ -167,91 +174,161 @@ interface ReactivarDialogState {
                 Nueva unidad
               </button>
             }
-          </div>
+          </app-list-empty-state>
         } @else {
-          <div class="overflow-x-auto rounded-lg border border-border-default">
-            <table class="w-full text-left text-sm" data-testid="tabla-unidades">
-              <thead class="bg-bg-page">
-                <tr>
-                  <th class="px-4 py-3 text-xs font-medium uppercase text-text-primary">ID</th>
-                  <th class="px-4 py-3 text-xs font-medium uppercase text-text-primary">Placa</th>
-                  <th class="px-4 py-3 text-xs font-medium uppercase text-text-primary">Nombre</th>
-                  <th class="px-4 py-3 text-xs font-medium uppercase text-text-primary">Estado</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium uppercase text-text-primary">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (u of unidades; track u.idunidademergencia) {
-                  <tr [class]="filaClass(u.idunidademergencia)">
-                    <td class="px-4 py-3 font-mono text-text-primary">
-                      {{ u.idunidademergencia }}
-                    </td>
-                    <td class="px-4 py-3 font-mono text-text-primary">{{ u.placa }}</td>
-                    <td class="px-4 py-3 text-text-secondary">{{ u.unidademergencia }}</td>
-                    <td class="px-4 py-3">
-                      <span
-                        [class]="
-                          u.activo
-                            ? 'rounded-md bg-alert-success-bg px-2 py-1 text-xs text-alert-success'
-                            : 'rounded-md bg-alert-critical-bg px-2 py-1 text-xs text-alert-critical'
-                        "
+          <table [class]="listTableClass" data-testid="tabla-unidades">
+            <thead>
+              <tr class="bg-bg-surface">
+                <th [class]="listTableThClass">ID</th>
+                <th [class]="listTableThClass">Placa</th>
+                <th [class]="listTableThClass">Nombre</th>
+                <th [class]="listTableThClass">Estado</th>
+                <th [class]="listTableThRightClass">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of unidades; track u.idunidademergencia) {
+                <tr [class]="filaClass(u.idunidademergencia)">
+                  <td [class]="listTableTdPrimaryClass + ' font-mono'">
+                    {{ u.idunidademergencia }}
+                  </td>
+                  <td [class]="listTableTdClass + ' font-mono'">{{ u.placa }}</td>
+                  <td [class]="listTableTdClass">{{ u.unidademergencia }}</td>
+                  <td [class]="listTableTdClass">
+                    <span
+                      [class]="
+                        u.activo
+                          ? 'rounded-md bg-alert-success-bg px-2 py-1 text-xs text-alert-success'
+                          : 'rounded-md bg-alert-critical-bg px-2 py-1 text-xs text-alert-critical'
+                      "
+                    >
+                      {{ u.activo ? 'Activa' : 'Baja' }}
+                    </span>
+                  </td>
+                  <td [class]="listTableTdClass + ' text-right'">
+                    <div class="inline-flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        [class]="listActionIconBtnClass"
+                        aria-label="Ver detalles"
+                        title="Ver detalles"
+                        data-testid="btn-ver-detalles"
+                        (click)="irDetalle(u.idunidademergencia)"
                       >
-                        {{ u.activo ? 'Activa' : 'Baja' }}
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <div class="inline-flex items-center justify-end gap-1">
+                        <app-tabler-icon name="eye" [size]="18" />
+                      </button>
+                      <button
+                        type="button"
+                        [class]="listActionIconBtnClass"
+                        aria-label="Editar unidad"
+                        title="Editar unidad"
+                        data-testid="btn-editar-unidad"
+                        (click)="irEditar(u.idunidademergencia)"
+                      >
+                        <app-tabler-icon name="pencil" [size]="18" />
+                      </button>
+                      @if (u.activo) {
                         <button
                           type="button"
-                          class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                          aria-label="Ver detalles"
-                          title="Ver detalles"
-                          data-testid="btn-ver-detalles"
-                          (click)="irDetalle(u.idunidademergencia)"
+                          class="inline-flex h-11 w-11 items-center justify-center rounded-md text-alert-critical hover:bg-alert-critical-bg"
+                          aria-label="Dar de baja"
+                          title="Dar de baja"
+                          data-testid="btn-baja-unidad"
+                          (click)="iniciarBaja(u)"
                         >
-                          <app-tabler-icon name="eye" [size]="18" />
+                          <app-tabler-icon name="trash" [size]="18" />
                         </button>
+                      } @else {
                         <button
                           type="button"
-                          class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                          aria-label="Editar unidad"
-                          title="Editar unidad"
-                          data-testid="btn-editar-unidad"
-                          (click)="irEditar(u.idunidademergencia)"
+                          class="inline-flex h-11 w-11 items-center justify-center rounded-md text-accent-primary hover:bg-accent-primary/10"
+                          aria-label="Reactivar unidad"
+                          title="Reactivar unidad"
+                          data-testid="btn-reactivar-unidad"
+                          (click)="iniciarReactivar(u)"
                         >
-                          <app-tabler-icon name="pencil" [size]="18" />
+                          <app-tabler-icon name="refresh" [size]="18" />
                         </button>
-                        @if (u.activo) {
-                          <button
-                            type="button"
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-md text-alert-critical hover:bg-alert-critical-bg"
-                            aria-label="Dar de baja"
-                            title="Dar de baja"
-                            data-testid="btn-baja-unidad"
-                            (click)="iniciarBaja(u)"
-                          >
-                            <app-tabler-icon name="trash" [size]="18" />
-                          </button>
-                        } @else {
-                          <button
-                            type="button"
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-md text-accent-primary hover:bg-accent-primary/10"
-                            aria-label="Reactivar unidad"
-                            title="Reactivar unidad"
-                            data-testid="btn-reactivar-unidad"
-                            (click)="iniciarReactivar(u)"
-                          >
-                            <app-tabler-icon name="refresh" [size]="18" />
-                          </button>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <!-- Mobile: cards apiladas -->
+          <div class="grid gap-3 md:hidden" data-testid="tabla-unidades-mobile">
+            @for (u of unidades; track u.idunidademergencia) {
+              <div [class]="cardClass(u.idunidademergencia)">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <span class="font-mono text-sm font-semibold text-text-primary">{{ u.placa }}</span>
+                  <div class="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      [class]="listActionIconBtnClass"
+                      aria-label="Ver detalles"
+                      title="Ver detalles"
+                      (click)="irDetalle(u.idunidademergencia)"
+                    >
+                      <app-tabler-icon name="eye" [size]="18" />
+                    </button>
+                    <button
+                      type="button"
+                      [class]="listActionIconBtnClass"
+                      aria-label="Editar unidad"
+                      title="Editar unidad"
+                      (click)="irEditar(u.idunidademergencia)"
+                    >
+                      <app-tabler-icon name="pencil" [size]="18" />
+                    </button>
+                    @if (u.activo) {
+                      <button
+                        type="button"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-alert-critical hover:bg-alert-critical-bg"
+                        aria-label="Dar de baja"
+                        title="Dar de baja"
+                        (click)="iniciarBaja(u)"
+                      >
+                        <app-tabler-icon name="trash" [size]="18" />
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-accent-primary hover:bg-accent-primary/10"
+                        aria-label="Reactivar unidad"
+                        title="Reactivar unidad"
+                        (click)="iniciarReactivar(u)"
+                      >
+                        <app-tabler-icon name="refresh" [size]="18" />
+                      </button>
+                    }
+                  </div>
+                </div>
+                <dl class="grid gap-1 text-sm">
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-secondary">ID</dt>
+                    <dd class="font-mono font-medium text-text-primary">{{ u.idunidademergencia }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-secondary">Nombre</dt>
+                    <dd class="truncate font-medium text-text-primary">{{ u.unidademergencia }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-secondary">Estado</dt>
+                    <dd
+                      [class]="
+                        u.activo
+                          ? 'inline-flex rounded-md bg-alert-success-bg px-2 py-1 text-xs text-alert-success'
+                          : 'inline-flex rounded-md bg-alert-critical-bg px-2 py-1 text-xs text-alert-critical'
+                      "
+                    >
+                      {{ u.activo ? 'Activa' : 'Baja' }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            }
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-3" data-testid="catalogo-pager">
@@ -499,6 +576,13 @@ export class CatalogoPage implements OnInit, OnDestroy {
 
   readonly csvPlantilla = CSV_PLANTILLA;
   readonly pageLimit = PAGE_LIMIT;
+  readonly listTableClass = LIST_TABLE_CLASS;
+  readonly listTableThClass = LIST_TABLE_TH_CLASS;
+  readonly listTableThRightClass = LIST_TABLE_TH_RIGHT_CLASS;
+  readonly listTableTdClass = LIST_TABLE_TD_CLASS;
+  readonly listTableTdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
+  readonly listActionIconBtnClass = LIST_ACTION_ICON_BTN_CLASS;
+  readonly listFilterControlClass = LIST_FILTER_CONTROL_CLASS;
   readonly tiposUnidad: TipoUnidadEmergencia[] = [
     'Ambulancia',
     'Grúa',
@@ -608,10 +692,15 @@ export class CatalogoPage implements OnInit, OnDestroy {
   }
 
   filaClass(id: number): string {
-    const base = 'border-t border-border-default';
     return this.selectedId === String(id)
-      ? `${base} bg-accent-primary/[0.08] border-l-4 border-l-accent-primary`
-      : base;
+      ? `${LIST_ROW_CLASS} bg-accent-primary/[0.08] border-l-4 border-l-accent-primary`
+      : LIST_ROW_CLASS;
+  }
+
+  cardClass(id: number): string {
+    return this.selectedId === String(id)
+      ? `${LIST_MOBILE_CARD_CLASS} bg-accent-primary/[0.08] border-l-4 border-l-accent-primary`
+      : LIST_MOBILE_CARD_CLASS;
   }
 
   buildQuery(): CatalogQueryState {

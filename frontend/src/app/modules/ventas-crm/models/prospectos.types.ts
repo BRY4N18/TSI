@@ -2,7 +2,7 @@ export interface ApiEnvelope<T> {
   data: T;
   meta?: {
     pagination?: {
-      next_cursor?: string | null;
+      next_cursor?: string | number | null;
       limit?: number;
     };
   };
@@ -18,6 +18,14 @@ export type EtapaPipeline =
   | 'Ganado'
   | 'Perdido';
 export type TipoCliente = 'Proveedor' | 'Aseguradora' | 'Municipio' | 'Smart City';
+
+/** Query params for GET /ventas-crm/prospectos (RF-CPP-008). */
+export interface ProspectoListQuery {
+  cursor?: string | number | null;
+  limit?: number;
+  activo?: boolean;
+  etapa_actual?: EtapaPipeline;
+}
 
 export interface Prospecto {
   idprospecto: number;

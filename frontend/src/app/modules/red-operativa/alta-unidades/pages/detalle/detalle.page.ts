@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
+import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list-table.styles';
+import { AuthApiService } from '../../../../cuentas-clientes/auth/services/auth-api.service';
+import { UbicacionCatalogoApiService } from '../../../../accidentes/services/ubicacion-catalogo-api.service';
 import { ListaSeleccionStorage } from '../../lista-seleccion.storage';
 import { UnidadEmergenciaFacadeService } from '../../services/unidad-emergencia-facade.service';
 import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
@@ -12,7 +15,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
   standalone: true,
   imports: [CommonModule, TablerIconComponent],
   template: `
-    <div class="mx-auto w-full max-w-3xl space-y-6 p-6" data-testid="detalle-page">
+    <div [class]="pageShellClass" data-testid="detalle-page">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 class="text-[28px] font-bold text-text-primary">Detalles</h1>
@@ -47,7 +50,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
 
       @if (cargando) {
         <div
-          class="space-y-3 rounded-lg border border-border-default bg-bg-surface p-6"
+          class="mt-6 space-y-3 rounded-lg border border-border-default bg-bg-surface p-6"
           data-testid="detalle-loading"
         >
           <p class="text-sm text-text-secondary">Cargando unidad…</p>
@@ -58,119 +61,75 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
       } @else if (errorMensaje) {
         <div
           role="alert"
-          class="rounded-md border-l-4 border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
+          class="mt-6 rounded-md border-l-4 border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
         >
           {{ errorMensaje }}
         </div>
       } @else if (unidad) {
-        <div
-          class="grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+        <dl
+          class="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
           data-testid="detalle-campos"
         >
-          <label class="block sm:col-span-2">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Cliente (dueño)</span>
-            <input
-              type="number"
-              [value]="unidad.idcliente"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 text-text-secondary opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Condado (ID)</span>
-            <input
-              type="number"
-              [value]="unidad.idcondado"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo de propiedad</span>
-            <input
-              [value]="unidad.tipopropiedad"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Placa</span>
-            <input
-              [value]="unidad.placa"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 font-mono opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Capacidad</span>
-            <input
-              [value]="unidad.capacidad ?? ''"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block sm:col-span-2">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Contacto proveedor</span>
-            <input
-              [value]="unidad.contactoproveedor ?? ''"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block sm:col-span-2">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Nombre de la unidad</span>
-            <input
-              [value]="unidad.unidademergencia"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block sm:col-span-2">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Tipo de unidad</span>
-            <input
-              [value]="unidad.tipounidademergencia"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <div class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Estado</span>
-            <span
-              [class]="
-                unidad.activo
-                  ? 'inline-flex rounded-md bg-alert-success-bg px-2 py-1 text-xs text-alert-success'
-                  : 'inline-flex rounded-md bg-alert-critical-bg px-2 py-1 text-xs text-alert-critical'
-              "
-            >
-              {{ unidad.activo ? 'Activa' : 'Baja' }}
-            </span>
+          <div class="sm:col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Dueño</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ duenioLabel }}</dd>
           </div>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Usuario login</span>
-            <input
-              [value]="unidad.idusuario ?? '—'"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Latitud</span>
-            <input
-              [value]="unidad.latitud ?? ''"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-sm font-medium text-text-secondary">Longitud</span>
-            <input
-              [value]="unidad.longitud ?? ''"
-              disabled
-              class="w-full rounded-md border border-border-default bg-bg-page px-3.5 py-2.5 opacity-80"
-            />
-          </label>
-        </div>
-        <p class="text-xs text-text-secondary" data-testid="detalle-sin-guardar">
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Condado</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ condadoLabel }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Tipo de propiedad</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.tipopropiedad }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Placa</dt>
+            <dd class="mt-1 font-mono text-sm text-text-primary">{{ unidad.placa }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Capacidad</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.capacidad ?? '—' }}</dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Contacto proveedor</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.contactoproveedor ?? '—' }}</dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Nombre de la unidad</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.unidademergencia }}</dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Tipo de unidad</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.tipounidademergencia }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Estado</dt>
+            <dd class="mt-1">
+              <span
+                [class]="
+                  unidad.activo
+                    ? 'inline-flex rounded-md bg-alert-success-bg px-2 py-1 text-xs text-alert-success'
+                    : 'inline-flex rounded-md bg-alert-critical-bg px-2 py-1 text-xs text-alert-critical'
+                "
+              >
+                {{ unidad.activo ? 'Activa' : 'Baja' }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Usuario login</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.idusuario ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Latitud</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.latitud ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Longitud</dt>
+            <dd class="mt-1 text-sm text-text-primary">{{ unidad.longitud ?? '—' }}</dd>
+          </div>
+        </dl>
+        <p class="mt-3 text-xs text-text-secondary" data-testid="detalle-sin-guardar">
           Solo lectura — use Editar para modificar.
         </p>
       }
@@ -183,10 +142,16 @@ export class DetallePage implements OnInit {
   private readonly facade = inject(UnidadEmergenciaFacadeService);
   private readonly listaSeleccion = inject(ListaSeleccionStorage);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ubicacionCatalogo = inject(UbicacionCatalogoApiService);
+  private readonly auth = inject(AuthApiService);
+
+  readonly pageShellClass = LIST_PAGE_SHELL_CLASS;
 
   unidad: UnidadEmergenciaData | null = null;
   cargando = false;
   errorMensaje: string | null = null;
+  duenioLabel = 'Cuenta proveedor (sesión)';
+  condadoLabel = '—';
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('idunidademergencia'));
@@ -202,10 +167,36 @@ export class DetallePage implements OnInit {
       if (result.ok && result.data) {
         this.unidad = result.data;
         this.errorMensaje = null;
+        this.duenioLabel = this.auth.getProfile()?.gmail ?? 'Cuenta proveedor (sesión)';
+        this.condadoLabel = `Condado #${result.data.idcondado}`;
+        this.resolverCondado(result.data.idcondado);
       } else {
         this.errorMensaje = result.error ?? 'No se pudo cargar la unidad';
       }
       this.cdr.markForCheck();
+    });
+  }
+
+  /**
+   * Resuelve el nombre legible del condado recorriendo país→estados→condados
+   * (catálogo geográfico acotado). Si no encuentra coincidencia, conserva el
+   * fallback "Condado #N" ya asignado.
+   */
+  private resolverCondado(idcondado: number): void {
+    this.ubicacionCatalogo.listarPaises().subscribe((paises) => {
+      for (const pais of paises) {
+        this.ubicacionCatalogo.listarEstados(pais.id).subscribe((estados) => {
+          for (const estado of estados) {
+            this.ubicacionCatalogo.listarCondados(estado.id).subscribe((condados) => {
+              const match = condados.find((c) => c.id === idcondado);
+              if (match) {
+                this.condadoLabel = `${match.nombre} (${estado.nombre}, ${pais.nombre})`;
+                this.cdr.markForCheck();
+              }
+            });
+          }
+        });
+      }
     });
   }
 

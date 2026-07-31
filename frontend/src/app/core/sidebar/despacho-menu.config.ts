@@ -8,12 +8,12 @@ export const DESPACHO_MENU: DespachoMenuItem[] = [
   {
     label: 'Monitoreo despacho',
     route: '/despacho/monitoreo/ACC-EVI-TEST-1',
-    roles: ['Operador', 'Despacho', 'Administrador'],
+    roles: ['Operador', 'Despacho'],
   },
   {
     label: 'Asignación manual',
     route: '/despacho/asignacion/ACC-EVI-TEST-1',
-    roles: ['Operador', 'Despacho', 'Administrador'],
+    roles: ['Operador', 'Despacho'],
   },
   {
     label: 'Mi despacho',

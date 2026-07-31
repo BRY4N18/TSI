@@ -1,4 +1,4 @@
-"""Seed demo users: Operador + reset Admin password (Pinot-compatible Kafka payloads).
+"""Seed demo users: Operador + GerenteVentas + reset Admin password (Pinot-compatible Kafka payloads).
 
 Pinot REALTIME schemas expect LONG millis for fecha_* (not ISO strings) and
 Dim_Usuario_Rol needs idusuariorol + activo (same shape as initial seed).
@@ -7,8 +7,9 @@ Run inside Django container:
   python /app/scripts/seed_demo_usuarios_roles.py
 
 Demo logins (password: password123):
-  Operador  sofia.castro.operador@demo.tsi.com
-  Admin     carlos.mendoza.admin@demo.tsi.com
+  Operador       sofia.castro.operador@demo.tsi.com
+  GerenteVentas  lucia.ramos.ventas@demo.tsi.com
+  Admin          carlos.mendoza.admin@demo.tsi.com
 """
 
 from __future__ import annotations
@@ -32,12 +33,17 @@ from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter  # noqa:
 
 DEMO_PASSWORD = "password123"
 OPERADOR_GMAIL = "sofia.castro.operador@demo.tsi.com"
+GERENTE_VENTAS_GMAIL = "lucia.ramos.ventas@demo.tsi.com"
 ADMIN_GMAIL = "carlos.mendoza.admin@demo.tsi.com"
 
 OPERADOR_USER_ID = 10
 OPERADOR_ROLE_ID = 11
 OPERADOR_CRED_ID = 10
 OPERADOR_USER_ROLE_ID = 30  # seed used 1–20; keep clear of collisions
+GERENTE_VENTAS_USER_ID = 12
+GERENTE_VENTAS_ROLE_ID = 12
+GERENTE_VENTAS_CRED_ID = 12
+GERENTE_VENTAS_USER_ROLE_ID = 31
 ADMIN_USER_ID = 2
 ADMIN_CRED_ID = 2
 
@@ -124,6 +130,72 @@ def main() -> None:
     )
     print(f"published Dim_Usuario_Rol Operador idusuariorol={OPERADOR_USER_ROLE_ID}")
 
+    # --- Role GerenteVentas ---
+    existing_gv_role = pinot.query(
+        "SELECT idrol FROM Dim_Rol WHERE rol = %(rol)s LIMIT 1",
+        {"rol": "GerenteVentas"},
+    )
+    gv_role_id = int(existing_gv_role[0]["idrol"]) if existing_gv_role else GERENTE_VENTAS_ROLE_ID
+    writer.publish(
+        topics["role"],
+        {
+            "idrol": gv_role_id,
+            "rol": "GerenteVentas",
+            "descripcion": "Gerente de ventas — pipeline comercial y prospectos",
+            "activo": True,
+            "fecha_actualizacion": now + 5,
+        },
+    )
+    print(f"published Dim_Rol GerenteVentas idrol={gv_role_id}")
+
+    existing_gv_user = pinot.query(
+        "SELECT idusuario FROM Dim_Usuarios WHERE gmail = %(gmail)s LIMIT 1",
+        {"gmail": GERENTE_VENTAS_GMAIL},
+    )
+    gv_user_id = (
+        int(existing_gv_user[0]["idusuario"]) if existing_gv_user else GERENTE_VENTAS_USER_ID
+    )
+    writer.publish(
+        topics["user"],
+        {
+            "idusuario": gv_user_id,
+            "nombres": "Lucia",
+            "apellidos": "Ramos",
+            "gmail": GERENTE_VENTAS_GMAIL,
+            "identificacion": "GV-DEMO-001",
+            "genero": "F",
+            "telefono": "0991234512",
+            "activo": True,
+            "fechanacimiento": 662688000000,
+            "fecha_actualizacion": now + 6,
+        },
+    )
+    print(f"published Dim_Usuarios GerenteVentas idusuario={gv_user_id}")
+
+    writer.publish(
+        topics["credential"],
+        {
+            "idcredencial": GERENTE_VENTAS_CRED_ID,
+            "idusuario": gv_user_id,
+            "contrasena": pwd_hash,
+            "estadocredencial": "ACTIVA",
+            "fecha_actualizacion": now + 7,
+        },
+    )
+    print(f"published Dim_Credencial GerenteVentas idcredencial={GERENTE_VENTAS_CRED_ID}")
+
+    writer.publish(
+        topics["user_role"],
+        {
+            "idusuariorol": GERENTE_VENTAS_USER_ROLE_ID,
+            "idusuario": gv_user_id,
+            "idrol": gv_role_id,
+            "activo": True,
+            "fecha_actualizacion": now + 8,
+        },
+    )
+    print(f"published Dim_Usuario_Rol GerenteVentas idusuariorol={GERENTE_VENTAS_USER_ROLE_ID}")
+
     # --- Reset Admin password (planes / catálogo / aprobaciones) ---
     admin = pinot.query(
         "SELECT idusuario FROM Dim_Usuarios WHERE gmail = %(gmail)s LIMIT 1",
@@ -146,9 +218,10 @@ def main() -> None:
         print(f"published Dim_Credencial Admin idusuario={admin_id} password=password123")
 
     print()
-    print("Demo logins (password for both: password123)")
-    print(f"  Operador → {OPERADOR_GMAIL}   → /accidentes/lista")
-    print(f"  Admin    → {ADMIN_GMAIL} → /suscripciones/catalogo-planes")
+    print("Demo logins (password for all: password123)")
+    print(f"  Operador       → {OPERADOR_GMAIL}   → /accidentes/lista")
+    print(f"  GerenteVentas  → {GERENTE_VENTAS_GMAIL} → /ventas-crm/prospectos")
+    print(f"  Admin          → {ADMIN_GMAIL} → /suscripciones/catalogo-planes")
     print("OK — wait ~5–15s for Pinot realtime before login.")
 
 

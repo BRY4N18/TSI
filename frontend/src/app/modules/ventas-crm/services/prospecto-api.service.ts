@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -6,6 +6,7 @@ import {
   ApiEnvelope,
   AsignacionManualRequest,
   Prospecto,
+  ProspectoListQuery,
   RegistroProspectoRequest,
 } from '../models/prospectos.types';
 
@@ -18,13 +19,20 @@ export class ProspectoApiService {
     return this.http.post<ApiEnvelope<Prospecto>>(this.base, body);
   }
 
-  listar(params?: {
-    cursor?: string;
-    limit?: number;
-    activo?: boolean;
-    etapa_actual?: string;
-  }): Observable<ApiEnvelope<Prospecto[]>> {
-    return this.http.get<ApiEnvelope<Prospecto[]>>(this.base, { params: params as never });
+  listar(params: ProspectoListQuery = {}): Observable<ApiEnvelope<Prospecto[]>> {
+    let httpParams = new HttpParams();
+    const limit = params.limit ?? 20;
+    httpParams = httpParams.set('limit', String(limit));
+    if (params.cursor != null && params.cursor !== '') {
+      httpParams = httpParams.set('cursor', String(params.cursor));
+    }
+    if (params.activo !== undefined) {
+      httpParams = httpParams.set('activo', String(params.activo));
+    }
+    if (params.etapa_actual) {
+      httpParams = httpParams.set('etapa_actual', params.etapa_actual);
+    }
+    return this.http.get<ApiEnvelope<Prospecto[]>>(this.base, { params: httpParams });
   }
 
   obtener(idprospecto: number): Observable<ApiEnvelope<Prospecto>> {

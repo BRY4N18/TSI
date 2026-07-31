@@ -127,6 +127,21 @@
 
 ---
 
+## Phase 11: Polish — Formulario UX humano + chrome Accidente (P1)
+
+**Goal**: Usuario elige Condado por nombre; no ve `idcliente`/`idcondado` como campos técnicos; formulario alinea chrome a Accidente Editar.
+
+**Independent Test**: Nueva/Editar unidad — select Condado legible; dueño como texto de sesión; sin inputs numéricos de PK.
+
+- [X] T024 Cargar catálogo condados (lectura Pinot/API existente o endpoint mínimo GET) y poblar combobox en `pages/formulario/formulario.page.ts`
+- [X] T025 Remover/ocultar inputs «Condado (ID)» y «Cliente (dueño)» numéricos; mostrar etiqueta dueño legible; payload sigue enviando IDs en `formulario.page.ts`
+- [X] T026 [P] Detalle RO: mostrar nombre de condado (no solo id) en `pages/detalle/detalle.page.ts`
+- [X] T027 Alinear chrome formulario (Volver/Cancelar, cards, focus ring) a patrón Accidente en `formulario.page.ts`
+- [X] T028 [P] Jasmine: formulario no exige teclear idcondado — `pages/formulario/formulario.page.spec.ts`
+- [X] T029 Rebuild Docker frontend (+ django si hubo API) y humo Nueva/Editar unidad
+
+---
+
 ## Dependencies & Execution Order
 
 ```text

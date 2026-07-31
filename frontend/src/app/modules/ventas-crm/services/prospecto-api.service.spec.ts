@@ -29,4 +29,16 @@ describe('ProspectoApiService', () => {
     expect(req.request.method).toBe('GET');
     expect(result).toEqual({ data: [], meta: {} });
   });
+
+  it('listar_envia_filtros_y_cursor', () => {
+    service
+      .listar({ cursor: 5, limit: 20, activo: false, etapa_actual: 'Negociación' })
+      .subscribe();
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/ventas-crm/prospectos');
+    expect(req.request.params.get('limit')).toBe('20');
+    expect(req.request.params.get('cursor')).toBe('5');
+    expect(req.request.params.get('activo')).toBe('false');
+    expect(req.request.params.get('etapa_actual')).toBe('Negociación');
+    req.flush({ data: [], meta: { pagination: { next_cursor: null, limit: 20 } } });
+  });
 });

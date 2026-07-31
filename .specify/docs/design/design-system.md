@@ -214,6 +214,10 @@ Patrón estándar para cualquier módulo del sistema que gestione registros con 
 
   Ambos con tooltip al hover y área de toque mínima 44x44px aunque el ícono visual sea de ~18-20px (Ley de Fitts). Cuando el registro es de solo lectura para el rol activo, se muestra únicamente `eye` — nunca `pencil` deshabilitado (coherente con la regla de sidebar por rol: no exponer lo que el rol no puede hacer).
 
+**Variante Ver-only / CRUD parcial:** si el Depends-on del módulo no expone PATCH de ficha (o el rol no puede crear/editar), la lista usa **solo** `eye` y el CTA de alta del header se omite o se sustituye por la acción de dominio permitida (ej. «Entrada directa» solo Admin). El workpanel puede vivir como **página dedicada** (no split-view) cuando el spec lo declare — misma tipografía, mismos estados loading/vacío/error e misma tabla `md:table` + cards mobile. Implementación canónica de esos estados: componentes `app-list-loading-skeleton`, `app-list-error-state`, `app-list-empty-state` y constantes en `frontend/src/app/shared/ui/list-states/`.
+
+**Chrome del workpanel página dedicada (golden sample Accidente Detalles):** link «← Volver a la lista» con ícono `arrow-left` (no botón outline a la derecha como único retorno); eyebrow de modo («Detalles» / «Editar…»); `h1` + badge(s) en la misma fila; secciones en cards; en modo **Ver**, datos como `<dl>` con `dt` uppercase + `dd` texto — **nunca** `<input disabled>` para fingir solo lectura. Formularios (Crear/Editar): inputs según sección Formularios; catálogos y personas se eligen por **nombre legible** (combobox / select / typeahead). **Prohibido** pedir al usuario que teclee PKs (`idcondado`, `idcliente`, `idusuario`) o mostrarlos como campos principales de la UI (los IDs viajan solo en el payload).
+
 **2. Workpanel (vista de detalle — un mismo componente para los tres modos)**
 
 - **Desktop / Tablet:** panel amplio de ~640-720px, en layout tipo split-view junto a la lista. El ancho amplio se elige por sobre un panel angosto porque estos formularios tienen muchos campos agrupados por sección; un panel estrecho obligaría a scroll excesivo y rompería la agrupación por proximidad (Gestalt).

@@ -1,6 +1,17 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
+import {
+  LIST_MOBILE_CARD_CLASS,
+  LIST_ROW_CLASS,
+  LIST_TABLE_CLASS,
+  LIST_TABLE_TD_CLASS,
+  LIST_TABLE_TD_PRIMARY_CLASS,
+  LIST_TABLE_TH_CLASS,
+} from '../../../../shared/ui/list-states/list-table.styles';
 import { Factura } from '../../services/models/suscripciones.types';
 import { FacturaApiService } from '../../services/factura-api.service';
 import { billingEstadoBadge } from '../../billing-ui';
@@ -8,12 +19,27 @@ import { billingEstadoBadge } from '../../billing-ui';
 @Component({
   selector: 'app-historial-facturas',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe],
+  imports: [
+    CommonModule,
+    CurrencyPipe,
+    DatePipe,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './historial-facturas.page.html',
 })
 export class HistorialFacturasPage implements OnInit {
   private readonly api = inject(FacturaApiService);
+
+  readonly tableClass = LIST_TABLE_CLASS;
+  readonly thClass = LIST_TABLE_TH_CLASS;
+  readonly tdClass = LIST_TABLE_TD_CLASS;
+  readonly tdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
+  readonly rowClass = LIST_ROW_CLASS;
+  readonly mobileCardClass = LIST_MOBILE_CARD_CLASS;
+
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly items = signal<Factura[]>([]);

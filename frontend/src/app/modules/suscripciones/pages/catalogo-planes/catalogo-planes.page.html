@@ -78,131 +78,179 @@
   </div>
 
   @if (loading()) {
-    <div class="rounded-lg border border-border-default bg-bg-surface p-5" aria-busy="true">
-      <div class="h-4 w-1/3 animate-pulse rounded-md bg-border-default"></div>
-      <div class="mt-4 h-24 animate-pulse rounded-md bg-border-default"></div>
-    </div>
+    <app-list-loading-skeleton />
   } @else if (error()) {
-    <div
-      class="grid justify-items-start gap-2 rounded-lg border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
-      role="alert"
-    >
-      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
-      <button
-        type="button"
-        data-testid="btn-reintentar-planes"
-        class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
-        (click)="cargar()"
-      >
-        Reintentar
-      </button>
-    </div>
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
   } @else if (planes().length === 0) {
-    <p
-      class="m-0 rounded-lg border border-dashed border-border-default bg-bg-surface px-5 py-10 text-center text-sm text-text-secondary"
-    >
-      No hay planes que coincidan con los filtros.
+    <app-list-empty-state message="No hay planes que coincidan con los filtros." icon="list">
       @if (esDirector()) {
         <a
           routerLink="/suscripciones/planes/nuevo"
-          class="ml-1 font-medium text-accent-primary no-underline hover:underline"
-          >Crear plan</a
+          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white no-underline [&:hover:not(:disabled)]:bg-accent-hover"
         >
+          Crear plan
+        </a>
       }
-    </p>
+    </app-list-empty-state>
   } @else {
-    <section class="overflow-hidden rounded-lg border border-border-default bg-bg-surface">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-sm">
-          <thead class="bg-bg-page">
-            <tr>
-              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Nombre
-              </th>
-              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Nivel
-              </th>
-              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Precio
-              </th>
-              <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Límites
-              </th>
-              @if (esDirector()) {
-                <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                  Estado
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-text-secondary">
-                  Acciones
-                </th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of planes(); track p.idplan) {
-              <tr class="border-t border-border-default">
-                <td class="px-4 py-3 font-medium text-text-primary">{{ p.nombre }}</td>
-                <td class="px-4 py-3">
-                  <span [class]="infoBadge()">{{ p.nivel }}</span>
-                </td>
-                <td class="px-4 py-3 tabular-nums">
-                  {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }}
-                  <span class="text-text-secondary">/ mes</span>
-                </td>
-                <td class="px-4 py-3 text-text-secondary">{{ limitesTexto(p.limites) }}</td>
-                @if (esDirector()) {
-                  <td class="px-4 py-3">
-                    <span [class]="p.activo !== false ? okBadge() : warnBadge()">
-                      {{ p.activo !== false ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <div class="inline-flex flex-wrap items-center justify-end gap-1">
-                      <a
-                        [routerLink]="['/suscripciones/planes', p.idplan]"
-                        data-testid="btn-ver-plan"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary no-underline hover:bg-bg-page hover:text-text-primary"
-                        aria-label="Ver detalles del plan"
-                        title="Ver detalles"
-                      >
-                        <app-tabler-icon name="eye" [size]="18" />
-                      </a>
-                      <a
-                        [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
-                        data-testid="btn-editar-plan"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary no-underline hover:bg-bg-page hover:text-text-primary"
-                        aria-label="Editar plan"
-                        title="Editar"
-                      >
-                        <app-tabler-icon name="pencil" [size]="18" />
-                      </a>
-                      @if (p.activo !== false) {
-                        <button
-                          type="button"
-                          data-testid="btn-desactivar-plan"
-                          class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
-                          (click)="pedirDesactivar(p)"
-                        >
-                          Desactivar
-                        </button>
-                      } @else {
-                        <button
-                          type="button"
-                          data-testid="btn-reactivar-plan"
-                          class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
-                          (click)="reactivar(p)"
-                        >
-                          Reactivar
-                        </button>
-                      }
-                    </div>
-                  </td>
-                }
-              </tr>
+    <table [class]="tableClass">
+      <thead>
+        <tr class="bg-bg-surface">
+          <th [class]="thClass">Nombre</th>
+          <th [class]="thClass">Nivel</th>
+          <th [class]="thClass">Precio</th>
+          <th [class]="thClass">Límites</th>
+          @if (esDirector()) {
+            <th [class]="thClass">Estado</th>
+            <th [class]="thRightClass">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of planes(); track p.idplan) {
+          <tr [class]="rowClass">
+            <td [class]="tdPrimaryClass">{{ p.nombre }}</td>
+            <td [class]="tdClass">
+              <span [class]="infoBadge()">{{ p.nivel }}</span>
+            </td>
+            <td [class]="tdClass + ' tabular-nums'">
+              {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }}
+              <span class="text-text-secondary">/ mes</span>
+            </td>
+            <td [class]="tdClass">{{ limitesTexto(p.limites) }}</td>
+            @if (esDirector()) {
+              <td [class]="tdClass">
+                <span [class]="p.activo !== false ? okBadge() : warnBadge()">
+                  {{ p.activo !== false ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="inline-flex flex-wrap items-center justify-end gap-1">
+                  <a
+                    [routerLink]="['/suscripciones/planes', p.idplan]"
+                    data-testid="btn-ver-plan"
+                    [class]="actionBtnClass + ' no-underline'"
+                    aria-label="Ver detalles del plan"
+                    title="Ver detalles"
+                  >
+                    <app-tabler-icon name="eye" [size]="18" />
+                  </a>
+                  <a
+                    [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
+                    data-testid="btn-editar-plan"
+                    [class]="actionBtnClass + ' no-underline'"
+                    aria-label="Editar plan"
+                    title="Editar"
+                  >
+                    <app-tabler-icon name="pencil" [size]="18" />
+                  </a>
+                  @if (p.activo !== false) {
+                    <button
+                      type="button"
+                      data-testid="btn-desactivar-plan"
+                      class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+                      (click)="pedirDesactivar(p)"
+                    >
+                      Desactivar
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      data-testid="btn-reactivar-plan"
+                      class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+                      (click)="reactivar(p)"
+                    >
+                      Reactivar
+                    </button>
+                  }
+                </div>
+              </td>
             }
-          </tbody>
-        </table>
-      </div>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="grid gap-3 md:hidden">
+      @for (p of planes(); track p.idplan) {
+        <div [class]="mobileCardClass">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="text-sm font-semibold text-text-primary">{{ p.nombre }}</span>
+            @if (esDirector()) {
+              <div class="inline-flex items-center gap-1">
+                <a
+                  [routerLink]="['/suscripciones/planes', p.idplan]"
+                  data-testid="btn-ver-plan"
+                  [class]="actionBtnClass + ' no-underline'"
+                  aria-label="Ver detalles del plan"
+                  title="Ver detalles"
+                >
+                  <app-tabler-icon name="eye" [size]="18" />
+                </a>
+                <a
+                  [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
+                  data-testid="btn-editar-plan"
+                  [class]="actionBtnClass + ' no-underline'"
+                  aria-label="Editar plan"
+                  title="Editar"
+                >
+                  <app-tabler-icon name="pencil" [size]="18" />
+                </a>
+              </div>
+            }
+          </div>
+          <dl class="grid gap-1 text-sm">
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Nivel</dt>
+              <dd class="font-medium text-text-primary">{{ p.nivel }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Precio</dt>
+              <dd class="font-medium text-text-primary">
+                {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }} / mes
+              </dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Límites</dt>
+              <dd class="truncate font-medium text-text-primary">{{ limitesTexto(p.limites) }}</dd>
+            </div>
+            @if (esDirector()) {
+              <div class="flex justify-between gap-2">
+                <dt class="text-text-secondary">Estado</dt>
+                <dd class="font-medium text-text-primary">
+                  {{ p.activo !== false ? 'Activo' : 'Inactivo' }}
+                </dd>
+              </div>
+            }
+          </dl>
+          @if (esDirector()) {
+            <div class="mt-3 flex flex-wrap gap-2">
+              @if (p.activo !== false) {
+                <button
+                  type="button"
+                  data-testid="btn-desactivar-plan"
+                  class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+                  (click)="pedirDesactivar(p)"
+                >
+                  Desactivar
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  data-testid="btn-reactivar-plan"
+                  class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+                  (click)="reactivar(p)"
+                >
+                  Reactivar
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <section class="overflow-hidden rounded-lg border border-border-default bg-bg-surface">
       <div
         class="flex flex-wrap items-center justify-between gap-3 border-t border-border-default px-4 py-3"
         data-testid="catalogo-planes-pager"

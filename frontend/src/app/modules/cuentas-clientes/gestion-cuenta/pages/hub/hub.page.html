@@ -56,61 +56,102 @@
   <section class="rounded-lg border border-border-default bg-bg-surface p-4">
     <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Usuarios</h2>
     @if (cargando() && !usuarios().length) {
-      <div class="grid gap-2" data-testid="loading-skeleton">
-        @for (i of [1, 2, 3]; track i) {
-          <div class="h-12 animate-pulse rounded-md bg-bg-page"></div>
-        }
-      </div>
+      <app-list-loading-skeleton [count]="3" />
+    } @else if (error() && !usuarios().length) {
+      <app-list-error-state [message]="error()" (retry)="cargar()" />
     } @else if (!usuarios().length) {
-      <p class="m-0 text-sm text-text-secondary">No hay usuarios registrados.</p>
+      <app-list-empty-state message="No hay usuarios registrados." icon="user" />
     } @else {
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
-          <thead>
-            <tr class="border-b border-border-default text-xs uppercase tracking-wide text-text-secondary">
-              <th class="px-3 py-2 font-semibold">ID</th>
-              <th class="px-3 py-2 font-semibold">Nombre</th>
-              <th class="px-3 py-2 font-semibold">Correo</th>
-              <th class="px-3 py-2 font-semibold">Roles</th>
-              <th class="px-3 py-2 font-semibold">Estado</th>
-              <th class="px-3 py-2 font-semibold"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of usuarios(); track u.idusuario) {
-              <tr class="border-b border-border-default last:border-b-0">
-                <td class="px-3 py-2 font-mono text-text-primary">{{ u.idusuario }}</td>
-                <td class="px-3 py-2 text-text-primary">{{ u.nombres }} {{ u.apellidos }}</td>
-                <td class="px-3 py-2 text-text-secondary">{{ u.gmail }}</td>
-                <td class="px-3 py-2">
-                  <div class="flex flex-wrap gap-1">
-                    @for (r of u.roles; track r) {
-                      <span class="tsi-badge tsi-badge-neutral">{{ r }}</span>
-                    } @empty {
-                      <span class="text-xs text-text-secondary">Sin rol</span>
-                    }
-                  </div>
-                </td>
-                <td class="px-3 py-2">
-                  <span
-                    class="tsi-badge"
-                    [class.tsi-badge-success]="u.activo"
-                    [class.tsi-badge-neutral]="!u.activo"
-                  >
-                    {{ u.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td class="px-3 py-2 text-right">
-                  @if (u.activo) {
-                    <button type="button" class="tsi-btn tsi-btn-ghost" (click)="desactivar(u)">
-                      Desactivar
-                    </button>
+      <table [class]="listTableClass">
+        <thead>
+          <tr class="bg-bg-surface">
+            <th [class]="listTableThClass">ID</th>
+            <th [class]="listTableThClass">Nombre</th>
+            <th [class]="listTableThClass">Correo</th>
+            <th [class]="listTableThClass">Roles</th>
+            <th [class]="listTableThClass">Estado</th>
+            <th [class]="listTableThClass"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.idusuario) {
+            <tr [class]="listRowClass">
+              <td [class]="listTableTdPrimaryClass + ' font-mono'">{{ u.idusuario }}</td>
+              <td [class]="listTableTdClass">{{ u.nombres }} {{ u.apellidos }}</td>
+              <td [class]="listTableTdClass">{{ u.gmail }}</td>
+              <td [class]="listTableTdClass">
+                <div class="flex flex-wrap gap-1">
+                  @for (r of u.roles; track r) {
+                    <span class="tsi-badge tsi-badge-neutral">{{ r }}</span>
+                  } @empty {
+                    <span class="text-xs text-text-secondary">Sin rol</span>
                   }
-                </td>
-              </tr>
+                </div>
+              </td>
+              <td [class]="listTableTdClass">
+                <span
+                  class="tsi-badge"
+                  [class.tsi-badge-success]="u.activo"
+                  [class.tsi-badge-neutral]="!u.activo"
+                >
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td [class]="listTableTdClass + ' text-right'">
+                @if (u.activo) {
+                  <button type="button" class="tsi-btn tsi-btn-ghost" (click)="desactivar(u)">
+                    Desactivar
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Mobile: cards apiladas -->
+      <div class="grid gap-3 md:hidden">
+        @for (u of usuarios(); track u.idusuario) {
+          <div [class]="listMobileCardClass">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <span class="font-mono text-sm font-semibold text-text-primary">#{{ u.idusuario }}</span>
+              <span
+                class="tsi-badge"
+                [class.tsi-badge-success]="u.activo"
+                [class.tsi-badge-neutral]="!u.activo"
+              >
+                {{ u.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <dl class="grid gap-1 text-sm">
+              <div class="flex justify-between gap-2">
+                <dt class="text-text-secondary">Nombre</dt>
+                <dd class="font-medium text-text-primary">{{ u.nombres }} {{ u.apellidos }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-text-secondary">Correo</dt>
+                <dd class="truncate font-medium text-text-primary">{{ u.gmail }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-text-secondary">Roles</dt>
+                <dd class="flex flex-wrap justify-end gap-1">
+                  @for (r of u.roles; track r) {
+                    <span class="tsi-badge tsi-badge-neutral">{{ r }}</span>
+                  } @empty {
+                    <span class="text-xs text-text-secondary">Sin rol</span>
+                  }
+                </dd>
+              </div>
+            </dl>
+            @if (u.activo) {
+              <div class="mt-3 text-right">
+                <button type="button" class="tsi-btn tsi-btn-ghost" (click)="desactivar(u)">
+                  Desactivar
+                </button>
+              </div>
             }
-          </tbody>
-        </table>
+          </div>
+        }
       </div>
     }
   </section>

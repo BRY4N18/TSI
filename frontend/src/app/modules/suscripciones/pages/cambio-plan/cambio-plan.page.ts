@@ -2,6 +2,17 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
+import {
+  LIST_MOBILE_CARD_CLASS,
+  LIST_ROW_CLASS,
+  LIST_TABLE_CLASS,
+  LIST_TABLE_TD_CLASS,
+  LIST_TABLE_TD_PRIMARY_CLASS,
+  LIST_TABLE_TH_CLASS,
+} from '../../../../shared/ui/list-states/list-table.styles';
 import { Plan, SolicitudCambioPlan } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { SuscripcionApiService } from '../../services/suscripcion-api.service';
@@ -10,7 +21,14 @@ import { billingEstadoBadge } from '../../billing-ui';
 @Component({
   selector: 'app-cambio-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CurrencyPipe,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './cambio-plan.page.html',
 })
@@ -24,6 +42,13 @@ export class CambioPlanPage implements OnInit {
   readonly planes = signal<Plan[]>([]);
   readonly message = signal<string | null>(null);
   readonly busy = signal(false);
+
+  readonly listTableClass = LIST_TABLE_CLASS;
+  readonly listTableThClass = LIST_TABLE_TH_CLASS;
+  readonly listTableTdClass = LIST_TABLE_TD_CLASS;
+  readonly listTableTdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
+  readonly listRowClass = LIST_ROW_CLASS;
+  readonly listMobileCardClass = LIST_MOBILE_CARD_CLASS;
 
   idplansolicitado: number | null = null;
   motivo = '';
