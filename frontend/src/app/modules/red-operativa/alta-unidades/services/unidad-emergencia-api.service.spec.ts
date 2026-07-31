@@ -34,6 +34,7 @@ describe('UnidadEmergenciaApiService', () => {
         contactoproveedor: '5551234',
         unidademergencia: 'Ambulancia Norte',
         tipounidademergencia: 'Ambulancia',
+        gmail: 'unidad@test.com',
       })
       .subscribe((res) => {
         // Assert
@@ -72,6 +73,32 @@ describe('UnidadEmergenciaApiService', () => {
     });
 
     const req = http.expectOne('/api/v1/red-operativa/unidades/500');
+    expect(req.request.method).toBe('GET');
+    req.flush(mock);
+  });
+
+  it('listar_when_params_sends_query_and_reads_pagination', () => {
+    const mock = {
+      data: { items: [] },
+      meta: { pagination: { next_cursor: 42, limit: 20 } },
+    };
+
+    service
+      .listar({ cursor: 10, limit: 20, q: 'ABC', activo: true, tipounidademergencia: 'Ambulancia' })
+      .subscribe((res) => {
+        expect(res.meta.pagination?.next_cursor).toBe(42);
+        expect(res.meta.pagination?.limit).toBe(20);
+      });
+
+    const req = http.expectOne(
+      (r) =>
+        r.url === '/api/v1/red-operativa/unidades' &&
+        r.params.get('cursor') === '10' &&
+        r.params.get('limit') === '20' &&
+        r.params.get('q') === 'ABC' &&
+        r.params.get('activo') === 'true' &&
+        r.params.get('tipounidademergencia') === 'Ambulancia',
+    );
     expect(req.request.method).toBe('GET');
     req.flush(mock);
   });

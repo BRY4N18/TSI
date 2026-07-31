@@ -55,6 +55,12 @@ export const SUSCRIPCIONES_ROUTES: Routes = [
           import('./pages/plan-form/plan-form.page').then((m) => m.PlanFormPage),
       },
       {
+        path: 'planes/:idplan',
+        canActivate: [directorEstrategiaBillingGuard],
+        loadComponent: () =>
+          import('./pages/plan-detalle/plan-detalle.page').then((m) => m.PlanDetallePage),
+      },
+      {
         path: 'aprobaciones-downgrade',
         canActivate: [adminBillingGuard],
         loadComponent: () =>

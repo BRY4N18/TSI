@@ -662,12 +662,22 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         rows = list(PINOT_STORE["Dim_Plan"])
         if "IDPLAN =" in sql_upper:
             rows = [r for r in rows if r.get("idplan") == params.get("idplan")]
+        if "IDPLAN >" in sql_upper:
+            rows = [r for r in rows if int(r.get("idplan") or 0) > int(params.get("cursor", 0))]
         if "ACTIVO = TRUE" in sql_upper or "ACTIVO = %(ACTIVO)S" in sql_upper:
             want = params.get("activo", True)
             rows = [r for r in rows if r.get("activo") is want]
         elif "ACTIVO =" in sql_upper:
             want = params.get("activo", True)
-            rows = [r for r in rows if r.get("activo") is want]
+            rows = [r for r in rows if bool(r.get("activo")) is bool(want)]
+        if "NIVEL =" in sql_upper:
+            rows = [r for r in rows if r.get("nivel") == params.get("nivel")]
+        if "LIKE" in sql_upper:
+            needle = str(params.get("q") or "").lower().strip("%")
+            rows = [r for r in rows if needle in str(r.get("nombre") or "").lower()]
+        rows.sort(key=lambda r: int(r.get("idplan") or 0))
+        if "LIMIT" in sql_upper and "limit" in params:
+            rows = rows[: int(params["limit"])]
         return rows
     # --- Billing tables ---
     if "MAX(IDMETODOPAGO)" in sql_upper:

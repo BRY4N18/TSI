@@ -110,7 +110,9 @@ class ImportacionLoteUnidadService:
                 user = self._crear_o_reactivar_usuario(gmail, payload)
                 # Ligar login → unidad para CU-O30 (find_by_usuario)
                 self.registro_service.unidad_repo.update(
-                    unidad["idunidademergencia"], {"idusuario": user["idusuario"]}
+                    unidad["idunidademergencia"],
+                    {"idusuario": user["idusuario"]},
+                    base=unidad,
                 )
                 creadas.append((unidad["idunidademergencia"], user["idusuario"]))
                 temp_password = secrets.token_urlsafe(12)
@@ -121,6 +123,7 @@ class ImportacionLoteUnidadService:
                     user_id=user["idusuario"],
                     temp_password=temp_password,
                     actor_id=user_id,
+                    gmail=gmail,
                 )
         except Exception as exc:  # noqa: BLE001 — todo-o-nada: compensar y reportar
             for unidad_id, uid in creadas:

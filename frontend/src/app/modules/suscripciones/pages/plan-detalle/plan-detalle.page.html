@@ -1,0 +1,103 @@
+<div class="grid gap-6 pb-8 text-text-primary" data-testid="plan-detalle-page">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div class="grid gap-2">
+      <a
+        routerLink="/suscripciones/catalogo-planes"
+        class="inline-flex w-fit items-center gap-1 text-sm font-medium text-accent-primary no-underline hover:underline"
+      >
+        ← Volver al catálogo
+      </a>
+      <h1 class="m-0 text-[1.75rem] font-bold leading-tight">Detalles</h1>
+      <p class="m-0 max-w-xl text-sm leading-normal text-text-secondary">
+        Vista de solo lectura del plan comercial. Usa Editar para modificar.
+      </p>
+    </div>
+    @if (plan()?.idplan; as id) {
+      <a
+        [routerLink]="['/suscripciones/planes', id, 'editar']"
+        data-testid="btn-editar-desde-detalle"
+        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+      >
+        <app-tabler-icon name="pencil" [size]="18" />
+        Editar
+      </a>
+    }
+  </header>
+
+  @if (loading()) {
+    <div
+      class="rounded-lg border border-border-default bg-bg-surface p-6"
+      aria-busy="true"
+      data-testid="plan-detalle-loading"
+    >
+      <div class="h-4 w-1/3 animate-pulse rounded-md bg-border-default"></div>
+      <div class="mt-4 h-32 animate-pulse rounded-md bg-border-default"></div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="grid justify-items-start gap-2 rounded-lg border border-border-default border-l-4 border-l-alert-critical bg-alert-critical-bg p-5"
+      role="alert"
+      data-testid="plan-detalle-error"
+    >
+      <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
+      <button
+        type="button"
+        data-testid="btn-reintentar-detalle"
+        class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+        (click)="cargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    @if (plan(); as p) {
+      <section
+        class="grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6"
+        data-testid="plan-detalle-readonly"
+      >
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Nombre</span>
+            <input
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary"
+              [value]="p.nombre ?? ''"
+              disabled
+              readonly
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Precio (USD/mes)</span>
+            <input
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary tabular-nums"
+              [value]="(p.precio | currency: 'USD' : 'symbol' : '1.2-2') ?? ''"
+              disabled
+              readonly
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Nivel</span>
+            <input
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary"
+              [value]="p.nivel ?? ''"
+              disabled
+              readonly
+            />
+          </label>
+          <div class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Estado</span>
+            <div class="flex min-h-11 items-center">
+              <span [class]="p.activo !== false ? okBadge() : warnBadge()">
+                {{ p.activo !== false ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-1.5 border-t border-border-default pt-6 text-sm">
+          <span class="font-medium text-text-secondary">Límites</span>
+          <p class="m-0 text-text-primary">{{ limitesTexto(p.limites) }}</p>
+        </div>
+        <!-- Sin Guardar: página de solo lectura (FR-UI-015) -->
+      </section>
+    }
+  }
+</div>

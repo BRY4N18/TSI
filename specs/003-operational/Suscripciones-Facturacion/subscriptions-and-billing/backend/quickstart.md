@@ -68,9 +68,18 @@ Headers: `Authorization: Bearer <jwt>`, escrituras con `Idempotency-Key`.
 1. Seed: `python /app/scripts/seed_demo_director_estrategia.py` (esperar indexación Pinot ~30–60 s).
 2. Login demo: `elena.nunez.estrategia@demo.tsi.com` / `password123` (JWT rol `DirectorEstrategia`) → home `/suscripciones/catalogo-planes`.
 3. `POST /suscripciones/planes` con `nombre`, `precio`, `limites`, `nivel`, `Idempotency-Key` → `201`.
-4. `PATCH /suscripciones/planes/{idplan}` desactivar (`activo=false`) → plan no aparece en listados `solo_activos=true`; suscripciones existentes intactas.
+4. `PATCH /suscripciones/planes/{idplan}` desactivar (`activo=false`) → plan no aparece en listados `activo=true` / `solo_activos=true`; suscripciones existentes intactas.
 5. Login **Administrador** → mismo POST → `403`.
-6. UI: `/suscripciones/catalogo-planes` muestra formulario crear/desactivar solo para Director; Admin ve aprobaciones, no crear plan.
+6. UI: `/suscripciones/catalogo-planes` muestra crear/desactivar solo para Director; Admin ve aprobaciones, no crear plan.
+
+### H — Listado paginado + filtros (RNF-SUSF-005a / CA-016)
+
+1. Con JWT Director: `GET /api/v1/suscripciones/planes?limit=20` → `200`, `data.length ≤ 20`, `meta.pagination.limit=20`, `meta.pagination.next_cursor` presente solo si hay más.
+2. Si hay `next_cursor`: `GET ...?cursor=<next>&limit=20` → siguiente página sin solapar ids de la anterior.
+3. `GET ...?q=<fragmento_nombre>&limit=20` → solo planes cuyo nombre contiene el fragmento.
+4. `GET ...?activo=false&limit=20` (Director) → solo inactivos; Proveedor con `activo=false` o dump forzado → no expone inactivos ajenos a la regla de rol (no-Director → activos).
+5. `GET ...?nivel=Profesional&limit=20` → solo ese nivel.
+6. **Negativo de diseño:** la implementación **no** debe cargar el catálogo completo en memoria para armar la página (verificar en code review / test de repo).
 
 ## Jobs (management commands)
 

@@ -197,6 +197,51 @@ Cada token resuelve automáticamente a los valores de fondo/texto definidos en l
 - Columna de acción: ícono de ojo (ver detalle), no botón de texto — más compacto, no compite con los datos, y es un patrón reconocido (Ley de Jakob) en tablas de dashboards. Debe llevar `aria-label="Ver detalles"` y tooltip al hover para accesibilidad. Área de toque mínima 44x44px aunque el ícono visual sea de ~18-20px (Ley de Fitts).
 - Bordes entre filas: `border-default`, 1px, solo horizontal (sin líneas verticales entre columnas, para no sobrecargar).
 
+**Patrón CRUD operativo: Lista → Workpanel**
+
+Patrón estándar para cualquier módulo del sistema que gestione registros con operaciones de creación, consulta, edición y eliminación (casos de accidente, cuentas de cliente, unidades, usuarios, etc.). El formulario de creación/edición **no** se resuelve con un modal: se resuelve con un **workpanel**, es decir, una vista de detalle que vive como contenido de la propia pantalla y no como overlay flotante. La razón es que estos formularios suelen ser extensos y el usuario necesita mantener contexto, poder volver y poder refrescar sin perder lo que estaba viendo — condiciones que un modal no cumple bien.
+
+**1. Lista (punto de entrada del módulo)**
+
+- Botón primario **"Nuevo [registro]"** en la parte superior de la vista, siempre visible (Ley de Fitts: es la acción de creación más frecuente del módulo).
+- El identificador del registro se muestra como **texto plano** en `JetBrains Mono` (ver sección 4), **nunca como link**. Abrir un registro es siempre una acción explícita mediante los íconos de acción, nunca un click ambiguo sobre la fila o sobre el ID — esto elimina la duda de "¿si hago click aquí, veo o edito?".
+- Columna de acciones con **dos íconos Tabler de propósito distinto y no intercambiable**:
+
+| Ícono (Tabler) | Modo que abre | `aria-label` |
+|---|---|---|
+| `eye` | Ver — solo consulta | "Ver detalles" |
+| `pencil` | Editar — modificación de datos | "Editar [registro]" |
+
+  Ambos con tooltip al hover y área de toque mínima 44x44px aunque el ícono visual sea de ~18-20px (Ley de Fitts). Cuando el registro es de solo lectura para el rol activo, se muestra únicamente `eye` — nunca `pencil` deshabilitado (coherente con la regla de sidebar por rol: no exponer lo que el rol no puede hacer).
+
+**2. Workpanel (vista de detalle — un mismo componente para los tres modos)**
+
+- **Desktop / Tablet:** panel amplio de ~640-720px, en layout tipo split-view junto a la lista. El ancho amplio se elige por sobre un panel angosto porque estos formularios tienen muchos campos agrupados por sección; un panel estrecho obligaría a scroll excesivo y rompería la agrupación por proximidad (Gestalt).
+- **Mobile (<640px):** el workpanel pasa a **página completa**, mismo criterio que ya aplica el Alert modal en mobile (ancho completo, sin split, sin overlay lateral).
+
+**Modos del workpanel:**
+
+| Modo | Título del panel | Campos de datos | Acción en header |
+|---|---|---|---|
+| Ver | "Detalles" | Deshabilitados (ver Formularios) | — (sin botón de guardado) |
+| Editar | "Editar [registro]" | Editables | "Guardar cambios" |
+| Crear | "Nuevo [registro]" | Editables, formulario vacío | "Guardar" |
+
+- El modo **Crear reutiliza el mismo componente** que Editar (no una pantalla aparte): mismo layout, mismas secciones, mismo orden de campos. Esto mantiene la consistencia visual entre registrar y modificar, y evita que el formulario se desincronice entre dos implementaciones distintas.
+- En modo Editar y Crear, el foco se ubica automáticamente en el **primer campo editable relevante** al abrir el panel, con scroll a esa sección si no está visible — el usuario no debería tener que buscar dónde empezar a escribir.
+- El botón de guardado sigue el **patrón de botón en carga** ya definido en esta sección (deshabilitado para evitar doble-submit, texto en gerundio, spinner de 16px dentro del propio botón).
+- **Las acciones de dominio del registro** (ej. Descartar, Escalar, Cerrar caso) se rigen por el **estado y el rol**, no por el modo del panel: pueden estar visibles tanto en Ver como en Editar. El modo únicamente gobierna si los campos de datos son editables y si aparece el botón de guardado — nunca qué acciones de negocio están disponibles.
+
+**3. Retorno a la lista**
+
+Al volver desde el workpanel (desde cualquiera de los tres modos), la fila del último registro abierto se distingue con un **fondo de fila en `accent-primary` muy tenue** (rgba ~0.06-0.08). Se elige deliberadamente el acento de marca y no un color semántico: teñir la fila con un token de severidad haría que "esto fue lo último que abriste" se confunda con "esto es grave" o con el estado del registro, que ya se comunican mediante el badge de su celda. La intensidad debe quedar por encima del zebra striping pero muy por debajo de cualquier badge, para que se lea como una marca de orientación y no como una alerta.
+
+**4. Eliminar**
+
+La eliminación **no usa el workpanel**. El ícono de papelera (`trash`, Tabler) dispara el **Alert modal de confirmación en 2 pasos** ya definido en las secciones de Botones y Alert de este documento. Nunca hay borrado directo desde la fila ni desde dentro del workpanel sin ese paso de confirmación explícita.
+
+**Qué no define este patrón:** el manejo de estado de selección entre navegaciones (cómo se recuerda el último registro visto), el esquema de rutas y sus parámetros, y los campos, validaciones y reglas de negocio de cada tipo de registro. Todo eso se documenta en el spec del caso de uso o del módulo correspondiente; aquí solo se fija el patrón visual y de interacción, reutilizable en cualquier módulo con CRUD.
+
 **Espaciado y grid:** sistema de 8px (8, 16, 24, 32, 48, 64). Grid de 12 columnas, gutter 24px. Ancho máximo 1440px.
 
 **Iconografía semántica de severidad:** cada nivel de severidad tiene una forma/ícono fijo, no solo un color, para que el estado sea distinguible sin depender del color (accesibilidad para daltonismo, y legibilidad en condiciones de campo con mala luz). Set de íconos oficial del sistema: **Tabler Icons** — se elige por su cobertura amplia de casos específicos de TSI (mapas, dispatch/radio, cámara para evidencia) y por su geometría ligeramente angular que combina bien con la regla de radios sutiles (6-12px) del sistema, sin caer en formas ni muy orgánicas ni muy planas.

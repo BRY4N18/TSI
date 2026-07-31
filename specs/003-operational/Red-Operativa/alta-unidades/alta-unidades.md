@@ -1,7 +1,8 @@
 # Modulo: Alta de Unidades
 
-**Ubicacion:** `specs/003-operational/Red-Operativa/alta-unidades/`
-**Departamento:** Red-Operativa
+**Ubicacion:** `specs/003-operational/Red-Operativa/alta-unidades/`  
+**Departamento:** Red-Operativa  
+**CUs:** CU-O54, CU-O56, CU-O57, CU-O58 (CU-O59 retirado)
 
 Indice global del modulo (no es una spec Speckit). La feature activa de Speckit es **una capa** (`backend` o `frontend`), apuntada por `.specify/feature.json`.
 
@@ -9,17 +10,22 @@ Indice global del modulo (no es una spec Speckit). La feature activa de Speckit 
 
 | Capa | Ruta Speckit | Autoridad | Artefactos |
 |------|--------------|-----------|------------|
-| **Backend** | [`backend/`](./backend/) | Dominio, API, RF/RN/CA, OpenAPI, Pinot/Kafka | `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, `contracts/*`, `quickstart.md`, `traceability.md` |
-| **Frontend** | [`frontend/`](./frontend/) | Interaction Capability (Fase B) | `spec.md`, `plan.md`, `tasks.md`, `quickstart.md` |
+| **Backend** | [`backend/`](./backend/) | Dominio, API, RF/RN/CA, OpenAPI | `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, `contracts/*`, `quickstart.md`, `traceability.md` |
+| **Frontend** | [`frontend/`](./frontend/) | Lista + **página Detalles** + **página Formulario (crear/editar)**; SMTP/gmail; sin workpanel | `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/*`, `quickstart.md`, `tasks.md`, `checklists/` |
 
 ## Orden de trabajo
 
-1. Specificar e implementar **backend** primero (contrato OpenAPI + servicios).
-2. Luego **frontend**, con `Depends-on: ../backend` — no redefine estados, permisos ni payloads.
-3. Cambiar `.specify/feature.json` → `…/alta-unidades/backend` o `…/frontend` segun la capa en curso.
+1. Backend primero (OpenAPI + servicios) — ya disponible.
+2. Frontend: lista + Detalles (read) + Formulario (crear/editar) — **plan actualizado**; regenerar tasks e implementar (+ delta BE).
+3. Cambiar `.specify/feature.json` entre capas según el trabajo (FE vs BE delta).
+
+## Dependencias
+
+- Requiere: autenticacion-y-rbac, infraestructura / cobertura regional según backend.
+- Relacionado: evidencia-unidad (disponibilidad CU-O30).
 
 ## Convencion de nombres
 
-El archivo de indice del modulo se llama **igual que la carpeta del modulo** (`alta-unidades.md`), no `README.md`.
+El indice se llama **`alta-unidades.md`**, no `README.md`.
 
-**Split capas:** Fase A 2026-07-30 (estructural); **Fase B 2026-07-30** — Interaction Capability extraída en [`frontend/spec.md`](./frontend/spec.md).
+**Clarify 2026-07-30:** Sin workpanel. Dos páginas full (lectura vs formulario crear/editar). SMTP + gmail obligatorio. **Tasks regeneradas** T001–T032 en [`frontend/tasks.md`](./frontend/tasks.md). Siguiente: `/speckit-implement`.

@@ -113,9 +113,8 @@ export class PlanFormPage implements OnInit {
 
   private cargarPlan(id: number): void {
     this.cargando.set(true);
-    this.api.listar(false).subscribe({
-      next: (res) => {
-        const plan = (res.data ?? []).find((p) => p.idplan === id);
+    this.api.buscarPorId(id).subscribe({
+      next: (plan) => {
         this.cargando.set(false);
         if (!plan) {
           this.error.set('No se encontró el plan.');

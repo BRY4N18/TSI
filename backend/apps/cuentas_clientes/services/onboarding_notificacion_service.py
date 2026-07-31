@@ -27,26 +27,30 @@ class OnboardingNotificacionService:
         user_id: int,
         temp_password: str,
         actor_id: int,
-    ) -> None:
-        user = self.user_repo.find_by_id(user_id)
-        if not user:
-            return
-        gmail = user.get("gmail")
-        if not gmail:
-            return
+        gmail: str | None = None,
+    ) -> bool:
+        """Send invitation email. Returns True if SMTP succeeded, False otherwise."""
+        resolved_gmail = (gmail or "").strip().lower()
+        if not resolved_gmail:
+            user = self.user_repo.find_by_id(user_id)
+            if not user:
+                return False
+            resolved_gmail = (user.get("gmail") or "").strip().lower()
+        if not resolved_gmail:
+            return False
         subject = "Invitación a Tráfico Seguro Integral"
         body = (
             f"Bienvenido a Tráfico Seguro Integral.\n\n"
             f"Su cuenta corporativa #{cliente_id} está lista.\n"
-            f"Usuario: {gmail}\n"
+            f"Usuario: {resolved_gmail}\n"
             f"Contraseña temporal: {temp_password}\n\n"
             f"Debe cambiar su contraseña en el primer inicio de sesión."
         )
-        self._send(
+        return self._send(
             event="invitacion_onboarding",
             cliente_id=cliente_id,
             actor_id=actor_id,
-            gmail=gmail,
+            gmail=resolved_gmail,
             subject=subject,
             body=body,
         )
@@ -137,7 +141,7 @@ class OnboardingNotificacionService:
         gmail: str,
         subject: str,
         body: str,
-    ) -> None:
+    ) -> bool:
         try:
             self.sender.send(
                 event=event,
@@ -146,6 +150,7 @@ class OnboardingNotificacionService:
                 subject=subject,
                 body=body,
             )
+            return True
         except EmailSendError as exc:
             self.audit.log_smtp_failure(
                 user_id=actor_id,
@@ -153,3 +158,4 @@ class OnboardingNotificacionService:
                 event=event,
                 error=str(exc),
             )
+            return False

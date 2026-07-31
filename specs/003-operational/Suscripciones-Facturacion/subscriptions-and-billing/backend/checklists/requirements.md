@@ -27,7 +27,7 @@
 - [x] RF-SUSF-001 has clear actor + precondiciones
 - [x] User scenarios still valid with new actor on Esc. 15 (desactivación)
 - [x] Measurable outcomes of parent module still apply
-- [ ] **Code not yet aligned** — T091–T095 pendientes (expected; next `/speckit-implement`)
+- [x] **Code aligned** — T091–T095 entregados (DirectorEstrategia CRUD planes)
 
 ## Notes
 

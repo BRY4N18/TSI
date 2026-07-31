@@ -83,10 +83,26 @@
 - **Rationale:** `actors.md` operativo; cierra gap analyze I1/C1; Security (Principio V) con least privilege sobre catálogo comercial.
 - **Alternatives considered:** Mantener Admin en CRUD (rechazado: instrucción de producto); rol `GerenteVentas` (rechazado: CRM no es dueño de `Dim_Plan`); dual Admin|Director en POST (rechazado: diluye separación de actores).
 
+## Decision 13: Listado `Dim_Plan` — cursor + filtros en origen (enmienda 2026-07-30)
+
+- **Decision:**
+  - `GET /suscripciones/planes` usa **cursor** = último `idplan` de la página (entero), `limit` default **20** (max **100**).
+  - Filtros: `q` (substring case-insensitive sobre `nombre`), `activo` (bool; omitido = todas si Director, else forzar true para no-Director), `nivel` (enum o omitido).
+  - Compat: `solo_activos=true|false` se mapea a `activo` si `activo` no viene explícito.
+  - Respuesta: `data: Plan[]` (página) + `meta.pagination.{next_cursor, limit}` (`next_cursor=null` si no hay más).
+  - **Repo:** consulta Pinot con `WHERE` aplicables + `idplan > cursor` + `ORDER BY idplan ASC` + `LIMIT limit+1` (el +1 detecta siguiente página). **Prohibido** `SELECT * FROM Dim_Plan` sin tope y filtrar el universo en Python.
+  - Si Pinot no soporta un predicado (p. ej. LIKE frágil): proyectar columnas de lista con `LIMIT` alto acotado (p. ej. 500) **solo** como fallback documentado en tests; preferir predicados nativos. Nunca “todas las filas sin LIMIT”.
+  - Lectura puntual: `find_by_id` (detalle/form); no sustituye al listado.
+- **Rationale:** RNF-SUSF-005a / RN-SUSF-001a / api-standards; cierra anti-patrón dump→slice; alinea a Alta unidades.
+- **Alternatives considered:**
+  - Paginación solo en Angular sobre dump (rechazado: mismo anti-patrón en cliente; incumple CA-016).
+  - Offset `page=N` (rechazado: estándar del proyecto es cursor).
+  - Mantener dump “porque hay pocos planes” (rechazado: spec prohíbe explícitamente; Pinot default LIMIT 10 ya rompe dumps implícitos).
+
 ## Tie-breaker (constitution)
 
 Conflicto menor: **Maintainability** (adaptador + muchos servicios pequeños) vs velocidad de entrega. Safety no aplica → ganan Maintainability + Functional Suitability. Trade-off: más archivos de servicio, menor riesgo de monolito ilegible.
 
 ## Cierre Phase 0
 
-Todas las entradas NEEDS CLARIFICATION del Technical Context quedan resueltas (incl. actor RF-001 Session 2026-07-30). No quedan blockers de diseño para implementar T091–T095.
+Todas las entradas NEEDS CLARIFICATION del Technical Context quedan resueltas (incl. actor RF-001 Session 2026-07-30 y **listado paginado Decision 13**). No quedan blockers de diseño para el delta de listado planes.

@@ -18,6 +18,12 @@ Todas las columnas de tiempo / upsert de este módulo (`fecha_actualizacion`, `f
 - **Topic:** `Dim_Plan_topic`
 - **Reglas:** nunca delete físico; desactivar con `activo=false` (RN-SUSF-001). Severidad operativa se **deriva** de `nivel` (RN-SUSF-002), no hay columna `severidad_permitida`.
 - **Actor de mutación (Session 2026-07-30):** solo Director de Estrategia (`DirectorEstrategia`). El esquema y topic **no cambian**.
+- **Listado (RF-SUSF-001 / RNF-SUSF-005a):**
+  - Orden estable: `idplan ASC`.
+  - Página: `idplan > cursor` + `LIMIT limit` (default 20); `next_cursor` = último `idplan` de la página si hay más.
+  - Filtros: `nombre` (~ `q`), `activo`, `nivel`.
+  - **Prohibido** cargar todas las filas a memoria de aplicación para paginar (RN-SUSF-001a).
+  - Detalle puntual: lectura por `idplan` (no es listado).
 
 ### 2) `Dim_MetodoPago`
 

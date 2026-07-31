@@ -20,6 +20,9 @@ from apps.red_operativa.services.importacion_lote_unidad_service import (
 )
 from apps.red_operativa.services.proveedor_access_service import ProveedorAccessError
 from apps.red_operativa.services.registro_unidad_service import RegistroUnidadService
+from apps.red_operativa.services.reenviar_invitacion_unidad_service import (
+    ReenviarInvitacionUnidadService,
+)
 from core.api.response_envelope import error_response, success_response
 from core.auth.permissions import IsAuthenticated401
 from core.repositories.red_operativa.unidad_emergencia_repository import (
@@ -46,8 +49,50 @@ class UnidadListCreateView(APIView):
             )
         except ProveedorAccessError as exc:
             return error_response("forbidden", str(exc), "403", status_code=403)
-        items = UnidadEmergenciaRepository().list_by_cliente(cliente["idcliente"])
-        return success_response({"items": items})
+
+        try:
+            cursor = int(request.query_params.get("cursor") or 0)
+            limit = int(request.query_params.get("limit") or 20)
+        except (TypeError, ValueError):
+            return error_response(
+                "bad_request",
+                "cursor y limit deben ser enteros",
+                "400",
+                status_code=400,
+            )
+        limit = max(1, min(limit, 100))
+        q = (request.query_params.get("q") or "").strip() or None
+        tipounidademergencia = (
+            request.query_params.get("tipounidademergencia") or ""
+        ).strip() or None
+        activo_raw = request.query_params.get("activo")
+        activo: bool | None = None
+        if activo_raw is not None and str(activo_raw).strip() != "":
+            lowered = str(activo_raw).strip().lower()
+            if lowered in ("true", "1"):
+                activo = True
+            elif lowered in ("false", "0"):
+                activo = False
+            else:
+                return error_response(
+                    "bad_request",
+                    "activo debe ser true o false",
+                    "400",
+                    status_code=400,
+                )
+
+        items, next_cursor = UnidadEmergenciaRepository().list_by_cliente(
+            cliente["idcliente"],
+            cursor=cursor,
+            limit=limit,
+            q=q,
+            activo=activo,
+            tipounidademergencia=tipounidademergencia,
+        )
+        return success_response(
+            {"items": items},
+            meta={"pagination": {"next_cursor": next_cursor, "limit": limit}},
+        )
 
     def post(self, request: Request) -> Response:
         cached = get_cached_response(request, "unidad_create")
@@ -65,16 +110,17 @@ class UnidadListCreateView(APIView):
             return error_response("bad_request", str(exc), "400", status_code=400)
         except ValueError as exc:
             return error_response("conflict", str(exc), "409", status_code=409)
-        response = success_response(
-            {
-                "idunidademergencia": data["idunidademergencia"],
-                "placa": data["placa"],
-                "activo": data["activo"],
-                "idusuario": data.get("idusuario"),
-                "usuario_creado": bool(data.get("usuario_creado")),
-            },
-            status_code=status.HTTP_201_CREATED,
-        )
+        body = {
+            "idunidademergencia": data["idunidademergencia"],
+            "placa": data["placa"],
+            "activo": data["activo"],
+            "idusuario": data.get("idusuario"),
+            "usuario_creado": bool(data.get("usuario_creado")),
+            "invitacion_enviada": bool(data.get("invitacion_enviada")),
+        }
+        if data.get("invitacion_error"):
+            body["invitacion_error"] = data["invitacion_error"]
+        response = success_response(body, status_code=status.HTTP_201_CREATED)
         store_response(request, "unidad_create", response)
         return response
 
@@ -191,6 +237,25 @@ class UnidadReactivarView(APIView):
     def post(self, request: Request, idunidademergencia: int) -> Response:
         try:
             data = BajaUnidadService().reactivar(
+                idunidademergencia,
+                user_id=request.user.idusuario,
+                roles=_roles(request),
+            )
+        except ProveedorAccessError as exc:
+            return error_response("forbidden", str(exc), "403", status_code=403)
+        except LookupError:
+            return error_response("not_found", "Unidad no encontrada", "404", status_code=404)
+        except ValueError as exc:
+            return error_response("conflict", str(exc), "409", status_code=409)
+        return success_response(data)
+
+
+class UnidadInvitacionReenviarView(APIView):
+    permission_classes = [IsAuthenticated401, IsProveedorFlota]
+
+    def post(self, request: Request, idunidademergencia: int) -> Response:
+        try:
+            data = ReenviarInvitacionUnidadService().reenviar(
                 idunidademergencia,
                 user_id=request.user.idusuario,
                 roles=_roles(request),

@@ -1,13 +1,14 @@
 openapi: 3.0.3
 info:
   title: Suscripciones y Facturación — TSI
-  version: "1.0.0"
+  version: "1.1.0"
   description: >
     Contrato REST contract-first para RF-SUSF-001…003, 006, 009, 010 y regularización.
     RF-004/005/007 (batch)/008 son jobs sin endpoint público — ver research.md Decision 1.
     Envelope y errores según api-standards.md. Auth: Bearer JWT.
     RF-SUSF-001 (POST/PATCH planes): rol JWT `DirectorEstrategia` (Session 2026-07-30);
     Administrador conserva aprobaciones de downgrade y consulta de facturas.
+    v1.1.0: GET /suscripciones/planes — cursor/limit/filtros + meta.pagination (RNF-SUSF-005a).
 servers:
   - url: /api/v1
 
@@ -253,17 +254,47 @@ paths:
 
   /suscripciones/planes:
     get:
-      summary: Catálogo de planes (activos para Proveedor; todos para Admin)
+      summary: Catálogo de planes paginado (RF-SUSF-001 listado / RNF-SUSF-005a)
+      description: |
+        Paginación por cursor (`idplan`). Default limit=20 (max 100).
+        Filtros: q (nombre), activo, nivel.
+        MUST NOT materializar el catálogo completo en memoria de aplicación para paginar.
+        Compat: solo_activos → activo si activo no se envía.
       operationId: listarPlanes
       tags: [Planes]
       security: [{ bearerAuth: [] }]
       parameters:
+        - name: cursor
+          in: query
+          description: idplan exclusivo inferior (página siguiente); omitir en primera página
+          schema: { type: integer, minimum: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: q
+          in: query
+          description: Búsqueda por nombre (substring)
+          schema: { type: string }
+        - name: activo
+          in: query
+          description: true|false; omitido = todas (solo Director); no-Director fuerza true
+          schema: { type: boolean }
+        - name: nivel
+          in: query
+          schema:
+            type: string
+            enum: [Básico, Profesional, Empresarial]
         - name: solo_activos
           in: query
-          schema: { type: boolean, default: true }
+          deprecated: true
+          description: |
+            Compat — si `activo` no viene: solo_activos=true ⇒ activo=true;
+            solo_activos=false ⇒ todas (Director). Si ambos omitidos: no-Director ⇒ activos;
+            Director ⇒ todas.
+          schema: { type: boolean }
       responses:
         "200":
-          description: Lista de planes
+          description: Página de planes + meta.pagination
           content:
             application/json:
               schema:
@@ -405,7 +436,7 @@ components:
         pagination:
           type: object
           properties:
-            next_cursor: { type: string, nullable: true }
+            next_cursor: { type: integer, nullable: true }
             limit: { type: integer }
 
     AltaSuscripcionRequest:
@@ -579,11 +610,13 @@ components:
 
     PlanListEnvelope:
       type: object
+      required: [data, meta]
       properties:
         data:
           type: array
+          maxItems: 100
           items: { $ref: "#/components/schemas/Plan" }
-        meta: { type: object }
+        meta: { $ref: "#/components/schemas/PaginationMeta" }
 
     Factura:
       type: object

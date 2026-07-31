@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
 
 import { proveedorFlotaGuard } from './guards/proveedor-flota.guard';
-import { BajaPage } from './pages/baja/baja.page';
 import { CatalogoPage } from './pages/catalogo/catalogo.page';
-import { EdicionPage } from './pages/edicion/edicion.page';
+import { DetallePage } from './pages/detalle/detalle.page';
+import { FormularioPage } from './pages/formulario/formulario.page';
 
 export const ALTA_UNIDADES_ROUTES: Routes = [
   {
@@ -15,14 +15,26 @@ export const ALTA_UNIDADES_ROUTES: Routes = [
         canActivate: [proveedorFlotaGuard],
       },
       {
-        path: 'editar/:idunidademergencia',
-        component: EdicionPage,
+        path: 'detalle/:idunidademergencia',
+        component: DetallePage,
         canActivate: [proveedorFlotaGuard],
       },
       {
-        path: 'baja/:idunidademergencia',
-        component: BajaPage,
+        path: 'nueva',
+        component: FormularioPage,
         canActivate: [proveedorFlotaGuard],
+        data: { mode: 'create' },
+      },
+      {
+        path: 'editar/:idunidademergencia',
+        component: FormularioPage,
+        canActivate: [proveedorFlotaGuard],
+        data: { mode: 'edit' },
+      },
+      {
+        path: 'baja/:idunidademergencia',
+        redirectTo: 'catalogo',
+        pathMatch: 'full',
       },
       { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
     ],

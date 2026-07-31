@@ -20,8 +20,40 @@ class CatalogoPlanService:
     def __init__(self, plans: PlanRepository | None = None):
         self.plans = plans or PlanRepository()
 
-    def listar(self, *, solo_activos: bool = True) -> list[dict[str, Any]]:
-        return self.plans.list(solo_activos=solo_activos)
+    def listar(
+        self,
+        *,
+        cursor: int | None = None,
+        limit: int = 20,
+        q: str | None = None,
+        activo: bool | None = None,
+        nivel: str | None = None,
+        solo_activos: bool | None = None,
+        es_director: bool = False,
+    ) -> dict[str, Any]:
+        """Listado paginado. No-Director fuerza activo=True (Decision 13)."""
+        if nivel and nivel not in NIVELES:
+            raise CatalogoPlanError("invalid_nivel", "nivel inválido")
+
+        resolved_activo = activo
+        if resolved_activo is None and solo_activos is not None:
+            resolved_activo = True if solo_activos else None
+        if not es_director:
+            resolved_activo = True
+
+        limit_i = max(1, min(int(limit or 20), 100))
+        items, next_cursor = self.plans.list(
+            cursor=cursor,
+            limit=limit_i,
+            q=q,
+            activo=resolved_activo,
+            nivel=nivel,
+        )
+        return {
+            "items": items,
+            "next_cursor": next_cursor,
+            "limit": limit_i,
+        }
 
     def crear(self, data: dict[str, Any]) -> dict[str, Any]:
         self._validate(data)

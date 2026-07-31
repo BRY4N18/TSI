@@ -2,19 +2,79 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <p class="m-0 text-sm text-text-secondary">
       @if (esDirector()) {
-        {{ planes().length }} plan(es) en catálogo
+        Hasta {{ pageLimit }} plan(es) por página
       } @else {
         Planes publicados disponibles para contratación
       }
     </p>
-    @if (esDirector()) {
-      <a
-        routerLink="/suscripciones/planes/nuevo"
-        class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        data-testid="btn-actualizar-planes"
+        class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default bg-bg-surface px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+        (click)="cargar()"
       >
-        Crear plan
-      </a>
+        Actualizar
+      </button>
+      @if (esDirector()) {
+        <a
+          routerLink="/suscripciones/planes/nuevo"
+          data-testid="btn-crear-plan"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+        >
+          Crear plan
+        </a>
+      }
+    </div>
+  </div>
+
+  <div
+    data-testid="catalogo-planes-filtros"
+    class="grid gap-3 rounded-lg border border-border-default bg-bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4"
+  >
+    <label class="grid gap-1 text-xs font-medium text-text-secondary">
+      Buscar nombre
+      <input
+        type="search"
+        name="filtroQ"
+        [(ngModel)]="filtroQ"
+        (ngModelChange)="onFiltroTexto()"
+        data-testid="filtro-q"
+        class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+        placeholder="Texto en nombre…"
+      />
+    </label>
+    @if (esDirector()) {
+      <label class="grid gap-1 text-xs font-medium text-text-secondary">
+        Estado
+        <select
+          name="filtroEstado"
+          [(ngModel)]="filtroEstado"
+          (ngModelChange)="onFiltroSelect()"
+          data-testid="filtro-estado"
+          class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+        >
+          <option value="todas">Todas</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </label>
     }
+    <label class="grid gap-1 text-xs font-medium text-text-secondary">
+      Nivel
+      <select
+        name="filtroNivel"
+        [(ngModel)]="filtroNivel"
+        (ngModelChange)="onFiltroSelect()"
+        data-testid="filtro-nivel"
+        class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+      >
+        <option value="">Todos</option>
+        @for (n of niveles; track n) {
+          <option [value]="n">{{ n }}</option>
+        }
+      </select>
+    </label>
   </div>
 
   @if (loading()) {
@@ -30,6 +90,7 @@
       <p class="m-0 text-sm text-text-secondary">{{ error() }}</p>
       <button
         type="button"
+        data-testid="btn-reintentar-planes"
         class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
         (click)="cargar()"
       >
@@ -40,12 +101,12 @@
     <p
       class="m-0 rounded-lg border border-dashed border-border-default bg-bg-surface px-5 py-10 text-center text-sm text-text-secondary"
     >
-      No hay planes en el catálogo.
+      No hay planes que coincidan con los filtros.
       @if (esDirector()) {
         <a
           routerLink="/suscripciones/planes/nuevo"
           class="ml-1 font-medium text-accent-primary no-underline hover:underline"
-          >Crear el primero</a
+          >Crear plan</a
         >
       }
     </p>
@@ -71,7 +132,7 @@
                 <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
                   Estado
                 </th>
-                <th class="px-4 py-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-text-secondary">
                   Acciones
                 </th>
               }
@@ -96,17 +157,30 @@
                     </span>
                   </td>
                   <td class="px-4 py-3">
-                    <div class="flex flex-wrap gap-3">
+                    <div class="inline-flex flex-wrap items-center justify-end gap-1">
+                      <a
+                        [routerLink]="['/suscripciones/planes', p.idplan]"
+                        data-testid="btn-ver-plan"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary no-underline hover:bg-bg-page hover:text-text-primary"
+                        aria-label="Ver detalles del plan"
+                        title="Ver detalles"
+                      >
+                        <app-tabler-icon name="eye" [size]="18" />
+                      </a>
                       <a
                         [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
-                        class="text-sm font-medium text-accent-primary no-underline hover:underline"
+                        data-testid="btn-editar-plan"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary no-underline hover:bg-bg-page hover:text-text-primary"
+                        aria-label="Editar plan"
+                        title="Editar"
                       >
-                        Editar
+                        <app-tabler-icon name="pencil" [size]="18" />
                       </a>
                       @if (p.activo !== false) {
                         <button
                           type="button"
-                          class="text-sm font-medium text-alert-critical hover:underline"
+                          data-testid="btn-desactivar-plan"
+                          class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
                           (click)="pedirDesactivar(p)"
                         >
                           Desactivar
@@ -114,7 +188,8 @@
                       } @else {
                         <button
                           type="button"
-                          class="text-sm font-medium text-accent-primary hover:underline"
+                          data-testid="btn-reactivar-plan"
+                          class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
                           (click)="reactivar(p)"
                         >
                           Reactivar
@@ -127,6 +202,34 @@
             }
           </tbody>
         </table>
+      </div>
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 border-t border-border-default px-4 py-3"
+        data-testid="catalogo-planes-pager"
+      >
+        <p class="m-0 text-xs text-text-secondary">
+          {{ planes().length }} de hasta {{ pageLimit }} en esta página
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            data-testid="btn-pagina-anterior"
+            class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="!puedeAnterior"
+            (click)="paginaAnterior()"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            data-testid="btn-pagina-siguiente"
+            class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="!puedeSiguiente"
+            (click)="paginaSiguiente()"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </section>
   }

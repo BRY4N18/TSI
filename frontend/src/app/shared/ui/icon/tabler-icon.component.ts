@@ -37,7 +37,11 @@ export type TablerIconName =
   | 'moon'
   | 'focus-2'
   | 'user'
-  | 'car';
+  | 'car'
+  | 'plus'
+  | 'trash'
+  | 'chevron-up'
+  | 'chevron-down';
 
 const ICON_PATHS: Record<TablerIconName, string[]> = {
   dashboard: [
@@ -139,6 +143,16 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
     'M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
     'M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m6 -10h-1',
   ],
+  plus: ['M12 5l0 14', 'M5 12l14 0'],
+  trash: [
+    'M4 7l16 0',
+    'M10 11l0 6',
+    'M14 11l0 6',
+    'M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12',
+    'M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3',
+  ],
+  'chevron-up': ['M6 15l6 -6l6 6'],
+  'chevron-down': ['M6 9l6 6l6 -6'],
 };
 
 /** Paths crudos de un ícono — para reutilizar el mismo lenguaje visual fuera de Angular (ej. marcadores de Leaflet). */

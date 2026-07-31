@@ -19,12 +19,12 @@ class EmailSendError(Exception):
 
 class EmailNotificationSender:
     def send(self, *, event: str, cliente_id: int, gmail: str, subject: str, body: str) -> None:
-        if not settings.EMAIL_HOST_USER:
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
             logger.warning(
                 "smtp_skipped_not_configured",
                 extra={"event": event, "idcliente": cliente_id},
             )
-            return
+            raise EmailSendError("SMTP no configurado (EMAIL_HOST_USER/PASSWORD)")
 
         try:
             send_mail(

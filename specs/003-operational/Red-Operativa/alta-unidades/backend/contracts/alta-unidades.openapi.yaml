@@ -1,11 +1,13 @@
 openapi: 3.0.3
 info:
   title: TSI Alta y Configuración de Unidades de Emergencia API
-  version: 1.1.0
+  version: 1.3.0
   description: >
-    Contrato contract-first (delta 2026-07-24): CU-O54/O56/O57/O58 para actor Proveedor.
-    idcliente se resuelve del JWT (no en body). O56 requiere columna gmail y crea
-    credenciales con todo-o-nada total. CU-O59 eliminado — disponibilidad solo vía CU-O30.
+    Contrato contract-first (delta 2026-07-30): CU-O54/O56/O57/O58 para actor Proveedor.
+    idcliente se resuelve del JWT (no en body). O54/O56 requieren gmail; create responde
+    invitacion_enviada/invitacion_error (nunca password). Reenviar invitacion por unidad.
+    List unidades: cursor/limit (default 20) + filtros q/activo/tipounidademergencia + meta.pagination.
+    CU-O59 eliminado — disponibilidad solo vía CU-O30.
     Sigue api-standards.md del proyecto.
 servers:
   - url: /api/v1
@@ -15,20 +17,56 @@ paths:
   /red-operativa/unidades:
     get:
       tags: [Unidades]
-      summary: Listar unidades de la flota del Proveedor autenticado
+      summary: Listar unidades de la flota del Proveedor (paginado + filtros)
       operationId: listUnidades
       description: >
-        Devuelve las unidades del `idcliente` resuelto desde el JWT (flota propia).
+        Devuelve una página de unidades del `idcliente` resuelto desde el JWT.
+        Paginación por cursor (`idunidademergencia`). Default limit=20.
+        Filtros: q (placa o nombre), activo, tipounidademergencia.
       security:
         - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Último idunidademergencia de la página anterior (omitir en la primera)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Texto libre sobre placa o unidademergencia
+        - name: activo
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: true=Activa, false=Baja; omitir=Todas
+        - name: tipounidademergencia
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Ambulancia, Grúa, Patrulla, Bomberos, Defensa Civil]
       responses:
         '200':
-          description: Catálogo de unidades
+          description: Página de catálogo
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, meta]
                 properties:
                   data:
                     type: object
@@ -36,11 +74,23 @@ paths:
                     properties:
                       items:
                         type: array
+                        maxItems: 100
                         items:
                           $ref: '#/components/schemas/UnidadData'
                   meta:
                     type: object
-                    nullable: true
+                    required: [pagination]
+                    properties:
+                      pagination:
+                        type: object
+                        required: [next_cursor, limit]
+                        properties:
+                          next_cursor:
+                            type: integer
+                            nullable: true
+                            description: idunidademergencia para la siguiente página; null si no hay más
+                          limit:
+                            type: integer
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -244,6 +294,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /red-operativa/unidades/{idunidademergencia}/invitacion/reenviar:
+    post:
+      tags: [Unidades]
+      summary: Reenviar invitación SMTP de login de la unidad
+      operationId: reenviarInvitacionUnidad
+      description: >
+        Regenera credencial temporal y reenvía correo. No incluye password en la respuesta.
+        Si SMTP falla, invitacion_enviada=false e invitacion_error.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdUnidad'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Resultado del reenvío
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [idunidademergencia, idusuario, invitacion_enviada]
+                    properties:
+                      idunidademergencia:
+                        type: integer
+                      idusuario:
+                        type: integer
+                      invitacion_enviada:
+                        type: boolean
+                      invitacion_error:
+                        type: string
+                  meta:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -386,6 +482,7 @@ components:
         - placa
         - unidademergencia
         - tipounidademergencia
+        - gmail
       properties:
         idcliente:
           type: integer
@@ -413,7 +510,7 @@ components:
           type: string
           format: email
           description: >
-            Opcional en O54. Si se envía, crea login rol Unidad, credencial temporal,
+            Requerido en O54. Crea login rol Unidad, credencial temporal,
             liga idusuario e invita por correo (habilita CU-O30).
         activo:
           type: boolean
@@ -425,7 +522,7 @@ components:
       properties:
         data:
           type: object
-          required: [idunidademergencia, placa, activo]
+          required: [idunidademergencia, placa, activo, invitacion_enviada]
           properties:
             idunidademergencia:
               type: integer
@@ -433,6 +530,16 @@ components:
               type: string
             activo:
               type: boolean
+            idusuario:
+              type: integer
+            usuario_creado:
+              type: boolean
+            invitacion_enviada:
+              type: boolean
+              description: true si SMTP entregó la invitación con credenciales
+            invitacion_error:
+              type: string
+              description: Presente si invitacion_enviada=false; nunca incluye password
 
     UnidadPatchRequest:
       type: object

@@ -1,24 +1,58 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  OnDestroy,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Subject, TimeoutError, of } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  switchMap,
+  takeUntil,
+  timeout,
+} from 'rxjs/operators';
 
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
-import { Plan, PlanLimites } from '../../services/models/suscripciones.types';
+import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import {
+  NivelPlan,
+  Plan,
+  PlanLimites,
+  PlanListQuery,
+} from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { billingBadge } from '../../billing-ui';
+
+const PAGE_LIMIT = 20;
+const LIST_TIMEOUT_MS = 10_000;
+
+type EstadoFiltro = 'todas' | 'activo' | 'inactivo';
 
 @Component({
   selector: 'app-catalogo-planes-suscripciones',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink],
+  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './catalogo-planes.page.html',
 })
-export class CatalogoPlanesPage implements OnInit {
+export class CatalogoPlanesPage implements OnInit, OnDestroy {
   private readonly api = inject(PlanApiService);
   private readonly auth = inject(AuthApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroy$ = new Subject<void>();
+  private readonly load$ = new Subject<{ resetCursor: boolean }>();
+  private readonly textoFiltro$ = new Subject<string>();
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -26,9 +60,142 @@ export class CatalogoPlanesPage implements OnInit {
   readonly esDirector = signal(false);
   readonly planPendienteDesactivar = signal<Plan | null>(null);
   readonly desactivando = signal(false);
+  readonly nextCursor = signal<number | null>(null);
+  readonly pageLimit = PAGE_LIMIT;
+
+  filtroQ = '';
+  filtroEstado: EstadoFiltro = 'todas';
+  filtroNivel: NivelPlan | '' = '';
+  cursor: number | null = null;
+  private cursorStack: number[] = [];
+
+  readonly niveles: NivelPlan[] = ['Básico', 'Profesional', 'Empresarial'];
+
+  get puedeAnterior(): boolean {
+    return this.cursorStack.length > 0;
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.nextCursor() != null;
+  }
 
   ngOnInit(): void {
     this.esDirector.set(this.auth.hasRole('DirectorEstrategia'));
+    if (!this.esDirector()) {
+      this.filtroEstado = 'activo';
+    }
+
+    this.textoFiltro$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => this.cargar({ resetCursor: true }));
+
+    this.load$
+      .pipe(
+        switchMap(({ resetCursor }) => {
+          if (resetCursor) {
+            this.cursor = null;
+            this.cursorStack = [];
+            this.nextCursor.set(null);
+          }
+          this.loading.set(true);
+          this.error.set(null);
+          this.cdr.markForCheck();
+          return this.api.listar(this.buildQuery()).pipe(
+            timeout(LIST_TIMEOUT_MS),
+            catchError((err: unknown) => {
+              const detail =
+                err instanceof TimeoutError
+                  ? 'La carga tardó demasiado. Reintenta.'
+                  : ((err as { error?: { detail?: string } })?.error?.detail ??
+                    'Error al cargar planes.');
+              return of({ __error: detail as string });
+            }),
+            finalize(() => {
+              this.loading.set(false);
+              this.cdr.markForCheck();
+            }),
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res) => {
+        if (res && '__error' in res) {
+          this.planes.set([]);
+          this.nextCursor.set(null);
+          this.error.set(res.__error);
+          this.cdr.markForCheck();
+          return;
+        }
+        const envelope = res as {
+          data?: Plan[];
+          meta?: { pagination?: { next_cursor?: number | string | null } };
+        };
+        this.planes.set(envelope.data ?? []);
+        const raw = envelope.meta?.pagination?.next_cursor;
+        if (raw == null || raw === '') {
+          this.nextCursor.set(null);
+        } else {
+          const n = typeof raw === 'string' ? Number(raw) : raw;
+          this.nextCursor.set(Number.isFinite(n) ? n : null);
+        }
+        this.error.set(null);
+        this.cdr.markForCheck();
+      });
+
+    this.cargar({ resetCursor: true });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  buildQuery(): PlanListQuery {
+    const query: PlanListQuery = {
+      cursor: this.cursor,
+      limit: PAGE_LIMIT,
+      q: this.filtroQ.trim() || undefined,
+    };
+    if (this.filtroNivel) {
+      query.nivel = this.filtroNivel;
+    }
+    if (!this.esDirector()) {
+      query.activo = true;
+    } else if (this.filtroEstado === 'activo') {
+      query.activo = true;
+    } else if (this.filtroEstado === 'inactivo') {
+      query.activo = false;
+    } else {
+      // Todas — explícito para no heredar default solo_activos=true del BE
+      query.solo_activos = false;
+    }
+    return query;
+  }
+
+  cargar(opts?: { resetCursor?: boolean }): void {
+    this.load$.next({ resetCursor: opts?.resetCursor ?? false });
+  }
+
+  onFiltroTexto(): void {
+    this.textoFiltro$.next(this.filtroQ.trim());
+  }
+
+  onFiltroSelect(): void {
+    this.cargar({ resetCursor: true });
+  }
+
+  paginaSiguiente(): void {
+    const next = this.nextCursor();
+    if (next == null) return;
+    this.cursorStack.push(this.cursor ?? 0);
+    this.cursor = next;
+    this.cargar();
+  }
+
+  paginaAnterior(): void {
+    if (!this.cursorStack.length) return;
+    const prev = this.cursorStack.pop()!;
+    this.cursor = prev > 0 ? prev : null;
     this.cargar();
   }
 
@@ -42,22 +209,6 @@ export class CatalogoPlanesPage implements OnInit {
 
   warnBadge(): string {
     return billingBadge('warn');
-  }
-
-  cargar(): void {
-    this.loading.set(true);
-    this.error.set(null);
-    const soloActivos = !this.esDirector();
-    this.api.listar(soloActivos).subscribe({
-      next: (res) => {
-        this.planes.set(res.data ?? []);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.error?.detail ?? 'Error al cargar planes.');
-        this.loading.set(false);
-      },
-    });
   }
 
   pedirDesactivar(plan: Plan): void {
@@ -79,6 +230,7 @@ export class CatalogoPlanesPage implements OnInit {
         this.planPendienteDesactivar.set(null);
         this.notifications.toast(`Plan «${plan.nombre}» desactivado.`, 'success');
         this.cargar();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.desactivando.set(false);
@@ -86,6 +238,7 @@ export class CatalogoPlanesPage implements OnInit {
           err?.error?.detail ?? 'No se pudo desactivar el plan.',
           'critical',
         );
+        this.cdr.markForCheck();
       },
     });
   }
@@ -96,12 +249,14 @@ export class CatalogoPlanesPage implements OnInit {
       next: () => {
         this.notifications.toast(`Plan «${plan.nombre}» reactivado.`, 'success');
         this.cargar();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.notifications.toast(
           err?.error?.detail ?? 'No se pudo reactivar el plan.',
           'critical',
         );
+        this.cdr.markForCheck();
       },
     });
   }

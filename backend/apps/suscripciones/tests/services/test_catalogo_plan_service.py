@@ -9,11 +9,39 @@ pytestmark = pytest.mark.service
 
 
 class TestCatalogoPlanService:
-    def test_listar_activos(self, mock_pinot, mock_kafka):
+    def test_listar_activos_paginado(self, mock_pinot, mock_kafka):
         # Arrange / Act
-        planes = CatalogoPlanService().listar()
+        result = CatalogoPlanService().listar(es_director=False)
         # Assert
-        assert len(planes) >= 3
+        assert len(result["items"]) >= 3
+        assert all(r["activo"] for r in result["items"])
+        assert result["limit"] == 20
+        assert "next_cursor" in result
+
+    def test_listar_director_puede_ver_inactivos(self, mock_pinot, mock_kafka):
+        result = CatalogoPlanService().listar(
+            activo=False, es_director=True, limit=20
+        )
+        assert len(result["items"]) == 1
+        assert result["items"][0]["activo"] is False
+
+    def test_listar_director_omit_activo_es_todas(self, mock_pinot, mock_kafka):
+        result = CatalogoPlanService().listar(es_director=True, limit=20)
+        estados = {r["activo"] for r in result["items"]}
+        assert True in estados and False in estados
+
+    def test_listar_director_solo_activos_false_es_todas(self, mock_pinot, mock_kafka):
+        result = CatalogoPlanService().listar(
+            solo_activos=False, es_director=True, limit=20
+        )
+        estados = {r["activo"] for r in result["items"]}
+        assert True in estados and False in estados
+
+    def test_listar_no_director_fuerza_activos(self, mock_pinot, mock_kafka):
+        result = CatalogoPlanService().listar(
+            activo=False, es_director=False, limit=20
+        )
+        assert all(r["activo"] for r in result["items"])
 
     def test_crear_invalido_nivel(self, mock_pinot, mock_kafka):
         # Arrange / Act / Assert

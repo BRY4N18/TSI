@@ -28,17 +28,61 @@ class PlanRepository:
 
     def find_by_id(self, idplan: int) -> dict[str, Any] | None:
         rows = self.pinot.query(
-            "SELECT * FROM Dim_Plan WHERE idplan = %(idplan)s",
+            "SELECT * FROM Dim_Plan WHERE idplan = %(idplan)s LIMIT 1",
             {"idplan": idplan},
         )
         return rows[0] if rows else None
 
-    def list(self, *, solo_activos: bool = True) -> list[dict[str, Any]]:
-        rows = list(self.pinot.query("SELECT * FROM Dim_Plan", {}) or [])
-        if solo_activos:
-            rows = [r for r in rows if r.get("activo")]
-        rows.sort(key=lambda r: r.get("idplan", 0))
-        return rows
+    def list(
+        self,
+        *,
+        cursor: int | None = None,
+        limit: int = 20,
+        q: str | None = None,
+        activo: bool | None = None,
+        nivel: str | None = None,
+        solo_activos: bool | None = None,
+    ) -> tuple[list[dict[str, Any]], int | None]:
+        """Página de Dim_Plan ordenada por idplan ASC (Decision 13 / RNF-SUSF-005a).
+
+        Prohibido: SELECT * sin tope + filtrar el universo en Python.
+        """
+        if solo_activos is True and activo is None:
+            activo = True
+        elif solo_activos is False and activo is None:
+            activo = None
+
+        limit_i = max(1, min(int(limit or 20), 100))
+        cursor_i = max(0, int(cursor or 0))
+        fetch = limit_i + 1
+
+        clauses = ["idplan > %(cursor)s"]
+        params: dict[str, Any] = {"cursor": cursor_i, "limit": fetch}
+
+        if activo is not None:
+            clauses.append("activo = %(activo)s")
+            params["activo"] = bool(activo)
+        if nivel:
+            clauses.append("nivel = %(nivel)s")
+            params["nivel"] = str(nivel)
+        q_norm = (q or "").strip()
+        if q_norm:
+            clauses.append("LOWER(nombre) LIKE %(q)s")
+            params["q"] = f"%{q_norm.lower()}%"
+
+        where = " AND ".join(clauses)
+        sql = (
+            "SELECT idplan, nombre, precio, limites, nivel, activo, fecha_actualizacion "
+            f"FROM Dim_Plan WHERE {where} ORDER BY idplan ASC LIMIT %(limit)s"
+        )
+        rows = list(self.pinot.query(sql, params) or [])
+        next_cursor: int | None = None
+        if len(rows) > limit_i:
+            page = rows[:limit_i]
+            next_cursor = int(page[-1]["idplan"])
+        else:
+            page = rows
+        return page, next_cursor
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         limites = data.get("limites", {})

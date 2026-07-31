@@ -5,7 +5,7 @@ export interface ApiEnvelope<T> {
 
 export interface PaginationMetaFields {
   pagination?: {
-    next_cursor?: string | null;
+    next_cursor?: number | string | null;
     limit?: number;
   };
   regularizacion_disparada?: boolean;
@@ -119,6 +119,17 @@ export interface Plan {
   limites?: PlanLimites;
   nivel?: NivelPlan;
   activo?: boolean;
+}
+
+/** Query params for GET /suscripciones/planes (RF-SUSF-001 listado). */
+export interface PlanListQuery {
+  cursor?: number | null;
+  limit?: number;
+  q?: string;
+  activo?: boolean;
+  nivel?: NivelPlan;
+  /** @deprecated prefer `activo` */
+  solo_activos?: boolean;
 }
 
 export type PlanEnvelope = ApiEnvelope<Plan>;

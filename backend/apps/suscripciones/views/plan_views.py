@@ -17,6 +17,17 @@ from apps.suscripciones.throttles import AdminBillingThrottle
 from core.api.response_envelope import error_response, success_response
 
 
+def _parse_bool(raw: str | None) -> bool | None:
+    if raw is None or raw == "":
+        return None
+    low = str(raw).lower()
+    if low in {"1", "true", "yes", "si", "sí"}:
+        return True
+    if low in {"0", "false", "no"}:
+        return False
+    raise ValueError("invalid boolean")
+
+
 class PlanListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == "POST":
@@ -29,14 +40,69 @@ class PlanListCreateView(APIView):
         return []
 
     def get(self, request):
-        raw = request.query_params.get("solo_activos", "true")
-        solo_activos = str(raw).lower() not in {"0", "false", "no"}
-        # Solo Director puede pedir el catálogo completo (incl. inactivos).
+        try:
+            cursor_raw = request.query_params.get("cursor")
+            cursor = int(cursor_raw) if cursor_raw not in (None, "") else None
+            if cursor is not None and cursor < 0:
+                raise ValueError("cursor")
+            limit = int(request.query_params.get("limit", "20"))
+            if limit < 1 or limit > 100:
+                raise ValueError("limit")
+        except (TypeError, ValueError):
+            return error_response(
+                "invalid_query",
+                "Parámetros cursor/limit inválidos",
+                "400",
+                status_code=400,
+            )
+
+        q = (request.query_params.get("q") or "").strip() or None
+        nivel = (request.query_params.get("nivel") or "").strip() or None
+
         roles = list(getattr(request.user, "roles", []) or [])
-        if "DirectorEstrategia" not in roles:
-            solo_activos = True
-        planes = CatalogoPlanService().listar(solo_activos=solo_activos)
-        return success_response(planes)
+        es_director = "DirectorEstrategia" in roles
+
+        try:
+            activo: bool | None = None
+            solo_activos: bool | None = None
+            if "activo" in request.query_params:
+                activo = _parse_bool(request.query_params.get("activo"))
+            elif "solo_activos" in request.query_params:
+                solo_activos = _parse_bool(request.query_params.get("solo_activos"))
+            elif not es_director:
+                # Compat: no-Director que omite filtros → solo activos.
+                # Director que omite activo/solo_activos → todas (OpenAPI).
+                solo_activos = True
+        except ValueError:
+            return error_response(
+                "invalid_query",
+                "Parámetro activo/solo_activos inválido",
+                "400",
+                status_code=400,
+            )
+
+        try:
+            result = CatalogoPlanService().listar(
+                cursor=cursor,
+                limit=limit,
+                q=q,
+                activo=activo,
+                nivel=nivel,
+                solo_activos=solo_activos,
+                es_director=es_director,
+            )
+        except CatalogoPlanError as exc:
+            return error_response(exc.code, exc.detail, "400", status_code=400)
+
+        return success_response(
+            result["items"],
+            meta={
+                "pagination": {
+                    "next_cursor": result["next_cursor"],
+                    "limit": result["limit"],
+                }
+            },
+        )
 
     def post(self, request):
         cached = get_cached_response(request, "plan_create")

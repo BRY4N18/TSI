@@ -55,6 +55,7 @@ class TestProveedorOwnershipContract:
                 "contactoproveedor": "555",
                 "unidademergencia": "Own Unit",
                 "tipounidademergencia": "Ambulancia",
+                "gmail": "own-unit@test.com",
             },
             format="json",
             **proveedor_auth_headers,

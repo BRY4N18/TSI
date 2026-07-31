@@ -10,12 +10,20 @@
 **Nota de naming:** ruta canónica = esta carpeta `subscriptions-and-billing/`. El slug histórico `billing-and-auto-renewal` queda **deprecado**; las demás specs del repo deben referirse a `subscriptions-and-billing`.
 **App Django:** `apps/suscripciones/` · **Módulo Angular:** `modules/suscripciones/`
 **Fuente narrativa consultada:** `SuscripcionesFacturacion.md`
-**Estado:** Implementado (T001–T090); **enmienda actor RF-001 en curso** (Clarification 2026-07-30; tasks T091–T095)
+**Estado:** Implementado (T001–T090); **enmienda actor RF-001** (Clarification 2026-07-30); **enmienda listado catálogo planes** (paginación + filtros, Clarification 2026-07-30 listado)
 **Última actualización:** 2026-07-30
 
 ---
 
 ## Clarifications
+
+### Session 2026-07-30 (listado catálogo planes — paginación correcta)
+
+- Q: ¿El listado de `Dim_Plan` puede devolver el catálogo completo y paginar después en memoria de aplicación? → A: **No**. El listado **MUST** ser **paginado en origen** (página por defecto **20**). Está **prohibido** cargar todos los planes a memoria del servidor (o del cliente) para luego cortar una página.
+- Q: ¿Qué mecanismo de paginación? → A: **Cursor** (p. ej. por `idplan`) + `limit`, con metadatos de paginación en la respuesta de éxito (estándar de API del proyecto). No paginación por número de página offset-only como único contrato.
+- Q: ¿Qué filtros son obligatorios en el listado? → A: Al menos: **texto** (`q` sobre `nombre`), **estado** (`activo`: true / false / todas según rol), **nivel** (`Básico` | `Profesional` | `Empresarial` | todas). Cambiar filtros reinicia a la primera página (sin cursor).
+- Q: ¿Quién consume el listado paginado? → A: Capa **backend** define el contrato y la semántica; la UI Director (y lecturas de catálogo activo para Proveedor) **MUST** usar ese listado — no un dump paralelo.
+- Q: ¿Umbral de tiempo al listar? → A: En el **95 %** de consultas de listado de catálogo (tamaño operativo habitual), el resultado (página, vacío o error) está disponible en **menos de 2 segundos**.
 
 ### Session 2026-07-30
 
@@ -154,19 +162,26 @@ Orden sugerido de implementación: después de Cuentas-Clientes (`incorporacion-
 
 ### RF-SUSF-001 — Gestionar catálogo de planes *(CU-O106, Director de Estrategia; alias narrativo CU-O99)*
 
-**Descripción:** el Director de Estrategia crea, edita o desactiva planes.
+**Descripción:** el Director de Estrategia crea, edita o desactiva planes, y **consulta el catálogo en páginas filtradas**.
 
-**Precondiciones:** sesión con rol JWT `DirectorEstrategia` autorizada.
+**Precondiciones:** sesión con rol JWT `DirectorEstrategia` autorizada (mutaciones). Lectura de planes `activo=true` también disponible a actores que ya consumen el catálogo comercial (p. ej. Proveedor en alta/cambio); la lectura de inactivos queda restringida al Director.
 
-**Flujo principal:**
+**Flujo principal — Alta / edición:**
 1. Ingresa/edita: `nombre`, `precio` (número ≥ 0, USD), `limites` (objeto JSON, RN-SUSF-019), `nivel` ∈ {`Básico`,`Profesional`,`Empresarial`}.
 2. Validación: campos obligatorios; `nivel` del enum; `limites` conforme al esquema. El orden upgrade/downgrade usa solo `nivel` (RN-SUSF-005).
 3. `Dim_Plan` — escribir: esos campos + `activo=true`.
 
+**Flujo principal — Listado (obligatorio, paginado):**
+1. El cliente del listado solicita una **página** con `limit` (default **20**, máximo acotado p. ej. 100) y opcionalmente `cursor` (continuación), más filtros: `q` (texto sobre nombre), `activo`, `nivel`.
+2. El sistema devuelve **solo** esa página de planes que cumplen los filtros, orden estable (p. ej. `idplan` ascendente), más metadatos de paginación que permiten pedir la siguiente página (`next_cursor` o equivalente) sin reconsultar el universo completo.
+3. **Prohibido:** materializar el catálogo entero en memoria de aplicación (o enviar el catálogo entero al cliente) para luego “paginar” o filtrar en memoria. Los filtros y el tope de página se aplican **antes** de devolver la respuesta.
+4. Si no hay coincidencias: lista vacía + metadatos coherentes (sin error genérico).
+5. Obtención de **un** plan por `idplan` (detalle/edición) es una lectura puntual — no sustituye al listado paginado.
+
 **Flujo alternativo — Desactivación:**
 - `Dim_Plan` — escribir: `activo=false`. No se elimina la fila. Suscripciones que ya referencian el `idplan` no se alteran (RN-SUSF-001).
 
-**Efecto:** `Dim_Plan_topic`.
+**Efecto:** `Dim_Plan_topic` (mutaciones). Listado: solo lectura.
 
 ### RF-SUSF-002 — Gestionar método de pago *(CU-O101, Proveedor)*
 
@@ -339,7 +354,7 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 |---|---|
 | Functional Suitability | RF-SUSF-001…010 + CA-SUSF-* |
 | Reliability | RNF-SUSF-003, RNF-SUSF-004, CA-SUSF-002/004/005/008 |
-| Performance Efficiency | RNF-SUSF-005, CA-SUSF-006 |
+| Performance Efficiency | RNF-SUSF-005, RNF-SUSF-005a, CA-SUSF-006, CA-SUSF-016 |
 | Interaction Capability | RNF-SUSF-006 |
 | Security | RNF-SUSF-001, RNF-SUSF-002, RNF-SUSF-007 |
 | Compatibility | RNF-SUSF-008 (adaptador de pasarela) |
@@ -354,6 +369,7 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 | RNF-SUSF-003 | Idempotencia de cobro `{id_factura}-{reintentos}` y `{id_factura}-reactivacion-{idmetodopago}`. | Reliability — Tolerancia a fallos |
 | RNF-SUSF-004 | Consistencia eventual entre tablas; diseños reprocesables sin duplicar efectos de negocio. | Reliability |
 | RNF-SUSF-005 | Job de generación de facturas: **≤ 30 minutos** para hasta **10 000** suscripciones activas, sin degradar consultas hot-path de otros módulos sobre Pinot. | Performance Efficiency |
+| RNF-SUSF-005a | Listado de catálogo `Dim_Plan`: **p95 &lt; 2 s** hasta devolver página/vacío/error; página default **20**; **MUST NOT** cargar el catálogo completo en memoria de aplicación para paginar o filtrar. Cumple paginación por cursor del estándar de API. | Performance Efficiency / Compatibility |
 | RNF-SUSF-006 | UI muestra estado de suscripción, uso vs límites, último cobro; estados vacío/carga/error definidos en RF-SUSF-006. | Interaction Capability |
 | RNF-SUSF-007 | Todo evento Kafka incluye `fecha_actualizacion` precisa. | Maintainability / Security |
 | RNF-SUSF-008 | Pasarela detrás de adaptador en `apps/suscripciones/services/`. | Compatibility / Flexibility |
@@ -366,6 +382,7 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 | Código | Regla |
 |---|---|
 | RN-SUSF-001 | Un plan solo se desactiva (`activo=false`); nunca delete físico. |
+| RN-SUSF-001a | El listado de planes **nunca** entrega el catálogo completo de golpe: siempre página acotada + filtros aplicados en origen (RF-SUSF-001 listado / RNF-SUSF-005a). |
 | RN-SUSF-002 | `Dim_Plan.nivel` → severidad: `Básico`→Baja; `Profesional`→Baja+Media; `Empresarial`→Baja+Media+Alta. |
 | RN-SUSF-003 | Como máximo un `Dim_MetodoPago.activo=true` por `idcliente`. |
 | RN-SUSF-004 | Sin PAN/CVV en modelo TSI; solo token + últimos 4 dígitos. *(Normativa de negocio; el RNF equivalente es RNF-SUSF-001.)* |
@@ -566,8 +583,20 @@ Entonces ve solo las de su `idcliente`; si no hay, estado vacío definido.
 
 ### Escenario 15 — Desactivación de plan
 Dado plan con suscriptores
-Cuando Admin pone `activo=false`
+Cuando el **Director de Estrategia** pone `activo=false`
 Entonces no aparece para altas/cambios y suscripciones existentes no se rompen.
+
+### Escenario 15b — Listado paginado del catálogo
+Dado más de 20 planes que cumplen el filtro
+Cuando el Director solicita el listado con límite por defecto
+Entonces recibe **como máximo 20** planes y metadatos para pedir la página siguiente
+Y el sistema **no** ha requerido cargar el catálogo completo en memoria para armar esa página.
+
+### Escenario 15c — Filtros del catálogo
+Dado planes de distintos niveles y estados
+Cuando filtra por texto de nombre, por `activo` o por `nivel`
+Entonces solo recibe planes que cumplen el filtro
+Y al cambiar el filtro vuelve a la primera página (sin cursor previo).
 
 ---
 
@@ -590,6 +619,7 @@ Entonces no aparece para altas/cambios y suscripciones existentes no se rompen.
 | CA-SUSF-013 | 100% de segundas solicitudes con otra `Pendiente` son rechazadas (RN-SUSF-023). | Functional Suitability |
 | CA-SUSF-014 | 100% de `numero_factura` emitidos son únicos por `periodo` (RN-SUSF-026). | Reliability |
 | CA-SUSF-015 | Durante dunning (`Pendiente`), 100% de suscripciones siguen con acceso permitido hasta `Fallida`. | Functional Suitability |
+| CA-SUSF-016 | 95% de listados de catálogo de planes (página default) responden en &lt; 2 s; 100% de respuestas de listado tienen ≤ `limit` ítems (default 20); 0 listados que materialicen el catálogo completo en memoria de aplicación para paginar. | Performance Efficiency / Compatibility |
 
 ---
 

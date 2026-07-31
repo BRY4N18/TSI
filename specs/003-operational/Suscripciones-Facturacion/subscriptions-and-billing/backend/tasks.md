@@ -18,7 +18,7 @@
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Ejecutable en paralelo (archivos distintos, sin dependencia directa)
-- **[Story]**: Historia (`US1`–`US8`)
+- **[Story]**: Historia (`US1`–`US9`)
 - Cada descripción incluye path exacto de archivo
 
 ### User Story Map
@@ -26,6 +26,7 @@
 | Story | Prioridad | CU/RF | Escenarios spec / quickstart |
 |-------|-----------|-------|------------------------------|
 | US1 | P1 🎯 MVP | RF-001 O106, RF-010 O111 | Esc. 0, 15; quickstart A (parcial) |
+| US9 | P1 🎯 MVP delta | RF-001 listado + RNF-005a / CA-016 | Esc. 15b, 15c; quickstart **H** (reopen US1 listado) |
 | US2 | P1 | RF-002 O101 | Esc. 1, 1b, 2 |
 | US3 | P1 | RF-004 O107, RF-005 O102 | Esc. 6, 6b, 7–9; jobs facturación/dunning |
 | US4 | P1 | RF-007 O105 | Esc. 10, 11, 11b; quickstart D |
@@ -309,37 +310,94 @@
 
 **Checkpoint**: RF-SUSF-001 operable solo por Director de Estrategia end-to-end.
 
+---
+
+## Phase 12: Setup — Delta listado paginado (Shared)
+
+**Purpose**: Gate de contrato OpenAPI v1.1.0 ya diseñado en `/speckit-plan`; confirmar alineación antes de código.
+
+**Prior work**: T001–T095 entregados. Este bloque es el **delta** Clarification 2026-07-30 listado (Decision 13). UI pager → [`../frontend/tasks.md`](../frontend/tasks.md) tras este BE.
+
+- [X] T096 Verificar que `listarPlanes` en `specs/003-operational/Suscripciones-Facturacion/subscriptions-and-billing/backend/contracts/subscriptions-and-billing.openapi.yaml` documenta `cursor`, `limit` (default 20, max 100), `q`, `activo`, `nivel`, `solo_activos` deprecated, y `PlanListEnvelope.meta` → `PaginationMeta`
+
+**Checkpoint**: Contrato listo para implementar.
+
+---
+
+## Phase 13: Foundational — Repo listado en origen (Blocking)
+
+**Purpose**: Eliminar dump→slice en `PlanRepository.list`. Bloquea US9.
+
+**CRITICAL**: No empezar vista/servicio de listado sin T097–T098.
+
+- [X] T097 Reescribir `list` en `backend/core/repositories/suscripciones/plan_repository.py`: filtros `q` / `activo` / `nivel`, cursor `idplan > cursor`, `ORDER BY idplan ASC`, `LIMIT limit+1` (Decision 13); **prohibido** `SELECT * FROM Dim_Plan` sin tope + filtrar universo en Python; devolver filas de página (+ señal has_more / next_cursor)
+- [X] T098 [P] Extender tests (marker: `repository`, AAA) en `backend/apps/suscripciones/tests/repositories/test_plan_repository.py`: ≤limit, next página, filtros q/activo/nivel, assert SQL/llamada Pinot con LIMIT (no dump)
+
+**Checkpoint**: Repo lista páginas acotadas.
+
+---
+
+## Phase 14: User Story 9 — Listado paginado + filtros (Priority: P1) 🎯 MVP delta
+
+**Goal**: `GET /suscripciones/planes` cumple RF-SUSF-001 listado, RNF-SUSF-005a, RN-SUSF-001a, Esc. 15b/15c, CA-SUSF-016.
+
+**Independent Test**: JWT Director `GET .../planes?limit=20` → `data.length ≤ 20` + `meta.pagination`; filtros q/activo/nivel; Proveedor no ve inactivos; code/test prueba ausencia de dump completo.
+
+### Tests (escribir / actualizar; fallan hasta T101)
+
+- [X] T099 [P] [US9] Contract tests listado paginado/filtrado (marker: `api`, AAA) en `backend/apps/suscripciones/tests/api/test_planes_contract.py`: ≤limit, `next_cursor`, q/activo/nivel, compat `solo_activos`, rol no-Director fuerza activos, lista vacía coherente
+- [X] T100 [P] [US9] Performance p95 listado &lt; 2 s (marker: `slow` / `performance`, AAA) en `backend/apps/suscripciones/tests/performance/test_list_planes_p95.py` (CA-SUSF-016; alinear a `.specify/docs/architecture/testing.md`)
+
+### Implementation
+
+- [X] T101 [US9] Extender `CatalogoPlanService.listar` en `backend/apps/suscripciones/services/catalogo_plan_service.py` con `cursor`, `limit`, filtros; devolver `{items, next_cursor, limit}` (o tupla equivalente); mapear `solo_activos` → `activo` si `activo` omitido; Director puede `activo` omitido/false; no-Director fuerza `activo=true`
+- [X] T102 [P] [US9] Actualizar tests de servicio (marker: `service`, AAA) en `backend/apps/suscripciones/tests/services/test_catalogo_plan_service.py` para firma paginada + reglas de rol
+- [X] T103 [US9] Actualizar `PlanListCreateView.get` en `backend/apps/suscripciones/views/plan_views.py`: parsear query params; `success_response(data, meta={"pagination": {"next_cursor": ..., "limit": ...}})`; validar `limit` 1..100 (default 20)
+- [X] T104 [US9] Asegurar que mutaciones POST/PATCH y `find_by_id` siguen intactos; callers internos de `listar`/`list` (si los hay) migran a página o `find_by_id` — buscar usos en `backend/apps/suscripciones/` y ajustar
+
+**Checkpoint**: Esc. 15b/15c vía API; CA-016 contract + p95.
+
+---
+
+## Phase 15: Polish — Delta listado
+
+**Purpose**: Humo, bridge tipos, Docker.
+
+- [X] T105 Ejecutar humo quickstart **H** en `specs/003-operational/Suscripciones-Facturacion/subscriptions-and-billing/backend/quickstart.md` (páginas, filtros, rol)
+- [X] T106 [P] [Bridge-FE] Extender tipos listado (`cursor|limit|q|activo|nivel` + `meta.pagination`) en `frontend/src/app/modules/suscripciones/services/models/suscripciones.types.ts` desde OpenAPI (UI pager = capa frontend)
+- [X] T107 Rebuild Docker Django: `docker compose -f docker/accidentes.yml up -d --build django` y verificar `accidentes-django` Up
+
+**Checkpoint**: Delta BE listo para `/speckit-tasks` + implement en capa frontend (FR-UI-019…021).
+
+---
+
 ## Dependencies & Execution Order
 
-### Story completion order
+### Story completion order (histórico + delta)
 
 ```text
-Phase 1 Setup → Phase 2 Foundational
-  → US1 (MVP: planes + alta)
-  → US2 (método pago)
-  → US3 (factura + cobro + dunning)
-  → US4 (mora)  [usa US2+US3]
-  → US5 (cambio plan) [usa US1]
-  → US6 (renovación/cancelación) [usa US3]
-  → US7 (historial) [usa US3]
-  → US8 (Angular) [tras contrato API estable US1–US7]
-  → Polish
+[Histórico] Phase 1–2 → US1…US8 → Phase 11 Director (T091–T095)  [X]
+[Delta activo]
+  Phase 12 Setup (T096)
+  → Phase 13 Foundational repo (T097–T098)
+  → Phase 14 US9 (T099–T104) 🎯 MVP delta
+  → Phase 15 Polish (T105–T107)
+  → (siguiente capa) frontend FR-UI-019…021
 ```
 
-### Parallel opportunities
+### Parallel opportunities (delta)
 
-- Tras T008–T017: tests de repositorio `[P]` en paralelo.
-- T086–T089 (idempotency + throttles) en paralelo tras T024.
-- Dentro de cada US: tests `[P]` antes/en paralelo a implementación de archivos distintos.
-- US5 / US7 pueden avanzar en paralelo tras US1+US3.
-- US8 T075–T076 en paralelo tras tipos.
-- T090 smoke latency en paralelo con T084.
+- T099 ∥ T100 tras T096 (tests fallan hasta T103).
+- T102 ∥ puede ir tras T101.
+- T106 ∥ T105 tras T103.
+- Tras T098: T101 → T103 en serie (mismo flujo GET).
 
 ### Independent test criteria (resumen)
 
 | Story | Cómo probar solo |
 |-------|------------------|
 | US1 | API planes + POST `/suscripciones` + GET `/mia` |
+| US9 | `GET /planes?limit=20` + filtros + `meta.pagination`; repo sin dump; p95 |
 | US2 | POST/GET métodos-pago + assert un activo |
 | US3 | management facturación/dunning + asserts Pinot fake |
 | US4 | forzar Fallida → Suspendida → reintentar-cobro |
@@ -352,26 +410,28 @@ Phase 1 Setup → Phase 2 Foundational
 
 ## Implementation Strategy
 
-### MVP (recommended first ship)
+### MVP histórico (ya entregado)
 
-1. Completar Phase 1–2 + **US1 + US2 + US3 + US4** (contratar, pagar, facturar, mora).
-2. Validar quickstart A–D.
-3. Luego US5–US8 y polish.
+Phase 1–2 + US1…US8 + Director T091–T095.
+
+### MVP delta (ship ahora)
+
+1. T096 → T097–T098 → T101–T104 (con T099–T100).
+2. Validar quickstart **H** + T107.
+3. Luego capa frontend: filtros/pager catálogo planes.
 
 ### Incremental delivery
 
-Cada US deja endpoints/jobs testeables sin depender de la UI Angular (US8 al final).
+US9 no reabre mutaciones de plan ni jobs; solo lectura listado. Callers internos migran o usan `find_by_id`.
 
 ---
 
 ## Format validation
 
-- Todas las tareas usan `- [ ]`, ID `Tnnn`, paths absolutos de repo relativos, labels `[USx]` en fases de historia.
-- Toda implementación de **servicio** o **repositorio** tiene tarea de test pareja con marker y AAA explícitos en la descripción.
-- Remediation analyze 2026-07-26: C1 (`ClienteRepository`), C2 (throttles T088–T089), C3 (Idempotency-Key T086–T087), C4 (smoke latency T090), A1 (wrapper T082).
+- Todas las tareas usan `- [ ]` / `- [X]`, ID `Tnnn`, paths de repo, labels `[US9]` en fase de historia delta.
+- Toda implementación de **servicio** o **repositorio** del delta tiene tarea de test pareja con marker y AAA.
+- Remediation analyze 2026-07-26: C1–C4 / A1 (histórico). Enmienda listado 2026-07-30: T096–T107.
 
 ---
 
----
-
-> **Histórico-UI:** las fases/tareas Angular de este archivo quedan como registro pre-split. Trabajo UI nuevo → capa [`../frontend/`](../frontend/).
+> **Histórico-UI:** las fases/tareas Angular de este archivo quedan como registro pre-split. Trabajo UI pager/filtros → capa [`../frontend/`](../frontend/) tras T107.

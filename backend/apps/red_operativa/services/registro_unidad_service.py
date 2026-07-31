@@ -1,9 +1,9 @@
 """CU-O54 — registrar unidad de emergencia individual (actor Proveedor).
 
-Si el body incluye `gmail`, crea login (rol Unidad), credencial temporal e
-invitación, y liga `Dim_UnidadEmergencia.idusuario` (requisito para CU-O30).
-Sin `gmail` la unidad queda operativa en catálogo pero no puede declarar
-disponibilidad hasta que se asigne login (p. ej. vía lote O56 o re-alta).
+Requiere `gmail`: crea login (rol Unidad), credencial temporal e invitación,
+y liga `Dim_UnidadEmergencia.idusuario` (requisito para CU-O30).
+Si SMTP falla, la unidad y el usuario se conservan; la respuesta reporta
+`invitacion_enviada=false` + `invitacion_error` (nunca la contraseña).
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ TIPOS_PROPIEDAD = {"Propia", "Externa"}
 TIPOS_UNIDAD = {"Ambulancia", "Grúa", "Patrulla", "Bomberos", "Defensa Civil"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 UNIDAD_ROLE = "Unidad"
+SMTP_FAIL_MSG = "No se pudo enviar la invitación por correo. Use Reenviar."
 
 
 class RegistroUnidadService:
@@ -60,7 +61,9 @@ class RegistroUnidadService:
         payload = dict(data)
         payload.pop("idcliente", None)
         gmail_raw = payload.pop("gmail", None)
-        payload["idcliente"] = cliente["idcliente"]
+        if gmail_raw is None or str(gmail_raw).strip() == "":
+            raise KeyError("gmail es requerido")
+        payload["idcliente"] = int(cliente["idcliente"])
         if not payload.get("tipopropiedad"):
             payload["tipopropiedad"] = "Externa"
         self._validar(payload)
@@ -69,35 +72,44 @@ class RegistroUnidadService:
         if not self.unidad_repo.condado_exists(payload["idcondado"]):
             raise LookupError(f"idcondado {payload['idcondado']} no existe")
 
-        gmail = self._normalizar_gmail(gmail_raw) if gmail_raw is not None else None
-        if gmail is not None:
-            unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
-            if not unidad_role or not unidad_role.get("activo", True):
-                raise ValueError(f"Rol '{UNIDAD_ROLE}' no configurado o inactivo")
-            existing_user = self.user_repo.find_by_gmail(gmail)
-            if existing_user and existing_user.get("activo", True):
-                raise ValueError(f"Correo ya registrado: {gmail}")
+        gmail = self._normalizar_gmail(gmail_raw)
+        unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
+        if not unidad_role or not unidad_role.get("activo", True):
+            raise ValueError(f"Rol '{UNIDAD_ROLE}' no configurado o inactivo")
+        existing_user = self.user_repo.find_by_gmail(gmail)
+        if existing_user and existing_user.get("activo", True):
+            raise ValueError(f"Correo ya registrado: {gmail}")
 
         unidad = self.unidad_repo.create(payload)
-        if gmail is None:
-            return unidad
-
         user = self._crear_o_reactivar_usuario(gmail, payload)
+        # Pass local create payload as base — avoid Pinot read-after-write lag
+        # which can return incomplete rows (missing idcondado / idcliente=0).
         updated = self.unidad_repo.update(
-            unidad["idunidademergencia"], {"idusuario": user["idusuario"]}
+            unidad["idunidademergencia"],
+            {"idusuario": user["idusuario"]},
+            base=unidad,
         )
         temp_password = secrets.token_urlsafe(12)
         self.credential_repo.create_temporary(user["idusuario"], temp_password)
         self.role_repo.assign_role_to_user(user["idusuario"], unidad_role["idrol"])
-        self.notificacion.notify_invitacion(
+        enviada = self.notificacion.notify_invitacion(
             cliente_id=cliente["idcliente"],
             user_id=user["idusuario"],
             temp_password=temp_password,
             actor_id=user_id,
+            gmail=gmail,
         )
         result = updated or unidad
         result["idusuario"] = user["idusuario"]
         result["usuario_creado"] = True
+        result["invitacion_enviada"] = bool(enviada)
+        if not enviada:
+            result["invitacion_error"] = SMTP_FAIL_MSG
+        else:
+            result.pop("invitacion_error", None)
+        # Never expose credentials in API responses
+        result.pop("temp_password", None)
+        result.pop("password", None)
         return result
 
     def _normalizar_gmail(self, gmail_raw: Any) -> str:

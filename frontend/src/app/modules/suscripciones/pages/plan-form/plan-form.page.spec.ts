@@ -50,4 +50,14 @@ describe('PlanFormPage', () => {
     page.guardar();
     expect(planApi.crear).toHaveBeenCalled();
   });
+
+  it('places primary save CTA in the page header', () => {
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector(
+      '[data-testid="btn-guardar-plan-header"]',
+    ) as HTMLButtonElement | null;
+    expect(btn).toBeTruthy();
+    expect(btn?.getAttribute('form')).toBe('plan-form');
+    expect(btn?.textContent?.trim()).toContain('Publicar plan');
+  });
 });

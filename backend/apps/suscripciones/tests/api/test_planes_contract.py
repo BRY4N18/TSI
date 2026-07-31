@@ -13,7 +13,103 @@ class TestPlanesContract:
         )
         # Assert
         assert response.status_code == 200
-        assert len(response.json()["data"]) >= 3
+        body = response.json()
+        assert len(body["data"]) >= 3
+        assert all(p["activo"] for p in body["data"])
+        pagination = body["meta"]["pagination"]
+        assert pagination["limit"] == 20
+        assert "next_cursor" in pagination
+
+    def test_list_planes_paginado_y_filtros(
+        self, api_client, director_estrategia_billing_auth_headers, pinot_store
+    ):
+        for i in range(5, 30):
+            pinot_store["Dim_Plan"].append(
+                {
+                    "idplan": i,
+                    "nombre": f"Extra {i}",
+                    "nivel": "Profesional" if i % 2 == 0 else "Básico",
+                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1}',
+                    "activo": True,
+                    "precio": 10.0,
+                    "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
+                }
+            )
+
+        r1 = api_client.get(
+            "/api/v1/suscripciones/planes?limit=5",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert r1.status_code == 200
+        body1 = r1.json()
+        assert len(body1["data"]) == 5
+        next_cursor = body1["meta"]["pagination"]["next_cursor"]
+        assert next_cursor is not None
+
+        r2 = api_client.get(
+            f"/api/v1/suscripciones/planes?limit=5&cursor={next_cursor}",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert r2.status_code == 200
+        ids1 = {p["idplan"] for p in body1["data"]}
+        ids2 = {p["idplan"] for p in r2.json()["data"]}
+        assert ids1.isdisjoint(ids2)
+
+        rq = api_client.get(
+            "/api/v1/suscripciones/planes?q=Profesional&limit=20",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert rq.status_code == 200
+        assert all("profes" in p["nombre"].lower() for p in rq.json()["data"])
+
+        rn = api_client.get(
+            "/api/v1/suscripciones/planes?nivel=Empresarial&limit=20",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert rn.status_code == 200
+        assert all(p["nivel"] == "Empresarial" for p in rn.json()["data"])
+
+        rain = api_client.get(
+            "/api/v1/suscripciones/planes?activo=false&limit=20",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert rain.status_code == 200
+        assert all(p["activo"] is False for p in rain.json()["data"])
+
+        # Director omite activo/solo_activos → todas (activos + inactivos)
+        rtodas = api_client.get(
+            "/api/v1/suscripciones/planes?limit=20",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert rtodas.status_code == 200
+        estados = {p["activo"] for p in rtodas.json()["data"]}
+        assert True in estados and False in estados
+
+        ract = api_client.get(
+            "/api/v1/suscripciones/planes?activo=true&limit=20",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert ract.status_code == 200
+        assert all(p["activo"] is True for p in ract.json()["data"])
+
+    def test_list_planes_proveedor_no_ve_inactivos(
+        self, api_client, proveedor_billing_auth_headers
+    ):
+        response = api_client.get(
+            "/api/v1/suscripciones/planes?activo=false&limit=20",
+            **proveedor_billing_auth_headers,
+        )
+        assert response.status_code == 200
+        assert all(p["activo"] for p in response.json()["data"])
+
+    def test_list_planes_invalid_limit(
+        self, api_client, director_estrategia_billing_auth_headers
+    ):
+        response = api_client.get(
+            "/api/v1/suscripciones/planes?limit=0",
+            **director_estrategia_billing_auth_headers,
+        )
+        assert response.status_code == 400
 
     def test_create_plan_director(self, api_client, director_estrategia_billing_auth_headers):
         response = api_client.post(

@@ -45,6 +45,7 @@ class TestReactivarUnidadContract:
                 "contactoproveedor": "555",
                 "unidademergencia": "Otra unidad",
                 "tipounidademergencia": "Patrulla",
+                "gmail": "otra-reactivar@test.com",
             },
             format="json",
             **proveedor_auth_headers,
