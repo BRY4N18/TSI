@@ -8,6 +8,26 @@
 
 **Input**: User description: "Crear la spec de infraestructura táctica ('tactico-infra') para el nuevo sistema de informes tácticos del departamento de Gestión de Emergencias. Se necesita agregar infraestructura NUEVA (ClickHouse + Apache Airflow) agrupada bajo el nombre 'tactico', separada pero conviviendo con el stack de infraestructura actual (Kafka + Apache Pinot). Es solo infraestructura: servicios, puertos, volúmenes, variables de entorno, y cómo se conecta este stack con Pinot (fuente) hacia ClickHouse (destino de informes compuestos) vía Airflow. No incluye DAGs de negocio ni workpanels de frontend — eso va en specs separadas."
 
+**Trazabilidad**: Objetivo táctico (OT) del departamento de Gestión de Emergencias — habilitar informes tácticos compuestos (p. ej. detección de pérdida de señal GPS, ratio demanda/capacidad por condado), trazados en `informestacticos/auditoria-esquemas-informes-v2.md`. Esta feature no introduce un OE/OT nuevo: entrega el prerrequisito de infraestructura batch para esos informes ya auditados.
+
+**Artefactos técnicos**: en esta misma carpeta — [`infraestructura.md`](./infraestructura.md) (índice), [`plan.md`](./plan.md), [`research.md`](./research.md), [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md), [`tasks.md`](./tasks.md). Esta `spec.md` describe el *qué* y el *por qué*.
+
+## Constitution Compliance (ISO/IEC 25010:2023) *(mandatory)*
+
+Cada característica se declara aquí según la Golden Rule de `.specify/memory/constitution.md`. El detalle de diseño y el Constitution Check del plan están en [`plan.md`](./plan.md).
+
+| Characteristic | Applies? | Justification |
+| --- | --- | --- |
+| Functional Suitability | Yes | Habilita los informes tácticos compuestos ya trazados (OT Emergencias); sin esta capa batch no hay dónde materializarlos. |
+| Reliability | Partial | Persistencia entre reinicios y healthchecks del stack; recuperación de DAGs de negocio = N/A (aún no hay DAGs). |
+| Performance Efficiency | N/A | No participa del camino crítico de despacho; solo se exige arranque del stack en menos de 5 min (SC-001). |
+| Interaction Capability | N/A | No hay UI de operador/técnico; la UI de Airflow es administración interna. |
+| Security | Yes | Autenticación obligatoria en Airflow (FR-008); alcance solo entorno de desarrollo/interno; datos sensibles de víctimas = N/A en esta fase. |
+| Compatibility | Yes | Convivencia sin colisión con Kafka/Pinot (puertos, nombres, volúmenes, red compartida). |
+| Maintainability | Yes (priority) | Prefijo `tactico-*`, documentación en `infrastructure.md`, mismo patrón de compose que el stack operativo. |
+| Flexibility | Yes | Stack independiente: se levanta/detiene sin tocar el operativo; reemplazable sin migrar Pinot. |
+| Safety | N/A | No interviene en asignación/despacho de unidades ni en decisiones en tiempo real sobre víctimas. |
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Levantar el stack táctico junto al stack operativo existente (Priority: P1)
@@ -78,6 +98,7 @@ Como responsable de infraestructura, quiero que el orquestador (Airflow) tenga c
 - **FR-008**: El acceso administrativo a la interfaz web de Airflow DEBE requerir autenticación (usuario/contraseña), no debe quedar abierto sin credenciales.
 - **FR-009**: La documentación de infraestructura del proyecto (según el patrón ya usado en `.specify/docs/infra/infrastructure.md`) DEBE actualizarse para reflejar los nuevos servicios, puertos y variables de entorno del stack `tactico`.
 - **FR-010**: El stack `tactico` NO DEBE requerir cambios en el esquema de datos de Pinot ni en el código de las apps de negocio existentes — es exclusivamente infraestructura nueva a su lado.
+- **FR-011**: El stack `tactico` NO DEBE escribir datos de dominio de emergencia (accidentes, despachos, ubicaciones, identidades) fuera del canal Kafka→Pinot. ClickHouse recibe solo resultados analíticos batch orquestados; el Postgres de Airflow almacena solo metadatos del orquestador, nunca el modelo dimensional operativo.
 
 ### Key Entities
 
@@ -98,7 +119,7 @@ Como responsable de infraestructura, quiero que el orquestador (Airflow) tenga c
 ## Assumptions
 
 - El stack `tactico` se ejecuta en el mismo entorno de desarrollo/despliegue (Docker) que el stack operativo actual (`docker/docker-compose.infraestructura.yml`), como un archivo compose adicional (p. ej. `docker-compose.tactico.yml`) que se levanta junto al existente — no reemplaza ni fusiona con él.
-- Airflow requiere una base de datos relacional propia para sus metadatos (independiente de ClickHouse y de las bases operativas del proyecto); se asume Postgres por ser el backend de metadatos estándar y recomendado de Airflow.
+- Airflow requiere una base de datos relacional propia para sus metadatos (independiente de ClickHouse y de las bases operativas del proyecto); se asume Postgres por ser el backend de metadatos estándar y recomendado de Airflow. Ese Postgres **no** almacena datos de dominio TSI (no contradice la regla de canal único Kafka→Pinot para el modelo dimensional).
 - Esta fase no expone ningún puerto de ClickHouse ni de Airflow a internet — el alcance es entorno de desarrollo/interno, igual que el resto de `infrastructure.md`.
 - Las credenciales de administración de Airflow y de acceso a ClickHouse en esta fase son de desarrollo (no se define aquí un esquema de gestión de secretos productivo); eso queda fuera de alcance.
 - Ningún DAG de negocio, ninguna tabla de ClickHouse con modelo de datos real, ni ningún workpanel de frontend se define en esta spec — son objeto de specs posteriores dedicadas a informes simples e informes compuestos del departamento de Gestión de Emergencias.

@@ -7,6 +7,18 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-01 — Revisión `002-tactico` (spec vs. docs globales)
+
+Alcance: `specs/002-tactico/`, `.specify/docs/infra/infrastructure.md`
+
+**T1** — `spec.md` no declaraba las 9 características ISO/IEC 25010 ni trazabilidad OT (solo el `plan.md` lo hacía). Corregido: sección Constitution Compliance + enlace a `informestacticos/auditoria-esquemas-informes-v2.md`; FR-011 (ClickHouse/Postgres Airflow ≠ almacén de dominio).
+
+**T2** — `infrastructure.md` §1 afirmaba “infraestructura de datos única / no se usa PostgreSQL” de forma absoluta, en tensión con el stack `tactico` ya documentado en §2.1. Reformulado: Kafka+Pinot = canal único del *modelo dimensional*; Postgres de Airflow = solo metastore. Encabezado §5 actualizado (ya no dice “no implementar todavía” mientras §5.1 está activo). Regla vinculante §4 añadida sobre ClickHouse/Postgres.
+
+**T3** — Todo el feature vive bajo `specs/002-tactico/infraestructura/` (`spec.md`, plan, research, data-model, contracts, quickstart, tasks, índice). `feature.json` apunta a esa carpeta. Se eliminó `checklists/` (gate de `/specify` ya cumplido; no aporta valor operativo tras plan/tasks cerrados).
+
+---
+
 ## 2026-07-15 — Módulo Emergencias (revisión spec vs. implementación)
 
 Alcance: `despacho-inteligente`, `evidencia-unidad`, `registro-accidente`, `seguimiento-cierre-de-casos`

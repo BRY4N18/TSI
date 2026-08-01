@@ -21,7 +21,7 @@ Representa cada contenedor que compone el stack. No es una tabla de base de dato
 **Relaciones**:
 - `tactico-airflow-init` depende de `tactico-airflow-postgres` (healthy) — corre migraciones y crea el usuario admin, luego termina (no es un proceso de larga duración).
 - `tactico-airflow-webserver` y `tactico-airflow-scheduler` dependen de `tactico-airflow-init` (completado) y de `tactico-airflow-postgres` (healthy).
-- Ninguno de los servicios `tactico-*` depende de servicios del stack operativo (`zookeeper`, `kafka`, `pinot-*`) para arrancar — solo la *tarea de conectividad de prueba* (User Story 3) requiere que Pinot esté arriba, no el arranque del stack en sí (ver Edge Cases en `spec.md`).
+- Ninguno de los servicios `tactico-*` depende de servicios del stack operativo (`zookeeper`, `kafka`, `pinot-*`) para arrancar — solo la *tarea de conectividad de prueba* (User Story 3) requiere que Pinot esté arriba, no el arranque del stack en sí (ver Edge Cases en [`spec.md`](spec.md)).
 
 ## Entidad: Conexión de red verificada
 

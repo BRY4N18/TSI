@@ -1,7 +1,7 @@
 ﻿# Infraestructura — TSI (Tráfico Seguro Integral)
 
 **Ubicación de este archivo:** `docs/arquitectura/infraestructura.md`
-**Última actualización:** 2026-07-09 (v2 — Azure Blob Storage añadido, tracking en tiempo real migrado de WebSocket a SSE, roadmap ClickHouse+Airflow documentado)
+**Última actualización:** 2026-08-01 (v3 — stack `tactico` ClickHouse+Airflow activo; clarificación Kafka+Pinot = canal único de *dominio*)
 
 > Contexto de referencia sobre qué infraestructura y stack tecnológico existen y cómo se conectan. No es un manual de operación.
 
@@ -9,7 +9,9 @@
 
 ## 1. Qué es esto
 
-TSI usa **Apache Kafka + Apache Pinot** como infraestructura de datos única — no hay base de datos transaccional separada (no se usa PostgreSQL ni Django ORM para persistencia). Todo el modelo dimensional (`Dim_*`/`Hecho_*`, ver `docs/arquitectura/modelo-datos.md`) vive en Pinot, alimentado en tiempo real vía Kafka.
+TSI usa **Apache Kafka + Apache Pinot** como **canal único del modelo dimensional de dominio** (`Dim_*`/`Hecho_*`, ver `docs/arquitectura/modelo-datos.md`): no hay ORM Django ni PostgreSQL de negocio para ese modelo. Todo el modelo dimensional vive en Pinot, alimentado en tiempo real vía Kafka.
+
+Aparte de ese canal operativo existe el stack **`tactico`** (ClickHouse + Airflow, ver §2.1): capa analítica batch para informes tácticos compuestos. El Postgres que acompaña a Airflow es **solo metastore del orquestador** (DAGs, runs, conexiones) — no almacena el modelo dimensional ni sustituye a Pinot.
 
 ```
 Django Service → publica evento → Kafka topic → Pinot ingiere en tiempo real (Kafka consumer)
@@ -43,7 +45,7 @@ Servicios adicionales, definidos en `docker/docker-compose.tactico.yml`, que se 
 | `tactico-airflow-webserver` | `8090` | UI de administración de Airflow |
 | `tactico-airflow-scheduler` | *sin publicar* | Planificador de DAGs |
 
-Orden de arranque: `tactico-airflow-postgres` → `tactico-airflow-init` (migraciones + usuario admin, corre una vez) → `tactico-airflow-webserver` / `tactico-airflow-scheduler`. `tactico-clickhouse` no depende de los anteriores. Ver `specs/002-tactico/` para el detalle completo (spec, plan, contrato de puertos/hosts, quickstart de verificación).
+Orden de arranque: `tactico-airflow-postgres` → `tactico-airflow-init` (migraciones + usuario admin, corre una vez) → `tactico-airflow-webserver` / `tactico-airflow-scheduler`. `tactico-clickhouse` no depende de los anteriores. Spec y diseño: `specs/002-tactico/infraestructura/` (`spec.md`, plan, contrato, quickstart, tasks).
 
 Pinot no es un solo servicio: son 3 procesos independientes (controller/broker/server), cada uno con su propio contenedor.
 
@@ -97,18 +99,19 @@ docker compose -f accidentes.yml up -d django    # recrea con la imagen nueva
 - **Ordenar y paginar usan la misma clave.** Ordenar por un campo y comparar el cursor contra otro deja huecos o repite filas entre páginas.
 - **Nunca releer de Pinot lo que se acaba de escribir por Kafka** dentro de la misma operación: la ingesta tarda segundos y la lectura devuelve vacío. Un rollback que dependa de esa relectura falla en silencio (ver B2).
 - Las tablas de Pinot son **upsert por clave primaria**: publicar un registro parcial borra el resto de columnas, y dos escritores que reusen un id se pisan sin aviso. Convenciones de seeds en `datos-demo.md`.
+- **ClickHouse y el Postgres de Airflow no son almacén de dominio.** El stack `tactico` (ver §2.1) materializa resultados analíticos batch y metadatos del orquestador; no sustituye Kafka→Pinot para el modelo dimensional ni para escrituras de apps Django.
 
 ---
 
-## 5. Roadmap futuro y decisiones evaluadas (no implementar todavía)
+## 5. Decisiones de infraestructura evaluadas (historial)
 
-> Esta sección documenta decisiones de infraestructura ya discutidas y resueltas, para que no se vuelvan a proponer sin este contexto. Nada de lo que está aquí se implementa hoy — es alcance futuro explícito.
+> Decisiones ya discutidas y resueltas, para que no se vuelvan a proponer sin este contexto. Algunas quedaron en roadmap; otras (como §5.1) ya están activas — el estado de cada subsección manda sobre este encabezado.
 
 ### 5.1 ClickHouse + Airflow para capa analítica batch (activo desde 2026-08-01)
 
 **Decisión:** ClickHouse + Airflow se incorporan como capa **separada** para analítica pesada/BI (informes tácticos compuestos del departamento de Gestión de Emergencias, ver `informestacticos/auditoria-esquemas-informes-v2.md`), **sin reemplazar a Pinot**. Patrón: Pinot sigue sirviendo lo operativo en tiempo real (despacho, casos activos, todo lo sensible a latencia); Airflow orquesta el ETL desde Kafka/Pinot hacia ClickHouse para lo que no necesita tiempo real. No es redundancia si el límite se mantiene claro: **Pinot = serving en tiempo real, ClickHouse = analítica batch/histórica.**
 
-**Estado:** implementado como infraestructura base en `specs/002-tactico/` (`docker/docker-compose.tactico.yml`) — ver §2.1 más arriba para el detalle de servicios/puertos. Esta fase entrega solo el stack de infraestructura verificado (arranque, persistencia, conectividad de red); los DAGs de negocio concretos y las tablas de ClickHouse por informe compuesto son objeto de la spec siguiente de informes tácticos compuestos de Emergencias, todavía no creada.
+**Estado:** implementado como infraestructura base (`docker/docker-compose.tactico.yml`) — ver §2.1. Spec y diseño: `specs/002-tactico/infraestructura/`. Esta fase entrega solo el stack verificado (arranque, persistencia, conectividad de red); los DAGs de negocio y las tablas de ClickHouse por informe compuesto son objeto de la spec siguiente de informes tácticos compuestos de Emergencias, todavía no creada.
 
 **Por qué ahora sí:** a diferencia de cuando se escribió esta sección originalmente (sin CU que respaldara las tablas especulativas `Fact_Reporte`/`Fact_Inteligencia`/`Fact_Satisfaccion`), la necesidad quedó trazada en `informestacticos/auditoria-esquemas-informes-v2.md` contra informes tácticos concretos del departamento de Gestión de Emergencias (ej. detección de pérdida de señal GPS, ratio demanda/capacidad por condado) — ya no es especulativo.
 

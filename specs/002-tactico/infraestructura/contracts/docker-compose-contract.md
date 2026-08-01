@@ -12,7 +12,7 @@
 | Puerto nativo TCP (interno) | `9000` |
 | Puerto nativo TCP (host, para verificación manual) | `9100` |
 | Base de datos por defecto | `default` (las tablas de informes compuestos crearán su propia base de datos en la spec correspondiente — no en esta) |
-| Autenticación | Usuario/contraseña de desarrollo definidos por variables de entorno del compose; sin TLS (uso interno de desarrollo, ver Assumptions de `spec.md`) |
+| Autenticación | Usuario/contraseña de desarrollo definidos por variables de entorno del compose; sin TLS (uso interno de desarrollo, ver Assumptions de [`spec.md`](spec.md)) |
 
 ## Acceso a Airflow
 
@@ -24,7 +24,7 @@
 | Conexión a Pinot (a configurar en Airflow UI/CLI por la spec de informes compuestos) | Host `pinot-broker`, puerto `8099`, dentro de `pipeline-net` |
 | Conexión a ClickHouse (a configurar en Airflow UI/CLI por la spec de informes compuestos) | Host `tactico-clickhouse`, puerto `8123` (HTTP) o `9000` (nativo, interno) |
 
-**Conectividad verificada (T014-T016, `specs/002-tactico/tasks.md`)**: desde `tactico-airflow-scheduler`, `curl http://pinot-broker:8099/health` responde `OK` y `curl http://tactico-clickhouse:8123/ping` responde `Ok.` — ambos alcanzables por nombre de host dentro de `pipeline-net`, sin necesidad de IP ni puerto publicado al host. La configuración de la `Connection` de Airflow (UI/CLI) con estos hosts queda para la spec de informes compuestos, que es quien primero necesitará usarla desde un DAG real.
+**Conectividad verificada (T014-T016, `specs/002-tactico/infraestructura/tasks.md`)**: desde `tactico-airflow-scheduler`, `curl http://pinot-broker:8099/health` responde `OK` y `curl http://tactico-clickhouse:8123/ping` responde `Ok.` — ambos alcanzables por nombre de host dentro de `pipeline-net`, sin necesidad de IP ni puerto publicado al host. La configuración de la `Connection` de Airflow (UI/CLI) con estos hosts queda para la spec de informes compuestos, que es quien primero necesitará usarla desde un DAG real.
 
 ## Garantías que esta feature entrega
 

@@ -2,7 +2,7 @@
 
 **Branch**: `002-tactico` | **Date**: 2026-08-01 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `specs/002-tactico/spec.md`
+**Input**: Feature specification from `specs/002-tactico/infraestructura/spec.md`
 
 **Note**: This template is filled in by the `/speckit-plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
@@ -55,14 +55,16 @@ Esta feature es infraestructura pura (sin lógica de negocio ni UI), así que va
 ### Documentation (this feature)
 
 ```text
-specs/002-tactico/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-│   └── docker-compose-contract.md
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+specs/002-tactico/infraestructura/   # feature_directory activa
+├── infraestructura.md               # Índice de esta carpeta
+├── spec.md                          # Alcance (qué / por qué) + ISO 25010
+├── plan.md                          # This file (/speckit-plan)
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── tasks.md
+└── contracts/
+    └── docker-compose-contract.md
 ```
 
 ### Source Code (repository root)
