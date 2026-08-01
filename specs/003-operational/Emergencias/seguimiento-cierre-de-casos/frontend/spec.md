@@ -57,6 +57,8 @@ Operador filtra historial; Cliente lista expedientes jurisdicción y exporta PDF
 - **FR-UI-012**: Historial operador: filtros fecha/estado/severidad/ubicación/unidad + cursor pagination — RF-SEG-005.
 - **FR-UI-013**: Detalle expediente operador: timeline despachos, GPS, evidencias — RF-SEG-005/006 lectura operador.
 - **FR-UI-014**: Expedientes Cliente: solo casos CERRADOS en condados onboarding — RF-SEG-006, RN-SEG-005.
+- **FR-UI-014a**: Expedientes Cliente — **listado** en `/seguimiento/expedientes`: tabla `md:table` + cards mobile, columna de acción `eye` (solo lectura, sin `pencil`: el cliente no edita expedientes), paginación por cursor y los tres estados asíncronos con los componentes canónicos `app-list-*`. La navegación «Mis expedientes» apunta aquí, no al detalle — RF-SEG-006. (Agregado 2026-07-31: el enlace cargaba el detalle sin `idaccidente` y renderizaba una página vacía; ver `.specify/docs/changelog.md` F1.)
+- **FR-UI-014b**: Expedientes Cliente — **detalle** en `/seguimiento/expedientes/:idaccidente` con el chrome de workpanel en página dedicada del golden sample *Accidente Detalles*: link «Volver a la lista» con `arrow-left`, eyebrow de modo, `h1` + badge de estado en la misma fila, secciones en cards y datos en `<dl>` (`dt` uppercase + `dd`) — **nunca** `<input disabled>` para fingir solo lectura (design-system §5) — RF-SEG-006.
 - **FR-UI-015**: Cliente: export PDF expediente — RF-SEG-006 §4.
 - **FR-UI-016**: Guards: operador (`mapa`, `historial`), unidad (`mi-seguimiento`), cliente (`expedientes`); Cliente **403** en mapa — CA-SEG-010.
 - **FR-UI-017**: Alertas GPS perdido (O37) visibles como notas tipo alerta en detalle caso — RF-SEG-008 (lectura).

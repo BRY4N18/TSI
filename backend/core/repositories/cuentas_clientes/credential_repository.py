@@ -11,6 +11,23 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
+# Valores canónicos de `Dim_Credencial.estadocredencial`. Se centralizan aquí
+# porque estaban como literales sueltos en servicios y seeds, y un seed escribía
+# "ACTIVA" mientras el código comparaba contra "Activo": ese desajuste hacía que
+# `onboarding_service` considerara inválida la credencial de todos los usuarios
+# sembrados por `database/seed_usuarios.py`.
+ESTADO_CREDENCIAL_ACTIVO = "Activo"
+ESTADO_CREDENCIAL_INACTIVO = "Inactivo"
+ESTADO_CREDENCIAL_CAMBIO_PASSWORD = "Cambio contraseña"
+
+ESTADOS_CREDENCIAL = frozenset(
+    {
+        ESTADO_CREDENCIAL_ACTIVO,
+        ESTADO_CREDENCIAL_INACTIVO,
+        ESTADO_CREDENCIAL_CAMBIO_PASSWORD,
+    }
+)
+
 
 class CredentialRepository:
     """Repository for Dim_Credencial entity."""
@@ -52,7 +69,7 @@ class CredentialRepository:
             "idcredencial": cred_id,
             "idusuario": user_id,
             "contrasena": self.hash_password(temp_password),
-            "estadocredencial": "Cambio contraseña",
+            "estadocredencial": ESTADO_CREDENCIAL_CAMBIO_PASSWORD,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)
@@ -65,7 +82,7 @@ class CredentialRepository:
             "idcredencial": cred_id,
             "idusuario": user_id,
             "contrasena": self.hash_password(plain_password),
-            "estadocredencial": "Activo",
+            "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)
@@ -79,7 +96,7 @@ class CredentialRepository:
         payload = {
             **existing,
             "contrasena": self.hash_password(temporary_password),
-            "estadocredencial": "Cambio contraseña",
+            "estadocredencial": ESTADO_CREDENCIAL_CAMBIO_PASSWORD,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)
@@ -93,7 +110,7 @@ class CredentialRepository:
         payload = {
             **existing,
             "contrasena": self.hash_password(new_password),
-            "estadocredencial": "Activo",
+            "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)

@@ -305,6 +305,12 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
 
 ### Escalamiento a zona (CU-O34)
 - `idaccidente` sin unidades disponibles en zona actual.
+- Depende de `Dim_CondadoVecino` (adyacencia) **y** de que el condado vecino tenga su
+  propia geografía (`Dim_Condado`/`Dim_Ciudad`/`Dim_Calle`) y flota activa; una
+  adyacencia sin flota del otro lado resuelve siempre "sin unidades en condados
+  vecinos" aunque la consulta de adyacencia funcione. Entorno demo con el camino
+  completo verificado en `database/seed_catalogos.py` (condado 2, Benito Juárez) +
+  `database/seed_flota_demo.py` (unidad 3) — ver `.specify/docs/changelog.md` S7.
 
 ### Timeout (CU-O35)
 - Job programado: compara fechahoradespacho contra umbral configurable.

@@ -1094,10 +1094,32 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             return [a for a in PINOT_STORE["Fact_Accidente"] if a["idaccidente"] == aid]
         activo = params.get("activo", True)
         if "WHERE ACTIVO" in sql_upper:
-            return [a for a in PINOT_STORE["Fact_Accidente"] if a.get("activo") == activo]
-        if "ACTIVO = TRUE" in sql_upper or "activo = true" in sql:
-            return [a for a in PINOT_STORE["Fact_Accidente"] if a.get("activo") is True]
-        return list(PINOT_STORE["Fact_Accidente"])
+            rows = [a for a in PINOT_STORE["Fact_Accidente"] if a.get("activo") == activo]
+        elif "ACTIVO = TRUE" in sql_upper or "activo = true" in sql:
+            rows = [a for a in PINOT_STORE["Fact_Accidente"] if a.get("activo") is True]
+        else:
+            rows = list(PINOT_STORE["Fact_Accidente"])
+        # Los predicados de paginación/filtrado viven en el SQL real (ver
+        # AccidenteRepository.list_activos); el doble debe aplicarlos igual o
+        # los tests dejan de medir lo que hace Pinot.
+        if "IDSEVERIDAD =" in sql_upper:
+            rows = [r for r in rows if r.get("idseveridad") == params.get("idseveridad")]
+        if "FECHAHORAACCIDENTE >=" in sql_upper:
+            desde = params.get("fecha_desde", params.get("desde"))
+            rows = [r for r in rows if (r.get("fechahoraaccidente") or 0) >= desde]
+        if "FECHAHORAACCIDENTE <=" in sql_upper:
+            hasta = params.get("fecha_hasta", params.get("hasta"))
+            rows = [r for r in rows if (r.get("fechahoraaccidente") or 0) <= hasta]
+        if "IDCALLE IN" in sql_upper:
+            permitidas = set(params.get("idscalle") or [])
+            rows = [r for r in rows if r.get("idcalle") in permitidas]
+        if "IDACCIDENTE <" in sql_upper:
+            rows = [r for r in rows if r["idaccidente"] < params.get("cursor")]
+        if "ORDER BY IDACCIDENTE DESC" in sql_upper:
+            rows = sorted(rows, key=lambda r: r["idaccidente"], reverse=True)
+        if "LIMIT" in sql_upper and "limit" in params:
+            rows = rows[: int(params["limit"])]
+        return rows
 
     if "FROM DIM_CALLE" in sql_upper and "WHERE IDCALLE" in sql_upper:
         idcalle = params.get("idcalle")
@@ -1236,6 +1258,21 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         if "ORDER BY FECHAHORA DESC" in sql_upper:
             rows.sort(key=lambda r: r.get("fechahora", 0), reverse=True)
             return rows[:1]
+        # Ventana temporal, cursor keyset y tope de la traza GPS
+        # (HistorialUbicacionRepository.list_by_unidad).
+        if "FECHAHORA >=" in sql_upper:
+            rows = [r for r in rows if (r.get("fechahora") or 0) >= params.get("desde")]
+        if "FECHAHORA <=" in sql_upper:
+            rows = [r for r in rows if (r.get("fechahora") or 0) <= params.get("hasta")]
+        if "IDHISTORIALUBICACION >" in sql_upper:
+            rows = [
+                r for r in rows
+                if int(r.get("idhistorialubicacion") or 0) > int(params.get("cursor", 0))
+            ]
+        if "ORDER BY IDHISTORIALUBICACION" in sql_upper:
+            rows = sorted(rows, key=lambda r: int(r.get("idhistorialubicacion") or 0))
+        if "LIMIT" in sql_upper and "limit" in params:
+            rows = rows[: int(params["limit"])]
         return rows
 
     if "FROM DIM_PARAMETROSDESPACHO" in sql_upper:
@@ -1265,7 +1302,17 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             return [e for e in PINOT_STORE["Dim_EvidenciaFoto"] if e["idevidenciafoto"] == eid]
         aid = params.get("idaccidente")
         if "WHERE IDACCIDENTE" in sql_upper:
-            return [e for e in PINOT_STORE["Dim_EvidenciaFoto"] if e["idaccidente"] == aid]
+            rows = [e for e in PINOT_STORE["Dim_EvidenciaFoto"] if e["idaccidente"] == aid]
+            # Filtro/orden/paginación de EvidenciaFotoRepository.list_by_accidente.
+            if "SINCRONIZADO = TRUE" in sql_upper:
+                rows = [r for r in rows if r.get("sincronizado") is True]
+            if "IDEVIDENCIAFOTO <" in sql_upper:
+                rows = [r for r in rows if r.get("idevidenciafoto", 0) < params.get("cursor")]
+            if "ORDER BY FECHAHORA DESC" in sql_upper:
+                rows = sorted(rows, key=lambda r: r.get("fechahora", 0), reverse=True)
+            if "LIMIT" in sql_upper and "limit" in params:
+                rows = rows[: int(params["limit"])]
+            return rows
         return list(PINOT_STORE["Dim_EvidenciaFoto"])
 
     if "FROM DIM_ELEMENTOCLIMATICOSACCIDENTE" in sql_upper:
@@ -1400,6 +1447,26 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             r for r in PINOT_STORE["Fact_HistorialEstadoUnidad"]
             if r["idunidademergencia"] == uid
         ]
+        # Orden/cursor/tope ahora viven en el SQL real (ver
+        # HistorialEstadoUnidadRepository.list_by_unidad); el doble debe aplicarlos
+        # o `get_current_estado` devolvería una fila arbitraria en los tests.
+        if "IDHISTORIALESTADOSUNIDADESEMERGENCIAS <" in sql_upper:
+            rows = [
+                r for r in rows
+                if int(r.get("idhistorialestadosunidadesemergencias") or 0)
+                < int(params.get("cursor", 0))
+            ]
+        if "ORDER BY FECHAHORA DESC" in sql_upper:
+            rows = sorted(
+                rows,
+                key=lambda r: (
+                    r.get("fechahora", 0),
+                    r.get("idhistorialestadosunidadesemergencias", 0),
+                ),
+                reverse=True,
+            )
+        if "LIMIT" in sql_upper and "limit" in params:
+            rows = rows[: int(params["limit"])]
         return rows
 
     if "FROM DIM_UNIDADEMERGENCIA" in sql_upper:
@@ -1440,7 +1507,20 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
                 if u["idunidademergencia"] == uid
             ]
         if "WHERE ACTIVO" in sql_upper or "activo = true" in sql.lower():
-            return [u for u in PINOT_STORE["Dim_UnidadEmergencia"] if u.get("activo")]
+            rows = [u for u in PINOT_STORE["Dim_UnidadEmergencia"] if u.get("activo")]
+            # Filtro/paginación de la flota (UnidadEmergenciaRepository.list_active).
+            if "TIPOUNIDADEMERGENCIA =" in sql_upper:
+                rows = [r for r in rows if r.get("tipounidademergencia") == params.get("tipo")]
+            if "IDUNIDADEMERGENCIA >" in sql_upper:
+                rows = [
+                    r for r in rows
+                    if int(r.get("idunidademergencia") or 0) > int(params.get("cursor", 0))
+                ]
+            if "ORDER BY IDUNIDADEMERGENCIA" in sql_upper:
+                rows = sorted(rows, key=lambda r: int(r.get("idunidademergencia") or 0))
+            if "LIMIT" in sql_upper and "limit" in params:
+                rows = rows[: int(params["limit"])]
+            return rows
         return list(PINOT_STORE["Dim_UnidadEmergencia"])
 
     if "FROM DIM_ESTADOUNIDADEMERGENCIA" in sql_upper:
@@ -1520,6 +1600,21 @@ def pinot_store():
 def reset_pinot_store():
     """Reset in-memory Pinot data between tests."""
     _reset_pinot_store()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def reset_throttle_history():
+    """Clear DRF throttle counters between tests.
+
+    SimpleRateThrottle persists its history in django.core.cache, which lives
+    for the whole pytest process. Without this reset a test that exhausts a
+    scope (p. ej. `prospecto_registro`: 10/min) makes every later test hitting
+    the same endpoint fail with 429 depending on collection order.
+    """
+    from django.core.cache import cache
+
+    cache.clear()
     yield
 
 

@@ -11,6 +11,8 @@ from core.jwt_utils import (
     create_session_token,
 )
 from core.repositories.cuentas_clientes.credential_repository import (
+    ESTADO_CREDENCIAL_CAMBIO_PASSWORD,
+    ESTADO_CREDENCIAL_INACTIVO,
     CredentialRepository,
 )
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
@@ -57,7 +59,7 @@ class AuthService:
             self.audit.log_login(user["idusuario"], ip_address, success=False)
             raise AuthenticationError("Credenciales invalidas")
 
-        if credential.get("estadocredencial") == "Inactivo":
+        if credential.get("estadocredencial") == ESTADO_CREDENCIAL_INACTIVO:
             self.audit.log_login(user["idusuario"], ip_address, success=False)
             raise AuthenticationError("Credencial inactiva")
 
@@ -85,7 +87,9 @@ class AuthService:
             session_id=session["idsession"],
         )
 
-        requires_password_change = credential.get("estadocredencial") == "Cambio contraseña"
+        requires_password_change = (
+            credential.get("estadocredencial") == ESTADO_CREDENCIAL_CAMBIO_PASSWORD
+        )
         self.audit.log_login(user["idusuario"], ip_address, success=True)
 
         return {

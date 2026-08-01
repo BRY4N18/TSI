@@ -39,3 +39,31 @@ class TestConsultaFlotaService:
 
         # Assert
         assert all(i["estado_actual"] == "Activa" for i in items)
+
+
+@pytest.mark.service
+class TestConsultaFlotaFiltroTipo:
+    def test_listar_when_filtra_por_tipo_devuelve_solo_ese_tipo(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Arrange — la flota semilla tiene Ambulancia (1) y Grúa (2); el tipo se
+        # modela como texto en Dim_UnidadEmergencia, no como id numérico.
+        for u in pinot_store["Dim_UnidadEmergencia"]:
+            u["tipounidademergencia"] = "Ambulancia" if u["idunidademergencia"] == 1 else "Grúa"
+
+        # Act
+        items, _ = ConsultaFlotaService().listar(tipounidademergencia="Grúa")
+
+        # Assert — antes se filtraba por un `idtipounidad` inexistente y esto
+        # devolvía la flota vacía para cualquier tipo.
+        assert items
+        assert {i["tipounidademergencia"] for i in items} == {"Grúa"}
+
+    def test_listar_when_tipo_sin_unidades_devuelve_vacio(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Act
+        items, _ = ConsultaFlotaService().listar(tipounidademergencia="Helicóptero")
+
+        # Assert
+        assert items == []

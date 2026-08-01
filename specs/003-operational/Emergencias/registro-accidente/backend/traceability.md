@@ -9,6 +9,7 @@
 | CA-REG-003 | Confirmación BORRADOR→REPORTADO | T029, T039 | `test_confirmar_when_borrador_returns_200` | ✓ |
 | CA-REG-004 | Fusión duplicados | T065-T069 | `test_fusionar_when_valid_returns_200` | ✓ |
 | CA-REG-005 | Lista accidentes activos | T047, T052 | `test_listar_when_activos_returns_200` | ✓ |
+| CA-REG-005b | Paginación por cursor resuelta en Pinot (no recorte en memoria): `meta.pagination.next_cursor` real, orden estable por `idaccidente` DESC y filtros en el SQL | T047, T052 | `test_listar_when_hay_mas_de_una_pagina_devuelve_cursor_y_avanza`, `test_pinot_client_limit.py` | ✓ (corregido 2026-07-31, ver `.specify/docs/changelog.md` D1/B1 — el contrato OpenAPI ya declaraba `cursor`/`next_cursor`; la implementación devolvía siempre `null` e ignoraba el parámetro) |
 | CA-REG-006 | Geocodificación inversa | T027, T035 | `test_geocodificacion_when_valid_coords_returns_200` | ✓ |
 | CA-REG-007 | Edición complementaria con auditoría | T049, T052 | `test_patch_when_increment_numvehiculos_returns_200` | ✓ |
 | CA-REG-008 | 403 roles no autorizados | T016, T080 | `test_escalar_when_operador_returns_403` | ✓ |

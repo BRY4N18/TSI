@@ -32,12 +32,12 @@ class ConsultaFlotaService:
         self,
         *,
         estado: str | None = None,
-        idtipounidad: int | None = None,
+        tipounidademergencia: str | None = None,
         limit: int = 20,
         cursor: int | None = None,
     ) -> tuple[list[dict], str | None]:
         unidades = self.unidad_repo.list_active(
-            idtipounidad=idtipounidad,
+            tipounidademergencia=tipounidademergencia,
             limit=limit + 1,
             cursor=cursor,
         )
@@ -56,7 +56,8 @@ class ConsultaFlotaService:
                 {
                     "idunidademergencia": uid,
                     "nombre": unidad.get("unidademergencia") or unidad.get("nombre"),
-                    "idtipounidad": unidad.get("idtipounidad"),
+                    "tipounidademergencia": unidad.get("tipounidademergencia"),
+                    "placa": unidad.get("placa"),
                     "estado_actual": estado_actual,
                     "incluido_en_despacho": estado_actual == ESTADO_ACTIVA,
                 }

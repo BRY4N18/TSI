@@ -620,10 +620,23 @@ paths:
           in: query
           schema:
             $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
+        - name: tipo
+          in: query
+          description: >-
+            Tipo de unidad por nombre ("Ambulancia", "Grúa", …). Es como está
+            modelado en Dim_UnidadEmergencia (columna tipounidademergencia, texto).
+          schema:
+            type: string
         - name: idtipounidad
           in: query
+          deprecated: true
+          description: >-
+            Alias de `tipo`, conservado por compatibilidad con clientes ya
+            desplegados. No existe una columna `idtipounidad` en el modelo de
+            datos; filtrar por ella devolvía siempre la flota vacía
+            (ver .specify/docs/changelog.md B3).
           schema:
-            type: integer
+            type: string
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -1223,8 +1236,11 @@ components:
           type: integer
         nombre:
           type: string
-        idtipounidad:
-          type: integer
+        tipounidademergencia:
+          type: string
+          description: Tipo de unidad ("Ambulancia", "Grúa", …)
+        placa:
+          type: string
         estado_actual:
           $ref: '#/components/schemas/EstadoDisponibilidadUnidad'
         incluido_en_despacho:

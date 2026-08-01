@@ -5,6 +5,17 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { SeguimientoSseService } from './seguimiento-sse.service';
 
+/** Sondea `cond` con el reloj real hasta que se cumpla o se agote el plazo. */
+async function waitFor(cond: () => boolean, timeoutMs = 2000): Promise<void> {
+  const limite = Date.now() + timeoutMs;
+  while (!cond()) {
+    if (Date.now() > limite) {
+      throw new Error('waitFor: condición no cumplida antes del timeout');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
 describe('SeguimientoSseService', () => {
   let service: SeguimientoSseService;
   let originalFetch: typeof fetch;
@@ -93,8 +104,16 @@ describe('SeguimientoSseService', () => {
     sub.unsubscribe();
   }));
 
-  it('connectResiliente_when_stream_completa_reintenta', fakeAsync(() => {
+  // Este caso no puede correr bajo `fakeAsync`: el cierre del stream se observa
+  // dentro de `await reader.read()`, y las promesas internas de ReadableStream
+  // son nativas del navegador (zone.js no las parchea), así que `tick()` nunca
+  // las drena. Se usa el reloj real con el backoff acortado por reflexión.
+  it('connectResiliente_when_stream_completa_reintenta', async () => {
+    // Arrange
     const destroyRef = TestBed.inject(DestroyRef);
+    const BACKOFF_MS = 20;
+    (service as unknown as { RECONEXION_MS: number }).RECONEXION_MS = BACKOFF_MS;
+
     let intentos = 0;
     window.fetch = jasmine.createSpy('fetch').and.callFake(() => {
       intentos++;
@@ -109,17 +128,18 @@ describe('SeguimientoSseService', () => {
 
     const estados: string[] = [];
     const sub = service.connectResiliente(destroyRef).subscribe((u) => estados.push(u.estado));
-    tick(0);
 
+    // Act — esperar a que el primer intento abra y luego se cierre solo
+    await waitFor(() => estados.includes('offline'));
+
+    // Assert — el cierre limpio del upstream degrada a offline, no queda colgado
     expect(estados).toContain('live');
-    expect(estados).toContain('offline');
     expect(intentos).toBe(1);
 
-    tick(5000);
-    tick(0);
+    // Act / Assert — y reprograma un reintento tras el backoff
+    await waitFor(() => intentos === 2);
     expect(intentos).toBe(2);
 
     sub.unsubscribe();
-    tick(5000);
-  }));
+  });
 });

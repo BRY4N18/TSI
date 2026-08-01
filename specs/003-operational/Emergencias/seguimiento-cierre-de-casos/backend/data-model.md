@@ -134,3 +134,45 @@ Persistencia: defaults en `settings.SEGUIMIENTO_PARAMETROS` (config compartida /
 Overrides auditables opcionales vía topic `Dim_ParametrosSeguimiento_topic` — **no** es tabla de dominio
 del módulo seguimiento (contrato Fase 4: 0 tablas propias de dominio). Ver
 `flujoscorreguidos/flujo-emergencias-canonico.md`.
+
+## Tablas puente consumidas (no propias del módulo)
+
+Agregadas al modelo el 2026-07-31: el código productivo ya las consultaba, pero no estaban
+declaradas en `database/esquemas.json` ni creadas en Pinot, así que
+`GET /api/v1/cliente/expedientes` respondía **500** (`TableDoesNotExistError`).
+Ver `.specify/docs/changelog.md` D2.
+
+| Tabla | Columnas | Clave primaria | Quién la consume |
+|---|---|---|---|
+| `Dim_Usuario_Cliente` | `idusuariocliente`, `idusuario`, `idcliente`, `activo`, `fecha_actualizacion` | `idusuariocliente` | `cliente_expediente_views._condados_cliente` (RF-SEG-006, RN-SEG-005) y `soporte_cliente/services/cliente_lookup_service` |
+| `Dim_CondadoVecino` | `idcondadovecinorel`, `idcondado`, `idcondadovecino`, `activo`, `fecha_actualizacion` | `idcondadovecinorel` | `despacho/repositories/geografia_repository.list_condados_vecinos` (CU-O34, escalamiento de zona) |
+
+`Dim_CondadoVecino` almacena la adyacencia en **ambos sentidos** (si A limita con B, existe
+también la fila B→A), para que la consulta por `idcondado` funcione desde cualquiera de los
+dos. Seed de referencia: `database/seed_vinculos.py`.
+
+> **Nota de método:** estas tablas sí existían en el doble en memoria de `backend/conftest.py`,
+> por lo que la suite de contratos pasaba al 100% mientras el endpoint real devolvía 500. Al
+> agregar tablas al modelo, verificar que el doble y `database/esquemas.json` coincidan.
+
+## Lectura paginada de históricos de alto volumen
+
+Agregado el 2026-07-31 (ver `.specify/docs/changelog.md` B6/B7).
+
+`Dim_HistorialUbicacionUnidadEmergencia` es la tabla de mayor crecimiento del sistema:
+una unidad en misión publica una posición cada ~10 s, es decir ~2.900 filas por jornada
+de 8 h **por unidad**. `Fact_HistorialEstadoUnidad` crece con cada cambio de estado.
+
+Ninguna de las dos puede leerse completa desde un repositorio:
+
+| Repositorio | Método | Contrato |
+|---|---|---|
+| `HistorialUbicacionRepository` | `list_by_unidad(id, desde?, hasta?, limit, cursor)` | Devuelve `(filas, cursor_siguiente)`; ventana temporal, orden y tope en el SQL; keyset sobre `idhistorialubicacion` |
+| `HistorialUbicacionRepository` | `iter_by_unidad(id, desde?, hasta?)` | Generador que recorre la traza completa por bloques, para consumidores que sí la necesitan (depuración GPS, geofence, expediente) |
+| `HistorialEstadoUnidadRepository` | `list_by_unidad(id, limit, cursor)` | Orden `fechahora DESC` y tope en el SQL; `get_current_estado` se apoya en `LIMIT 1` |
+
+> **Por qué importa:** antes ambas se leían sin `LIMIT` y Pinot las recortaba en silencio
+> a 10 filas (ver D1). El efecto no era de rendimiento sino de **corrección**: el estado
+> vigente de una unidad se decidía sobre 10 filas arbitrarias de su historial, y el job de
+> depuración GPS elegía qué puntos conservar mirando solo los 10 primeros de la traza.
+

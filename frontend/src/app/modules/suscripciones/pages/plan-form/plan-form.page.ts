@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import {
   NivelPlan,
   Plan,
@@ -16,7 +17,7 @@ import { PlanApiService } from '../../services/plan-api.service';
 @Component({
   selector: 'app-plan-form-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, ListLoadingSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './plan-form.page.html',
 })

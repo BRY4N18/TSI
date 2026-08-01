@@ -8,7 +8,7 @@
   </a>
 
   @if (cargando() && !ticket()) {
-    <div class="h-40 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+    <app-list-loading-skeleton [count]="1" />
   } @else if (ticket()) {
     @let t = ticket()!;
     <section class="rounded-lg border border-border-default bg-bg-surface">

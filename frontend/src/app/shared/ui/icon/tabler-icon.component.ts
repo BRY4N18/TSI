@@ -30,6 +30,7 @@ export type TablerIconName =
   | 'refresh'
   | 'arrow-left'
   | 'upload'
+  | 'download'
   | 'x'
   | 'chevron-left'
   | 'chevron-right'
@@ -121,6 +122,7 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
   refresh: ['M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4', 'M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4'],
   'arrow-left': ['M5 12l14 0', 'M5 12l6 6', 'M5 12l6 -6'],
   upload: ['M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2', 'M7 9l5 -5l5 5', 'M12 4l0 12'],
+  download: ['M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2', 'M7 11l5 5l5 -5', 'M12 4l0 12'],
   x: ['M18 6l-12 12', 'M6 6l12 12'],
   'chevron-left': ['M15 6l-6 6l6 6'],
   'chevron-right': ['M9 6l6 6l-6 6'],

@@ -20,6 +20,7 @@ import sys
 import time
 
 sys.path.insert(0, os.environ.get("PYTHONPATH", "/app"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
@@ -32,7 +33,7 @@ from django.conf import settings  # noqa: E402
 from core.pinot.client import PinotClient  # noqa: E402
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter  # noqa: E402
 
-DEMO_PASSWORD = "password123"
+from _demo_seed_common import DEMO_PASSWORD, ESTADO_CREDENCIAL_ACTIVO  # noqa: E402
 GMAIL = "ana.torres.cliente@demo.tsi.com"
 CRED_ID = 1
 PROVEEDOR_ROLE_ID = 13
@@ -108,7 +109,7 @@ def main() -> None:
             "idcredencial": CRED_ID,
             "idusuario": user_id,
             "contrasena": pwd_hash,
-            "estadocredencial": "ACTIVA",
+            "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
             "fecha_actualizacion": now + 2,
         },
     )

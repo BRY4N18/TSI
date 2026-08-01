@@ -27,17 +27,55 @@ class ConsultaAccidenteService:
         self.audit = audit or AuditAccidenteService()
         self.catalogo_repo = catalogo_repo or UbicacionCatalogoRepository()
 
-    def listar(self, *, estado: str | None = None, **filters) -> list[dict[str, Any]]:
-        rows = self.accidente_repo.list_activos(**filters)
-        for row in rows:
-            row["estado_actual"] = self.estado_repo.get_current_estado(row["idaccidente"])
-        if estado is not None:
-            rows = [r for r in rows if r["estado_actual"] == estado]
+    # Tope de páginas que se piden a Pinot para completar una sola página de
+    # respuesta. Solo se encadenan lecturas cuando el filtro por estado descarta
+    # filas (el estado vive en otra tabla y no se puede filtrar en el mismo SQL);
+    # evita que un filtro muy selectivo recorra la tabla entera en una petición.
+    MAX_PAGINAS_ENCADENADAS = 10
 
-        ubicaciones = self.catalogo_repo.resolver_calles([r.get("idcalle") for r in rows])
-        for row in rows:
+    def listar(
+        self,
+        *,
+        estado: str | None = None,
+        limit: int = 20,
+        cursor: str | None = None,
+        **filters,
+    ) -> dict[str, Any]:
+        """Una página de accidentes con su cursor de continuación.
+
+        Pide páginas acotadas a Pinot y avanza a la siguiente solo si el filtro
+        por estado dejó la página corta; nunca trae la tabla completa a memoria.
+        """
+        seleccionados: list[dict[str, Any]] = []
+        cursor_actual = cursor
+        siguiente: str | None = None
+
+        for _ in range(self.MAX_PAGINAS_ENCADENADAS):
+            faltantes = limit - len(seleccionados)
+            rows, siguiente = self.accidente_repo.list_activos(
+                limit=faltantes, cursor=cursor_actual, **filters
+            )
+            for row in rows:
+                row["estado_actual"] = self.estado_repo.get_current_estado(row["idaccidente"])
+                if estado is None or row["estado_actual"] == estado:
+                    seleccionados.append(row)
+
+            if len(seleccionados) >= limit or siguiente is None:
+                break
+            cursor_actual = siguiente
+
+        # El cursor devuelto apunta al último elemento entregado, no al último
+        # leído: así la página siguiente arranca justo después de lo que el
+        # cliente ya vio, aunque en el medio se hayan descartado filas.
+        if seleccionados and siguiente is not None:
+            siguiente = seleccionados[-1]["idaccidente"]
+
+        ubicaciones = self.catalogo_repo.resolver_calles(
+            [r.get("idcalle") for r in seleccionados]
+        )
+        for row in seleccionados:
             row["ubicacion"] = ubicaciones.get(row.get("idcalle"))
-        return rows
+        return {"items": seleccionados, "next_cursor": siguiente}
 
     def detalle(self, idaccidente: str) -> dict[str, Any] | None:
         row = self.accidente_repo.find_by_id(idaccidente)

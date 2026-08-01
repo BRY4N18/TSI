@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { DisponibilidadUnidadApiService } from '../../services/disponibilidad-unidad-api.service';
 import {
@@ -20,7 +22,13 @@ const ESTADOS_SELECCIONABLES: EstadoDisponibilidadUnidadSeleccionable[] = [
 @Component({
   selector: 'app-panel-disponibilidad',
   standalone: true,
-  imports: [FormsModule, TablerIconComponent, DatePipe],
+  imports: [
+    FormsModule,
+    TablerIconComponent,
+    DatePipe,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './panel-disponibilidad.page.html',
 })

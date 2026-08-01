@@ -91,7 +91,7 @@
       } @else if (error()) {
         <div
           class="grid place-items-center gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-10 text-center"
-          data-testid="error"
+          data-testid="error-state"
         >
           <app-tabler-icon name="alert-triangle" [size]="32" />
           <p class="m-0 text-sm text-alert-warning">{{ error() }}</p>
@@ -105,9 +105,7 @@
           </button>
         </div>
       } @else if (!fotos().length) {
-        <div class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center">
-          <app-tabler-icon name="camera" [size]="28" />
-          <p class="m-0 text-sm text-text-secondary">Sin evidencia fotográfica todavía.</p>
+        <app-list-empty-state icon="camera" message="Sin evidencia fotográfica todavía.">
           @if (!soloLectura()) {
             <button
               type="button"
@@ -118,7 +116,7 @@
               Subir evidencia
             </button>
           }
-        </div>
+        </app-list-empty-state>
       } @else {
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="galeria">
           @for (item of fotos(); track trackItem(item)) {

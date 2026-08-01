@@ -63,10 +63,13 @@ class UnidadesEmergenciaListView(APIView):
         cursor = request.query_params.get("cursor")
         cursor_int = int(cursor) if cursor else None
         estado = request.query_params.get("estado")
-        idtipounidad = request.query_params.get("idtipounidad")
+        # `tipo` es el nombre del tipo de unidad ("Ambulancia", "Grúa", …), que es
+        # como está modelado en Dim_UnidadEmergencia. Se acepta `idtipounidad`
+        # como alias por compatibilidad con clientes ya desplegados.
+        tipo = request.query_params.get("tipo") or request.query_params.get("idtipounidad")
         items, next_cursor = ConsultaFlotaService().listar(
             estado=estado,
-            idtipounidad=int(idtipounidad) if idtipounidad else None,
+            tipounidademergencia=tipo or None,
             limit=limit,
             cursor=cursor_int,
         )

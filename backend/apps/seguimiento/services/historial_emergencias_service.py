@@ -52,19 +52,24 @@ class HistorialEmergenciasService:
         solo_cerrados: bool = False,
         condados_permitidos: set[int] | None = None,
     ) -> dict[str, Any]:
-        rows = self.pinot.query("SELECT * FROM Fact_Accidente", {})
-        rows.sort(key=lambda r: r.get("horainicio") or r.get("fechahoraaccidente", 0), reverse=True)
-
         calles_ciudad = self._resolver_calles_por_ubicacion(idciudad, idestadoregion)
+        if calles_ciudad is not None and not calles_ciudad:
+            return {"items": [], "next_cursor": None}
 
         # Fase 1: filtrar barato (sin tocar Fact_Despacho/catálogos) hasta juntar
         # como mucho `limit` candidatos. El trabajo caro (tiempos, ubicación,
         # unidad) se paga solo por esa página final, no por cada fila escaneada.
+        # Las filas llegan por bloques desde Pinot (ver _leer_accidentes): nunca
+        # se materializa la tabla completa en memoria del servidor.
         candidatos: list[tuple[dict[str, Any], str, list[dict[str, Any]] | None]] = []
-        for acc in rows:
+        for acc in self._leer_accidentes(
+            cursor=cursor,
+            idseveridad=idseveridad,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            calles=calles_ciudad,
+        ):
             idaccidente = acc["idaccidente"]
-            if cursor and idaccidente >= cursor:
-                continue
             est = self.estado.get_current_estado(idaccidente)
             if solo_cerrados and est != ESTADO_CERRADO:
                 continue
@@ -131,6 +136,49 @@ class HistorialEmergenciasService:
 
         next_cursor = items[-1]["idaccidente"] if len(items) == limit else None
         return {"items": items, "next_cursor": next_cursor}
+
+    # Filas que se piden a Pinot por viaje y cuántos viajes como máximo se
+    # encadenan para armar una página. El techo existe porque los filtros que
+    # no caben en el SQL (estado, condado permitido, unidad asignada) pueden
+    # descartar bloques enteros; sin él una consulta muy selectiva recorrería
+    # la tabla completa dentro de una sola petición HTTP.
+    BLOQUE_LECTURA = 50
+    MAX_BLOQUES = 20
+
+    def _leer_accidentes(
+        self,
+        *,
+        cursor: str | None,
+        idseveridad: int | None,
+        fecha_desde: int | None,
+        fecha_hasta: int | None,
+        calles: set[int] | None,
+    ):
+        """Recorre Fact_Accidente por bloques, del más reciente al más antiguo.
+
+        Cada bloque es una consulta acotada a Pinot; el siguiente arranca donde
+        terminó el anterior usando `idaccidente` como cursor keyset. El orden y
+        el cursor usan la misma clave a propósito: ordenar por un campo y
+        paginar por otro deja huecos o repite filas entre páginas.
+        """
+        cursor_actual = cursor
+        for _ in range(self.MAX_BLOQUES):
+            bloque, siguiente = self.accidentes.list_activos(
+                # Sin filtro de `activo`: cerrar un caso lo marca activo=False y
+                # el historial existe justamente para mostrar casos cerrados.
+                activo=None,
+                idseveridad=idseveridad,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                limit=self.BLOQUE_LECTURA,
+                cursor=cursor_actual,
+            )
+            if calles is not None:
+                bloque = [a for a in bloque if a.get("idcalle") in calles]
+            yield from bloque
+            if siguiente is None:
+                return
+            cursor_actual = siguiente
 
     def _resolver_calles_por_ubicacion(
         self, idciudad: int | None, idestadoregion: int | None

@@ -13,6 +13,9 @@ import { catchError, of, timeout } from 'rxjs';
 
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { ReadOnlyRouteMapComponent } from '../../../../shared/ui/map/read-only-route-map.component';
 import { SEVERIDAD_INFO, SeveridadInfo } from '../../../accidentes/severidad.constants';
 import { estadoNotificacionTono } from '../../despacho-tono.constants';
@@ -34,7 +37,14 @@ const RESPUESTA_TIMEOUT_MS = 15_000; // design-system.md §5: máx 10-15s antes 
 @Component({
   selector: 'app-mi-despacho',
   standalone: true,
-  imports: [FormsModule, TablerIconComponent, ReadOnlyRouteMapComponent],
+  imports: [
+    FormsModule,
+    TablerIconComponent,
+    ReadOnlyRouteMapComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mi-despacho.page.html',
 })

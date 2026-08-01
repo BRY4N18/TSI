@@ -32,6 +32,8 @@ export interface AccidenteListFilters {
   idciudad?: number;
   idestadoregion?: number;
   limit?: number;
+  /** Cursor keyset: idaccidente del último elemento de la página anterior. */
+  cursor?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -61,6 +63,9 @@ export class AccidenteApiService {
     }
     if (filters.idestadoregion !== undefined) {
       params = params.set('idestadoregion', String(filters.idestadoregion));
+    }
+    if (filters.cursor) {
+      params = params.set('cursor', filters.cursor);
     }
     return this.http.get<ApiEnvelope<AccidenteListItem[]>>(this.base, { params });
   }

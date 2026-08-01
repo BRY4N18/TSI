@@ -5,22 +5,10 @@
   </p>
 
   @if (loading()) {
-    <div class="h-24 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+    <app-list-loading-skeleton [count]="1" />
   } @else if (error()) {
-    <div
-      class="mb-4 grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
-      data-testid="error"
-    >
-      <app-tabler-icon name="alert-triangle" [size]="32" />
-      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
-        (click)="cargar()"
-      >
-        <app-tabler-icon name="refresh" [size]="16" />
-        Reintentar
-      </button>
+    <div class="mb-4">
+      <app-list-error-state [message]="error()!" (retry)="cargar()" />
     </div>
   } @else if (disponibilidad()) {
     <!-- Bloque 1: estado actual + acción de cambio -->

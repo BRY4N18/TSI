@@ -3,13 +3,21 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { CatalogoItem, Ticket } from '../../services/models/soporte.types';
 
 @Component({
   selector: 'app-mis-tickets',
   standalone: true,
-  imports: [FormsModule, RouterLink, TablerIconComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mis-tickets.page.html',
 })

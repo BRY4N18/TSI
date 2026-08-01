@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ConnectivityService } from '../../../../shared/connectivity/connectivity.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { EvidenciaApiService } from '../../services/evidencia-api.service';
 import { EvidenciaSyncSchedulerService } from '../../services/evidencia-sync-scheduler.service';
 import { EvidenciaFotoItem, EvidenciaItem } from '../../services/models/evidencia-unidad.types';
@@ -14,7 +15,14 @@ import { EvidenciaVisorModal } from './evidencia-visor.modal';
 @Component({
   selector: 'app-galeria-evidencias',
   standalone: true,
-  imports: [RouterLink, DatePipe, TablerIconComponent, EvidenciaCapturaModal, EvidenciaVisorModal],
+  imports: [
+    RouterLink,
+    DatePipe,
+    TablerIconComponent,
+    ListEmptyStateComponent,
+    EvidenciaCapturaModal,
+    EvidenciaVisorModal,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './galeria-evidencias.page.html',
 })

@@ -1,0 +1,123 @@
+<div class="mx-auto max-w-6xl p-8" data-testid="detalle-expediente-page">
+  <a
+    routerLink="/seguimiento/expedientes"
+    class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+  >
+    <app-tabler-icon name="arrow-left" [size]="16" />
+    Volver a la lista
+  </a>
+
+  @if (loading()) {
+    <app-list-loading-skeleton [count]="4" />
+  } @else if (error()) {
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
+  } @else {
+    @if (expediente(); as e) {
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="m-0 text-sm font-medium text-text-secondary" data-testid="modo-titulo">
+            Detalles
+          </p>
+          <div class="mt-1 flex flex-wrap items-center gap-3">
+            <h1 class="m-0 text-2xl font-bold text-text-primary">{{ idaccidente() }}</h1>
+            <span
+              class="inline-flex items-center rounded-md bg-alert-success-bg px-3 py-1.5 text-sm font-semibold text-alert-success"
+            >
+              {{ e.estado_actual }}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          data-testid="btn-descargar-pdf"
+          class="inline-flex min-h-11 items-center gap-2 rounded-md border border-accent-primary px-5 py-2.5 text-sm font-semibold text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="descargando()"
+          (click)="descargarPdf()"
+        >
+          @if (descargando()) {
+            <span
+              class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent-primary border-t-transparent"
+              aria-hidden="true"
+            ></span>
+            Descargando…
+          } @else {
+            <app-tabler-icon name="download" [size]="18" />
+            Descargar PDF
+          }
+        </button>
+      </div>
+
+      <section class="mt-6 grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6">
+        <h2 class="m-0 text-base font-semibold text-text-primary">Datos del caso</h2>
+        <dl class="grid gap-4 sm:grid-cols-2">
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Fecha y hora
+            </dt>
+            <dd class="m-0 text-sm text-text-primary">
+              {{
+                fecha('fechahoraaccidente')
+                  ? (fecha('fechahoraaccidente') | date: 'dd/MM/yyyy — HH:mm')
+                  : '—'
+              }}
+            </dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Severidad
+            </dt>
+            <dd class="m-0 text-sm text-text-primary">{{ severidadLabel() }}</dd>
+          </div>
+          <div class="grid gap-1.5 sm:col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Descripción
+            </dt>
+            <dd class="m-0 text-sm text-text-primary">{{ campo('descripcion') }}</dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Vehículos involucrados
+            </dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">{{ campo('numvehiculos') }}</dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Heridos</dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">{{ campo('numheridos') }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="mt-6 grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6">
+        <h2 class="m-0 text-base font-semibold text-text-primary">Contenido del expediente</h2>
+        <dl class="grid gap-4 sm:grid-cols-4">
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Despachos
+            </dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">{{ conteo('despachos') }}</dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Notas de campo
+            </dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">{{ conteo('notas') }}</dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Evidencias
+            </dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">{{ conteo('evidencias') }}</dd>
+          </div>
+          <div class="grid gap-1.5">
+            <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+              Puntos GPS
+            </dt>
+            <dd class="m-0 text-sm tabular-nums text-text-primary">
+              {{ conteo('trayectoria_gps') }}
+            </dd>
+          </div>
+        </dl>
+      </section>
+    }
+  }
+</div>

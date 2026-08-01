@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { estadoInfo } from '../../../accidentes/estado.constants';
 import { estadoDespachoTono } from '../../despacho-tono.constants';
 import { DespachoApiService } from '../../services/despacho-api.service';
@@ -20,7 +22,7 @@ const SYNC_LABEL: Record<SyncStatus, string> = {
 @Component({
   selector: 'app-monitoreo-despacho',
   standalone: true,
-  imports: [RouterLink, TablerIconComponent],
+  imports: [RouterLink, TablerIconComponent, ListLoadingSkeletonComponent, ListErrorStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './monitoreo-despacho.page.html',
 })

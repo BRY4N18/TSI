@@ -4,6 +4,9 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { catchError, debounceTime, of } from 'rxjs';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { ESTADOS, estadoInfo } from '../../../accidentes/estado.constants';
 import { EstadoAccidente } from '../../../accidentes/services/models/accidente.types';
 import { SEVERIDAD_INFO, SeveridadInfo } from '../../../accidentes/severidad.constants';
@@ -17,7 +20,14 @@ import { HistorialEmergenciaItem } from '../../models/seguimiento.types';
 @Component({
   selector: 'app-historial-emergencias',
   standalone: true,
-  imports: [ReactiveFormsModule, TablerIconComponent, DatePipe],
+  imports: [
+    ReactiveFormsModule,
+    TablerIconComponent,
+    DatePipe,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './historial-emergencias.page.html',
 })

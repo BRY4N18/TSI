@@ -50,16 +50,86 @@ class HistorialUbicacionRepository:
         self.kafka.publish(self.TOPIC, payload)
         return payload
 
-    def list_by_unidad(self, idunidademergencia: int) -> list[dict[str, Any]]:
+    # Tamaño de bloque al recorrer la traza GPS. Es la tabla que más rápido crece
+    # del sistema: cada unidad en misión publica una posición cada ~10 s, así que
+    # una jornada de 8 h por unidad son ~2.900 filas.
+    BLOQUE_LECTURA = 500
+    MAX_BLOQUES = 200
+
+    def list_by_unidad(
+        self,
+        idunidademergencia: int,
+        *,
+        desde: int | None = None,
+        hasta: int | None = None,
+        limit: int = BLOQUE_LECTURA,
+        cursor: int | None = None,
+    ) -> tuple[list[dict[str, Any]], int | None]:
+        """Una página de la traza GPS de la unidad, resuelta en Pinot.
+
+        Ventana temporal, orden y tope viajan en el SQL. La paginación es keyset
+        sobre `idhistorialubicacion`, que es monótono porque se asigna con
+        MAX(id)+1 en cada publicación.
+
+        Devuelve (filas, cursor_siguiente); cursor_siguiente es None en la última
+        página.
+        """
+        condiciones = ["idunidademergencia = %(idunidademergencia)s"]
+        params: dict[str, Any] = {
+            "idunidademergencia": idunidademergencia,
+            "limit": limit + 1,
+        }
+        if desde is not None:
+            condiciones.append("fechahora >= %(desde)s")
+            params["desde"] = desde
+        if hasta is not None:
+            condiciones.append("fechahora <= %(hasta)s")
+            params["hasta"] = hasta
+        if cursor is not None:
+            condiciones.append("idhistorialubicacion > %(cursor)s")
+            params["cursor"] = cursor
+
         rows = self.pinot.query(
-            """
+            f"""
             SELECT * FROM Dim_HistorialUbicacionUnidadEmergencia
-            WHERE idunidademergencia = %(idunidademergencia)s
+            WHERE {' AND '.join(condiciones)}
+            ORDER BY idhistorialubicacion
+            LIMIT %(limit)s
             """,
-            {"idunidademergencia": idunidademergencia},
+            params,
         )
-        rows.sort(key=lambda r: r.get("fechahora", 0))
-        return rows
+        pagina = rows[:limit]
+        siguiente = (
+            int(pagina[-1]["idhistorialubicacion"]) if len(rows) > limit and pagina else None
+        )
+        return pagina, siguiente
+
+    def iter_by_unidad(
+        self,
+        idunidademergencia: int,
+        *,
+        desde: int | None = None,
+        hasta: int | None = None,
+    ):
+        """Recorre toda la traza de la unidad por bloques, sin cargarla entera.
+
+        Para los consumidores que sí necesitan ver todos los puntos (job de
+        depuración GPS, exportación de expediente). Cada bloque es una consulta
+        acotada; el siguiente arranca donde terminó el anterior.
+        """
+        cursor: int | None = None
+        for _ in range(self.MAX_BLOQUES):
+            bloque, siguiente = self.list_by_unidad(
+                idunidademergencia,
+                desde=desde,
+                hasta=hasta,
+                limit=self.BLOQUE_LECTURA,
+                cursor=cursor,
+            )
+            yield from bloque
+            if siguiente is None:
+                return
+            cursor = siguiente
 
     def latest_fechahora(self, idunidademergencia: int) -> int | None:
         rows = self.pinot.query(

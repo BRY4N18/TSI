@@ -12,6 +12,12 @@
   - Vinculación solo por `idaccidente` (RN-EVI-004).
   - Caso debe estar activo (no Cerrado/Descartado) — RN-EVI-006.
   - Binario en Azure Blob; Pinot solo metadata.
+  - `EvidenciaFotoRepository.list_by_accidente` filtra `sincronizado`, ordena por
+    `fechahora DESC` y pagina por cursor (`idevidenciafoto`) **en el SQL**, no en
+    Python. Corregido 2026-07-31 (`.specify/docs/changelog.md` B9): antes la
+    consulta base no declaraba `LIMIT` y Pinot la recortaba a 10 filas antes de
+    que el filtro/orden se aplicara — un accidente con más de 10 fotos podía
+    perder evidencia real de la galería sin error visible.
 
 ### 2) `Dim_NotaAccidente` (notas de campo CU-O27)
 

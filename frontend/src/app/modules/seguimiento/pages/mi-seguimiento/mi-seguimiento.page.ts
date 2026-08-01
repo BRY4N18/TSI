@@ -3,6 +3,9 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { MiSeguimientoApiService } from '../../services/mi-seguimiento-api.service';
 import { DespachoActualData } from '../../models/seguimiento.types';
@@ -14,7 +17,13 @@ const INTERVALO_ENVIO_GPS_MS = 10_000;
 @Component({
   selector: 'app-mi-seguimiento',
   standalone: true,
-  imports: [FormsModule, TablerIconComponent],
+  imports: [
+    FormsModule,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mi-seguimiento.page.html',
 })

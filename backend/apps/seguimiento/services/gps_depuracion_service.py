@@ -30,7 +30,10 @@ class GpsDepuracionService:
         if not despacho:
             return set()
         uid = int(despacho["idunidademergencia"])
-        puntos = self.historial.list_by_unidad(uid)
+        # Recorrido por bloques: antes esto era un list_by_unidad() sin LIMIT, y
+        # Pinot lo recortaba en silencio a 10 filas, asi que el job decidia que
+        # conservar mirando solo los primeros 10 puntos de la traza.
+        puntos = list(self.historial.iter_by_unidad(uid))
         if not puntos:
             return set()
         puntos.sort(key=lambda p: p.get("fechahora", 0))
@@ -56,7 +59,7 @@ class GpsDepuracionService:
             idd = int(d["iddespacho"])
             conservar = self.puntos_a_conservar(idd)
             uid = int(d["idunidademergencia"])
-            for p in self.historial.list_by_unidad(uid):
+            for p in self.historial.iter_by_unidad(uid):
                 pid = int(p["idhistorialubicacion"])
                 if pid in conservar:
                     continue

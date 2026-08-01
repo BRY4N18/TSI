@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { Plan, PlanLimites } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { billingBadge } from '../../billing-ui';
@@ -10,7 +12,14 @@ import { billingBadge } from '../../billing-ui';
 @Component({
   selector: 'app-plan-detalle-page',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, TablerIconComponent],
+  imports: [
+    CommonModule,
+    CurrencyPipe,
+    RouterLink,
+    TablerIconComponent,
+    ListErrorStateComponent,
+    ListLoadingSkeletonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './plan-detalle.page.html',
 })

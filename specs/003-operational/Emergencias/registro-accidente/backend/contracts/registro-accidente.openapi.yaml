@@ -867,7 +867,6 @@ components:
         - code
         - idaccidente_similar
         - idaccidente_principal_sugerido
-        - idaccidente_duplicado_sugerido
       properties:
         error:
           type: string
@@ -882,8 +881,6 @@ components:
         idaccidente_principal_sugerido:
           type: string
           description: Registro más antiguo (RN-REG-010b)
-        idaccidente_duplicado_sugerido:
-          type: string
 
     DuplicadoConflictResponse:
       type: object

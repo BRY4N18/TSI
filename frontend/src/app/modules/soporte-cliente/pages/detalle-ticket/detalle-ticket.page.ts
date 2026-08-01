@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { HistorialTicketItem, Ticket } from '../../services/models/soporte.types';
@@ -11,7 +12,7 @@ import { HistorialTicketItem, Ticket } from '../../services/models/soporte.types
 @Component({
   selector: 'app-detalle-ticket',
   standalone: true,
-  imports: [FormsModule, NgClass, RouterLink, TablerIconComponent],
+  imports: [FormsModule, NgClass, RouterLink, TablerIconComponent, ListLoadingSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detalle-ticket.page.html',
 })

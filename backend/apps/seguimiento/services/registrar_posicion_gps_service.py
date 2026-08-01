@@ -114,9 +114,12 @@ class RegistrarPosicionGpsService:
                 },
             )
             params = self.parametros.get()
+            # La histéresis de geofence necesita la traza completa de la unidad,
+            # así que se recorre por bloques en vez de una sola lectura sin tope
+            # (que Pinot recortaba a 10 puntos y falseaba la evaluación).
             puntos = [
                 (float(r["latitud"]), float(r["longitud"]), int(r["fechahora"]))
-                for r in self.historial_ubicacion.list_by_unidad(idunidademergencia)
+                for r in self.historial_ubicacion.iter_by_unidad(idunidademergencia)
             ]
             if self._geofence.evaluar_llegada_desde_puntos(
                 puntos=puntos,

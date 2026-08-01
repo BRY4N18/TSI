@@ -2,33 +2,14 @@
   <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Mi seguimiento</h1>
 
   @if (cargando()) {
-    <div class="h-24 animate-pulse rounded-lg bg-bg-surface" data-testid="loading-skeleton"></div>
+    <app-list-loading-skeleton [count]="1" />
   } @else if (apiError() && !despacho()) {
-    <div
-      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
-      data-testid="error-state"
-    >
-      <app-tabler-icon name="alert-triangle" [size]="32" />
-      <p class="m-0 text-sm text-alert-critical">{{ apiError() }}</p>
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
-        (click)="cargarActual()"
-      >
-        <app-tabler-icon name="refresh" [size]="16" />
-        Reintentar
-      </button>
-    </div>
+    <app-list-error-state [message]="apiError()!" (retry)="cargarActual()" />
   } @else if (!despacho()) {
-    <div
-      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
-      data-testid="empty-state"
-    >
-      <app-tabler-icon name="map-pin" [size]="32" />
-      <p class="m-0 text-sm text-text-secondary">
-        No tienes un despacho en camino activo. Cuando confirmes un despacho desde "Mi Despacho", verás aquí tu seguimiento.
-      </p>
-    </div>
+    <app-list-empty-state
+      icon="map-pin"
+      message='No tienes un despacho en camino activo. Cuando confirmes un despacho desde "Mi Despacho", verás aquí tu seguimiento.'
+    />
   } @else {
     <p class="m-0 mb-6 text-sm text-text-secondary">
       @if (estado() === 'en_camino') {

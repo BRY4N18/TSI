@@ -19,6 +19,7 @@ import sys
 import time
 
 sys.path.insert(0, os.environ.get("PYTHONPATH", "/app"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
@@ -31,17 +32,23 @@ from django.conf import settings  # noqa: E402
 from core.pinot.client import PinotClient  # noqa: E402
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter  # noqa: E402
 
-DEMO_PASSWORD = "password123"
+from _demo_seed_common import (  # noqa: E402
+    DEMO_PASSWORD,
+    ESTADO_CREDENCIAL_ACTIVO,
+    ROL_ID_POR_NOMBRE,
+)
 OPERADOR_GMAIL = "sofia.castro.operador@demo.tsi.com"
 GERENTE_VENTAS_GMAIL = "lucia.ramos.ventas@demo.tsi.com"
 ADMIN_GMAIL = "carlos.mendoza.admin@demo.tsi.com"
 
 OPERADOR_USER_ID = 10
-OPERADOR_ROLE_ID = 11
+# Los idrol salen del catalogo canonico compartido: antes esta constante valia
+# 11 y creaba un segundo rol "Operador" junto al idrol 4 de database/seed_usuarios.py.
+OPERADOR_ROLE_ID = ROL_ID_POR_NOMBRE["Operador"]
 OPERADOR_CRED_ID = 10
 OPERADOR_USER_ROLE_ID = 30  # seed used 1–20; keep clear of collisions
 GERENTE_VENTAS_USER_ID = 12
-GERENTE_VENTAS_ROLE_ID = 12
+GERENTE_VENTAS_ROLE_ID = ROL_ID_POR_NOMBRE["GerenteVentas"]
 GERENTE_VENTAS_CRED_ID = 12
 GERENTE_VENTAS_USER_ROLE_ID = 31
 ADMIN_USER_ID = 2
@@ -111,7 +118,7 @@ def main() -> None:
             "idcredencial": OPERADOR_CRED_ID,
             "idusuario": user_id,
             "contrasena": pwd_hash,
-            "estadocredencial": "ACTIVA",
+            "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
             "fecha_actualizacion": now + 2,
         },
     )
@@ -178,7 +185,7 @@ def main() -> None:
             "idcredencial": GERENTE_VENTAS_CRED_ID,
             "idusuario": gv_user_id,
             "contrasena": pwd_hash,
-            "estadocredencial": "ACTIVA",
+            "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
             "fecha_actualizacion": now + 7,
         },
     )
@@ -211,7 +218,7 @@ def main() -> None:
                 "idcredencial": ADMIN_CRED_ID,
                 "idusuario": admin_id,
                 "contrasena": pwd_hash,
-                "estadocredencial": "ACTIVA",
+                "estadocredencial": ESTADO_CREDENCIAL_ACTIVO,
                 "fecha_actualizacion": now + 4,
             },
         )

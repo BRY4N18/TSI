@@ -102,19 +102,24 @@ class ImportacionLoteUnidadService:
         if fallidas:
             return {"insertadas": 0, "usuarios_creados": 0, "fallidas": fallidas}
 
-        creadas: list[tuple[int, int]] = []
+        # Se guarda el registro completo, no solo el id: la compensación no puede
+        # releer de Pinot lo que se acaba de escribir por Kafka (aún no está
+        # ingerido), y `update()` sin `base` devuelve None en silencio cuando no
+        # encuentra la fila — el rollback no haría nada y dejaría unidades activas
+        # apuntando a un usuario que nunca llegó a existir.
+        creadas: list[tuple[dict[str, Any], int]] = []
         try:
             for payload in preparadas:
                 gmail = payload.pop("gmail")
                 unidad = self.registro_service.unidad_repo.create(payload)
                 user = self._crear_o_reactivar_usuario(gmail, payload)
                 # Ligar login → unidad para CU-O30 (find_by_usuario)
-                self.registro_service.unidad_repo.update(
+                unidad = self.registro_service.unidad_repo.update(
                     unidad["idunidademergencia"],
                     {"idusuario": user["idusuario"]},
                     base=unidad,
-                )
-                creadas.append((unidad["idunidademergencia"], user["idusuario"]))
+                ) or unidad
+                creadas.append((unidad, user["idusuario"]))
                 temp_password = secrets.token_urlsafe(12)
                 self.credential_repo.create_temporary(user["idusuario"], temp_password)
                 self.role_repo.assign_role_to_user(user["idusuario"], unidad_role["idrol"])
@@ -126,8 +131,10 @@ class ImportacionLoteUnidadService:
                     gmail=gmail,
                 )
         except Exception as exc:  # noqa: BLE001 — todo-o-nada: compensar y reportar
-            for unidad_id, uid in creadas:
-                self.registro_service.unidad_repo.update(unidad_id, {"activo": False})
+            for unidad, uid in creadas:
+                self.registro_service.unidad_repo.update(
+                    int(unidad["idunidademergencia"]), {"activo": False}, base=unidad
+                )
                 self.user_repo.update(uid, {"activo": False})
             return {
                 "insertadas": 0,

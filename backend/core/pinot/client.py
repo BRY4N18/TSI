@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import requests
@@ -21,6 +22,15 @@ def _quote_literal(value: Any) -> str:
 
 
 _NON_FINITE_TOKENS = {"Infinity", "-Infinity", "NaN"}
+
+# Pinot aplica un `LIMIT 10` implícito a toda consulta que no declare uno, y lo
+# hace en silencio: la respuesta no distingue "hay 10 filas" de "hay 10 de 500".
+# Un repositorio que filtra o pagina en Python sobre ese resultado trabaja sobre
+# un recorte arbitrario (sin ORDER BY el subconjunto ni siquiera es estable), así
+# que devuelve datos incompletos sin error visible. Se fuerza un tope explícito
+# alto para que el recorte lo decida el repositorio, no el broker.
+DEFAULT_QUERY_LIMIT = 10_000
+_LIMIT_RE = re.compile(r"\blimit\b\s+\d+\s*$", re.IGNORECASE)
 # Pinot's default "no value" sentinels when column-based null handling is
 # disabled (enableColumnBasedNullHandling: false, the default in our schemas).
 _INT_NULL_SENTINEL = -2147483648
@@ -65,6 +75,18 @@ class PinotClient:
 
         self.broker_url = broker_url or settings.PINOT_BROKER_URL
 
+    @staticmethod
+    def _with_explicit_limit(sql: str) -> str:
+        """Añade `LIMIT DEFAULT_QUERY_LIMIT` si la consulta no declara uno.
+
+        Sin esto Pinot recorta a 10 filas en silencio (ver DEFAULT_QUERY_LIMIT).
+        Las consultas que ya traen su propio LIMIT se respetan tal cual.
+        """
+        stripped = sql.strip().rstrip(";").rstrip()
+        if _LIMIT_RE.search(stripped):
+            return stripped
+        return f"{stripped} LIMIT {DEFAULT_QUERY_LIMIT}"
+
     def query(self, sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """
         Execute a read-only SQL query against Pinot.
@@ -75,6 +97,7 @@ class PinotClient:
         Tests patch this method via the mock_pinot fixture.
         """
         rendered_sql = sql % {k: _quote_literal(v) for k, v in (params or {}).items()}
+        rendered_sql = self._with_explicit_limit(rendered_sql)
 
         response = requests.post(
             f"{self.broker_url}/query/sql",

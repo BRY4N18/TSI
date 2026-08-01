@@ -1,12 +1,13 @@
 import { Routes } from '@angular/router';
 
+import { landingRedirectGuard } from './modules/cuentas-clientes/auth/guards/landing-redirect.guard';
 import { sessionGuard } from './modules/cuentas-clientes/auth/guards/session.guard';
 import { LoginPage } from './modules/cuentas-clientes/auth/pages/login.page';
 import { PasswordResetPage } from './modules/cuentas-clientes/auth/pages/password-reset.page';
 import { AppShellComponent } from './shared/layout/app-shell.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'ventas-crm/planes', pathMatch: 'full' },
+  { path: '', pathMatch: 'full', canActivate: [landingRedirectGuard], children: [] },
   {
     path: 'cuentas-clientes/auth/login',
     component: LoginPage,
@@ -41,6 +42,17 @@ export const routes: Routes = [
     component: AppShellComponent,
     canActivate: [sessionGuard],
     children: [
+      {
+        // Destino de los guards de rol cuando la sesión es válida pero el rol no
+        // alcanza. Vive dentro del shell para que el usuario conserve su
+        // navegación; sin esta ruta el wildcard `**` lo mandaba al portal
+        // público y parecía que había perdido la sesión.
+        path: 'cuentas-clientes/auth/access-denied',
+        loadComponent: () =>
+          import('./modules/cuentas-clientes/auth/pages/access-denied.page').then(
+            (m) => m.AccessDeniedPage,
+          ),
+      },
       {
         path: 'cuentas-clientes',
         loadComponent: () =>

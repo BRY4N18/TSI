@@ -45,11 +45,15 @@ describe('Registro de accidente - integration flow', () => {
     notifications = TestBed.inject(NotificationService);
     fixture.detectChanges();
 
-    // El constructor carga el catálogo de países para la cascada manual de ubicación.
-    httpMock.expectOne('/api/v1/accidentes/paises').flush({
-      data: [],
-      meta: { pagination: null },
-    });
+    // El constructor precarga los catálogos del formulario: países (cascada manual
+    // de ubicación), tipos reportado y referencias de estación.
+    for (const url of [
+      '/api/v1/accidentes/paises',
+      '/api/v1/accidentes/tipos-reportado',
+      '/api/v1/accidentes/referencias-estacion',
+    ]) {
+      httpMock.expectOne(url).flush({ data: [], meta: { pagination: null } });
+    }
   });
 
   afterEach(() => httpMock.verify());
@@ -150,26 +154,29 @@ describe('Registro de accidente - integration flow', () => {
     const registrarReq = httpMock.expectOne(
       (req) => req.url === '/api/v1/accidentes' && req.method === 'POST',
     );
+    // El backend anida el detalle del conflicto bajo `data` (ver
+    // AccidenteListCreateView.post) — no usa el envelope raíz error/detail/code.
     registrarReq.flush(
       {
-        error: 'conflict',
-        detail: 'Accidente duplicado',
-        code: 'duplicado_posible',
-        idaccidente_similar: 'ACC-050',
-        idaccidente_principal_sugerido: 'ACC-050',
-        idaccidente_duplicado_sugerido: 'ACC-102',
+        data: {
+          error: 'duplicado_posible',
+          detail: 'Accidente duplicado',
+          code: '409',
+          advertencias: [{ code: 'duplicado_posible', detail: 'Similar a ACC-050' }],
+          idaccidente_similar: 'ACC-050',
+          idaccidente_principal_sugerido: 'ACC-050',
+        },
+        meta: { pagination: null },
       },
       { status: 409, statusText: 'Conflict' },
     );
 
     // Assert: el conflicto queda disponible para que el diálogo de fusión lo consuma
-    expect(fixture.componentInstance.duplicadoConflicto()?.idaccidente_duplicado_sugerido).toBe(
-      'ACC-102',
-    );
+    expect(fixture.componentInstance.duplicadoConflicto()?.idaccidente_similar).toBe('ACC-050');
 
-    // Act: operador confirma la fusión
+    // Act: operador confirma la fusión sobre el caso similar ya existente
     fixture.componentInstance.confirmarFusion('ACC-050');
-    const fusionarReq = httpMock.expectOne('/api/v1/accidentes/ACC-102/fusionar');
+    const fusionarReq = httpMock.expectOne('/api/v1/accidentes/ACC-050/fusionar');
     expect(fusionarReq.request.method).toBe('POST');
     expect(fusionarReq.request.body).toEqual({
       idaccidenteprincipal: 'ACC-050',
@@ -202,17 +209,21 @@ describe('Registro de accidente - integration flow', () => {
     );
     registrarReq.flush(
       {
-        error: 'conflict',
-        detail: 'Accidente duplicado',
-        code: 'duplicado_posible',
-        idaccidente_similar: 'ACC-050',
-        idaccidente_principal_sugerido: 'ACC-050',
-        idaccidente_duplicado_sugerido: null,
+        data: {
+          error: 'duplicado_posible',
+          detail: 'Accidente duplicado',
+          code: '409',
+          advertencias: [],
+          idaccidente_similar: null,
+          idaccidente_principal_sugerido: null,
+        },
+        meta: { pagination: null },
       },
       { status: 409, statusText: 'Conflict' },
     );
 
-    // Assert
+    // Assert: sin caso similar al que fusionar no se abre el diálogo, se avisa
+    expect(fixture.componentInstance.duplicadoConflicto()).toBeNull();
     expect(notifications.activeAlert()).toEqual(
       jasmine.objectContaining({ title: 'Error al registrar' }),
     );

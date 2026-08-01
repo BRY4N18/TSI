@@ -7,7 +7,7 @@ from core.repositories.accidentes.elemento_climatico_repository import (
 
 @pytest.mark.repository
 class TestElementoClimaticoRepository:
-    def test_upsert_when_called_publishes_to_kafka(self, mock_kafka):
+    def test_upsert_when_called_publishes_to_kafka(self, mock_pinot, mock_kafka):
         # Arrange
         repo = ElementoClimaticoRepository()
 

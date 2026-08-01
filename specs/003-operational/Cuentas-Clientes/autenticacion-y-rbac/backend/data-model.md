@@ -21,7 +21,13 @@
   - `idusuario` -> `Dim_Usuarios.idusuario` (1:1 logico para autenticacion)
 - Campos clave:
   - `contrasena` (hash bcrypt>=12 o argon2id)
-  - `estadocredencial` (`Activo` | `Inactivo` | `Cambio contraseña`)
+  - `estadocredencial` (`Activo` | `Inactivo` | `Cambio contraseña`) — enum cerrado.
+    Valores canónicos en `core/repositories/cuentas_clientes/credential_repository.py`
+    (`ESTADO_CREDENCIAL_*` / `ESTADOS_CREDENCIAL`); ningún seed ni servicio debe escribir
+    un literal fuera de ese conjunto. Los seeds escribían `"ACTIVA"`, que el login toleraba
+    (solo bloquea `Inactivo`) pero `onboarding_service` rechazaba por comparar contra
+    `"Activo"` — ver `.specify/docs/changelog.md` B8. Verificado por
+    `tests/regression/test_credenciales_demo_consistentes.py`.
   - `fecha_actualizacion`
 - Reglas:
   - Nunca almacenar contraseña en texto plano.

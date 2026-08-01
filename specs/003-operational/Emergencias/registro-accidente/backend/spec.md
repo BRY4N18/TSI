@@ -349,7 +349,7 @@ El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad 
 - **400 Bad Request** — Campos obligatorios faltantes o coordenadas fuera de rango global.
 - **401 Unauthorized** — Token no proporcionado, inválido o expirado.
 - **403 Forbidden** — Usuario sin rol de Operador de emergencias (O21, O32, O41) o Unidad de emergencia (O40).
-- **409 Conflict** — Posible duplicado detectado: incluye `idaccidente_similar`, `idaccidente_principal_sugerido` (registro más antiguo, RN-REG-010b) y `idaccidente_duplicado_sugerido`; el sistema advierte pero permite forzar registro independiente o fusionar (O41).
+- **409 Conflict** — Posible duplicado detectado: incluye `idaccidente_similar` y `idaccidente_principal_sugerido` (registro más antiguo, RN-REG-010b); el sistema advierte pero permite forzar registro independiente o fusionar (O41). La fusión opera sobre `idaccidente_similar`: el reporte rechazado por el 409 nunca llegó a crearse, así que no hay un "duplicado" con id propio.
 - **409 Conflict** — Intento de escalamiento (O40) con caso no en ASIGNADO/EN_ATENCIÓN o sin despacho activo confirmado (RN-REG-011).
 - **409 Conflict** — Intento de fusión con caso ya despachado (RN-REG-010).
 - **409 Conflict** — Intento de descarte con caso no en BORRADOR (RN-REG-009).

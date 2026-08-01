@@ -25,7 +25,7 @@ class TestRegistroCriticalPath:
 
         # Assert
         assert created["estado"] == "REPORTADO"
-        assert any(r["idaccidente"] == aid for r in lista)
+        assert any(r["idaccidente"] == aid for r in lista["items"])
         assert detalle is not None
         assert detalle["estado_actual"] == "REPORTADO"
         assert "numvehiculos" in patch["campos_modificados"]

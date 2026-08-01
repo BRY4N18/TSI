@@ -121,7 +121,7 @@ describe('CatalogoPlanesPage', () => {
     fixture.detectChanges();
     expect(page.error()).toContain('tardó demasiado');
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.querySelector('[data-testid="btn-reintentar-planes"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="btn-reintentar-lista"]')).toBeTruthy();
   }));
 
   it('requires confirmation before deactivating', () => {

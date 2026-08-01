@@ -94,6 +94,35 @@ class TestImportacionLoteUnidadService:
         ]
         assert activas_nuevas == []
 
+    def test_importar_when_credencial_falla_y_pinot_aun_no_ingirio_igual_revierte(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Arrange — en producción las escrituras van por Kafka y Pinot tarda en
+        # ingerirlas, así que releer la unidad recién creada devuelve vacío. El
+        # doble en memoria refleja la escritura al instante y esconde el caso;
+        # aquí se fuerza el comportamiento real.
+        service = ImportacionLoteUnidadService()
+        service.credential_repo = MagicMock()
+        service.credential_repo.create_temporary.side_effect = RuntimeError("smtp/cred fail")
+        service.registro_service.unidad_repo.find_by_id = MagicMock(return_value=None)
+        before = len(pinot_store["Dim_UnidadEmergencia"])
+        filas = [
+            self._fila_valida(placa="LOTE-L1", gmail="l1@test.com"),
+            self._fila_valida(placa="LOTE-L2", gmail="l2@test.com"),
+        ]
+
+        # Act
+        result = service.importar(filas, **PROVEEDOR)
+
+        # Assert — el rollback no puede depender de leer lo recién escrito
+        assert result["insertadas"] == 0
+        activas_nuevas = [
+            u
+            for u in pinot_store["Dim_UnidadEmergencia"][before:]
+            if str(u.get("placa", "")).startswith("LOTE-L") and u.get("activo")
+        ]
+        assert activas_nuevas == []
+
     def test_importar_when_credencial_falla_gmails_quedan_reutilizables(
         self, mock_pinot, mock_kafka, pinot_store
     ):

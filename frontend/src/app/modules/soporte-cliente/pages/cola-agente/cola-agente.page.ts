@@ -8,6 +8,7 @@ import {
 import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { TicketApiService } from '../../services/ticket-api.service';
 import {
   EstadoTicket,
@@ -32,7 +33,7 @@ type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'urgent' | 'critic
 @Component({
   selector: 'app-cola-agente',
   standalone: true,
-  imports: [FormsModule, NgClass, TablerIconComponent],
+  imports: [FormsModule, NgClass, TablerIconComponent, ListEmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './cola-agente.page.html',
 })

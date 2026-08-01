@@ -152,7 +152,9 @@ export interface HistorialEstadoUnidadItem extends HistorialEstadoUnidadData {
 export interface UnidadEmergenciaResumen {
   idunidademergencia: number;
   nombre?: string;
-  idtipounidad?: number;
+  /** Tipo de unidad: "Ambulancia", "Grúa", … (texto, no id). */
+  tipounidademergencia?: string;
+  placa?: string;
   estado_actual: EstadoDisponibilidadUnidad;
   incluido_en_despacho: boolean;
 }

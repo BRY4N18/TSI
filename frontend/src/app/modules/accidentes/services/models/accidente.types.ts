@@ -80,7 +80,6 @@ export interface DuplicadoConflictData {
   code: string;
   idaccidente_similar: string | null;
   idaccidente_principal_sugerido: string | null;
-  idaccidente_duplicado_sugerido: string | null;
 }
 
 export interface UbicacionLegible {

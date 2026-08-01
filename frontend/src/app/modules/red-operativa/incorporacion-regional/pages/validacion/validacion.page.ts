@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
+import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/list-empty-state.component';
+import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
+import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { AuthApiService } from '../../../../cuentas-clientes/auth/services/auth-api.service';
 import { RegionOperativaFacadeService } from '../../services/region-operativa-facade.service';
 import {
@@ -22,7 +25,14 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
 @Component({
   selector: 'app-region-validacion-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TablerIconComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+    ListEmptyStateComponent,
+  ],
   template: `
     <div class="mx-auto max-w-2xl space-y-8 p-6">
       <header>
@@ -139,7 +149,16 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
             </button>
           </div>
 
-          @if (historial.length) {
+          @if (historialLoading) {
+            <app-list-loading-skeleton [count]="3" />
+          } @else if (historialError) {
+            <app-list-error-state [message]="historialError" (retry)="cargarHistorial()" />
+          } @else if (historialCargado && !historial.length) {
+            <app-list-empty-state
+              icon="history"
+              message="Esta región todavía no tiene validaciones registradas."
+            />
+          } @else if (historial.length) {
             <div class="overflow-x-auto rounded-lg border border-border-default">
               <table class="w-full text-left text-sm">
                 <thead class="bg-bg-page">
@@ -215,6 +234,12 @@ export class ValidacionPage implements OnInit {
   mensajeRechazo: string | null = null;
   estadoregionActual: EstadoRegion | null = null;
   historial: ValidacionHistorialItem[] = [];
+  // Los tres estados asíncronos del listado (design-system §5). `historialCargado`
+  // separa "todavía no se pidió" de "se pidió y vino vacío": antes la tabla
+  // simplemente no se dibujaba y ambas situaciones se veían igual.
+  historialCargado = false;
+  historialLoading = false;
+  historialError: string | null = null;
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.queryParamMap.get('id'));
@@ -255,8 +280,22 @@ export class ValidacionPage implements OnInit {
     if (!this.idregionoperativa) {
       return;
     }
-    this.facade.listarHistorialValidacion(this.idregionoperativa).subscribe((result) => {
-      this.historial = result.ok ? (result.data ?? []) : [];
+    this.historialCargado = true;
+    this.historialLoading = true;
+    this.historialError = null;
+    this.facade.listarHistorialValidacion(this.idregionoperativa).subscribe({
+      next: (result) => {
+        this.historialLoading = false;
+        this.historial = result.ok ? (result.data ?? []) : [];
+        if (!result.ok) {
+          this.historialError = result.error ?? 'No se pudo cargar el historial de validaciones.';
+        }
+      },
+      error: () => {
+        this.historialLoading = false;
+        this.historial = [];
+        this.historialError = 'No se pudo cargar el historial de validaciones.';
+      },
     });
   }
 

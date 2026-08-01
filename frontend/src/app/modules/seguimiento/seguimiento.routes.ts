@@ -29,8 +29,8 @@ export const SEGUIMIENTO_ROUTES: Routes = [
     path: 'expedientes',
     canActivate: [clienteExpedienteGuard],
     loadComponent: () =>
-      import('./pages/detalle-expediente/detalle-expediente.page').then(
-        (m) => m.DetalleExpedientePage,
+      import('./pages/lista-expedientes/lista-expedientes.page').then(
+        (m) => m.ListaExpedientesPage,
       ),
   },
   {

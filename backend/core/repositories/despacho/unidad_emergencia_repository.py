@@ -36,20 +36,35 @@ class UnidadEmergenciaRepository:
     def list_active(
         self,
         *,
-        idtipounidad: int | None = None,
+        tipounidademergencia: str | None = None,
         limit: int = 100,
         cursor: int | None = None,
     ) -> list[dict[str, Any]]:
-        rows = self.pinot.query(
-            "SELECT * FROM Dim_UnidadEmergencia WHERE activo = true",
-            {},
-        )
-        if idtipounidad is not None:
-            rows = [r for r in rows if r.get("idtipounidad") == idtipounidad]
-        rows.sort(key=lambda r: r.get("idunidademergencia", 0))
+        """Flota activa, paginada por keyset sobre `idunidademergencia`.
+
+        El tipo de unidad se filtra por `tipounidademergencia` (texto:
+        "Ambulancia", "Grúa", …), que es la columna que realmente existe en
+        `Dim_UnidadEmergencia`. Antes se filtraba por un inexistente
+        `idtipounidad`, así que cualquier filtro por tipo devolvía la flota
+        vacía en vez de las unidades de ese tipo.
+        """
+        condiciones = ["activo = true"]
+        params: dict[str, Any] = {"limit": limit}
+        if tipounidademergencia is not None:
+            condiciones.append("tipounidademergencia = %(tipo)s")
+            params["tipo"] = tipounidademergencia
         if cursor is not None:
-            rows = [r for r in rows if r.get("idunidademergencia", 0) > cursor]
-        return rows[:limit]
+            condiciones.append("idunidademergencia > %(cursor)s")
+            params["cursor"] = cursor
+        return self.pinot.query(
+            f"""
+            SELECT * FROM Dim_UnidadEmergencia
+            WHERE {' AND '.join(condiciones)}
+            ORDER BY idunidademergencia
+            LIMIT %(limit)s
+            """,
+            params,
+        )
 
     def list_candidatas_por_condado(
         self,

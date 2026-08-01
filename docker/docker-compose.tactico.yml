@@ -1,0 +1,138 @@
+name: tactico
+
+networks:
+  pipeline-net:
+    name: pipeline-net
+    external: true
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@tactico-airflow-postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+  volumes:
+    - ../docker/tactico/airflow-dags:/opt/airflow/dags
+  networks:
+    - pipeline-net
+
+services:
+
+  # ─────────────────────────────────────────
+  # CLICKHOUSE
+  # ─────────────────────────────────────────
+  tactico-clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: tactico-clickhouse
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+      - "9100:9000"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-tactico}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-tactico}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    networks:
+      - pipeline-net
+    volumes:
+      - tactico-clickhouse-data:/var/lib/clickhouse
+
+  # ─────────────────────────────────────────
+  # AIRFLOW — METASTORE (Postgres)
+  # ─────────────────────────────────────────
+  tactico-airflow-postgres:
+    image: postgres:16
+    container_name: tactico-airflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:-airflow}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_POSTGRES_USER:-airflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    networks:
+      - pipeline-net
+    volumes:
+      - tactico-airflow-metadata:/var/lib/postgresql/data
+
+  # ─────────────────────────────────────────
+  # AIRFLOW — INIT (migraciones + usuario admin, corre una vez)
+  # ─────────────────────────────────────────
+  tactico-airflow-init:
+    <<: *airflow-common
+    container_name: tactico-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username "${_AIRFLOW_WWW_USER_USERNAME:-admin}" \
+          --password "${_AIRFLOW_WWW_USER_PASSWORD:-admin}" \
+          --firstname tactico \
+          --lastname admin \
+          --role Admin \
+          --email admin@tactico.local || true
+    restart: "no"
+    depends_on:
+      tactico-airflow-postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────
+  # AIRFLOW — WEBSERVER
+  # ─────────────────────────────────────────
+  tactico-airflow-webserver:
+    <<: *airflow-common
+    container_name: tactico-airflow-webserver
+    command: webserver
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 40s
+    depends_on:
+      tactico-airflow-postgres:
+        condition: service_healthy
+      tactico-airflow-init:
+        condition: service_completed_successfully
+
+  # ─────────────────────────────────────────
+  # AIRFLOW — SCHEDULER
+  # ─────────────────────────────────────────
+  tactico-airflow-scheduler:
+    <<: *airflow-common
+    container_name: tactico-airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$$(hostname)\" || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 40s
+    depends_on:
+      tactico-airflow-postgres:
+        condition: service_healthy
+      tactico-airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  tactico-clickhouse-data:
+  tactico-airflow-metadata:

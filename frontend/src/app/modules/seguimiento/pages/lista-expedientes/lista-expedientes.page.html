@@ -1,0 +1,126 @@
+<div [class]="shellClass">
+  <header class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="m-0 text-2xl font-semibold text-text-primary">Mis expedientes</h1>
+      <p class="m-0 mt-1 text-sm text-text-secondary">
+        Casos cerrados de tu operación, con sus tiempos de atención.
+      </p>
+    </div>
+    <button
+      type="button"
+      data-testid="btn-actualizar-expedientes"
+      class="inline-flex min-h-11 items-center gap-2 rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+      (click)="cargar()"
+    >
+      <app-tabler-icon name="refresh" [size]="16" />
+      Actualizar
+    </button>
+  </header>
+
+  @if (loading()) {
+    <app-list-loading-skeleton [count]="5" />
+  } @else if (error()) {
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
+  } @else if (!expedientes().length) {
+    <app-list-empty-state
+      icon="history"
+      message="Todavía no hay expedientes cerrados para tu cuenta."
+    />
+  } @else {
+    <table [class]="tableClass" data-testid="tabla-expedientes">
+      <thead>
+        <tr>
+          <th [class]="thClass">ID</th>
+          <th [class]="thClass">Fecha</th>
+          <th [class]="thClass">Severidad</th>
+          <th [class]="thClass">Ubicación</th>
+          <th [class]="thClass">Unidad</th>
+          <th [class]="thRightClass">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of expedientes(); track e.idaccidente) {
+          <tr [class]="rowClass">
+            <td [class]="tdPrimaryClass">{{ e.idaccidente }}</td>
+            <td [class]="tdClass">{{ e.fecha | date: 'dd/MM/yyyy — HH:mm' }}</td>
+            <td [class]="tdClass">{{ severidadLabel(e.severidad) }}</td>
+            <td [class]="tdClass">{{ e.ubicacion || '—' }}</td>
+            <td [class]="tdClass">{{ e.unidad_principal || '—' }}</td>
+            <td class="px-4 py-3 text-right">
+              <button
+                type="button"
+                data-testid="btn-ver-expediente"
+                [class]="actionBtnClass"
+                [attr.aria-label]="'Ver expediente ' + e.idaccidente"
+                (click)="verDetalle(e.idaccidente)"
+              >
+                <app-tabler-icon name="eye" [size]="18" />
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="grid gap-3 md:hidden">
+      @for (e of expedientes(); track e.idaccidente) {
+        <div [class]="mobileCardClass">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <p class="m-0 font-semibold text-text-primary">{{ e.idaccidente }}</p>
+            <button
+              type="button"
+              [class]="actionBtnClass"
+              [attr.aria-label]="'Ver expediente ' + e.idaccidente"
+              (click)="verDetalle(e.idaccidente)"
+            >
+              <app-tabler-icon name="eye" [size]="18" />
+            </button>
+          </div>
+          <dl class="grid gap-1 text-sm">
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Fecha</dt>
+              <dd class="font-medium text-text-primary">{{ e.fecha | date: 'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Severidad</dt>
+              <dd class="font-medium text-text-primary">{{ severidadLabel(e.severidad) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Ubicación</dt>
+              <dd class="truncate font-medium text-text-primary">{{ e.ubicacion || '—' }}</dd>
+            </div>
+          </dl>
+        </div>
+      }
+    </div>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-3 border-t border-border-default px-4 py-3"
+      data-testid="expedientes-pager"
+    >
+      <p class="m-0 text-xs text-text-secondary">
+        {{ expedientes().length }} de hasta {{ pageLimit }} en esta página
+      </p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          data-testid="btn-pagina-anterior"
+          class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="!puedeAnterior"
+          (click)="paginaAnterior()"
+        >
+          Anterior
+        </button>
+        <button
+          type="button"
+          data-testid="btn-pagina-siguiente"
+          class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="!puedeSiguiente"
+          (click)="paginaSiguiente()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  }
+</div>

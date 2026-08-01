@@ -36,43 +36,90 @@ class AccidenteRepository:
         )
         return rows[0] if rows else None
 
+    def calles_de_ubicacion(
+        self, idciudad: int | None, idestadoregion: int | None
+    ) -> set[int] | None:
+        """Calles que caen dentro del filtro geográfico, o None si no hay filtro.
+
+        Un conjunto vacío significa "el filtro es válido pero no cubre ninguna
+        calle", que no es lo mismo que "sin filtro": el llamador debe devolver
+        cero resultados en vez de listar todo.
+        """
+        if idciudad is None and idestadoregion is None:
+            return None
+        calles: set[int] = set()
+        if idciudad is not None:
+            calles.update(c["id"] for c in self.catalogo_repo.listar_calles(idciudad))
+        if idestadoregion is not None:
+            for condado in self.catalogo_repo.listar_condados(idestadoregion):
+                for ciudad in self.catalogo_repo.listar_ciudades(condado["id"]):
+                    calles.update(c["id"] for c in self.catalogo_repo.listar_calles(ciudad["id"]))
+        return calles
+
     def list_activos(
         self,
         *,
         idseveridad: int | None = None,
-        activo: bool = True,
+        activo: bool | None = True,
         fecha_desde: int | None = None,
         fecha_hasta: int | None = None,
         idciudad: int | None = None,
         idestadoregion: int | None = None,
         limit: int = 20,
-    ) -> list[dict[str, Any]]:
-        rows = self.pinot.query(
-            """
-            SELECT * FROM Fact_Accidente
-            WHERE activo = %(activo)s
-            """,
-            {"activo": activo},
-        )
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Una página de accidentes, resuelta enteramente en Pinot.
+
+        Filtros, orden y tope viajan en el SQL: se traen `limit + 1` filas para
+        saber si hay página siguiente y nada más. No se materializa la tabla en
+        memoria del servidor — avanzar de página emite una consulta nueva
+        acotada por el cursor (paginación keyset sobre `idaccidente`, que es
+        monótono en el tiempo por construcción: ACC-{epoch_ms}-{aleatorio}).
+
+        `activo=None` deja el campo fuera del filtro: lo necesita el historial,
+        porque cerrar un caso lo marca `activo=False` y aun así debe listarse.
+
+        Devuelve (filas, cursor_siguiente); cursor_siguiente es None en la
+        última página.
+        """
+        calles = self.calles_de_ubicacion(idciudad, idestadoregion)
+        if calles is not None and not calles:
+            return [], None
+
+        condiciones: list[str] = []
+        params: dict[str, Any] = {"limit": limit + 1}
+        if activo is not None:
+            condiciones.append("activo = %(activo)s")
+            params["activo"] = activo
         if idseveridad is not None:
-            rows = [r for r in rows if r.get("idseveridad") == idseveridad]
+            condiciones.append("idseveridad = %(idseveridad)s")
+            params["idseveridad"] = idseveridad
         if fecha_desde is not None:
-            rows = [r for r in rows if r.get("fechahoraaccidente", 0) >= fecha_desde]
+            condiciones.append("fechahoraaccidente >= %(fecha_desde)s")
+            params["fecha_desde"] = fecha_desde
         if fecha_hasta is not None:
-            rows = [r for r in rows if r.get("fechahoraaccidente", 0) <= fecha_hasta]
-        if idciudad is not None:
-            calles = {c["id"] for c in self.catalogo_repo.listar_calles(idciudad)}
-            rows = [r for r in rows if r.get("idcalle") in calles]
-        if idestadoregion is not None:
-            condados = self.catalogo_repo.listar_condados(idestadoregion)
-            ciudades: set[int] = set()
-            for condado in condados:
-                ciudades.update(c["id"] for c in self.catalogo_repo.listar_ciudades(condado["id"]))
-            calles: set[int] = set()
-            for idciudad_estado in ciudades:
-                calles.update(c["id"] for c in self.catalogo_repo.listar_calles(idciudad_estado))
-            rows = [r for r in rows if r.get("idcalle") in calles]
-        return rows[:limit]
+            condiciones.append("fechahoraaccidente <= %(fecha_hasta)s")
+            params["fecha_hasta"] = fecha_hasta
+        if calles is not None:
+            condiciones.append("idcalle IN %(idscalle)s")
+            params["idscalle"] = sorted(calles)
+        if cursor:
+            condiciones.append("idaccidente < %(cursor)s")
+            params["cursor"] = cursor
+
+        where = f"WHERE {' AND '.join(condiciones)}" if condiciones else ""
+        rows = self.pinot.query(
+            f"""
+            SELECT * FROM Fact_Accidente
+            {where}
+            ORDER BY idaccidente DESC
+            LIMIT %(limit)s
+            """,
+            params,
+        )
+        pagina = rows[:limit]
+        siguiente = pagina[-1]["idaccidente"] if len(rows) > limit and pagina else None
+        return pagina, siguiente
 
     def find_nearby(
         self,
@@ -83,12 +130,21 @@ class AccidenteRepository:
         window_ms: int,
         exclude_id: str | None = None,
     ) -> list[dict[str, Any]]:
+        # Único caso que no pagina: agrupar reportes duplicados exige mirar todo
+        # el conjunto candidato de una vez, porque un duplicado que quedara fuera
+        # de la página se registraría como accidente nuevo. La ventana temporal
+        # va en el SQL para que el escaneo no crezca con la historia completa.
         rows = self.pinot.query(
             """
             SELECT * FROM Fact_Accidente
             WHERE activo = true
+              AND fechahoraaccidente >= %(desde)s
+              AND fechahoraaccidente <= %(hasta)s
             """,
-            {},
+            {
+                "desde": fechahoraaccidente - window_ms,
+                "hasta": fechahoraaccidente + window_ms,
+            },
         )
         results = []
         for row in rows:

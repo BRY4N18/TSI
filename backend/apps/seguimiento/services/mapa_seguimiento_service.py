@@ -60,7 +60,8 @@ class MapaSeguimientoService:
 
     def obtener_mapa(self) -> dict[str, Any]:
         accidentes_activos: list[dict[str, Any]] = []
-        for acc in self.accidentes.list_activos(limit=100):
+        activos, _ = self.accidentes.list_activos(limit=100)
+        for acc in activos:
             est = self.estado.get_current_estado(acc["idaccidente"])
             if est in (ESTADO_CERRADO, ESTADO_DESCARTADO, ESTADO_FUSIONADO, None):
                 continue

@@ -58,6 +58,9 @@ Todas las peticiones HTTP autenticadas incluyen `Authorization: Bearer` desde al
 - **FR-UI-009**: `AuthApiService` encapsula login/logout/refresh de perfil sin duplicar contratos OpenAPI en componentes.
 - **FR-UI-010**: `UserRoleAdminService` y `ServerAccessAdminService` disponibles para pantallas admin futuras; guards reutilizables en rutas CU-O04/O13/O15.
 - **FR-UI-011**: Mensajes de error de auth alineados al envelope `error/detail/code` del backend — sin filtrar existencia de usuarios (Security).
+- **FR-UI-012**: Pantalla **Acceso denegado** en `/cuentas-clientes/auth/access-denied`, destino de todos los guards de rol cuando la sesión es válida pero el rol no alcanza. Vive **dentro del shell autenticado** para que el usuario conserve su navegación; indica que la sesión sigue activa, muestra correo y roles vigentes, y ofrece un CTA «Volver a mi inicio» resuelto con `homePathForRoles` (FR-UI-008). Nunca debe llevar al portal comercial público (RF-AUT-004).
+  > Agregado 2026-07-31: los 28 guards ya redirigían a esa ruta, pero no estaba declarada, así que el wildcard `**` la capturaba y mostraba «Iniciar sesión» a un usuario con sesión válida. Ver `.specify/docs/changelog.md` F6.
+- **FR-UI-013**: La ruta raíz `/` respeta la sesión: sin sesión resuelve al portal comercial público; con sesión, al home del rol (misma función que el login). Ver `.specify/docs/changelog.md` F2.
 
 ## Out of Scope
 

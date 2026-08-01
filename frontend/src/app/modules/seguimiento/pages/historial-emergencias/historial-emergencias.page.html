@@ -95,35 +95,11 @@
   </form>
 
   @if (loading()) {
-    <div class="grid gap-2" data-testid="loading-skeleton">
-      @for (i of [1, 2, 3, 4]; track i) {
-        <div class="h-14 animate-pulse rounded-md bg-bg-surface"></div>
-      }
-    </div>
+    <app-list-loading-skeleton [count]="4" />
   } @else if (error()) {
-    <div
-      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
-      data-testid="error-state"
-    >
-      <app-tabler-icon name="alert-triangle" [size]="32" />
-      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
-        (click)="cargar()"
-      >
-        <app-tabler-icon name="refresh" [size]="16" />
-        Reintentar
-      </button>
-    </div>
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
   } @else if (!items().length) {
-    <div
-      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
-      data-testid="empty-state"
-    >
-      <app-tabler-icon name="history" [size]="32" />
-      <p class="m-0 text-sm text-text-secondary">No hay casos que coincidan con estos filtros.</p>
-    </div>
+    <app-list-empty-state icon="history" message="No hay casos que coincidan con estos filtros." />
   } @else {
     <table class="w-full border-collapse overflow-hidden rounded-lg border border-border-default">
       <thead>

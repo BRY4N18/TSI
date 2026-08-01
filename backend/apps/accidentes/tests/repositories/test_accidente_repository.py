@@ -37,7 +37,7 @@ class TestAccidenteRepository:
         repo.create({"idaccidente": "ACC-NEW", "fechahoraaccidente": 5_000, "activo": True, "idcalle": 1})
 
         # Act
-        rows = repo.list_activos(fecha_desde=3_000, fecha_hasta=6_000)
+        rows, _ = repo.list_activos(fecha_desde=3_000, fecha_hasta=6_000)
 
         # Assert
         ids = [r["idaccidente"] for r in rows]
@@ -51,7 +51,7 @@ class TestAccidenteRepository:
         repo.create({"idaccidente": "ACC-CIUDAD-99", "idcalle": 99, "activo": True})
 
         # Act
-        rows = repo.list_activos(idciudad=1)
+        rows, _ = repo.list_activos(idciudad=1)
 
         # Assert
         ids = [r["idaccidente"] for r in rows]
@@ -65,7 +65,7 @@ class TestAccidenteRepository:
         repo.create({"idaccidente": "ACC-ESTADO-99", "idcalle": 99, "activo": True})
 
         # Act
-        rows = repo.list_activos(idestadoregion=1)
+        rows, _ = repo.list_activos(idestadoregion=1)
 
         # Assert
         ids = [r["idaccidente"] for r in rows]

@@ -51,6 +51,12 @@ export class ListaAccidentesPage implements OnInit {
   readonly error = signal<string | null>(null);
   readonly selectedId = signal<string | null>(null);
 
+  /** Tamaño de página pedido al backend; el servidor topa a 100. */
+  readonly pageLimit = 20;
+  readonly nextCursor = signal<string | null>(null);
+  cursor: string | null = null;
+  private cursorStack: (string | null)[] = [];
+
   readonly filtros = this.fb.group({
     idpais: [null as number | null],
     idestadoregion: [null as number | null],
@@ -74,7 +80,37 @@ export class ListaAccidentesPage implements OnInit {
       }
     });
 
-    this.filtros.valueChanges.pipe(debounceTime(300)).subscribe(() => this.cargar());
+    // Cambiar un filtro reinicia la paginación: los cursores acumulados
+    // pertenecen al conjunto de resultados anterior y ya no son válidos.
+    this.filtros.valueChanges
+      .pipe(debounceTime(300))
+      .subscribe(() => this.cargar({ reiniciarCursor: true }));
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.nextCursor() !== null;
+  }
+
+  get puedeAnterior(): boolean {
+    return this.cursorStack.length > 0;
+  }
+
+  paginaSiguiente(): void {
+    const siguiente = this.nextCursor();
+    if (!siguiente) {
+      return;
+    }
+    this.cursorStack.push(this.cursor);
+    this.cursor = siguiente;
+    this.cargar();
+  }
+
+  paginaAnterior(): void {
+    if (!this.cursorStack.length) {
+      return;
+    }
+    this.cursor = this.cursorStack.pop() ?? null;
+    this.cargar();
   }
 
   esSeleccionado(idaccidente: string): boolean {
@@ -125,7 +161,11 @@ export class ListaAccidentesPage implements OnInit {
     return [ubicacion.calle, ubicacion.ciudad].filter(Boolean).join(', ') || '—';
   }
 
-  cargar(): void {
+  cargar(opciones: { reiniciarCursor?: boolean } = {}): void {
+    if (opciones.reiniciarCursor) {
+      this.cursor = null;
+      this.cursorStack = [];
+    }
     const raw = this.filtros.getRawValue();
     this.loading.set(true);
     this.error.set(null);
@@ -138,10 +178,14 @@ export class ListaAccidentesPage implements OnInit {
         fechaDesde: raw.fechaDesde ? new Date(raw.fechaDesde).getTime() : undefined,
         fechaHasta: raw.fechaHasta ? new Date(raw.fechaHasta).getTime() : undefined,
         idestadoregion: raw.idestadoregion ?? undefined,
+        limit: this.pageLimit,
+        cursor: this.cursor,
       })
       .subscribe({
         next: (res) => {
           this.accidentes.set(res.data);
+          const siguiente = res.meta?.pagination?.next_cursor;
+          this.nextCursor.set(siguiente ? String(siguiente) : null);
           this.loading.set(false);
         },
         error: () => {

@@ -10,6 +10,7 @@ from apps.cuentas_clientes.services.onboarding_access_service import (
 )
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
 from core.repositories.cuentas_clientes.credential_repository import (
+    ESTADO_CREDENCIAL_ACTIVO,
     CredentialRepository,
 )
 from core.repositories.cuentas_clientes.onboarding_repository import (
@@ -143,7 +144,7 @@ class OnboardingService:
             cred = self.credential_repo.find_by_user_id(admin_local_id)
             if not cred:
                 raise OnboardingError("Credencial no encontrada")
-            if cred.get("estadocredencial") != "Activo":
+            if cred.get("estadocredencial") != ESTADO_CREDENCIAL_ACTIVO:
                 raise OnboardingError("Debe cambiar la contraseña antes de continuar")
             return
 

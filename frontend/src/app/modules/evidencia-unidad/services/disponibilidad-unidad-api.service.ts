@@ -34,7 +34,8 @@ export class DisponibilidadUnidadApiService {
 
   listarUnidades(params?: {
     estado?: EstadoDisponibilidadUnidad;
-    idtipounidad?: number;
+    /** Tipo de unidad por nombre ("Ambulancia", "Grúa", …). */
+    tipo?: string;
     cursor?: string;
     limit?: number;
   }): Observable<ApiEnvelope<{ items: UnidadEmergenciaResumen[] }>> {
@@ -42,8 +43,8 @@ export class DisponibilidadUnidadApiService {
     if (params?.estado) {
       httpParams = httpParams.set('estado', params.estado);
     }
-    if (params?.idtipounidad != null) {
-      httpParams = httpParams.set('idtipounidad', String(params.idtipounidad));
+    if (params?.tipo) {
+      httpParams = httpParams.set('tipo', params.tipo);
     }
     if (params?.cursor) {
       httpParams = httpParams.set('cursor', params.cursor);

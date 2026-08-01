@@ -52,7 +52,8 @@ class AccidenteListCreateView(APIView):
         idestadoregion = params.get("idestadoregion")
         activo = params.get("activo")
         try:
-            rows = ConsultaAccidenteService().listar(
+            limit = min(max(int(params.get("limit", 20)), 1), 100)
+            data = ConsultaAccidenteService().listar(
                 idseveridad=int(idseveridad) if idseveridad else None,
                 estado=params.get("estado") or None,
                 activo=activo.lower() == "true" if activo is not None else True,
@@ -60,11 +61,15 @@ class AccidenteListCreateView(APIView):
                 fecha_hasta=int(fecha_hasta) if fecha_hasta else None,
                 idciudad=int(idciudad) if idciudad else None,
                 idestadoregion=int(idestadoregion) if idestadoregion else None,
-                limit=int(params.get("limit", 20)),
+                limit=limit,
+                cursor=params.get("cursor") or None,
             )
         except ValueError:
             return error_response("bad_request", "Parámetros de filtro inválidos", "400", status_code=400)
-        return success_response(rows, meta={"pagination": {"next_cursor": None, "limit": 20}})
+        return success_response(
+            data["items"],
+            meta={"pagination": {"next_cursor": data["next_cursor"], "limit": limit}},
+        )
 
     def post(self, request: Request) -> Response:
         forzar = request.query_params.get("forzarAdvertencias", "false").lower() == "true"
@@ -89,9 +94,11 @@ class AccidenteListCreateView(APIView):
                         "detail": primera_advertencia.get("detail", "Posible duplicado detectado"),
                         "code": "409",
                         "advertencias": exc.advertencias,
+                        # El caso duplicado no existe todavía: el 409 rechaza el
+                        # alta, así que la fusión (CU-O41) opera sobre
+                        # `idaccidente_similar`, el reporte ya registrado.
                         "idaccidente_similar": dup_id,
                         "idaccidente_principal_sugerido": exc.parent_suggested,
-                        "idaccidente_duplicado_sugerido": None,
                     },
                     "meta": {"pagination": None},
                 },

@@ -58,27 +58,29 @@ class HistorialEstadoUnidadRepository:
         limit: int = 20,
         cursor: int | None = None,
     ) -> list[dict[str, Any]]:
-        rows = self.pinot.query(
-            """
-            SELECT * FROM Fact_HistorialEstadoUnidad
-            WHERE idunidademergencia = %(idunidademergencia)s
-            """,
-            {"idunidademergencia": idunidademergencia},
-        )
-        rows.sort(
-            key=lambda r: (
-                r.get("fechahora", 0),
-                r.get("idhistorialestadosunidadesemergencias", 0),
-            ),
-            reverse=True,
-        )
+        # Orden y tope van en el SQL. Antes se traía sin LIMIT y se ordenaba en
+        # Python: Pinot recortaba en silencio a 10 filas, así que
+        # `get_current_estado` decidía el estado vigente de la unidad mirando 10
+        # filas arbitrarias de su historial. Una unidad con más de 10 cambios de
+        # estado podía reportar uno viejo y quedar mal clasificada para despacho.
+        condiciones = ["idunidademergencia = %(idunidademergencia)s"]
+        params: dict[str, Any] = {
+            "idunidademergencia": idunidademergencia,
+            "limit": limit,
+        }
         if cursor is not None:
-            rows = [
-                r
-                for r in rows
-                if r.get("idhistorialestadosunidadesemergencias", 0) < cursor
-            ]
-        return rows[:limit]
+            condiciones.append("idhistorialestadosunidadesemergencias < %(cursor)s")
+            params["cursor"] = cursor
+
+        return self.pinot.query(
+            f"""
+            SELECT * FROM Fact_HistorialEstadoUnidad
+            WHERE {' AND '.join(condiciones)}
+            ORDER BY fechahora DESC, idhistorialestadosunidadesemergencias DESC
+            LIMIT %(limit)s
+            """,
+            params,
+        )
 
     def get_current_estado(self, idunidademergencia: int) -> tuple[str, int | None]:
         rows = self.list_by_unidad(idunidademergencia, limit=1)

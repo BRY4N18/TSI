@@ -32,6 +32,19 @@ Django Service → SQL directo → Pinot Broker → resultado (solo lectura)
 
 Orden de arranque: `zookeeper` → `kafka` → `pinot-controller` → `pinot-broker` → `pinot-server`. Todos los servicios comparten la red `pipeline-net`.
 
+### 2.1 Stack `tactico`: capa analítica batch (activo, ver §5.1)
+
+Servicios adicionales, definidos en `docker/docker-compose.tactico.yml`, que se levantan de forma **independiente** del stack anterior pero comparten la misma red `pipeline-net`:
+
+| Servicio | Puerto (host) | Rol |
+| --- | --- | --- |
+| `tactico-clickhouse` | `8123` (HTTP) / `9100` (nativo TCP, remapeado — `9000` ya lo usa `pinot-controller`) | Almacén analítico batch — destino de los informes tácticos compuestos |
+| `tactico-airflow-postgres` | *sin publicar* | Metastore de Airflow (DAGs, runs, conexiones, variables) |
+| `tactico-airflow-webserver` | `8090` | UI de administración de Airflow |
+| `tactico-airflow-scheduler` | *sin publicar* | Planificador de DAGs |
+
+Orden de arranque: `tactico-airflow-postgres` → `tactico-airflow-init` (migraciones + usuario admin, corre una vez) → `tactico-airflow-webserver` / `tactico-airflow-scheduler`. `tactico-clickhouse` no depende de los anteriores. Ver `specs/002-tactico/` para el detalle completo (spec, plan, contrato de puertos/hosts, quickstart de verificación).
+
 Pinot no es un solo servicio: son 3 procesos independientes (controller/broker/server), cada uno con su propio contenedor.
 
 **Cada tabla del modelo dimensional tiene su propio tópico Kafka**, con el formato `{NombreTabla}_topic`. Configuración de ingesta: stream `kafka` (lowlevel consumer), decoder JSON, offset reset `smallest`, modo `MMAP`, upsert `FULL` sobre la columna `fecha_actualizacion`.
@@ -79,6 +92,11 @@ docker compose -f accidentes.yml up -d django    # recrea con la imagen nueva
 - Los tópicos de Kafka se definen en la especificación del módulo que los publica, no en el consumidor.
 - Pinot es de solo lectura desde Django; Kafka es el canal de escritura.
 - Pinot no soporta UPDATE/DELETE tradicional: los cambios de estado (ej. accidente ACTIVO → CERRADO) se modelan como eventos nuevos en Kafka, no como mutaciones de registro.
+- **Toda consulta a Pinot declara un `LIMIT` explícito.** Pinot aplica un `LIMIT 10` implícito a las consultas que no lo traen, y la respuesta no distingue "hay 10 filas" de "hay 10 de 500": el recorte es silencioso y sin `ORDER BY` ni siquiera es estable entre llamadas. `PinotClient.query` añade un tope de seguridad, pero un repositorio que filtre o pagine sobre el resultado debe declarar el suyo. Ver `.specify/docs/changelog.md` D1.
+- **Filtros, orden y paginación viven en el SQL, no en Python.** Traer un conjunto y recortarlo en memoria del servidor deja los filtros operando sobre un subconjunto arbitrario. La paginación es keyset (cursor sobre una columna monótona), y avanzar de página emite una consulta nueva acotada — nunca se materializa la tabla.
+- **Ordenar y paginar usan la misma clave.** Ordenar por un campo y comparar el cursor contra otro deja huecos o repite filas entre páginas.
+- **Nunca releer de Pinot lo que se acaba de escribir por Kafka** dentro de la misma operación: la ingesta tarda segundos y la lectura devuelve vacío. Un rollback que dependa de esa relectura falla en silencio (ver B2).
+- Las tablas de Pinot son **upsert por clave primaria**: publicar un registro parcial borra el resto de columnas, y dos escritores que reusen un id se pisan sin aviso. Convenciones de seeds en `datos-demo.md`.
 
 ---
 
@@ -86,11 +104,13 @@ docker compose -f accidentes.yml up -d django    # recrea con la imagen nueva
 
 > Esta sección documenta decisiones de infraestructura ya discutidas y resueltas, para que no se vuelvan a proponer sin este contexto. Nada de lo que está aquí se implementa hoy — es alcance futuro explícito.
 
-### 5.1 ClickHouse + Airflow para capa analítica batch (futuro)
+### 5.1 ClickHouse + Airflow para capa analítica batch (activo desde 2026-08-01)
 
-**Decisión:** cuando se necesite, ClickHouse + Airflow se incorporan como capa **separada** para analítica pesada/BI (reportes históricos, entrenamiento de ML batch, y el futuro `apps/bsc/` — hoy fuera de alcance según `actors.md`), **sin reemplazar a Pinot**. Patrón: Pinot sigue sirviendo lo operativo en tiempo real (despacho, casos activos, todo lo sensible a latencia); Airflow orquesta el ETL desde Kafka/Pinot hacia ClickHouse para lo que no necesita tiempo real. No es redundancia si el límite se mantiene claro: **Pinot = serving en tiempo real, ClickHouse = analítica batch/histórica.**
+**Decisión:** ClickHouse + Airflow se incorporan como capa **separada** para analítica pesada/BI (informes tácticos compuestos del departamento de Gestión de Emergencias, ver `informestacticos/auditoria-esquemas-informes-v2.md`), **sin reemplazar a Pinot**. Patrón: Pinot sigue sirviendo lo operativo en tiempo real (despacho, casos activos, todo lo sensible a latencia); Airflow orquesta el ETL desde Kafka/Pinot hacia ClickHouse para lo que no necesita tiempo real. No es redundancia si el límite se mantiene claro: **Pinot = serving en tiempo real, ClickHouse = analítica batch/histórica.**
 
-**Por qué no ahora:** ninguno de los 89 CU operativos actuales lo requiere — las tablas que se beneficiarían (`Fact_Reporte`, `Fact_Inteligencia`, `Fact_Satisfaccion`) hoy son especulativas, sin CU que las respalde (ver discrepancias documentadas al regenerar `data-model.md`). Construir la capa ClickHouse+Airflow antes de tener esos CU definidos sería sobreingeniería.
+**Estado:** implementado como infraestructura base en `specs/002-tactico/` (`docker/docker-compose.tactico.yml`) — ver §2.1 más arriba para el detalle de servicios/puertos. Esta fase entrega solo el stack de infraestructura verificado (arranque, persistencia, conectividad de red); los DAGs de negocio concretos y las tablas de ClickHouse por informe compuesto son objeto de la spec siguiente de informes tácticos compuestos de Emergencias, todavía no creada.
+
+**Por qué ahora sí:** a diferencia de cuando se escribió esta sección originalmente (sin CU que respaldara las tablas especulativas `Fact_Reporte`/`Fact_Inteligencia`/`Fact_Satisfaccion`), la necesidad quedó trazada en `informestacticos/auditoria-esquemas-informes-v2.md` contra informes tácticos concretos del departamento de Gestión de Emergencias (ej. detección de pérdida de señal GPS, ratio demanda/capacidad por condado) — ya no es especulativo.
 
 ### 5.2 Firebase para tracking en tiempo real — evaluado y descartado
 

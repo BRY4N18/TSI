@@ -11,6 +11,21 @@ from core.audit.evidencia_service import AuditEvidenciaService
 from core.storage.blob_storage_service import BlobTooLargeError, BlobUploadError
 
 
+def _exigir_campos(item: dict[str, Any], requeridos: tuple[str, ...], entidad: str) -> None:
+    """Valida presencia de campos antes de armar la llamada al servicio.
+
+    Sin esto un campo ausente sale como KeyError y el técnico ve el nombre
+    crudo de la clave (`'estadoimplicado'`) como motivo de que su registro
+    quedara pendiente, sin saber qué corregir ni en cuál de los ítems.
+    """
+    faltantes = [c for c in requeridos if item.get(c) in (None, "")]
+    if faltantes:
+        raise ValueError(
+            f"Falta completar {' y '.join(faltantes)} en el {entidad} "
+            f"'{item.get('local_id', 'sin identificador')}'"
+        )
+
+
 class SincronizarEvidenciaService:
     def __init__(
         self,
@@ -159,6 +174,7 @@ class SincronizarEvidenciaService:
         for item in enriquecimiento.get("elementos_fisicos") or []:
             local_id = item.get("local_id", f"fisico-{item.get('idelementofisico')}")
             try:
+                _exigir_campos(item, ("idelementofisico",), "elemento físico")
                 EnriquecimientoElementoFisicoService().agregar(
                     idaccidente=idaccidente,
                     idelementofisico=int(item["idelementofisico"]),
@@ -177,6 +193,9 @@ class SincronizarEvidenciaService:
         for item in enriquecimiento.get("conductores") or []:
             local_id = item.get("local_id", "conductor")
             try:
+                _exigir_campos(
+                    item, ("conductor", "idestadoconductor", "vehiculo"), "conductor"
+                )
                 EnriquecimientoConductorService().registrar(
                     idaccidente=idaccidente,
                     idusuario=idusuario,
@@ -197,6 +216,7 @@ class SincronizarEvidenciaService:
         for item in enriquecimiento.get("implicados") or []:
             local_id = item.get("local_id", "implicado")
             try:
+                _exigir_campos(item, ("tipoimplicado", "estadoimplicado"), "implicado")
                 EnriquecimientoImplicadoService().registrar(
                     idaccidente=idaccidente,
                     idusuario=idusuario,

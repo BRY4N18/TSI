@@ -70,12 +70,8 @@
           <div class="h-64 animate-pulse rounded-lg bg-bg-surface"></div>
         </div>
       } @else if (!tickets().length) {
-        <div
-          class="grid flex-1 place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
-          data-testid="empty-state"
-        >
-          <app-tabler-icon name="list" [size]="32" />
-          <p class="m-0 text-sm text-text-secondary">No hay tickets pendientes.</p>
+        <div class="grid flex-1">
+          <app-list-empty-state icon="list" message="No hay tickets pendientes." />
         </div>
       } @else {
         <div

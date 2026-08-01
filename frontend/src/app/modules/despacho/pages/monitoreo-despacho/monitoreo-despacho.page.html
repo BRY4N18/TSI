@@ -8,27 +8,9 @@
   </a>
 
   @if (loading()) {
-    <div class="grid gap-2" data-testid="loading-skeleton">
-      @for (i of [1, 2, 3]; track i) {
-        <div class="h-16 animate-pulse rounded-lg bg-bg-surface"></div>
-      }
-    </div>
+    <app-list-loading-skeleton [count]="3" />
   } @else if (error()) {
-    <div
-      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
-      data-testid="error-state"
-    >
-      <app-tabler-icon name="alert-triangle" [size]="32" />
-      <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
-        (click)="cargar()"
-      >
-        <app-tabler-icon name="refresh" [size]="16" />
-        Reintentar
-      </button>
-    </div>
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
   } @else if (estado()) {
     @let e = estado()!;
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">

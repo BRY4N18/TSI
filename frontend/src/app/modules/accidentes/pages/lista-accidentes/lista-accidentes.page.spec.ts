@@ -209,4 +209,84 @@ describe('ListaAccidentesPage', () => {
     expect(text).toContain('Nuevo registro');
     expect(text.toLowerCase()).not.toContain('elementos físicos');
   });
+
+  it('paginaSiguiente_envia_el_cursor_devuelto_por_el_backend', () => {
+    // Arrange — la primera página trae cursor de continuación
+    api.listar.and.returnValue(
+      of<any>({
+        data: [{ idaccidente: 'ACC-3' }],
+        meta: { pagination: { next_cursor: 'ACC-3', limit: 20 } },
+      }),
+    );
+    fixture.detectChanges();
+    api.listar.calls.reset();
+
+    // Act
+    component.paginaSiguiente();
+
+    // Assert — el cursor viaja al servidor: la página siguiente se pide a la BD
+    expect(api.listar).toHaveBeenCalledWith(
+      jasmine.objectContaining({ cursor: 'ACC-3', limit: 20 }),
+    );
+  });
+
+  it('paginaAnterior_vuelve_al_cursor_previo', () => {
+    // Arrange
+    api.listar.and.returnValue(
+      of<any>({
+        data: [{ idaccidente: 'ACC-3' }],
+        meta: { pagination: { next_cursor: 'ACC-3', limit: 20 } },
+      }),
+    );
+    fixture.detectChanges();
+    component.paginaSiguiente();
+    api.listar.calls.reset();
+
+    // Act
+    component.paginaAnterior();
+
+    // Assert — la primera página no lleva cursor
+    expect(api.listar).toHaveBeenCalledWith(jasmine.objectContaining({ cursor: null }));
+    expect(component.puedeAnterior).toBeFalse();
+  });
+
+  it('cambiar_un_filtro_reinicia_la_paginacion', fakeAsync(() => {
+    // Arrange
+    api.listar.and.returnValue(
+      of<any>({
+        data: [{ idaccidente: 'ACC-3' }],
+        meta: { pagination: { next_cursor: 'ACC-3', limit: 20 } },
+      }),
+    );
+    fixture.detectChanges();
+    component.paginaSiguiente();
+    expect(component.cursor).toBe('ACC-3');
+    api.listar.calls.reset();
+
+    // Act — los cursores acumulados pertenecen al resultado anterior
+    component.filtros.controls.idseveridad.setValue(4);
+    tick(300);
+
+    // Assert
+    expect(component.cursor).toBeNull();
+    expect(component.puedeAnterior).toBeFalse();
+    expect(api.listar).toHaveBeenCalledWith(jasmine.objectContaining({ cursor: null }));
+  }));
+
+  it('sin_next_cursor_el_boton_siguiente_queda_deshabilitado', () => {
+    // Arrange
+    api.listar.and.returnValue(
+      of<any>({ data: [{ idaccidente: 'ACC-1' }], meta: { pagination: { next_cursor: null, limit: 20 } } }),
+    );
+
+    // Act
+    fixture.detectChanges();
+
+    // Assert
+    expect(component.puedeSiguiente).toBeFalse();
+    const btn = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="btn-pagina-siguiente"]',
+    ) as HTMLButtonElement | null;
+    expect(btn?.disabled).toBeTrue();
+  });
 });

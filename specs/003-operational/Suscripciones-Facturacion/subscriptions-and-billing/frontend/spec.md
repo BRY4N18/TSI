@@ -93,7 +93,8 @@ UI refleja RN-SUSF-017 — mensaje cuando suscripción Suspendida bloquea accion
 ### Delta — Catálogo planes (piloto UX)
 
 - **FR-UI-014**: Acciones de fila ≥44×44: **ojo** → página Detalles (lectura); **lápiz** → página Formulario (editar). Nombre/ID del plan como texto plano (no único enlace de apertura).
-- **FR-UI-015**: Ruta dedicada de **Detalles** (`planes/:idplan` o equivalente). Título «Detalles»; campos disabled / solo lectura; **sin** Guardar. Volver al catálogo; CTA opcional «Editar».
+- **FR-UI-015**: Ruta dedicada de **Detalles** (`planes/:idplan` o equivalente), con el chrome de workpanel en página dedicada del golden sample *Accidente Detalles*: link «Volver a la lista» con `arrow-left`, eyebrow de modo («Detalles»), `h1` + badge de estado en la misma fila, y datos en `<dl>` con `dt` uppercase + `dd` texto. **Sin** Guardar; CTA opcional «Editar».
+  > Corregido 2026-07-31: este requisito pedía «campos disabled / solo lectura», que contradice el design-system global §5 («en modo Ver, datos como `<dl>`… **nunca** `<input disabled>` para fingir solo lectura»). La implementación usaba `<input disabled readonly>`; ver `.specify/docs/changelog.md` F3. El design-system es la autoridad: un spec de módulo no puede relajar una regla global de diseño.
 - **FR-UI-016**: CTA «Crear plan» permanece en el **header** del catálogo (ya presente). **Sin workpanel split** que comprima la lista.
 - **FR-UI-017**: En `plan-form` (crear y editar), el CTA primario («Publicar plan» / «Guardar cambios») **MUST** estar en la **cabecera** de la página (además de o en lugar del pie-only).
 - **FR-UI-018**: Desactivar / reactivar desde la lista con confirmación explícita (diálogo); no se completa con un solo clic accidental.

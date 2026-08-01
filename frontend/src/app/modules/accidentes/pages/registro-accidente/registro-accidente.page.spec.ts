@@ -168,7 +168,6 @@ describe('RegistroAccidentePage', () => {
       code: '409',
       idaccidente_similar: 'ACC-10',
       idaccidente_principal_sugerido: 'ACC-9',
-      idaccidente_duplicado_sugerido: null,
     };
     accidenteApi.registrar.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 409, error: { data: conflictBody, meta: {} } })),
@@ -190,7 +189,6 @@ describe('RegistroAccidentePage', () => {
       code: '409',
       idaccidente_similar: null,
       idaccidente_principal_sugerido: null,
-      idaccidente_duplicado_sugerido: null,
     };
     accidenteApi.registrar.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 409, error: { data: conflictBody, meta: {} } })),
@@ -230,7 +228,6 @@ describe('RegistroAccidentePage', () => {
       code: '409',
       idaccidente_similar: 'ACC-10',
       idaccidente_principal_sugerido: 'ACC-9',
-      idaccidente_duplicado_sugerido: null,
     });
     accidenteApi.fusionar.and.returnValue(
       of<any>({

@@ -10,6 +10,7 @@ dist/
 .env.*
 !.env.example
 !backend/.env.example
+!docker/.env.tactico.example
 
 # Django
 *.sqlite3
