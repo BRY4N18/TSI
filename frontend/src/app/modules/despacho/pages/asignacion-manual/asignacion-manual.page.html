@@ -1,0 +1,66 @@
+<div class="mx-auto max-w-2xl p-8">
+  <a
+    [routerLink]="['/despacho/monitoreo', idaccidente]"
+    class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+  >
+    <app-tabler-icon name="arrow-left" [size]="16" />
+    Volver al monitoreo
+  </a>
+
+  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Asignación manual</h1>
+  <p class="m-0 mb-6 font-mono text-sm text-text-secondary">{{ idaccidente }}</p>
+
+  <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+    <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades candidatas</h2>
+
+    @if (loading()) {
+      <app-list-loading-skeleton [count]="3" />
+    } @else if (error()) {
+      <app-list-error-state [message]="error()!" (retry)="cargar()" />
+    } @else if (!candidatas().length) {
+      <app-list-empty-state message="No hay unidades candidatas disponibles para este caso." icon="car" />
+    } @else {
+      <div class="flex flex-col gap-4">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-text-secondary">
+          Unidad
+          <select
+            [(ngModel)]="unidadSeleccionada"
+            class="rounded-md border border-border-default bg-transparent px-3 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)] focus:outline-none"
+          >
+            @for (c of candidatas(); track c.idunidademergencia) {
+              <option [ngValue]="c.idunidademergencia">
+                {{ c.unidademergencia }} — {{ c.tipounidademergencia }} ({{ c.distancia_km }} km, puntuación
+                {{ c.puntuacion }})
+              </option>
+            }
+          </select>
+        </label>
+
+        <button
+          type="button"
+          [disabled]="asignando()"
+          (click)="asignar()"
+          class="inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-accent-primary px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-80"
+        >
+          @if (asignando()) {
+            <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            Asignando…
+          } @else {
+            Asignar unidad
+          }
+        </button>
+      </div>
+    }
+
+    @if (mensaje()) {
+      <p
+        class="m-0 mt-4 text-sm"
+        [class.text-alert-success]="mensaje() !== 'Error al asignar'"
+        [class.text-alert-critical]="mensaje() === 'Error al asignar'"
+        data-testid="mensaje"
+      >
+        {{ mensaje() }}
+      </p>
+    }
+  </section>
+</div>

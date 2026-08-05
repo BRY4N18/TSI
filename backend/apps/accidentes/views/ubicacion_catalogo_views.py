@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accidentes.permissions import AccidentesLecturaPermission
+from apps.accidentes.permissions import UbicacionCatalogoLecturaPermission
 from apps.accidentes.services.ubicacion_catalogo_service import UbicacionCatalogoService
 from core.api.response_envelope import error_response, success_response
 from core.auth.permissions import IsAuthenticated401
@@ -20,14 +20,14 @@ def _parse_required_int(request: Request, param: str) -> int | None:
 
 
 class PaisListView(APIView):
-    permission_classes = [IsAuthenticated401, AccidentesLecturaPermission]
+    permission_classes = [IsAuthenticated401, UbicacionCatalogoLecturaPermission]
 
     def get(self, request: Request) -> Response:
         return success_response(UbicacionCatalogoService().listar_paises())
 
 
 class EstadoListView(APIView):
-    permission_classes = [IsAuthenticated401, AccidentesLecturaPermission]
+    permission_classes = [IsAuthenticated401, UbicacionCatalogoLecturaPermission]
 
     def get(self, request: Request) -> Response:
         idpais = _parse_required_int(request, "idpais")
@@ -37,7 +37,7 @@ class EstadoListView(APIView):
 
 
 class CondadoListView(APIView):
-    permission_classes = [IsAuthenticated401, AccidentesLecturaPermission]
+    permission_classes = [IsAuthenticated401, UbicacionCatalogoLecturaPermission]
 
     def get(self, request: Request) -> Response:
         idestado = _parse_required_int(request, "idestado")
@@ -47,7 +47,7 @@ class CondadoListView(APIView):
 
 
 class CiudadListView(APIView):
-    permission_classes = [IsAuthenticated401, AccidentesLecturaPermission]
+    permission_classes = [IsAuthenticated401, UbicacionCatalogoLecturaPermission]
 
     def get(self, request: Request) -> Response:
         idcondado = _parse_required_int(request, "idcondado")
@@ -57,7 +57,7 @@ class CiudadListView(APIView):
 
 
 class CalleListView(APIView):
-    permission_classes = [IsAuthenticated401, AccidentesLecturaPermission]
+    permission_classes = [IsAuthenticated401, UbicacionCatalogoLecturaPermission]
 
     def get(self, request: Request) -> Response:
         idciudad = _parse_required_int(request, "idciudad")

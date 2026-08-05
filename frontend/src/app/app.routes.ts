@@ -90,6 +90,11 @@ export const routes: Routes = [
           import('./modules/accidentes/accidentes.routes').then((m) => m.ACCIDENTES_ROUTES),
       },
       {
+        path: 'emergencias',
+        loadChildren: () =>
+          import('./modules/emergencias/emergencias.routes').then((m) => m.EMERGENCIAS_ROUTES),
+      },
+      {
         path: 'despacho',
         loadChildren: () =>
           import('./modules/despacho/despacho.routes').then((m) => m.DESPACHO_ROUTES),

@@ -1,0 +1,156 @@
+<div class="mx-auto flex max-w-6xl flex-col gap-6 p-8">
+  <h1 class="m-0 text-[28px] font-bold text-text-primary">Informes de Despacho Inteligente</h1>
+
+  <app-periodo-selector (cambio)="onPeriodoChange($event)">
+    <label class="flex flex-col text-xs text-text-secondary">
+      Condado (opcional)
+      <input
+        type="number"
+        placeholder="Todos"
+        class="mt-1 w-28 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+        [(ngModel)]="idcondado"
+        (change)="onCondadoChange()"
+      />
+    </label>
+  </app-periodo-selector>
+
+  <section class="flex flex-col gap-4">
+    <h2 class="m-0 text-xl font-semibold text-text-primary">Asignación y tiempos de respuesta</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <app-informe-card
+        title="Origen de la asignación"
+        [loading]="asignacionOrigen.loading()"
+        [error]="asignacionOrigen.error()"
+        [empty]="!asignacionOrigen.loading() && !asignacionOrigen.error() && !asignacionOrigen.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+          @for (item of asignacionOrigen.data(); track item.idorigendespacho) {
+            <li class="flex justify-between text-text-secondary">
+              <span>{{ item.origen_nombre ?? 'Origen #' + item.idorigendespacho }}</span>
+              <span class="font-semibold text-text-primary">{{ item.pct_total * 100 | number: '1.0-1' }}%</span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+
+      <app-informe-card
+        title="Tiempo de respuesta inicial (reporte → asignación)"
+        [loading]="tiempoReportadoConfirmado.loading()"
+        [error]="tiempoReportadoConfirmado.error()"
+        [empty]="!tiempoReportadoConfirmado.loading() && !tiempoReportadoConfirmado.error() && !tiempoReportadoConfirmado.data()"
+        (retry)="cargarTodo()"
+      >
+        <p class="m-0 text-2xl font-semibold text-text-primary">
+          {{ tiempoReportadoConfirmado.data()?.promedio_segundos | number: '1.0-0' }} s
+        </p>
+      </app-informe-card>
+
+      <app-informe-card
+        title="Tiempo de respuesta por severidad"
+        [loading]="tiempoRespuestaSeveridad.loading()"
+        [error]="tiempoRespuestaSeveridad.error()"
+        [empty]="!tiempoRespuestaSeveridad.loading() && !tiempoRespuestaSeveridad.error() && !tiempoRespuestaSeveridad.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+          @for (item of tiempoRespuestaSeveridad.data(); track item.idseveridad) {
+            <li class="flex items-center justify-between text-text-secondary">
+              <app-severidad-badge [idseveridad]="item.idseveridad" />
+              <span class="font-semibold text-text-primary">{{ item.promedio_segundos | number: '1.0-0' }} s</span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-4">
+    <h2 class="m-0 text-xl font-semibold text-text-primary">Capacidad y desempeño operativo</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <app-informe-card
+        title="Rechazos y timeouts por unidad"
+        [loading]="rechazoTimeout.loading()"
+        [error]="rechazoTimeout.error()"
+        [empty]="!rechazoTimeout.loading() && !rechazoTimeout.error() && !rechazoTimeout.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+          @for (item of rechazoTimeout.data(); track item.idunidademergencia) {
+            <li class="flex justify-between text-text-secondary">
+              <span>{{ item.unidad_nombre ?? 'Unidad #' + item.idunidademergencia
+                }}{{ item.unidad_placa ? ' (' + item.unidad_placa + ')' : '' }}</span>
+              <span class="font-semibold text-text-primary">{{ item.pct_rechazo_timeout * 100 | number: '1.0-1' }}%</span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+
+      <app-informe-card
+        title="Carga de despachos por unidad"
+        [loading]="cargaPorUnidad.loading()"
+        [error]="cargaPorUnidad.error()"
+        [empty]="!cargaPorUnidad.loading() && !cargaPorUnidad.error() && !cargaPorUnidad.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+          @for (item of cargaPorUnidad.data(); track item.idunidademergencia) {
+            <li class="flex justify-between text-text-secondary">
+              <span>{{ item.unidad_nombre ?? 'Unidad #' + item.idunidademergencia
+                }}{{ item.unidad_placa ? ' (' + item.unidad_placa + ')' : '' }}</span>
+              <span class="font-semibold text-text-primary">{{ item.total_despachos | number }}</span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+
+      <app-informe-card
+        title="Demanda vs. capacidad por condado"
+        [loading]="ratioDemandaCapacidad.loading()"
+        [error]="ratioDemandaCapacidad.error()"
+        [empty]="!ratioDemandaCapacidad.loading() && !ratioDemandaCapacidad.error() && !ratioDemandaCapacidad.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+          @for (item of ratioDemandaCapacidad.data(); track item.idcondado) {
+            <li class="flex flex-col text-text-secondary">
+              <span class="font-medium text-text-primary">{{ item.condado_nombre ?? 'Condado #' + item.idcondado }}</span>
+              <span
+                >{{ item.total_accidentes }} accidentes / {{ item.unidades_activas }} unidades activas
+                @if (item.ratio !== null) {
+                  (ratio: {{ item.ratio | number: '1.0-1' }})
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+
+      @if (puedeVerCompuestos) {
+        <app-informe-card
+          title="Rendimiento por proveedor de unidades"
+          [batch]="true"
+          [ultimaCorrida]="rendimientoProveedor.ultimaCorrida()"
+          [loading]="rendimientoProveedor.loading()"
+          [error]="rendimientoProveedor.error()"
+          [noMaterializado]="!rendimientoProveedor.loading() && !rendimientoProveedor.error() && !rendimientoProveedor.materializado()"
+          [empty]="!rendimientoProveedor.loading() && !rendimientoProveedor.error() && rendimientoProveedor.materializado() && !rendimientoProveedor.data()?.length"
+          (retry)="cargarTodo()"
+        >
+          <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+            @for (item of rendimientoProveedor.data(); track item.idcliente) {
+              <li class="flex flex-col text-text-secondary">
+                <span class="font-medium text-text-primary">{{ item.proveedor_nombre ?? 'Proveedor #' + item.idcliente }}</span>
+                <span
+                  >Rechazo: {{ item.pct_rechazo * 100 | number: '1.0-1' }}% · Llegada:
+                  {{ item.tiempo_llegada_promedio_seg | number: '1.0-0' }} s · Abortos:
+                  {{ item.pct_abortos * 100 | number: '1.0-1' }}% · Despachos: {{ item.total_despachos }}</span
+                >
+              </li>
+            }
+          </ul>
+        </app-informe-card>
+      }
+    </div>
+  </section>
+</div>

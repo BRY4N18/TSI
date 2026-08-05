@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Compuestos de Emergencias
+  version: "1.0.0"
+  description: >
+    3 endpoints de lectura de solo lectura sobre ClickHouse (resultado ya
+    materializado por Airflow). Acceso restringido a rol Administrador
+    (FR-009 de la spec, ver desviación de roles en research.md §5).
+    Ver specs/002-tactico/Emergencias/informes-tacticos-compuestos/backend/spec.md.
+
+servers:
+  - url: /api/v1/informes-tacticos/compuestos
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    periodoDesde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    periodoHasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+
+  schemas:
+    MetaCompuesto:
+      type: object
+      properties:
+        periodo:
+          type: object
+          properties:
+            desde: { type: string, format: date }
+            hasta: { type: string, format: date }
+        materializado: { type: boolean }
+        ultima_corrida: { type: string, format: date-time, nullable: true }
+    ErrorEnvelope:
+      type: object
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Rol sin permiso — solo Administrador puede consultar informes compuestos (FR-009).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+paths:
+  /perdida-senal:
+    get:
+      summary: Listado y % de misiones con pérdida de señal GPS, por unidad y período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Filas materializadas de `perdida_senal_gps`, o `materializado:false` si el DAG no ha corrido para el período.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    nullable: true
+                    items:
+                      type: object
+                      properties:
+                        idunidademergencia: { type: integer }
+                        idaccidente: { type: string }
+                        inicio_hueco: { type: string, format: date-time }
+                        fin_hueco: { type: string, format: date-time }
+                        duracion_seg: { type: integer }
+                        umbral_usado_seg: { type: integer }
+                  meta: { $ref: '#/components/schemas/MetaCompuesto' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /indice-calidad:
+    get:
+      summary: Índice consolidado de calidad del histórico, con evolución en el tiempo
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Serie temporal de `indice_calidad_historico`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    nullable: true
+                    items:
+                      type: object
+                      properties:
+                        periodo: { type: string, format: date }
+                        pct_completitud: { type: number }
+                        pct_descarte: { type: number }
+                        pct_fusion: { type: number }
+                        pct_cobertura_evidencia: { type: number }
+                        indice_consolidado: { type: number }
+                  meta: { $ref: '#/components/schemas/MetaCompuesto' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rendimiento-proveedor:
+    get:
+      summary: Rendimiento de despacho agrupado por proveedor de unidades
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Filas materializadas de `rendimiento_por_proveedor`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    nullable: true
+                    items:
+                      type: object
+                      properties:
+                        idcliente: { type: integer }
+                        pct_rechazo: { type: number }
+                        tiempo_llegada_promedio_seg: { type: number }
+                        pct_abortos: { type: number }
+                        total_despachos: { type: integer }
+                  meta: { $ref: '#/components/schemas/MetaCompuesto' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

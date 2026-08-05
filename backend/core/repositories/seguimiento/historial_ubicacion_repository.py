@@ -21,7 +21,7 @@ class HistorialUbicacionRepository:
     def _next_id(self) -> int:
         rows = self.pinot.query(
             """
-            SELECT MAX(idhistorialubicacion) AS max_id
+            SELECT MAX(idhistorialunidademergencia) AS max_id
             FROM Dim_HistorialUbicacionUnidadEmergencia
             """,
             {},
@@ -39,7 +39,7 @@ class HistorialUbicacionRepository:
     ) -> dict[str, Any]:
         now = fechahora or int(datetime.now(timezone.utc).timestamp() * 1000)
         payload = {
-            "idhistorialubicacion": self._next_id(),
+            "idhistorialunidademergencia": self._next_id(),
             "idunidademergencia": idunidademergencia,
             "idaccidente": idaccidente,
             "latitud": latitud,
@@ -68,7 +68,7 @@ class HistorialUbicacionRepository:
         """Una página de la traza GPS de la unidad, resuelta en Pinot.
 
         Ventana temporal, orden y tope viajan en el SQL. La paginación es keyset
-        sobre `idhistorialubicacion`, que es monótono porque se asigna con
+        sobre `idhistorialunidademergencia`, que es monótono porque se asigna con
         MAX(id)+1 en cada publicación.
 
         Devuelve (filas, cursor_siguiente); cursor_siguiente es None en la última
@@ -86,21 +86,21 @@ class HistorialUbicacionRepository:
             condiciones.append("fechahora <= %(hasta)s")
             params["hasta"] = hasta
         if cursor is not None:
-            condiciones.append("idhistorialubicacion > %(cursor)s")
+            condiciones.append("idhistorialunidademergencia > %(cursor)s")
             params["cursor"] = cursor
 
         rows = self.pinot.query(
             f"""
             SELECT * FROM Dim_HistorialUbicacionUnidadEmergencia
             WHERE {' AND '.join(condiciones)}
-            ORDER BY idhistorialubicacion
+            ORDER BY idhistorialunidademergencia
             LIMIT %(limit)s
             """,
             params,
         )
         pagina = rows[:limit]
         siguiente = (
-            int(pagina[-1]["idhistorialubicacion"]) if len(rows) > limit and pagina else None
+            int(pagina[-1]["idhistorialunidademergencia"]) if len(rows) > limit and pagina else None
         )
         return pagina, siguiente
 

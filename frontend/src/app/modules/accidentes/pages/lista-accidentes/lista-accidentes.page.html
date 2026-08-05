@@ -11,7 +11,26 @@
     }
   </div>
 
-  <form [formGroup]="filtros" class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+  <form [formGroup]="filtros" class="mb-6 flex flex-col gap-4">
+    <div class="grid gap-1.5">
+      <label for="filtroBusqueda" class="text-sm font-medium text-text-secondary">Buscar por ID</label>
+      <div class="relative">
+        <app-tabler-icon
+          name="search"
+          [size]="16"
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+        />
+        <input
+          id="filtroBusqueda"
+          type="text"
+          placeholder="Ej. ACC-1785696743941-6704"
+          class="w-full rounded-md border border-border-default bg-bg-surface py-2.5 pl-9 pr-3.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+          formControlName="busqueda"
+        />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
     <div class="grid gap-1.5">
       <label for="filtroPais" class="text-sm font-medium text-text-secondary">País</label>
       <select
@@ -91,6 +110,7 @@
     <div class="flex items-end gap-2 pb-2.5">
       <input id="filtroActivo" type="checkbox" formControlName="activo" />
       <label for="filtroActivo" class="text-sm text-text-primary">Solo activos</label>
+    </div>
     </div>
   </form>
 

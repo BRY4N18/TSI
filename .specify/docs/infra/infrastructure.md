@@ -40,7 +40,7 @@ Servicios adicionales, definidos en `docker/docker-compose.tactico.yml`, que se 
 
 | Servicio | Puerto (host) | Rol |
 | --- | --- | --- |
-| `tactico-clickhouse` | `8123` (HTTP) / `9100` (nativo TCP, remapeado — `9000` ya lo usa `pinot-controller`) | Almacén analítico batch — destino de los informes tácticos compuestos |
+| `tactico-clickhouse` | `8123` (HTTP) / `9100` (nativo TCP, remapeado — `9000` ya lo usa `pinot-controller`) | Almacén analítico batch — DB `CLICKHOUSE_DB` (default `tsi_tactico`) |
 | `tactico-airflow-postgres` | *sin publicar* | Metastore de Airflow (DAGs, runs, conexiones, variables) |
 | `tactico-airflow-webserver` | `8090` | UI de administración de Airflow |
 | `tactico-airflow-scheduler` | *sin publicar* | Planificador de DAGs |

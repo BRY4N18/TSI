@@ -18,6 +18,7 @@ import {
 import { Router } from '@angular/router';
 import { debounceTime, finalize } from 'rxjs';
 
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { LatLng, LocationPickerMapComponent } from '../../../../shared/ui/map/location-picker-map.component';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
@@ -72,6 +73,7 @@ export class RegistroAccidentePage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly notifications = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly draftService = inject(RegistroAccidenteDraftService);
 
   readonly severidades = SEVERIDADES;
@@ -187,8 +189,15 @@ export class RegistroAccidentePage {
   }
 
   /** RNF-REG-006: descarta el borrador local tras confirmación en lenguaje de usuario. */
-  descartarBorradorLocal(): void {
-    if (!window.confirm('¿Descartar el borrador y empezar de nuevo?')) {
+  async descartarBorradorLocal(): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Descartar borrador',
+      message: '¿Descartar el borrador y empezar de nuevo?',
+      tone: 'danger',
+      confirmLabel: 'Descartar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmado) {
       return;
     }
     this.skipDraftSave = true;

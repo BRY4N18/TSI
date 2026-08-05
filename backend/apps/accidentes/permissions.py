@@ -6,8 +6,28 @@ ROLE_TECNICO = "Tecnico"
 ROLE_OPERADOR = "Operador"
 ROLE_UNIDAD = "Unidad"
 ROLE_ADMIN = "Administrador"
+ROLE_CLIENTE = "Cliente"
+ROLE_PROVEEDOR = "Proveedor"
 
 TECNICO_CAMPO_ROLES = frozenset({ROLE_TECNICO, ROLE_OPERADOR})
+
+
+class UbicacionCatalogoLecturaPermission(BasePermission):
+    """Read-only access to the shared location catalog (país/estado/condado/ciudad/calle).
+
+    Compartido entre accidentes, seguimiento y red-operativa/alta-unidades
+    (proveedores de flota dan de alta unidades con este catálogo), ver
+    proveedor-flota.guard.ts en el frontend.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        roles = set(getattr(user, "roles", []))
+        return bool(
+            roles & {ROLE_OPERADOR, ROLE_TECNICO, ROLE_ADMIN, ROLE_CLIENTE, ROLE_PROVEEDOR}
+        )
 
 
 class OperadorEmergenciasPermission(BasePermission):

@@ -31,8 +31,9 @@ export interface AccidenteListFilters {
   fechaHasta?: number;
   idciudad?: number;
   idestadoregion?: number;
+  busqueda?: string;
   limit?: number;
-  /** Cursor keyset: idaccidente del último elemento de la página anterior. */
+  /** Cursor keyset compuesto "fechahoraaccidente|idaccidente" del último elemento de la página anterior. */
   cursor?: string | null;
 }
 
@@ -63,6 +64,9 @@ export class AccidenteApiService {
     }
     if (filters.idestadoregion !== undefined) {
       params = params.set('idestadoregion', String(filters.idestadoregion));
+    }
+    if (filters.busqueda) {
+      params = params.set('busqueda', filters.busqueda);
     }
     if (filters.cursor) {
       params = params.set('cursor', filters.cursor);

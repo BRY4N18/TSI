@@ -11,8 +11,8 @@
 | Puerto HTTP (host, para verificación manual) | `8123` |
 | Puerto nativo TCP (interno) | `9000` |
 | Puerto nativo TCP (host, para verificación manual) | `9100` |
-| Base de datos por defecto | `default` (las tablas de informes compuestos crearán su propia base de datos en la spec correspondiente — no en esta) |
-| Autenticación | Usuario/contraseña de desarrollo definidos por variables de entorno del compose; sin TLS (uso interno de desarrollo, ver Assumptions de [`spec.md`](spec.md)) |
+| Base de datos analítica | Variable `CLICKHOUSE_DB` (default `tsi_tactico`) — creada al primer arranque vía `docker/tactico/clickhouse-init/` |
+| Autenticación | Usuario/contraseña de desarrollo definidos por `CLICKHOUSE_USER` / `CLICKHOUSE_PASSWORD` del compose; sin TLS (uso interno de desarrollo, ver Assumptions de [`spec.md`](spec.md)) |
 
 ## Acceso a Airflow
 

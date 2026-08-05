@@ -65,6 +65,7 @@ class AccidenteRepository:
         fecha_hasta: int | None = None,
         idciudad: int | None = None,
         idestadoregion: int | None = None,
+        busqueda: str | None = None,
         limit: int = 20,
         cursor: str | None = None,
     ) -> tuple[list[dict[str, Any]], str | None]:
@@ -73,8 +74,15 @@ class AccidenteRepository:
         Filtros, orden y tope viajan en el SQL: se traen `limit + 1` filas para
         saber si hay página siguiente y nada más. No se materializa la tabla en
         memoria del servidor — avanzar de página emite una consulta nueva
-        acotada por el cursor (paginación keyset sobre `idaccidente`, que es
-        monótono en el tiempo por construcción: ACC-{epoch_ms}-{aleatorio}).
+        acotada por el cursor.
+
+        Orden: `fechahoraaccidente DESC` (lo más reciente primero), no
+        `idaccidente DESC` — el ID no es un proxy confiable de recencia salvo
+        que todo el histórico venga del mismo generador (`ACC-{epoch_ms}-...`);
+        datos de otro origen (seed, importación) rompen ese supuesto y un caso
+        recién registrado puede no aparecer en la primera página. El cursor es
+        compuesto `"{fechahoraaccidente}|{idaccidente}"` para desempatar cuando
+        dos casos comparten el mismo milisegundo.
 
         `activo=None` deja el campo fuera del filtro: lo necesita el historial,
         porque cerrar un caso lo marca `activo=False` y aun así debe listarse.
@@ -103,22 +111,34 @@ class AccidenteRepository:
         if calles is not None:
             condiciones.append("idcalle IN %(idscalle)s")
             params["idscalle"] = sorted(calles)
+        if busqueda:
+            condiciones.append("idaccidente LIKE %(busqueda)s")
+            params["busqueda"] = f"%{busqueda.strip().upper()}%"
         if cursor:
-            condiciones.append("idaccidente < %(cursor)s")
-            params["cursor"] = cursor
+            cursor_fecha, _, cursor_id = cursor.partition("|")
+            condiciones.append(
+                "(fechahoraaccidente < %(cursor_fecha)s "
+                "OR (fechahoraaccidente = %(cursor_fecha)s AND idaccidente < %(cursor_id)s))"
+            )
+            params["cursor_fecha"] = int(cursor_fecha)
+            params["cursor_id"] = cursor_id
 
         where = f"WHERE {' AND '.join(condiciones)}" if condiciones else ""
         rows = self.pinot.query(
             f"""
             SELECT * FROM Fact_Accidente
             {where}
-            ORDER BY idaccidente DESC
+            ORDER BY fechahoraaccidente DESC, idaccidente DESC
             LIMIT %(limit)s
             """,
             params,
         )
         pagina = rows[:limit]
-        siguiente = pagina[-1]["idaccidente"] if len(rows) > limit and pagina else None
+        siguiente = (
+            f"{pagina[-1]['fechahoraaccidente']}|{pagina[-1]['idaccidente']}"
+            if len(rows) > limit and pagina
+            else None
+        )
         return pagina, siguiente
 
     def find_nearby(

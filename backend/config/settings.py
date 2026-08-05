@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.red_operativa",
     "apps.ventas_crm",
     "apps.suscripciones",
+    "apps.informes_tacticos",
 ]
 
 MIDDLEWARE = [
@@ -128,6 +129,12 @@ JWT_ISSUER = "tsi-auth"
 # --- Pinot / Kafka ---
 PINOT_BROKER_URL = os.environ.get("PINOT_BROKER_URL", "http://localhost:8099")
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+
+# --- ClickHouse (stack tactico — informes tácticos compuestos, solo lectura desde Django) ---
+CLICKHOUSE_URL = os.environ.get("CLICKHOUSE_URL", "http://localhost:8123")
+CLICKHOUSE_USER = os.environ.get("CLICKHOUSE_USER", "tactico")
+CLICKHOUSE_PASSWORD = os.environ.get("CLICKHOUSE_PASSWORD", "tactico")
+CLICKHOUSE_DB = os.environ.get("CLICKHOUSE_DB", "tsi_tactico")
 
 # --- OSRM (ruteo por calles, self-hosted, ver infrastructure.md §6.1) ---
 OSRM_URL = os.environ.get("OSRM_URL", "http://localhost:5000")

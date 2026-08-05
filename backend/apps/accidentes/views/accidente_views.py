@@ -61,6 +61,7 @@ class AccidenteListCreateView(APIView):
                 fecha_hasta=int(fecha_hasta) if fecha_hasta else None,
                 idciudad=int(idciudad) if idciudad else None,
                 idestadoregion=int(idestadoregion) if idestadoregion else None,
+                busqueda=params.get("busqueda") or None,
                 limit=limit,
                 cursor=params.get("cursor") or None,
             )

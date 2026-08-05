@@ -17,7 +17,7 @@ const TONE_ICON: Record<ToastTone, TablerIconName> = {
   imports: [TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2 sm:max-w-[400px]">
+    <div class="fixed bottom-4 right-4 z-[2000] flex w-full max-w-sm flex-col gap-2 sm:max-w-[400px]">
       @for (t of notifications.toasts(); track t.id) {
         <div
           class="flex items-start gap-2 rounded-md border-l-4 bg-bg-surface p-3 text-sm shadow-md"

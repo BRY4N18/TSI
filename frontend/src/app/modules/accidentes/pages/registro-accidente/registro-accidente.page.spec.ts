@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { AccidenteApiService } from '../../services/accidente-api.service';
 import { GeocodificacionApiService } from '../../services/geocodificacion-api.service';
@@ -336,32 +337,36 @@ describe('RegistroAccidentePage', () => {
       expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     });
 
-    it('descartarBorradorLocal_with_confirm_clears_draft_and_resets_form', () => {
+    it('descartarBorradorLocal_with_confirm_clears_draft_and_resets_form', async () => {
       // Arrange
-      spyOn(window, 'confirm').and.returnValue(true);
+      const confirmDialog = TestBed.inject(ConfirmDialogService);
+      spyOn(confirmDialog, 'confirm').and.resolveTo(true);
       component.form.controls.descripcion.setValue('borrador viejo');
       component.draftRestored.set(true);
       localStorage.setItem(DRAFT_KEY, JSON.stringify(component.form.getRawValue()));
 
       // Act
-      component.descartarBorradorLocal();
+      await component.descartarBorradorLocal();
 
       // Assert
-      expect(window.confirm).toHaveBeenCalledWith('¿Descartar el borrador y empezar de nuevo?');
+      expect(confirmDialog.confirm).toHaveBeenCalledWith(
+        jasmine.objectContaining({ message: '¿Descartar el borrador y empezar de nuevo?' }),
+      );
       expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
       expect(component.draftRestored()).toBe(false);
       expect(component.form.controls.descripcion.value).toBe('');
     });
 
-    it('descartarBorradorLocal_when_cancel_keeps_draft', () => {
+    it('descartarBorradorLocal_when_cancel_keeps_draft', async () => {
       // Arrange
-      spyOn(window, 'confirm').and.returnValue(false);
+      const confirmDialog = TestBed.inject(ConfirmDialogService);
+      spyOn(confirmDialog, 'confirm').and.resolveTo(false);
       component.form.controls.descripcion.setValue('borrador viejo');
       component.draftRestored.set(true);
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ descripcion: 'borrador viejo' }));
 
       // Act
-      component.descartarBorradorLocal();
+      await component.descartarBorradorLocal();
 
       // Assert
       expect(component.draftRestored()).toBe(true);

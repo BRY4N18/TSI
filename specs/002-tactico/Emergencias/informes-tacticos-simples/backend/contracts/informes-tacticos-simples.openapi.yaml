@@ -1,0 +1,494 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples de Emergencias
+  version: "1.0.0"
+  description: >
+    16 endpoints de agregación de solo lectura sobre Apache Pinot para los módulos
+    Registro de Accidente, Despacho Inteligente y Seguimiento y Cierre de Casos.
+    Ver specs/002-tactico/Emergencias/informes-tacticos-simples/backend/spec.md.
+
+servers:
+  - url: /api/v1/informes-tacticos
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    periodoDesde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    periodoHasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    granularidad:
+      name: granularidad
+      in: query
+      required: false
+      schema: { type: string, enum: [dia, semana, mes], default: dia }
+    idcondado:
+      name: idcondado
+      in: query
+      required: false
+      schema: { type: integer }
+      description: Corte opcional por condado (Dim_UnidadEmergencia.idcondado).
+    top:
+      name: top
+      in: query
+      required: false
+      schema: { type: integer, default: 10, maximum: 100 }
+      description: Tope de filas para informes de ranking (evita LIMIT implícito de Pinot).
+
+  schemas:
+    Meta:
+      type: object
+      properties:
+        periodo:
+          type: object
+          properties:
+            desde: { type: string, format: date }
+            hasta: { type: string, format: date }
+            granularidad: { type: string }
+        filtros:
+          type: object
+          additionalProperties: true
+    ErrorEnvelope:
+      type: object
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+    InformeSinDatos:
+      description: Período sin datos — respuesta explícita, no error (FR-006 de la spec).
+      type: object
+      properties:
+        data: { type: array, items: {}, example: [] }
+        meta: { $ref: '#/components/schemas/Meta' }
+
+  responses:
+    Unauthorized:
+      description: Rol sin permiso para consultar informes tácticos (FR-007).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+paths:
+  # ── Registro de Accidente (7) ──────────────────────────────
+  /registro/volumen-casos:
+    get:
+      summary: Volumen total de casos registrados, por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/granularidad'
+      responses:
+        '200':
+          description: Conteo de accidentes agrupado por período.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        periodo: { type: string, format: date }
+                        total_casos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/distribucion-severidad:
+    get:
+      summary: Distribución de casos por nivel de severidad, por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Conteo agrupado por severidad.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idseveridad: { type: integer }
+                        severidad: { type: string }
+                        total_casos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/distribucion-zona:
+    get:
+      summary: Distribución de casos por zona (calle), por período
+      description: >-
+        MVP: agrupa por `idcalle` (nivel geográfico disponible directamente en
+        Fact_Accidente). `calle_nombre` se resuelve vía Dim_Calle y puede ser
+        `null` si no existe una fila correspondiente.
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Conteo agrupado por idcalle.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idcalle: { type: integer }
+                        calle_nombre: { type: string, nullable: true }
+                        total_casos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/completitud-campos-criticos:
+    get:
+      summary: "% de registros con campos críticos completos, por período"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/granularidad'
+      responses:
+        '200':
+          description: Porcentaje de completitud por período.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        periodo: { type: string, format: date }
+                        pct_completos: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/descarte-fusion:
+    get:
+      summary: "% de descarte y de fusión sobre total de reportes, por período"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/granularidad'
+      responses:
+        '200':
+          description: Porcentajes de descarte y fusión por período.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        periodo: { type: string, format: date }
+                        pct_descarte: { type: number }
+                        pct_fusion: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/ranking-ubicaciones:
+    get:
+      summary: Ranking de ubicaciones con mayor frecuencia de casos, por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/top'
+      responses:
+        '200':
+          description: Ubicaciones ordenadas por frecuencia descendente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idcalle: { type: integer }
+                        calle_nombre: { type: string, nullable: true }
+                        total_casos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /registro/impacto-humano:
+    get:
+      summary: Impacto humano (víctimas, heridos, fallecidos) por calle
+      description: >-
+        MVP: agrupa por `idcalle` como región (ver nota de distribucion-zona).
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Suma de víctimas/heridos/fallecidos por idcalle.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idcalle: { type: integer }
+                        calle_nombre: { type: string, nullable: true }
+                        total_victimas: { type: integer }
+                        total_heridos: { type: integer }
+                        total_fallecidos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Despacho Inteligente (6) ────────────────────────────────
+  /despacho/asignacion-automatica-vs-manual:
+    get:
+      summary: "% de asignaciones automáticas vs. manuales/escaladas"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/idcondado'
+      responses:
+        '200':
+          description: Porcentaje agrupado por origen de despacho.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        origen: { type: string }
+                        pct_total: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /despacho/tiempo-reportado-confirmado:
+    get:
+      summary: Tiempo promedio entre "reportado" y "confirmado"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Tiempo promedio en segundos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      promedio_segundos: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /despacho/tiempo-respuesta-por-severidad:
+    get:
+      summary: Distribución del tiempo de respuesta por nivel de severidad, por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/idcondado'
+      responses:
+        '200':
+          description: Tiempo promedio agrupado por severidad (y condado si se filtra).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idseveridad: { type: integer }
+                        promedio_segundos: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /despacho/rechazo-timeout-por-unidad:
+    get:
+      summary: "% de rechazo/timeout por unidad, por período"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Porcentaje de rechazo/timeout agrupado por unidad.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idunidademergencia: { type: integer }
+                        pct_rechazo_timeout: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /despacho/carga-por-unidad:
+    get:
+      summary: Carga de despachos atendidos por unidad, por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Conteo de despachos agrupado por unidad.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idunidademergencia: { type: integer }
+                        total_despachos: { type: integer }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /despacho/ratio-demanda-capacidad:
+    get:
+      summary: Ratio demanda/capacidad por condado (casos por unidad disponible), por período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Ratio de accidentes sobre unidades activas, por condado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idcondado: { type: integer }
+                        total_accidentes: { type: integer }
+                        unidades_activas: { type: integer }
+                        ratio: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Seguimiento y Cierre de Casos (3) ───────────────────────
+  /seguimiento/tiempo-asignado-cerrado:
+    get:
+      summary: Tiempo promedio entre "asignado" y "cerrado", por unidad/zona/período
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - name: agrupar_por
+          in: query
+          required: false
+          schema: { type: string, enum: [unidad, zona], default: unidad }
+      responses:
+        '200':
+          description: Tiempo promedio agrupado por unidad o zona.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        grupo_id: { type: integer }
+                        promedio_segundos: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /seguimiento/cierres-forzados:
+    get:
+      summary: "% de cierres forzados sobre total de cierres, por período"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+        - $ref: '#/components/parameters/granularidad'
+      responses:
+        '200':
+          description: Porcentaje de cierres forzados por período.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        periodo: { type: string, format: date }
+                        pct_cierres_forzados: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /seguimiento/abortos-perdidas:
+    get:
+      summary: "% de abortos/pérdidas sobre total de despachos, por unidad/período"
+      parameters:
+        - $ref: '#/components/parameters/periodoDesde'
+        - $ref: '#/components/parameters/periodoHasta'
+      responses:
+        '200':
+          description: Porcentaje de abortos/pérdidas agrupado por unidad.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idunidademergencia: { type: integer }
+                        pct_abortos_perdidas: { type: number }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

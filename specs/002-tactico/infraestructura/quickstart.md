@@ -26,17 +26,24 @@ docker compose -f docker/docker-compose.infraestructura.yml ps
 ## 2. Verificar ClickHouse
 
 ```bash
-curl "http://localhost:8123/?query=SELECT%201"
+curl "http://localhost:8123/?user=tactico&password=tactico&query=SELECT%201"
 ```
 
 **Resultado esperado**: respuesta `1`.
 
+Base analítica del stack (variable `CLICKHOUSE_DB`, default `tsi_tactico`). Si el volumen ya existía antes de añadir el init script, créala una vez:
+
+```bash
+curl "http://localhost:8123/?user=tactico&password=tactico" --data-binary "CREATE DATABASE IF NOT EXISTS tsi_tactico"
+```
+
+En DBeaver: **Database/Schema** = `tsi_tactico` (mismo valor que `CLICKHOUSE_DB`).
+
 Crear una tabla de prueba (para la validación de persistencia del paso 4):
 
 ```bash
-curl "http://localhost:8123/" --data-binary "CREATE DATABASE IF NOT EXISTS tactico_smoke_test"
-curl "http://localhost:8123/" --data-binary "CREATE TABLE tactico_smoke_test.ping (id UInt32) ENGINE = MergeTree() ORDER BY id"
-curl "http://localhost:8123/" --data-binary "INSERT INTO tactico_smoke_test.ping VALUES (1)"
+curl "http://localhost:8123/?user=tactico&password=tactico" --data-binary "CREATE TABLE IF NOT EXISTS tsi_tactico.ping (id UInt32) ENGINE = MergeTree() ORDER BY id"
+curl "http://localhost:8123/?user=tactico&password=tactico" --data-binary "INSERT INTO tsi_tactico.ping VALUES (1)"
 ```
 
 ## 3. Verificar Airflow
@@ -54,7 +61,7 @@ docker compose -f docker/docker-compose.tactico.yml restart
 Repetir la consulta del paso 2:
 
 ```bash
-curl "http://localhost:8123/?query=SELECT%20*%20FROM%20tactico_smoke_test.ping"
+curl "http://localhost:8123/?user=tactico&password=tactico&query=SELECT%20*%20FROM%20tsi_tactico.ping"
 ```
 
 **Resultado esperado**: sigue devolviendo `1` — los datos sobrevivieron al reinicio.

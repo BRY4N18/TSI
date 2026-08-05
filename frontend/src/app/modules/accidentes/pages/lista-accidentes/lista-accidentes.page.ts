@@ -58,6 +58,7 @@ export class ListaAccidentesPage implements OnInit {
   private cursorStack: (string | null)[] = [];
 
   readonly filtros = this.fb.group({
+    busqueda: [''],
     idpais: [null as number | null],
     idestadoregion: [null as number | null],
     idseveridad: [null as number | null],
@@ -172,6 +173,7 @@ export class ListaAccidentesPage implements OnInit {
 
     this.api
       .listar({
+        busqueda: raw.busqueda?.trim() || undefined,
         idseveridad: raw.idseveridad ?? undefined,
         estado: raw.estado ?? undefined,
         activo: raw.activo ?? undefined,

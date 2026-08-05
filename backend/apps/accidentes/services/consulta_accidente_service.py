@@ -66,9 +66,12 @@ class ConsultaAccidenteService:
 
         # El cursor devuelto apunta al último elemento entregado, no al último
         # leído: así la página siguiente arranca justo después de lo que el
-        # cliente ya vio, aunque en el medio se hayan descartado filas.
+        # cliente ya vio, aunque en el medio se hayan descartado filas. El
+        # formato es compuesto (ver AccidenteRepository.list_activos): fecha
+        # primero para ordenar por recencia, idaccidente como desempate.
         if seleccionados and siguiente is not None:
-            siguiente = seleccionados[-1]["idaccidente"]
+            ultimo = seleccionados[-1]
+            siguiente = f"{ultimo['fechahoraaccidente']}|{ultimo['idaccidente']}"
 
         ubicaciones = self.catalogo_repo.resolver_calles(
             [r.get("idcalle") for r in seleccionados]

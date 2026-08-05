@@ -355,6 +355,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
         },
     ],
     "Fact_HistorialEstadoUnidad": [],
+    "Dim_OrigenDespacho": [],
     "Dim_UnidadEmergencia": [
         {
             "idunidademergencia": 1,
@@ -636,6 +637,23 @@ def _reset_pinot_store() -> None:
 _reset_pinot_store()
 
 
+def _day_key_to_epoch_ms(day_key: str) -> int:
+    """Convierte una clave de bucket 'YYYY-MM-DD' (o ISO semana 'YYYY-Www') de
+    vuelta a epoch millis — DATETRUNC de Pinot real devuelve epoch millis, no
+    un string, así que el doble del mock debe hacer lo mismo (ver
+    core/repositories/informes_tacticos/_periodo_utils.py)."""
+    from datetime import datetime, timezone
+
+    if "-W" in day_key:
+        year, week = day_key.split("-W")
+        dt = datetime.strptime(f"{year}-W{week}-1", "%G-W%V-%u").replace(tzinfo=timezone.utc)
+    elif len(day_key) == 7:  # YYYY-MM
+        dt = datetime.strptime(day_key, "%Y-%m").replace(tzinfo=timezone.utc)
+    else:
+        dt = datetime.strptime(day_key, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    return int(dt.timestamp() * 1000)
+
+
 def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     """Route SQL queries to in-memory store."""
     params = params or {}
@@ -852,9 +870,9 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             for r in PINOT_STORE["Dim_RegionOperativaEstadoRegion"]
         ]
         return [{"max_id": max(ids) if ids else 0}]
-    if "MAX(IDHISTORIALUBICACION)" in sql_upper:
+    if "MAX(IDHISTORIALUNIDADEMERGENCIA)" in sql_upper:
         ids = [
-            r["idhistorialubicacion"]
+            r["idhistorialunidademergencia"]
             for r in PINOT_STORE["Dim_HistorialUbicacionUnidadEmergencia"]
         ]
         return [{"max_id": max(ids) if ids else 0}]
@@ -916,7 +934,165 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             if a.get("idcalle") in idscalle and a.get("activo") is True
         ]
 
+    # --- informes_tacticos: agregaciones GROUP BY adicionales de Despacho ---
+    # Deben interceptar ANTES de los bloques genéricos de Fact_Despacho/
+    # Fact_HistorialDespachoUnidad/Fact_AccidenteTipoEstadoAccidente/Dim_Calle/
+    # Dim_Ciudad más abajo, que no filtran por fecha ni entienden estos shapes.
+    if "IDORIGENDESPACHO, IDUNIDADEMERGENCIA" in sql_upper and "FROM FACT_DESPACHO" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        return [
+            {"idorigendespacho": d["idorigendespacho"], "idunidademergencia": d.get("idunidademergencia")}
+            for d in PINOT_STORE["Fact_Despacho"]
+            if desde <= (d.get("fechahoradespacho") or 0) <= hasta
+        ]
+
+    if "FECHAHORALLEGADA IS NOT NULL" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        return [
+            {
+                "idaccidente": d["idaccidente"],
+                "idunidademergencia": d.get("idunidademergencia"),
+                "fechahoradespacho": d.get("fechahoradespacho"),
+                "fechahorallegada": d.get("fechahorallegada"),
+            }
+            for d in PINOT_STORE["Fact_Despacho"]
+            if desde <= (d.get("fechahoradespacho") or 0) <= hasta and d.get("fechahorallegada") is not None
+        ]
+
+    if "GROUP BY IDUNIDADEMERGENCIA" in sql_upper and "FROM FACT_DESPACHO" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            d for d in PINOT_STORE["Fact_Despacho"]
+            if desde <= (d.get("fechahoradespacho") or 0) <= hasta
+        ]
+        buckets: dict[int, int] = {}
+        for d in rows:
+            buckets[d.get("idunidademergencia")] = buckets.get(d.get("idunidademergencia"), 0) + 1
+        return [
+            {"idunidademergencia": k, "total_despachos": v} for k, v in sorted(buckets.items())
+        ]
+
+    if "WHERE IDDESPACHO IN" in sql_upper and "FROM FACT_DESPACHO" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"iddespacho": d["iddespacho"], "idunidademergencia": d.get("idunidademergencia")}
+            for d in PINOT_STORE["Fact_Despacho"]
+            if d["iddespacho"] in ids
+        ]
+
+    if "WHERE IDACCIDENTE IN" in sql_upper and "FROM FACT_DESPACHO" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"idaccidente": d["idaccidente"], "idunidademergencia": d.get("idunidademergencia")}
+            for d in PINOT_STORE["Fact_Despacho"]
+            if d.get("idaccidente") in ids
+        ]
+
+    if "AS PERIODO, ESTADONUEVO" in sql_upper:
+        from datetime import datetime, timezone
+
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        estados_validos = {"RETIRADO", "CERRADO"}
+        if "DATETRUNC('WEEK'" in sql_upper:
+            unit = "week"
+        elif "DATETRUNC('MONTH'" in sql_upper:
+            unit = "month"
+        else:
+            unit = "day"
+        rows = []
+        for h in PINOT_STORE["Fact_HistorialDespachoUnidad"]:
+            if not (desde <= (h.get("fechahora") or 0) <= hasta):
+                continue
+            if (h.get("estadonuevo") or "").upper() not in estados_validos:
+                continue
+            dt = datetime.fromtimestamp(h["fechahora"] / 1000, tz=timezone.utc)
+            if unit == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif unit == "week":
+                key = dt.strftime("%G-W%V")
+            else:
+                key = dt.strftime("%Y-%m")
+            rows.append(
+                {
+                    "periodo": _day_key_to_epoch_ms(key),
+                    "estadonuevo": h.get("estadonuevo"),
+                    "idusuario": h.get("idusuario"),
+                }
+            )
+        return rows
+
+    if "SELECT IDDESPACHO, ESTADONUEVO" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        return [
+            {"iddespacho": h["iddespacho"], "estadonuevo": h.get("estadonuevo")}
+            for h in PINOT_STORE["Fact_HistorialDespachoUnidad"]
+            if desde <= (h.get("fechahora") or 0) <= hasta
+        ]
+
+    if (
+        "FROM FACT_ACCIDENTETIPOESTADOACCIDENTE" in sql_upper
+        and "IDTIPOESTADOINCIDENTE IN" in sql_upper
+        and "GROUP BY" not in sql_upper
+    ):
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        estados_validos = {
+            v
+            for k, v in params.items()
+            if k in ("reportado", "asignado", "cerrado") and v is not None
+        }
+        return [
+            {
+                "idaccidente": r["idaccidente"],
+                "idtipoestadoincidente": r["idtipoestadoincidente"],
+                "fechahoramodificado": r.get("fechahoramodificado"),
+            }
+            for r in PINOT_STORE["Fact_AccidenteTipoEstadoAccidente"]
+            if desde <= (r.get("fechahoramodificado") or 0) <= hasta
+            and r.get("idtipoestadoincidente") in estados_validos
+        ]
+
+    if "WHERE IDACCIDENTE IN" in sql_upper and "FROM FACT_ACCIDENTE" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"idaccidente": a["idaccidente"], "idseveridad": a.get("idseveridad")}
+            for a in PINOT_STORE["Fact_Accidente"]
+            if a["idaccidente"] in ids
+        ]
+
+    if "SELECT IDCALLE, CALLE" in sql_upper and "FROM DIM_CALLE" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"idcalle": c["idcalle"], "calle": c.get("calle")}
+            for c in PINOT_STORE["Dim_Calle"]
+            if c["idcalle"] in ids
+        ]
+
+    if "WHERE IDCALLE IN" in sql_upper and "FROM DIM_CALLE" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"idcalle": c["idcalle"], "idciudad": c.get("idciudad")}
+            for c in PINOT_STORE["Dim_Calle"]
+            if c["idcalle"] in ids
+        ]
+
+    if "WHERE IDCIUDAD IN" in sql_upper and "FROM DIM_CIUDAD" in sql_upper:
+        ids = params.get("ids") or []
+        return [
+            {"idciudad": c["idciudad"], "idcondado": c.get("idcondado")}
+            for c in PINOT_STORE["Dim_Ciudad"]
+            if c["idciudad"] in ids
+        ]
+
     # --- Dim_Cliente ---
+    if "FROM DIM_CLIENTE" in sql_upper and "WHERE IDCLIENTE IN" in sql_upper:
+        ids = params.get("ids") or []
+        return [c for c in PINOT_STORE["Dim_Cliente"] if c.get("idcliente") in ids]
     if "FROM DIM_CLIENTE" in sql_upper and "WHERE NIT_IDENTIFICACION" in sql_upper:
         nit = params.get("nit")
         rows = [c for c in PINOT_STORE["Dim_Cliente"] if c["nit_identificacion"] == nit]
@@ -1080,6 +1256,151 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "FROM DIM_ROLESSERVIDOR" in sql_upper and "ORDER BY" in sql_upper:
         return sorted(PINOT_STORE["Dim_RolesServidor"], key=lambda r: r["idrolservidor"])
 
+    # --- informes_tacticos: agregaciones GROUP BY adicionales de Registro ---
+    # Deben interceptar ANTES de los bloques genéricos de Accidentes de abajo.
+    if (
+        "FROM FACT_ACCIDENTETIPOESTADOACCIDENTE" in sql_upper
+        and "GROUP BY PERIODO, IDTIPOESTADOINCIDENTE" in sql_upper
+    ):
+        from datetime import datetime, timezone
+
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        estados_validos = {params.get("descartado"), params.get("fusionado")}
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_AccidenteTipoEstadoAccidente"]
+            if desde <= (r.get("fechahoramodificado") or 0) <= hasta
+            and r.get("idtipoestadoincidente") in estados_validos
+        ]
+        if "DATETRUNC('WEEK'" in sql_upper:
+            unit = "week"
+        elif "DATETRUNC('MONTH'" in sql_upper:
+            unit = "month"
+        else:
+            unit = "day"
+        buckets: dict[tuple[str, int], int] = {}
+        for r in rows:
+            dt = datetime.fromtimestamp(r["fechahoramodificado"] / 1000, tz=timezone.utc)
+            if unit == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif unit == "week":
+                key = dt.strftime("%G-W%V")
+            else:
+                key = dt.strftime("%Y-%m")
+            bucket_key = (key, r["idtipoestadoincidente"])
+            buckets[bucket_key] = buckets.get(bucket_key, 0) + 1
+        return [
+            {"periodo": _day_key_to_epoch_ms(k[0]), "idtipoestadoincidente": k[1], "total": v}
+            for k, v in sorted(buckets.items())
+        ]
+
+    if "FROM FACT_ACCIDENTE" in sql_upper and "TOTAL_COMPLETOS" in sql_upper:
+        from datetime import datetime, timezone
+
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        if "DATETRUNC('WEEK'" in sql_upper:
+            unit = "week"
+        elif "DATETRUNC('MONTH'" in sql_upper:
+            unit = "month"
+        else:
+            unit = "day"
+        totales: dict[str, int] = {}
+        completos: dict[str, int] = {}
+        for r in rows:
+            dt = datetime.fromtimestamp(r["fechahoraaccidente"] / 1000, tz=timezone.utc)
+            if unit == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif unit == "week":
+                key = dt.strftime("%G-W%V")
+            else:
+                key = dt.strftime("%Y-%m")
+            totales[key] = totales.get(key, 0) + 1
+            if r.get("idseveridad") is not None and r.get("idcalle") is not None:
+                completos[key] = completos.get(key, 0) + 1
+        return [
+            {"periodo": _day_key_to_epoch_ms(k), "total_casos": v, "total_completos": completos.get(k, 0)}
+            for k, v in sorted(totales.items())
+        ]
+
+    if "FROM FACT_ACCIDENTE" in sql_upper and "GROUP BY IDSEVERIDAD" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        buckets: dict[int, int] = {}
+        for r in rows:
+            buckets[r.get("idseveridad")] = buckets.get(r.get("idseveridad"), 0) + 1
+        return [
+            {"idseveridad": k, "total_casos": v} for k, v in sorted(buckets.items())
+        ]
+
+    if "FROM FACT_ACCIDENTE" in sql_upper and "SUM(NUMVICTIMAS)" in sql_upper:
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        buckets: dict[int, dict[str, int]] = {}
+        for r in rows:
+            b = buckets.setdefault(
+                r.get("idcalle"), {"total_victimas": 0, "total_heridos": 0, "total_fallecidos": 0}
+            )
+            b["total_victimas"] += r.get("numvictimas") or 0
+            b["total_heridos"] += r.get("numheridos") or 0
+            b["total_fallecidos"] += r.get("numfallecidos") or 0
+        return [{"idcalle": k, **v} for k, v in sorted(buckets.items())]
+
+    if (
+        "FROM FACT_ACCIDENTE" in sql_upper
+        and "GROUP BY IDCALLE" in sql_upper
+        and "ORDER BY TOTAL_CASOS DESC" in sql_upper
+    ):
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        buckets: dict[int, int] = {}
+        for r in rows:
+            buckets[r.get("idcalle")] = buckets.get(r.get("idcalle"), 0) + 1
+        ranked = sorted(buckets.items(), key=lambda kv: (-kv[1], kv[0]))
+        result = [{"idcalle": k, "total_casos": v} for k, v in ranked]
+        tokens = sql_upper.rstrip(";").rstrip().split()
+        if tokens and tokens[-2] == "LIMIT":
+            result = result[: int(tokens[-1])]
+        return result
+
+    if (
+        "FROM FACT_ACCIDENTE" in sql_upper
+        and "GROUP BY IDCALLE" in sql_upper
+        and "ORDER BY IDCALLE" in sql_upper
+    ):
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        buckets: dict[int, int] = {}
+        for r in rows:
+            buckets[r.get("idcalle")] = buckets.get(r.get("idcalle"), 0) + 1
+        return [{"idcalle": k, "total_casos": v} for k, v in sorted(buckets.items())]
+
     # --- Accidentes domain (TipoEstado before Accidente — substring collision) ---
     if "FROM FACT_ACCIDENTETIPOESTADOACCIDENTE" in sql_upper:
         aid = params.get("idaccidente")
@@ -1087,6 +1408,39 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         if "ORDER BY FECHAHORAMODIFICADO DESC" in sql_upper:
             return sorted(rows, key=lambda r: r.get("fechahoramodificado", 0), reverse=True)[:1]
         return sorted(rows, key=lambda r: r.get("fechahoramodificado", 0))
+
+    # --- informes_tacticos: agregaciones GROUP BY sobre Fact_Accidente ---
+    # Deben interceptar ANTES del bloque genérico "FROM FACT_ACCIDENTE" de abajo,
+    # que devuelve filas crudas (sin agregar) y no entiende GROUP BY/DATETRUNC.
+    if "FROM FACT_ACCIDENTE" in sql_upper and "GROUP BY PERIODO" in sql_upper:
+        from datetime import datetime, timezone
+
+        desde = params.get("desde")
+        hasta = params.get("hasta")
+        rows = [
+            r
+            for r in PINOT_STORE["Fact_Accidente"]
+            if desde <= (r.get("fechahoraaccidente") or 0) <= hasta
+        ]
+        if "DATETRUNC('WEEK'" in sql_upper:
+            unit = "week"
+        elif "DATETRUNC('MONTH'" in sql_upper:
+            unit = "month"
+        else:
+            unit = "day"
+        buckets: dict[str, int] = {}
+        for r in rows:
+            dt = datetime.fromtimestamp(r["fechahoraaccidente"] / 1000, tz=timezone.utc)
+            if unit == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif unit == "week":
+                key = dt.strftime("%G-W%V")
+            else:
+                key = dt.strftime("%Y-%m")
+            buckets[key] = buckets.get(key, 0) + 1
+        return [
+            {"periodo": _day_key_to_epoch_ms(k), "total_casos": v} for k, v in sorted(buckets.items())
+        ]
 
     if "FROM FACT_ACCIDENTE" in sql_upper:
         if "WHERE IDACCIDENTE" in sql_upper:
@@ -1113,9 +1467,22 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         if "IDCALLE IN" in sql_upper:
             permitidas = set(params.get("idscalle") or [])
             rows = [r for r in rows if r.get("idcalle") in permitidas]
-        if "IDACCIDENTE <" in sql_upper:
+        if "IDACCIDENTE LIKE" in sql_upper:
+            patron = (params.get("busqueda") or "").strip("%")
+            rows = [r for r in rows if patron in r["idaccidente"].upper()]
+        if "CURSOR_FECHA" in sql_upper:
+            cf = params.get("cursor_fecha")
+            ci = params.get("cursor_id")
+            rows = [
+                r for r in rows
+                if (r.get("fechahoraaccidente") or 0) < cf
+                or ((r.get("fechahoraaccidente") or 0) == cf and r["idaccidente"] < ci)
+            ]
+        elif "IDACCIDENTE <" in sql_upper:
             rows = [r for r in rows if r["idaccidente"] < params.get("cursor")]
-        if "ORDER BY IDACCIDENTE DESC" in sql_upper:
+        if "ORDER BY FECHAHORAACCIDENTE DESC, IDACCIDENTE DESC" in sql_upper:
+            rows = sorted(rows, key=lambda r: (r.get("fechahoraaccidente") or 0, r["idaccidente"]), reverse=True)
+        elif "ORDER BY IDACCIDENTE DESC" in sql_upper:
             rows = sorted(rows, key=lambda r: r["idaccidente"], reverse=True)
         if "LIMIT" in sql_upper and "limit" in params:
             rows = rows[: int(params["limit"])]
@@ -1134,6 +1501,10 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         if "SELECT IDCONDADO" in sql_upper:
             return [{"idcondado": c["idcondado"]} for c in ciudades]
         return ciudades
+
+    if "FROM DIM_CONDADO" in sql_upper and "WHERE IDCONDADO IN" in sql_upper:
+        ids = params.get("ids") or []
+        return [c for c in PINOT_STORE["Dim_Condado"] if c.get("idcondado") in ids]
 
     if "FROM DIM_CONDADO " in sql_upper and "WHERE IDCONDADO" in sql_upper:
         idcondado = params.get("idcondado")
@@ -1264,13 +1635,13 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             rows = [r for r in rows if (r.get("fechahora") or 0) >= params.get("desde")]
         if "FECHAHORA <=" in sql_upper:
             rows = [r for r in rows if (r.get("fechahora") or 0) <= params.get("hasta")]
-        if "IDHISTORIALUBICACION >" in sql_upper:
+        if "IDHISTORIALUNIDADEMERGENCIA >" in sql_upper:
             rows = [
                 r for r in rows
-                if int(r.get("idhistorialubicacion") or 0) > int(params.get("cursor", 0))
+                if int(r.get("idhistorialunidademergencia") or 0) > int(params.get("cursor", 0))
             ]
-        if "ORDER BY IDHISTORIALUBICACION" in sql_upper:
-            rows = sorted(rows, key=lambda r: int(r.get("idhistorialubicacion") or 0))
+        if "ORDER BY IDHISTORIALUNIDADEMERGENCIA" in sql_upper:
+            rows = sorted(rows, key=lambda r: int(r.get("idhistorialunidademergencia") or 0))
         if "LIMIT" in sql_upper and "limit" in params:
             rows = rows[: int(params["limit"])]
         return rows
@@ -1495,6 +1866,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
                 u for u in PINOT_STORE["Dim_UnidadEmergencia"]
                 if u.get("idusuario") == user_id and u.get("activo")
             ]
+        if "WHERE IDUNIDADEMERGENCIA IN" in sql_upper:
+            ids = params.get("ids") or []
+            return [
+                u for u in PINOT_STORE["Dim_UnidadEmergencia"]
+                if u.get("idunidademergencia") in ids
+            ]
         if "WHERE IDUNIDADEMERGENCIA" in sql_upper:
             uid = params.get("idunidademergencia")
             if "SELECT LATITUD" in sql_upper:
@@ -1525,6 +1902,9 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
 
     if "FROM DIM_ESTADOUNIDADEMERGENCIA" in sql_upper:
         return list(PINOT_STORE["Dim_EstadoUnidadEmergencia"])
+
+    if "FROM DIM_ORIGENDESPACHO" in sql_upper:
+        return list(PINOT_STORE["Dim_OrigenDespacho"])
 
     if "FROM FACT_BAJAUNIDAD" in sql_upper:
         uid = params.get("idunidademergencia")

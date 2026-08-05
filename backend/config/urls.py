@@ -13,4 +13,5 @@ urlpatterns = [
     path("api/v1/", include("apps.red_operativa.views.urls")),
     path("api/v1/", include("apps.ventas_crm.urls")),
     path("api/v1/", include("apps.suscripciones.urls")),
+    path("api/v1/", include("apps.informes_tacticos.urls")),
 ]

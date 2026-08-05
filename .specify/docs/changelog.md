@@ -17,6 +17,8 @@ Alcance: `specs/002-tactico/`, `.specify/docs/infra/infrastructure.md`
 
 **T3** — Todo el feature vive bajo `specs/002-tactico/infraestructura/` (`spec.md`, plan, research, data-model, contracts, quickstart, tasks, índice). `feature.json` apunta a esa carpeta. Se eliminó `checklists/` (gate de `/specify` ya cumplido; no aporta valor operativo tras plan/tasks cerrados).
 
+**T4** — Variable `CLICKHOUSE_DB` (default `tsi_tactico`; no `TSI-tactico` — el guion no es válido como identificador ClickHouse sin comillas). Init en `docker/tactico/clickhouse-init/`; documentado en contrato, quickstart y `.env.tactico.example`.
+
 ---
 
 ## 2026-07-15 — Módulo Emergencias (revisión spec vs. implementación)
@@ -485,3 +487,62 @@ de "Reintentar" con sentido.
 - Recorrido end-to-end contra el stack real: 45/45 pasos.
 - Navegador: `mis-tickets` (8 tickets, sin loading colgado), `mi-suscripcion` (renderiza
   sin errores) verificados tras el despliegue.
+
+---
+
+## 2026-08-02 — Limitaciones conocidas de los informes tácticos compuestos (`002-tactico`)
+
+Alcance: `specs/002-tactico/Emergencias/informes-tacticos-compuestos/`, hallazgos de la
+revisión final contra el stack real. No son bugs — son decisiones de diseño forzadas por
+huecos del esquema actual, documentadas aquí para no volver a proponerlas sin este
+contexto (una ya se resolvió, ver entrada de más abajo).
+
+**L1 — Semántica de `materializado` en los 3 informes compuestos.** Los DAGs
+(`perdida_senal_gps`, `indice_calidad_historico`, `rendimiento_por_proveedor`) reprocesan
+el histórico completo en cada corrida, no una ventana incremental. Consecuencia: una vez
+que un DAG corrió al menos una vez, `materializado` es `true` para *cualquier* período
+consultado (incluso uno futuro sin datos) — la ausencia de filas para ese rango se lee
+como "sin eventos en ese período", no como "el DAG no lo ha procesado todavía". Si en el
+futuro se necesita una ventana incremental (por volumen de datos), esta semántica cambia
+y hace falta una lógica de "no materializado" por período explícita (ej. una tabla de
+control de corridas por rango de fechas). No es necesario hoy — el volumen de datos del
+proyecto no lo justifica.
+
+**L2 — `rendimiento_por_proveedor` usa el proveedor *actual* de cada unidad, no el
+histórico.** `Dim_UnidadEmergencia.idcliente` no tiene versión histórica (sin tabla tipo
+SCD) — el DAG no puede saber qué proveedor operaba una unidad en el momento de un
+despacho pasado si esa unidad cambió de proveedor después. Si el negocio necesita
+atribución histórica correcta de rendimiento por proveedor (ej. para negociar contratos
+según desempeño pasado), hace falta una tabla nueva `Fact_HistorialProveedorUnidad` (o
+similar) que registre cada cambio de `idcliente` por unidad con su vigencia — no
+implementada, es un cambio de esquema más grande que L3 (tabla nueva completa vs. un
+campo en tabla existente).
+
+**L3 — `idusuario` en `Fact_HistorialDespachoUnidad` — RESUELTO 2026-08-02.** Ver la
+sección "Campo `idusuario` en `Fact_HistorialDespachoUnidad`" más abajo — esta limitación
+ya no aplica.
+
+---
+
+## 2026-08-02 — Campo `idusuario` en `Fact_HistorialDespachoUnidad`
+
+Alcance: `database/esquemas.json`, `backend/core/repositories/despacho/`,
+`backend/core/repositories/informes_tacticos/seguimiento_repository.py`, `backend/conftest.py`.
+
+Resuelve L3 de la entrada anterior: el informe táctico "% de cierres forzados sobre total
+de cierres" (`informes-tacticos-simples`) aproximaba "forzado" con
+`estadonuevo = 'Retirado'` sobre el total de transiciones a estado terminal, sin poder
+distinguir un retiro hecho por un Operador de uno automático por vencimiento — la tabla
+no tenía forma de saber quién (o si alguien) causó la transición.
+
+**Cambio de esquema:** campo `idusuario` (INT, nullable) añadido a
+`Fact_HistorialDespachoUnidad` — `NULL`/ausente cuando la transición es automática
+(sistema), poblado con el id del operador cuando la transición la causa una acción humana
+explícita (ej. retiro forzado desde central).
+
+**Cambio de código:** ver detalle en `traceability.md` de
+`specs/002-tactico/Emergencias/informes-tacticos-compuestos/backend/` — repositorio de
+escritura de historial de despacho actualizado para aceptar `idusuario` opcional, caso de
+uso de retiro de despacho actualizado para pasar el id del operador actuante, y
+`cierres_forzados()` reescrito para calcular "forzado" como `estadonuevo='Retirado' AND
+idusuario IS NOT NULL` en vez de la aproximación anterior.

@@ -21,7 +21,7 @@ class TestHistorialUbicacionRepository:
         )
 
         # Assert
-        assert record["idhistorialubicacion"] == 1
+        assert record["idhistorialunidademergencia"] == 1
         assert len(mock_kafka) == 1
         assert mock_kafka[0]["topic"].endswith("Dim_HistorialUbicacionUnidadEmergencia_topic")
 
@@ -68,7 +68,7 @@ class TestHistorialUbicacionRepository:
         cursor = None
         for _ in range(10):
             pagina, cursor = repo.list_by_unidad(1, limit=2, cursor=cursor)
-            vistos.extend(int(p["idhistorialubicacion"]) for p in pagina)
+            vistos.extend(int(p["idhistorialunidademergencia"]) for p in pagina)
             if cursor is None:
                 break
 

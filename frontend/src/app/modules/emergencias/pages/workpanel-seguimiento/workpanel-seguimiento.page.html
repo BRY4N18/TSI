@@ -1,0 +1,78 @@
+<div class="mx-auto flex max-w-6xl flex-col gap-6 p-8">
+  <h1 class="m-0 text-[28px] font-bold text-text-primary">Informes de Seguimiento y Cierre de Casos</h1>
+
+  <app-periodo-selector (cambio)="onPeriodoChange($event)" />
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <app-informe-card
+      title="Tiempo de asignación a cierre, por unidad"
+      [loading]="tiempoAsignadoCerrado.loading()"
+      [error]="tiempoAsignadoCerrado.error()"
+      [empty]="!tiempoAsignadoCerrado.loading() && !tiempoAsignadoCerrado.error() && !tiempoAsignadoCerrado.data()?.length"
+      (retry)="cargarTodo()"
+    >
+      <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+        @for (item of tiempoAsignadoCerrado.data(); track item.idunidademergencia) {
+          <li class="flex justify-between text-text-secondary">
+            <span>{{ item.unidad_nombre ?? 'Unidad #' + item.idunidademergencia
+              }}{{ item.unidad_placa ? ' (' + item.unidad_placa + ')' : '' }}</span>
+            <span class="font-semibold text-text-primary">{{ item.promedio_segundos | number: '1.0-0' }} s</span>
+          </li>
+        }
+      </ul>
+    </app-informe-card>
+
+    <app-informe-card
+      title="Cierres forzados desde central"
+      [loading]="cierresForzados.loading()"
+      [error]="cierresForzados.error()"
+      [empty]="!cierresForzados.loading() && !cierresForzados.error() && !cierresForzados.data()?.length"
+      (retry)="cargarTodo()"
+    >
+      <app-timeseries-chart [items]="serieCierresForzados()" sufijo="%" formato="1.0-1" />
+    </app-informe-card>
+
+    <app-informe-card
+      title="Misiones abortadas, por unidad"
+      [loading]="abortosPerdidas.loading()"
+      [error]="abortosPerdidas.error()"
+      [empty]="!abortosPerdidas.loading() && !abortosPerdidas.error() && !abortosPerdidas.data()?.length"
+      (retry)="cargarTodo()"
+    >
+      <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+        @for (item of abortosPerdidas.data(); track item.idunidademergencia) {
+          <li class="flex justify-between text-text-secondary">
+            <span>{{ item.unidad_nombre ?? 'Unidad #' + item.idunidademergencia
+              }}{{ item.unidad_placa ? ' (' + item.unidad_placa + ')' : '' }}</span>
+            <span class="font-semibold text-text-primary">{{ item.pct_abortos_perdidas * 100 | number: '1.0-1' }}%</span>
+          </li>
+        }
+      </ul>
+    </app-informe-card>
+
+    @if (puedeVerCompuestos) {
+      <app-informe-card
+        title="Pérdida de señal GPS"
+        [batch]="true"
+        [ultimaCorrida]="perdidaSenal.ultimaCorrida()"
+        [loading]="perdidaSenal.loading()"
+        [error]="perdidaSenal.error()"
+        [noMaterializado]="!perdidaSenal.loading() && !perdidaSenal.error() && !perdidaSenal.materializado()"
+        [empty]="!perdidaSenal.loading() && !perdidaSenal.error() && perdidaSenal.materializado() && !perdidaSenal.data()?.length"
+        (retry)="cargarTodo()"
+      >
+        <ul class="m-0 flex max-h-40 list-none flex-col gap-1 overflow-y-auto p-0 pr-1 text-sm">
+          @for (item of perdidaSenal.data(); track item.idaccidente) {
+            <li class="flex flex-col text-text-secondary">
+              <span class="font-medium text-text-primary"
+                >{{ item.unidad_nombre ?? 'Unidad #' + item.idunidademergencia
+                }}{{ item.unidad_placa ? ' (' + item.unidad_placa + ')' : '' }}</span
+              >
+              <span>Hueco de señal: {{ item.duracion_seg | number: '1.0-0' }} s (umbral {{ item.umbral_usado_seg }} s)</span>
+            </li>
+          }
+        </ul>
+      </app-informe-card>
+    }
+  </div>
+</div>
