@@ -6,7 +6,7 @@
 
 ## Summary
 
-Módulo Angular campo: disponibilidad unidad, galería con captura modal offline-first, enriquecimiento multi-panel CU-O46, integración `mode=view` con registro-accidente.
+Módulo Angular campo: disponibilidad unidad, galería con captura modal offline-first, enriquecimiento multi-panel CU-O75/CU-O76, integración `mode=view` con registro-accidente.
 
 ## Technical Context
 

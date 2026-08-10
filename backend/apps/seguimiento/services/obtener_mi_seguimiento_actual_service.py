@@ -1,4 +1,4 @@
-"""Resuelve el despacho activo en curso de la unidad autenticada (CU-O25/O26/O39).
+"""Resuelve el despacho activo en curso de la unidad autenticada (CU-O68/O70/O71).
 
 Evita que el frontend dependa de recibir iddespacho/idaccidente por navegación:
 la unidad puede entrar a "Mi seguimiento" desde el sidebar, refrescar la

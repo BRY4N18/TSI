@@ -1,7 +1,12 @@
 """CU-O54 — registrar unidad de emergencia individual (actor Proveedor).
 
-Requiere `gmail`: crea login (rol Unidad), credencial temporal e invitación,
-y liga `Dim_UnidadEmergencia.idusuario` (requisito para CU-O30).
+`gmail` es opcional (SRS 3.5.1, RF-O39.5/RF-O39.6): si se envía, crea login
+(rol Unidad), credencial temporal e invitación, y liga
+`Dim_UnidadEmergencia.idusuario` (requisito para CU-O30). Si se omite, la
+unidad queda en el catálogo sin acceso propio — no puede declarar
+disponibilidad ni recibir despachos hasta que se le asigne login (edición
+posterior o CU-O30 vía otro alta). Solo la carga en lote (CU-O40) exige
+correo en cada fila.
 Si SMTP falla, la unidad y el usuario se conservan; la respuesta reporta
 `invitacion_enviada=false` + `invitacion_error` (nunca la contraseña).
 """
@@ -61,8 +66,6 @@ class RegistroUnidadService:
         payload = dict(data)
         payload.pop("idcliente", None)
         gmail_raw = payload.pop("gmail", None)
-        if gmail_raw is None or str(gmail_raw).strip() == "":
-            raise KeyError("gmail es requerido")
         payload["idcliente"] = int(cliente["idcliente"])
         if not payload.get("tipopropiedad"):
             payload["tipopropiedad"] = "Externa"
@@ -72,15 +75,26 @@ class RegistroUnidadService:
         if not self.unidad_repo.condado_exists(payload["idcondado"]):
             raise LookupError(f"idcondado {payload['idcondado']} no existe")
 
-        gmail = self._normalizar_gmail(gmail_raw)
-        unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
-        if not unidad_role or not unidad_role.get("activo", True):
-            raise ValueError(f"Rol '{UNIDAD_ROLE}' no configurado o inactivo")
-        existing_user = self.user_repo.find_by_gmail(gmail)
-        if existing_user and existing_user.get("activo", True):
-            raise ValueError(f"Correo ya registrado: {gmail}")
+        tiene_gmail = gmail_raw is not None and str(gmail_raw).strip() != ""
+        gmail: str | None = None
+        unidad_role: dict[str, Any] | None = None
+        if tiene_gmail:
+            gmail = self._normalizar_gmail(gmail_raw)
+            unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
+            if not unidad_role or not unidad_role.get("activo", True):
+                raise ValueError(f"Rol '{UNIDAD_ROLE}' no configurado o inactivo")
+            existing_user = self.user_repo.find_by_gmail(gmail)
+            if existing_user and existing_user.get("activo", True):
+                raise ValueError(f"Correo ya registrado: {gmail}")
 
         unidad = self.unidad_repo.create(payload)
+
+        if not tiene_gmail:
+            unidad["usuario_creado"] = False
+            unidad["invitacion_enviada"] = False
+            return unidad
+
+        assert gmail is not None and unidad_role is not None
         user = self._crear_o_reactivar_usuario(gmail, payload)
         # Pass local create payload as base — avoid Pinot read-after-write lag
         # which can return incomplete rows (missing idcondado / idcliente=0).

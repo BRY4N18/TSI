@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -7,6 +7,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+
+import { DEMO_QUERY_PARAM_GRANT, DEMO_QUERY_PARAM_IDPROSPECTO } from '../../models/notificacion-ventas.types';
 
 import { ProspectoApiService } from '../../services/prospecto-api.service';
 import { RegistroProspectoRequest, TipoOrganizacion } from '../../models/prospectos.types';
@@ -48,6 +50,20 @@ export class RegistroPublicoPage implements OnInit {
   readonly error = signal<string | null>(null);
   readonly success = signal(false);
   readonly fuentes = FUENTES_CONOCIMIENTO;
+  /** Capturados de la respuesta de registro para continuar hacia la demo (SRS §3.1.2). */
+  readonly demoIdprospecto = signal<number | null>(null);
+  readonly demoGrant = signal<string | null>(null);
+  readonly demoQueryParamIdprospecto = DEMO_QUERY_PARAM_IDPROSPECTO;
+  readonly demoQueryParamGrant = DEMO_QUERY_PARAM_GRANT;
+
+  /**
+   * Las plantillas de Angular no admiten claves computadas (`{ [k]: v }`), así
+   * que el objeto de query params del enlace a la demo se arma aquí.
+   */
+  readonly demoQueryParams = computed(() => ({
+    [DEMO_QUERY_PARAM_IDPROSPECTO]: this.demoIdprospecto(),
+    [DEMO_QUERY_PARAM_GRANT]: this.demoGrant(),
+  }));
 
   readonly form = this.fb.nonNullable.group({
     nombres: ['', [Validators.required, Validators.minLength(2)]],
@@ -137,9 +153,11 @@ export class RegistroPublicoPage implements OnInit {
       como_nos_conocio: this.resolverComoNosConocio(),
     };
     this.api.registrar(body).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading.set(false);
         this.success.set(true);
+        this.demoIdprospecto.set(res.data.idprospecto ?? null);
+        this.demoGrant.set(res.data.demo_grant ?? null);
       },
       error: (err) => {
         this.loading.set(false);

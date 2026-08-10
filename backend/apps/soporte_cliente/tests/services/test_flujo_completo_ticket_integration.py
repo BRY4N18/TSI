@@ -38,13 +38,13 @@ class TestFlujoCompletoTicketIntegration:
         assert resuelto["estado_nuevo"] == "Resuelto"
         assert resuelto["sla_status"] == "cumplido"
 
-        cerrado = ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idusuario=3)
+        cerrado = ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idcliente=1, idusuario=3)
         assert cerrado["estado_nuevo"] == "Cerrado"
         assert cerrado["cierreconfirmadocliente"] is True
 
         # Act — reapertura con renovación de SLA (Escenario 7 + clarificación)
         reabierto = ReabrirTicketService().reabrir(
-            reclamo["id_reclamo"], idusuario=3, motivo="La solución no funcionó"
+            reclamo["id_reclamo"], idcliente=1, idusuario=3, motivo="La solución no funcionó"
         )
         assert reabierto["estado_nuevo"] == "Reabierto"
         assert reabierto["sla_status"] == "en curso"

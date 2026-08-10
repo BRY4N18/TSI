@@ -14,7 +14,7 @@ def _ticket_cerrado():
     )
     TomarTicketService().tomar(reclamo["id_reclamo"], id_agente_asignado=10)
     ResolverTicketService().resolver(reclamo["id_reclamo"], idusuario=10)
-    return ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idusuario=3)["id_reclamo"]
+    return ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idcliente=1, idusuario=3)["id_reclamo"]
 
 
 @pytest.mark.service
@@ -25,7 +25,9 @@ class TestReabrirTicketService:
         historial_previo = HistorialTicketRepository().list_by_ticket(id_reclamo)
 
         # Act
-        actualizado = ReabrirTicketService().reabrir(id_reclamo, idusuario=3, motivo="No quedó resuelto")
+        actualizado = ReabrirTicketService().reabrir(
+            id_reclamo, idcliente=1, idusuario=3, motivo="No quedó resuelto"
+        )
         historial_nuevo = HistorialTicketRepository().list_by_ticket(id_reclamo)
 
         # Assert
@@ -42,7 +44,15 @@ class TestReabrirTicketService:
 
         # Act / Assert
         with pytest.raises(ValueError):
-            ReabrirTicketService().reabrir(reclamo["id_reclamo"], idusuario=3)
+            ReabrirTicketService().reabrir(reclamo["id_reclamo"], idcliente=1, idusuario=3)
+
+    def test_reabrir_when_otro_cliente_raises_permission_error(self, mock_pinot, mock_kafka):
+        # Arrange — RF-O88.1: solo el cliente dueño del ticket puede reabrirlo
+        id_reclamo = _ticket_cerrado()
+
+        # Act / Assert
+        with pytest.raises(PermissionError):
+            ReabrirTicketService().reabrir(id_reclamo, idcliente=999, idusuario=3)
 
     def test_reabrir_when_adjunto_publica_archivo(self, mock_pinot, mock_kafka, tmp_path):
         # Arrange
@@ -53,7 +63,7 @@ class TestReabrirTicketService:
         service = ReabrirTicketService(blob_storage=BlobStorageService(base_path=tmp_path))
 
         # Act
-        service.reabrir(id_reclamo, idusuario=3, adjuntos=[(contenido, "image/jpeg")])
+        service.reabrir(id_reclamo, idcliente=1, idusuario=3, adjuntos=[(contenido, "image/jpeg")])
 
         # Assert
         from core.repositories.soporte.archivo_adjunto_reclamo_repository import (

@@ -1,4 +1,4 @@
-"""CU-O32 deshacer descarte (reversión rápida / snackbar)."""
+"""CU-O58 deshacer descarte (reversión rápida / snackbar)."""
 
 from __future__ import annotations
 

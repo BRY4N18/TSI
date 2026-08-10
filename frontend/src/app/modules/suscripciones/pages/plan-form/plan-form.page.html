@@ -32,7 +32,7 @@
           form="plan-form"
           data-testid="btn-guardar-plan-header"
           class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
-          [disabled]="enviando() || form.invalid"
+          [disabled]="enviando() || form.invalid || severidadesSeleccionadas().length === 0"
         >
           {{
             enviando() ? 'Guardando…' : esEdicion() ? 'Guardar cambios' : 'Publicar plan'
@@ -85,6 +85,17 @@
             />
           </label>
           <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Excedente API (USD/llamada)</span>
+            <input
+              type="number"
+              step="0.0001"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              [class.border-alert-critical]="isInvalid('precio_excedente_llamada')"
+              formControlName="precio_excedente_llamada"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Nivel</span>
             <select
               class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none"
@@ -95,7 +106,55 @@
               }
             </select>
           </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">Periodicidad</span>
+            <select
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none"
+              formControlName="periodicidad"
+            >
+              @for (p of periodicidades; track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </label>
         </div>
+      </section>
+
+      <section class="grid gap-4 border-t border-border-default pt-6">
+        <h3 class="m-0 text-base font-semibold">Severidades atendibles</h3>
+        <p class="m-0 text-sm text-text-secondary">
+          Configuración independiente del nivel: elige qué severidades de incidente cubre este
+          plan.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" formControlName="severidad_baja" />
+            <span>Baja</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" formControlName="severidad_media" />
+            <span>Media</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" formControlName="severidad_alta" />
+            <span>Alta</span>
+          </label>
+        </div>
+        @if (severidadesSeleccionadas().length === 0) {
+          <p class="m-0 text-sm text-alert-critical">Selecciona al menos una severidad.</p>
+        }
+      </section>
+
+      <section class="grid gap-4 border-t border-border-default pt-6">
+        <h3 class="m-0 text-base font-semibold">Carga en lote de unidades</h3>
+        <p class="m-0 text-sm text-text-secondary">
+          Habilita a los proveedores con este plan a cargar unidades masivamente desde archivo
+          (CU-O40).
+        </p>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" formControlName="carga_lote_habilitada" data-testid="input-carga-lote-habilitada" />
+          <span>Habilitar carga en lote</span>
+        </label>
       </section>
 
       <section class="grid gap-4 border-t border-border-default pt-6">
@@ -126,6 +185,15 @@
               min="0"
               class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
               formControlName="api_calls_mes"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm">
+            <span class="font-medium text-text-secondary">API calls / minuto</span>
+            <input
+              type="number"
+              min="0"
+              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              formControlName="api_calls_minuto"
             />
           </label>
         </div>

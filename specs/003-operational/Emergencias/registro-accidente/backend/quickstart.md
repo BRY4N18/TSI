@@ -1,6 +1,6 @@
 # Quickstart — Validación Registro de Accidentes
 
-Guía de validación end-to-end contract-first para CU-O21, O32, O40, O41 y RF-REG-010.
+Guía de validación end-to-end contract-first para CU-O56, O58, O73, O57 y RF-REG-010.
 
 ## Prerrequisitos
 
@@ -9,7 +9,7 @@ Guía de validación end-to-end contract-first para CU-O21, O32, O40, O41 y RF-R
 - Dependencias operativas: `autenticacion-y-rbac` (JWT + roles), `incorporacion-regional` (regiones en Producción)
 - Infra: Kafka productor, Pinot broker lectura, backend Django, frontend Angular
 
-## 0) Seed catálogos CU-O21 (TipoReportado + ReferenciaEstacion)
+## 0) Seed catálogos CU-O56 (TipoReportado + ReferenciaEstacion)
 
 Sin estos datos, los selects de tipo de reporte y estación quedan vacíos en la UI.
 
@@ -34,7 +34,7 @@ GET /api/v1/accidentes/tipos-reportado
 GET /api/v1/accidentes/referencias-estacion
 ```
 
-Unidades adicionales (CU-O40) salen de `Dim_UnidadEmergencia` (seed de red operativa / flota), no de este script.
+Unidades adicionales (CU-O73) salen de `Dim_UnidadEmergencia` (seed de red operativa / flota), no de este script.
 
 ## 1) Validar contrato REST (backend contract-first)
 
@@ -43,20 +43,20 @@ Revisar endpoints en OpenAPI:
 | Método | Ruta | UC/RF |
 |--------|------|-------|
 | `GET` | `/api/v1/accidentes/paises` … `/calles` | RF-REG-006 cascada |
-| `GET` | `/api/v1/accidentes/tipos-reportado` | CU-O21 catálogo |
-| `GET` | `/api/v1/accidentes/referencias-estacion` | CU-O21 catálogo |
-| `GET` | `/api/v1/accidentes/unidades-emergencia` | CU-O40 catálogo |
+| `GET` | `/api/v1/accidentes/tipos-reportado` | CU-O56 catálogo |
+| `GET` | `/api/v1/accidentes/referencias-estacion` | CU-O56 catálogo |
+| `GET` | `/api/v1/accidentes/unidades-emergencia` | CU-O73 catálogo |
 | `GET` | `/api/v1/accidentes/geocodificacion-inversa` | RF-REG-006 |
 | `GET` | `/api/v1/accidentes` | RF-REG-005 |
-| `POST` | `/api/v1/accidentes` | CU-O21 |
+| `POST` | `/api/v1/accidentes` | CU-O56 |
 | `GET` | `/api/v1/accidentes/{idaccidente}` | RF-REG-005 |
 | `PATCH` | `/api/v1/accidentes/{idaccidente}` | RF-REG-005 |
 | `POST` | `/api/v1/accidentes/{idaccidente}/confirmar-reporte` | RF-REG-010 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/descartar` | CU-O32 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/deshacer-descarte` | CU-O32 snackbar |
-| `POST` | `/api/v1/accidentes/{idaccidente}/escalar-severidad` | CU-O40 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/fusionar` | CU-O41 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/deshacer-fusion` | CU-O41 snackbar |
+| `POST` | `/api/v1/accidentes/{idaccidente}/descartar` | CU-O58 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/deshacer-descarte` | CU-O58 snackbar |
+| `POST` | `/api/v1/accidentes/{idaccidente}/escalar-severidad` | CU-O73 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/fusionar` | CU-O57 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/deshacer-fusion` | CU-O57 snackbar |
 
 Convenciones (`api-standards.md`):
 
@@ -93,13 +93,13 @@ Convenciones (`api-standards.md`):
 4. `POST .../fusionar` con `idaccidenteprincipal` confirmado.
 5. **Esperado:** HTTP 200, duplicado `FUSIONADO`.
 
-### Escenario E — Descarte BORRADOR (O32)
+### Escenario E — Descarte BORRADOR (O58)
 
 1. Caso en BORRADOR.
 2. `POST .../descartar` opcional `{ "motivo": "falsa alarma" }`.
 3. **Esperado:** HTTP 200, `activo=false`, estado DESCARTADO.
 
-### Escenario F — Escalamiento ASIGNADO/EN_ATENCIÓN (O40)
+### Escenario F — Escalamiento ASIGNADO/EN_ATENCIÓN (O73)
 
 1. Caso con `Fact_Despacho` activo confirmado (datos semilla o integración despacho).
 2. Login como `Unidad de emergencia`.
@@ -144,7 +144,7 @@ Componentes objetivo (`frontend/src/app/modules/accidentes/`):
 | `AccidenteApiService` | CRUD + acciones sub-recurso según OpenAPI |
 | `GeocodificacionApiService` | `GET geocodificacion-inversa` |
 | `OperadorEmergenciasGuard` | Rutas registro/lista/edición/fusión/descarte |
-| `UnidadEmergenciaGuard` | Ruta escalamiento O40 |
+| `UnidadEmergenciaGuard` | Ruta escalamiento O73 |
 | `accidentes.routes.ts` | Lazy loading módulo |
 
 Escenarios UI mínimos:
@@ -170,7 +170,7 @@ Escenarios UI mínimos:
 ## 5) Criterios de salida
 
 - [ ] Contrato OpenAPI alineado con spec y clarificaciones
-- [ ] CU-O21/O32/O40/O41 + RF-REG-010 funcionales vía API
+- [ ] CU-O56/O58/O73/O57 + RF-REG-010 funcionales vía API
 - [ ] Patrón Vista→Servicio→Repositorio respetado
 - [ ] Kafka como único canal de escritura verificado
 - [ ] Guards Angular operativos por rol

@@ -1,7 +1,7 @@
 # Quickstart - Validación de Incorporación de Clientes
 
-Guía de validación end-to-end contract-first para **CU-O14, O16, O02, O09 y O08**.
-CU-O01 y CU-O12 están retirados (HTTP 410).
+Guía de validación end-to-end contract-first para **CU-O09 (autorregistro), CU-O10 (aprobar/rechazar/anular), CU-O11 (onboarding, incluye RF-O11.2 guardar progreso) y CU-O12 (reenviar invitación)**.
+Registro directo y config. plan+logo (legado, sin CU vigente) están retirados (HTTP 410) — no confundir con el CU-O12 vigente arriba.
 
 ## Prerequisitos
 
@@ -9,7 +9,7 @@ CU-O01 y CU-O12 están retirados (HTTP 410).
 - Spec y plan en `specs/003-operational/Cuentas-Clientes/incorporacion-clientes/backend/`
 - Módulo **autenticacion-y-rbac** operativo (login JWT + validación de sesión)
 - Topic `Fact_Onboarding_topic` registrado en `backend/config/settings.py` → `KAFKA_TOPICS`
-- Variables SMTP para O14/O16/O08/recordatorios (opcional en dev; fallo debe loguearse sin revertir)
+- Variables SMTP para O09/O10/O12/recordatorios (opcional en dev; fallo debe loguearse sin revertir)
 
 ```bash
 # Variables SMTP (backend/.env — ver backend/env.example)
@@ -25,16 +25,16 @@ DEFAULT_FROM_EMAIL=Tráfico Seguro Integral <...>
 
 | Método | Ruta | UC | Rol |
 |--------|------|-----|-----|
-| POST | `/api/v1/cuentas-clientes/autorregistro` | O14 | público |
-| GET | `/api/v1/cuentas-clientes/solicitudes` | O16 | Administrador |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/aprobacion` | O16 | Administrador |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/anular-rechazo` | O16 | Administrador |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | O02 | Cliente (admin local) |
-| GET | `/api/v1/cuentas-clientes/{idcliente}/onboarding/progreso` | O09 | Cliente (admin local) / Admin |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/onboarding/etapas` | O02 | Cliente (admin local) / Admin |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/invitacion/reenviar` | O08 | Administrador / Cliente |
-| POST | `/api/v1/cuentas-clientes` | O01 | **410 Gone** |
-| PATCH | `/api/v1/cuentas-clientes/{idcliente}/configuracion` | O12 | **410 Gone** |
+| POST | `/api/v1/cuentas-clientes/autorregistro` | CU-O09 | público |
+| GET | `/api/v1/cuentas-clientes/solicitudes` | CU-O10 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/aprobacion` | CU-O10 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/anular-rechazo` | CU-O10 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | CU-O11 | Cliente (admin local) |
+| GET | `/api/v1/cuentas-clientes/{idcliente}/onboarding/progreso` | CU-O11 (RF-O11.2) | Cliente (admin local) / Admin |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/onboarding/etapas` | CU-O11 | Cliente (admin local) / Admin |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/invitacion/reenviar` | CU-O12 | Administrador / Cliente |
+| POST | `/api/v1/cuentas-clientes` | — (registro directo, legado, retirado) | **410 Gone** |
+| PATCH | `/api/v1/cuentas-clientes/{idcliente}/configuracion` | — (config. plan+logo, legado, retirado) | **410 Gone** |
 
 Convenciones (`api-standards.md`):
 
@@ -42,11 +42,11 @@ Convenciones (`api-standards.md`):
 - Envelope error: `{ "error", "detail", "code" }`
 - Header `Idempotency-Key` en POST/PATCH de escritura
 
-**Resultado esperado**: contrato alineado con decisiones 2026-07-25 (O14→O16 canónico).
+**Resultado esperado**: contrato alineado con decisiones 2026-07-25 (CU-O09→CU-O10 canónico).
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio)
 
-### Escenario A — Autorregistro (O14)
+### Escenario A — Autorregistro (CU-O09)
 
 1. `POST /api/v1/cuentas-clientes/autorregistro` (sin auth) con cuerpo:
 
@@ -68,27 +68,27 @@ Convenciones (`api-standards.md`):
 3. Mismo NIT → **409**.
 4. Login con ese usuario: **permitido** (gate en módulos, no en auth).
 
-### Escenario B — Aprobación / rechazo / anular (O16)
+### Escenario B — Aprobación / rechazo / anular (CU-O10)
 
 1. Login **Administrador**.
 2. `GET .../solicitudes` → lista pendientes.
 3. `POST .../{id}/aprobacion` `{ "decision": "aprobar" }` → **200**, `Activo`, email.
 4. Alternativa rechazo: `{ "decision": "rechazar", "motivo": "..." }` → email.
-5. `POST .../{id}/anular-rechazo` → `Rechazado_Anulado`; nuevo O14 mismo NIT → **201**.
+5. `POST .../{id}/anular-rechazo` → `Rechazado_Anulado`; nuevo CU-O09 mismo NIT → **201**.
 
-### Escenario B2 — O01/O12 retirados
+### Escenario B2 — registro directo / config. plan+logo retirados (legado, sin CU vigente)
 
 1. `POST /api/v1/cuentas-clientes` → **410**.
 2. `PATCH .../configuracion` → **410**.
 
-### Escenario C — Onboarding (O02 + O09)
+### Escenario C — Onboarding (CU-O11, incluye RF-O11.2 guardar progreso)
 
 1. Login Cliente admin local de cuenta **Activo**.
 2. `GET .../onboarding/progreso` → etapa actual.
 3. Completar `cambio_password` → `perfil_corporativo` (logo) → `preferencias`.
 4. Si cuenta `Pendiente_Aprobación` → **403**.
 
-### Escenario D — Reenviar invitación (O08)
+### Escenario D — Reenviar invitación (CU-O12)
 
 1. Admin desde UI Solicitudes o `POST .../invitacion/reenviar`.
 2. Cliente desde wizard onboarding.
@@ -128,11 +128,11 @@ npm test -- --include='**/incorporacion-clientes/**/*.spec.ts'
 ## 5) Criterios de salida
 
 - [x] OpenAPI alineado (1.2.0) con Session 2026-07-25.
-- [x] CU-O14 → Pendiente_Aprobación.
-- [x] CU-O16 aprobar/rechazar/anular + email.
-- [x] CU-O01/O12 → 410.
-- [x] CU-O02/O09 solo Activo; logo cliente.
-- [x] CU-O08 en solicitudes + wizard.
+- [x] CU-O09 → Pendiente_Aprobación.
+- [x] CU-O10 aprobar/rechazar/anular + email.
+- [x] Registro directo / config. plan+logo (legado, sin CU vigente) → 410.
+- [x] CU-O11 (incluye RF-O11.2) solo Activo; logo cliente.
+- [x] CU-O12 en solicitudes + wizard.
 - [x] RN-ONB-004 job documentado.
 
 ## 6) Cron recordatorios (producción)

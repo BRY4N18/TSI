@@ -4,9 +4,9 @@
 
 | Ruta | Rol |
 |------|-----|
-| `/cuentas-clientes/incorporacion-clientes/autorregistro` | Público (O14) |
-| `/cuentas-clientes/incorporacion-clientes/solicitudes` | Administrador (O16) |
-| `/cuentas-clientes/incorporacion-clientes/:id/onboarding` | Admin local, cuenta Activo (O02) |
+| `/cuentas-clientes/incorporacion-clientes/autorregistro` | Público (O09) |
+| `/cuentas-clientes/incorporacion-clientes/solicitudes` | Administrador (O10) |
+| `/cuentas-clientes/incorporacion-clientes/:id/onboarding` | Admin local, cuenta Activo (O11) |
 
 ## Checks manuales
 

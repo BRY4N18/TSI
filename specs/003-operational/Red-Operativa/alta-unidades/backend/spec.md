@@ -52,15 +52,17 @@ Antes de que el algoritmo de despacho pueda asignar una unidad, esa unidad debe 
 - `Fact_HistorialEstadoUnidad` / `Dim_EstadoUnidadEmergencia`: consumidos por O30/despacho; **este spec ya no escribe disponibilidad**.
 - `Dim_Usuarios`, `Dim_Credencial`, `Dim_Usuario_Rol`: creados en O56 (y opcionalmente vínculo unidad↔usuario en O54 si se define en plan).
 - `Fact_Despacho` (solo lectura): validación de despacho activo en edición/baja.
+- `Fact_Suscripcion` (módulo Suscripciones y Facturación, solo lectura vía `SuscripcionActivaReadRepository`): gate `carga_lote_habilitada` en O56 (corrección 2026-08-08, RF-CAM-002 punto 0).
 
 ## 3. Actores
 
 | Actor | Rol en este spec | Interacción principal |
 |---|---|---|
 | **Proveedor** | Dueño del catálogo de su flota | Registra (O54/O56), edita (O57), da de baja/reactiva (O58) **solo** unidades con su `idcliente`. Requiere `Dim_Cliente.estado='Activo'`. |
+| **Administrador** | Única excepción — baja forzada con despacho activo (RF-CAM-004, corrección 2026-08-08) | Sin override sobre alta, edición, baja ordinaria ni reactivación de unidades de terceros; su única facultad en este spec es completar `POST .../baja` con `forzar=true` cuando la unidad tiene un despacho activo (RF-O42.4). |
 | **Sistema** | Validador | Unicidad de `placa`, pertenencia `idcliente`, bloqueo por despacho activo, todo-o-nada del lote + credenciales. |
 
-**Fuera de actores de este spec:** Administrador (sin override de unidades), Operador (ya no declara disponibilidad externa).
+**Fuera de actores de este spec:** Operador (ya no declara disponibilidad externa). El Administrador ya no está totalmente fuera de alcance — ver fila arriba.
 
 ## 4. Requisitos funcionales
 
@@ -78,6 +80,7 @@ El **Proveedor** autenticado registra una unidad. El sistema:
 ### RF-CAM-002: Registro en lote (CU-O56)
 
 El **Proveedor** importa CSV:
+0. **Gate de plan (RF-O40.6, corrección 2026-08-08):** solo procede si `Fact_Suscripcion.carga_lote_habilitada` (congelado desde `Dim_Plan.carga_lote_habilitada` al alta/cambio de plan — no se lee `Dim_Plan` en vivo, ver `SuscripcionActivaReadRepository`) es `true` para la suscripción activa del Proveedor. Si no hay suscripción activa o el campo es `false`/ausente → `403`, sin leer ni validar el archivo.
 1. Cada fila incluye las columnas de O54 **más `gmail`** (correo del usuario-unidad).
 2. Validar **todas** las filas: reglas de unidad **y** viabilidad de credencial (gmail válido, gmail no duplicado en `Dim_Usuarios`, etc.).
 3. Si **cualquier** fila falla (unidad o login), **no se inserta ninguna** unidad ni ningún usuario (`insertadas: 0`, reporte fila a fila).
@@ -97,6 +100,8 @@ El Proveedor edita campos: `tipopropiedad`, `capacidad`, `idcondado`, `contactop
 ### RF-CAM-004: Baja / reactivación (CU-O58)
 
 Misma regla de pertenencia `idcliente`. Flujo de baja (`Fact_BajaUnidad`, `activo=false`) y reactivación (409 si placa reutilizada) sin cambio de reglas de negocio previas, salvo el actor.
+
+**Corrección 2026-08-08 (RF-O42.4 del catálogo, SRS §3.5.1):** la baja **sin** despacho activo sigue siendo autoservicio pleno del Proveedor. Pero la baja **con** despacho activo (`forzar=true`) es la única excepción al modelo Proveedor de esta sesión — está reservada exclusivamente al Administrador; el Proveedor recibe 403 aunque envíe `forzar=true`, con sugerencia de esperar el cierre del caso. `UnidadBajaView` acepta tanto Proveedor como Administrador (`IsProveedorFlotaOrAdministrador`); la validación de quién puede completar la baja forzada vive en `BajaUnidadService`, no en el permiso de la vista.
 
 ### RF-CAM-005: CU-O59 eliminado
 

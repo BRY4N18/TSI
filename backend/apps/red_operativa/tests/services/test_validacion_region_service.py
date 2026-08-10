@@ -2,6 +2,9 @@ import pytest
 
 from apps.red_operativa.services.validacion_region_service import ValidacionRegionService
 
+ADMIN = ["Administrador"]
+DIRECTOR = ["DirectorTecnologico"]
+
 
 @pytest.mark.service
 class TestValidacionRegionService:
@@ -13,6 +16,7 @@ class TestValidacionRegionService:
         result = service.ejecutar(
             {"idestado": 2, "nombreregion": "Guadalajara", "resultado": "Rechazada", "motivo": "x"},
             idusuario=9,
+            roles=ADMIN,
         )
 
         # Assert
@@ -28,7 +32,9 @@ class TestValidacionRegionService:
 
         # Act
         result = service.ejecutar(
-            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "Latencia"}, idusuario=9
+            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "Latencia"},
+            idusuario=9,
+            roles=ADMIN,
         )
 
         # Assert
@@ -45,10 +51,27 @@ class TestValidacionRegionService:
         service.region_repo.update(1, {"estadoregion": "En_Validación"})
 
         # Act
-        result = service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+        result = service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
 
         # Assert
         assert result["estadoregion_actual"] == "Producción"
+
+    def test_ejecutar_when_aprobada_por_administrador_raises_permission_error(
+        self, mock_pinot, mock_kafka
+    ):
+        # Arrange — SRS 3.5.2: solo el Director Tecnológico aprueba definitivamente;
+        # el Administrador ejecuta el protocolo pero no puede aprobar solo.
+        service = ValidacionRegionService()
+        service.region_repo.update(1, {"estadoregion": "En_Validación"})
+
+        # Act & Assert
+        with pytest.raises(PermissionError):
+            service.ejecutar(
+                {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=ADMIN
+            )
+        assert service.region_repo.find_by_id(1)["estadoregion"] == "En_Validación"
 
     def test_ejecutar_when_rechazada_no_cambia_estadoregion(self, mock_pinot, mock_kafka):
         # Arrange
@@ -57,7 +80,9 @@ class TestValidacionRegionService:
 
         # Act
         result = service.ejecutar(
-            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "x"}, idusuario=9
+            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "x"},
+            idusuario=9,
+            roles=ADMIN,
         )
 
         # Assert
@@ -69,7 +94,9 @@ class TestValidacionRegionService:
 
         # Act & Assert
         with pytest.raises(ValueError):
-            service.ejecutar({"idregionoperativa": 1, "resultado": "Rechazada"}, idusuario=9)
+            service.ejecutar(
+                {"idregionoperativa": 1, "resultado": "Rechazada"}, idusuario=9, roles=ADMIN
+            )
 
     def test_ejecutar_when_reingreso_desde_despublicada_actualiza_a_produccion(
         self, mock_pinot, mock_kafka
@@ -79,7 +106,9 @@ class TestValidacionRegionService:
         service.region_repo.update(1, {"estadoregion": "Despublicada"})
 
         # Act
-        result = service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+        result = service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
 
         # Assert
         assert result["estadoregion_actual"] == "Producción"
@@ -92,7 +121,9 @@ class TestValidacionRegionService:
         service.region_repo.update(1, {"estadoregion": "En_Alerta"})
 
         # Act
-        result = service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+        result = service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
 
         # Assert
         assert result["estadoregion_actual"] == "Producción"
@@ -105,8 +136,12 @@ class TestValidacionRegionService:
         service.region_repo.update(1, {"estadoregion": "En_Validación"})
 
         # Act
-        service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
-        result = service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+        service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
+        result = service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
 
         # Assert
         assert result["estadoregion_actual"] == "Producción"
@@ -119,11 +154,15 @@ class TestValidacionRegionService:
         # ni siquiera si la región ya estaba en Producción por una validación previa.
         service = ValidacionRegionService()
         service.region_repo.update(1, {"estadoregion": "En_Validación"})
-        service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+        service.ejecutar(
+            {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+        )
 
         # Act
         result = service.ejecutar(
-            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "y"}, idusuario=9
+            {"idregionoperativa": 1, "resultado": "Rechazada", "motivo": "y"},
+            idusuario=9,
+            roles=ADMIN,
         )
 
         # Assert
@@ -136,7 +175,9 @@ class TestValidacionRegionService:
 
         # Act & Assert
         with pytest.raises(LookupError):
-            service.ejecutar({"idregionoperativa": 999, "resultado": "Aprobada"}, idusuario=9)
+            service.ejecutar(
+                {"idregionoperativa": 999, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+            )
 
     def test_ejecutar_when_region_inactiva_raises(self, mock_pinot, mock_kafka):
         # Arrange — Session 2026-07-21: reingreso salvo activo=false
@@ -145,4 +186,6 @@ class TestValidacionRegionService:
 
         # Act & Assert
         with pytest.raises(ValueError, match="inactiva"):
-            service.ejecutar({"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9)
+            service.ejecutar(
+                {"idregionoperativa": 1, "resultado": "Aprobada"}, idusuario=9, roles=DIRECTOR
+            )

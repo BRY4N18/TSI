@@ -28,9 +28,6 @@ export class UnidadEmergenciaFacadeService {
   private readonly api = inject(UnidadEmergenciaApiService);
 
   registrar(body: UnidadCreateRequest): Observable<OperationResult<UnidadCreatedData>> {
-    if (!body.gmail?.trim()) {
-      return of({ ok: false, error: 'gmail es requerido' });
-    }
     if (body.tipopropiedad === 'Externa' && !body.contactoproveedor) {
       return of({ ok: false, error: 'contactoproveedor es requerido para unidades Externa' });
     }

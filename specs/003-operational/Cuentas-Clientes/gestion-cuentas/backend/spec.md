@@ -15,19 +15,25 @@ Una vez que el cliente completó su onboarding, necesita gestionar su cuenta de 
 
 Nota: la gestión del plan de suscripción (cambio de plan, consulta de uso) y el historial de facturación se han movido al módulo **Suscripciones-Facturacion** (CU-O101, CU-O102).
 
-**Casos de uso incluidos:**
-- **CU-O03: Gestionar perfil de cuenta del cliente** — Actualizar datos corporativos en Dim_Cliente y preferencias operativas en Dim_Preferencias_Cliente (umbrales de alerta, canales de notificación, zonas geográficas, destinatarios de reportes). Actor: Administrador / Cliente.
-- **CU-O10: Transferir propiedad de cuenta** — Actualizar Dim_Cliente.admin_local_id para apuntar al nuevo responsable. Actor: Cliente.
-- **CU-O11: Dar de baja cuenta de cliente** — Marcar `Dim_Cliente.estado='Dado de baja'`. Nunca implica borrado físico. Actor: Administrador.
+**Casos de uso incluidos (numeración `TSI-Catalogo-CU-RF-RNF.md`, corregida 2026-08-08 — ver Clarifications):**
+- **CU-O13: Actualizar el perfil corporativo de la cuenta** — Datos corporativos en Dim_Cliente. Actor: Administrador / Cliente.
+- **CU-O14: Configurar preferencias de zonas y canales de aviso** — Preferencias operativas en Dim_Preferencias_Cliente (umbrales de alerta, canales de notificación, zonas geográficas, destinatarios de reportes). Actor: Administrador / Cliente.
+- **CU-O15: Transferir propiedad de cuenta** — Actualizar Dim_Cliente.admin_local_id para apuntar al nuevo responsable. Actor: Cliente.
+- **CU-O16: Dar de baja cuenta de cliente** — Marcar `Dim_Cliente.estado='Dado de baja'`. Nunca implica borrado físico. Actor: Administrador.
 
 ## Clarifications
 
+### Session 2026-08-08 (renumeración a catálogo vigente)
+
+- Q: ¿Los CU-Oxx de este spec (O03, O10, O11) eran los del catálogo limpio? → A: **No.** Numeración propia previa a la limpieza, sin alias declarado. Renumerado: O10→**O15** (Transferir propiedad), O11→**O16** (Dar de baja). El antiguo O03 (perfil + preferencias combinados) se **dividió** en dos CU del catálogo: **CU-O13** (perfil corporativo) y **CU-O14** (preferencias de zonas/canales) — el catálogo los trata como casos de uso independientes aunque este spec los implemente en el mismo módulo.
+- Q: ¿La referencia a "CU-O07" en RF-CTA-004 (revocación de sesiones al dar de baja) es correcta? → A: Era una referencia cruzada a la numeración vieja de `autenticacion-y-rbac` (donde O07 = revocar sesión). Con la renumeración de ese spec, el CU correcto es **CU-O05**. Corregido.
+
 ### Session 2026-07-09
 
-- Q: ¿Cómo debe completarse la transferencia de propiedad (CU-O10) al seleccionar un nuevo responsable? → A: Inmediata — al confirmar la selección se actualiza `admin_local_id` sin aceptación del nuevo responsable.
-- Q: ¿Qué debe ocurrir con las sesiones activas al dar de baja una cuenta (CU-O11)? → A: Revocación inmediata — expulsar todas las sesiones activas de usuarios de la cuenta al momento de la baja.
-- Q: ¿Qué campos de `Dim_Preferencias_Cliente` son editables en este módulo (CU-O03)? → A: Todos excepto `activo` — incluye `frecuencia_reportes`, `formato_reportes` y `telefono_sms`.
-- Q: ¿Dónde debe almacenarse el motivo de baja (CU-O11)? → A: Solo logs — el motivo se registra en logs de auditoría junto con idusuario, timestamp e idcliente.
+- Q: ¿Cómo debe completarse la transferencia de propiedad (CU-O15) al seleccionar un nuevo responsable? → A: Inmediata — al confirmar la selección se actualiza `admin_local_id` sin aceptación del nuevo responsable.
+- Q: ¿Qué debe ocurrir con las sesiones activas al dar de baja una cuenta (CU-O16)? → A: Revocación inmediata — expulsar todas las sesiones activas de usuarios de la cuenta al momento de la baja.
+- Q: ¿Qué campos de `Dim_Preferencias_Cliente` son editables en este módulo (CU-O14)? → A: Todos excepto `activo` — incluye `frecuencia_reportes`, `formato_reportes` y `telefono_sms`.
+- Q: ¿Dónde debe almacenarse el motivo de baja (CU-O16)? → A: Solo logs — el motivo se registra en logs de auditoría junto con idusuario, timestamp e idcliente.
 - Q: ¿Qué eventos deben generar notificación por correo? → A: Transferencia y baja — correo al nuevo admin, al anterior admin y al admin local en baja. Canal: SMTP (credenciales vía variables de entorno en implementación).
 
 ## 3. Actores
@@ -40,7 +46,7 @@ Nota: la gestión del plan de suscripción (cambio de plan, consulta de uso) y e
 
 ## 4. Requisitos funcionales
 
-### RF-CTA-001: Gestión del perfil corporativo (CU-O03)
+### RF-CTA-001: Gestión del perfil corporativo (CU-O13)
 
 El sistema debe permitir al Cliente y al Administrador ver y editar los datos del perfil corporativo en Dim_Cliente:
 - `razon_social` (string, requerido).
@@ -51,7 +57,7 @@ El sistema debe permitir al Cliente y al Administrador ver y editar los datos de
 
 Cada modificación debe registrarse en logs: idusuario, campos modificados, valores anterior y nuevo, timestamp.
 
-### RF-CTA-002: Gestión de preferencias del cliente (CU-O03)
+### RF-CTA-002: Gestión de preferencias del cliente (CU-O14)
 
 El sistema debe permitir al Cliente configurar sus preferencias operativas en Dim_Preferencias_Cliente. Son editables todos los campos del modelo excepto `activo` (gestionado por el sistema):
 - **Umbrales de alerta** (`umbrales_alerta`): tipo de accidentes que activan notificación, frecuencia mínima.
@@ -62,7 +68,7 @@ El sistema debe permitir al Cliente configurar sus preferencias operativas en Di
 - **Frecuencia de reportes** (`frecuencia_reportes`): periodicidad de reportes automatizados.
 - **Formato de reportes** (`formato_reportes`): formato de entrega de reportes (ej. PDF, CSV).
 
-### RF-CTA-003: Transferir propiedad de cuenta (CU-O10)
+### RF-CTA-003: Transferir propiedad de cuenta (CU-O15)
 
 El sistema debe permitir al Cliente transferir la administración de su cuenta a otro responsable:
 1. El Cliente (actual admin_local_id) selecciona un nuevo responsable de entre los usuarios de su cuenta y confirma la operación.
@@ -73,25 +79,25 @@ El sistema debe permitir al Cliente transferir la administración de su cuenta a
 6. Se registra la transferencia en logs del sistema.
 7. El sistema envía notificación por correo (SMTP) al nuevo responsable y al anterior administrador local informando la transferencia.
 
-### RF-CTA-004: Dar de baja cuenta de cliente (CU-O11)
+### RF-CTA-004: Dar de baja cuenta de cliente (CU-O16)
 
 El sistema debe permitir al Administrador dar de baja una cuenta de cliente:
 1. El Administrador selecciona la cuenta a dar de baja (puede incluir un `motivo` opcional).
 2. El sistema actualiza `Dim_Cliente.estado = 'Dado de baja'`.
 3. Si se proporciona `motivo`, el sistema lo registra en logs de auditoría (idusuario, idcliente, motivo, timestamp). El motivo **no** se persiste en `Dim_Cliente`.
-4. El sistema revoca **inmediatamente** todas las sesiones activas (`Fact_Session`) de los usuarios de esa cuenta, marcando `estadosession='Expulsado'` y `fechahoracierresesion=now` (mismo patrón que CU-O07).
+4. El sistema revoca **inmediatamente** todas las sesiones activas (`Fact_Session`) de los usuarios de esa cuenta, marcando `estadosession='Expulsado'` y `fechahoracierresesion=now` (mismo patrón que CU-O05, spec `autenticacion-y-rbac`).
 5. **Nunca se eliminan físicamente registros**: los datos históricos (usuarios, sesiones, onboarding, preferencias) permanecen íntegros en la base.
 6. Una cuenta dada de baja no puede iniciar sesión ni operar en el sistema.
 7. Los datos permanecen para cumplir con políticas de retención de datos y trazabilidad legal.
 8. El sistema envía notificación por correo (SMTP) al administrador local (`admin_local_id`) de la cuenta informando la baja.
 
-### RF-CTA-005: Notificaciones por correo (CU-O10, CU-O11)
+### RF-CTA-005: Notificaciones por correo (CU-O15, CU-O16)
 
 El sistema debe enviar notificaciones por correo electrónico vía SMTP en los siguientes eventos:
-- **Transferencia de propiedad (O10)**: correo al nuevo responsable y al anterior administrador local.
-- **Baja de cuenta (O11)**: correo al administrador local de la cuenta al momento de la baja.
+- **Transferencia de propiedad (O15)**: correo al nuevo responsable y al anterior administrador local.
+- **Baja de cuenta (O16)**: correo al administrador local de la cuenta al momento de la baja.
 
-Los cambios de perfil y preferencias (O03) **no** generan notificación por correo. La configuración SMTP (host, puerto, credenciales, remitente) se define en variables de entorno durante la implementación; no forma parte de esta especificación funcional.
+Los cambios de perfil (CU-O13) y preferencias (CU-O14) **no** generan notificación por correo. La configuración SMTP (host, puerto, credenciales, remitente) se define en variables de entorno durante la implementación; no forma parte de esta especificación funcional.
 
 ## 5. Requisitos no funcionales
 
@@ -110,10 +116,10 @@ Toda modificación de perfil, transferencia de propiedad y baja de cuenta debe r
 El `nit_identificacion` y el `tipo` no pueden modificarse después del registro.
 
 ### RN-CTA-002
-Para transferir la propiedad (O10), el nuevo responsable debe ser un usuario activo de la misma cuenta de cliente. La transferencia surte efecto de forma inmediata al confirmar; no requiere aceptación del nuevo responsable.
+Para transferir la propiedad (O15), el nuevo responsable debe ser un usuario activo de la misma cuenta de cliente. La transferencia surte efecto de forma inmediata al confirmar; no requiere aceptación del nuevo responsable.
 
 ### RN-CTA-003
-La baja de cuenta (O11) no elimina físicamente ningún registro. Es una baja lógica: `estado='Dado de baja'`. `Dim_Cliente` no tiene columna `activo` — el estado de la cuenta se determina exclusivamente por `estado`.
+La baja de cuenta (O16) no elimina físicamente ningún registro. Es una baja lógica: `estado='Dado de baja'`. `Dim_Cliente` no tiene columna `activo` — el estado de la cuenta se determina exclusivamente por `estado`.
 
 ### RN-CTA-004
 Una cuenta dada de baja no puede reactivarse desde este módulo. La reactivación requiere intervención del Administrador a nivel de base de datos o un proceso administrativo especial.
@@ -122,20 +128,20 @@ Una cuenta dada de baja no puede reactivarse desde este módulo. La reactivació
 Los usuarios de una cuenta dada de baja conservan su registro histórico pero no pueden operar. Al ejecutar la baja, el sistema debe expulsar inmediatamente todas sus sesiones activas en `Fact_Session`.
 
 ### RN-CTA-006
-Las notificaciones por correo de transferencia (O10) y baja (O11) son obligatorias. El fallo de envío no debe revertir la operación, pero debe registrarse en logs del sistema.
+Las notificaciones por correo de transferencia (O15) y baja (O16) son obligatorias. El fallo de envío no debe revertir la operación, pero debe registrarse en logs del sistema.
 
 ## 7. Entradas
 
-### Para gestión de perfil (CU-O03)
+### Para gestión de perfil (CU-O13)
 razon_social, nombre, logo_url.
 
-### Para preferencias (CU-O03)
+### Para preferencias (CU-O14)
 umbrales_alerta, canales_notificacion, telefono_sms, zonas_geograficas, destinatarios_reportes, frecuencia_reportes, formato_reportes.
 
-### Para transferencia de propiedad (CU-O10)
+### Para transferencia de propiedad (CU-O15)
 id_nuevo_responsable (debe pertenecer a la misma cuenta).
 
-### Para baja de cuenta (CU-O11)
+### Para baja de cuenta (CU-O16)
 idcliente, motivo (opcional, persistido solo en logs de auditoría).
 
 ## 8. Salidas
@@ -150,32 +156,32 @@ idcliente, motivo (opcional, persistido solo en logs de auditoría).
 
 ### Estados de Dim_Cliente
 - **Activo**: cuenta en operación normal.
-- **Dado de baja**: cuenta desactivada (O11). No existe columna `activo` en `Dim_Cliente`; el estado de la cuenta se determina exclusivamente por `estado`.
+- **Dado de baja**: cuenta desactivada (O16). No existe columna `activo` en `Dim_Cliente`; el estado de la cuenta se determina exclusivamente por `estado`.
 
 ### admin_local_id (Dim_Cliente)
-- Apunta al usuario que actualmente es el Administrador Principal de la cuenta (O10).
+- Apunta al usuario que actualmente es el Administrador Principal de la cuenta (O15).
 
 ## 10. Escenarios
 
-### Escenario 1: Actualización de perfil y preferencias (O03)
+### Escenario 1: Actualización de perfil y preferencias (CU-O13 / CU-O14)
 Cliente modifica `razon_social`, `telefono_sms` y umbrales de alerta → sistema actualiza Dim_Cliente y Dim_Preferencias_Cliente → logs.
 
-### Escenario 2: Transferencia de propiedad (O10)
+### Escenario 2: Transferencia de propiedad (O15)
 Cliente actual (admin_local_id) selecciona nuevo responsable de la misma cuenta → sistema actualiza Dim_Cliente.admin_local_id → nuevo responsable asume administración → notificación por correo a ambos involucrados.
 
-### Escenario 3: Baja de cuenta (O11)
+### Escenario 3: Baja de cuenta (O16)
 Administrador da de baja cuenta → `Dim_Cliente.estado='Dado de baja'` → sistema expulsa todas las sesiones activas de usuarios de la cuenta → notificación por correo al admin local → datos históricos preservados → cuenta no puede operar.
 
 ## 11. Criterios de aceptación
 
 ### CA-CTA-001
-Cliente puede editar perfil corporativo y preferencias (O03). Cambios registrados en logs.
+Cliente puede editar perfil corporativo (CU-O13) y preferencias (CU-O14). Cambios registrados en logs.
 
 ### CA-CTA-002
-Cliente puede transferir propiedad de la cuenta a otro usuario de la misma cuenta (O10).
+Cliente puede transferir propiedad de la cuenta a otro usuario de la misma cuenta (O15).
 
 ### CA-CTA-003
-Administrador puede dar de baja una cuenta. `Dim_Cliente.estado='Dado de baja'`. Datos históricos preservados (O11).
+Administrador puede dar de baja una cuenta. `Dim_Cliente.estado='Dado de baja'`. Datos históricos preservados (O16).
 
 ### CA-CTA-004
 Una cuenta dada de baja no puede iniciar sesión ni operar. Todas las sesiones activas de sus usuarios quedan expulsadas al momento de la baja.
@@ -184,7 +190,7 @@ Una cuenta dada de baja no puede iniciar sesión ni operar. Todas las sesiones a
 Los datos de la cuenta (usuarios, sesiones, preferencias) permanecen íntegros tras la baja.
 
 ### CA-CTA-006
-Transferencia (O10) y baja (O11) generan notificación por correo SMTP a los usuarios involucrados. El fallo de envío se registra en logs sin revertir la operación.
+Transferencia (O15) y baja (O16) generan notificación por correo SMTP a los usuarios involucrados. El fallo de envío se registra en logs sin revertir la operación.
 
 ## 12. Dependencias
 

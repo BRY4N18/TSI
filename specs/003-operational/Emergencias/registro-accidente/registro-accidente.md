@@ -2,7 +2,7 @@
 
 **Ubicación:** `specs/003-operational/Emergencias/registro-accidente/`  
 **Departamento:** Emergencias  
-**CUs:** CU-O21, CU-O32, CU-O40, CU-O41 (+ consulta/edición RF-REG-005)
+**CUs:** CU-O56, CU-O58, CU-O73, CU-O57 (+ consulta/edición RF-REG-005)
 
 Índice global del módulo (no es una spec Speckit). La feature activa de Speckit es **una capa** (`backend` o `frontend`), apuntada por `.specify/feature.json`.
 

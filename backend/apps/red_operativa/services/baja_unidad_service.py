@@ -15,6 +15,7 @@ from core.repositories.red_operativa.unidad_emergencia_repository import (
 
 TIPO_BAJA_NORMAL = "Normal"
 TIPO_BAJA_FORZADA = "Forzada_con_reasignación"
+ROLE_ADMIN = "Administrador"
 
 
 class BajaUnidadService:
@@ -40,13 +41,25 @@ class BajaUnidadService:
         forzar: bool = False,
     ) -> dict[str, Any]:
         unidad = self.unidad_repo.find_by_id(idunidademergencia)
-        self.access.require_unidad_propia(user_id=idusuario, roles=roles, unidad=unidad)
+        if not unidad:
+            raise LookupError("Unidad no encontrada")
 
         despacho_activo = self.despacho_repo.find_despacho_activo(idunidademergencia)
-        if despacho_activo and not forzar:
-            raise ValueError(
-                "La unidad tiene un despacho activo; se requiere forzar la baja explícitamente"
-            )
+        if despacho_activo:
+            # SRS 3.5.1: única excepción al autoservicio del proveedor — la baja
+            # de una unidad con despacho activo requiere intervención de un
+            # Administrador (RF-O42.4); el proveedor no puede autoforzarla.
+            if ROLE_ADMIN not in roles:
+                raise PermissionError(
+                    "La unidad tiene un despacho activo; solo un Administrador puede "
+                    "ejecutar la baja forzada. Espere al cierre del caso."
+                )
+            if not forzar:
+                raise ValueError(
+                    "La unidad tiene un despacho activo; se requiere forzar la baja explícitamente"
+                )
+        else:
+            self.access.require_unidad_propia(user_id=idusuario, roles=roles, unidad=unidad)
 
         self.baja_repo.create(
             {

@@ -1,4 +1,4 @@
-"""CU-O38 — coordinación de despacho múltiple."""
+"""CU-O66 — coordinación de despacho múltiple."""
 
 from __future__ import annotations
 

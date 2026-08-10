@@ -25,14 +25,14 @@
 
 | Story | Prioridad | CU/RF | Escenarios spec / quickstart |
 |-------|-----------|-------|------------------------------|
-| US1 | P1 🎯 MVP | RF-001 O106, RF-010 O111 | Esc. 0, 15; quickstart A (parcial) |
+| US1 | P1 🎯 MVP | RF-001 O26/O27, RF-010 O28 | Esc. 0, 15; quickstart A (parcial) |
 | US9 | P1 🎯 MVP delta | RF-001 listado + RNF-005a / CA-016 | Esc. 15b, 15c; quickstart **H** (reopen US1 listado) |
-| US2 | P1 | RF-002 O101 | Esc. 1, 1b, 2 |
-| US3 | P1 | RF-004 O107, RF-005 O102 | Esc. 6, 6b, 7–9; jobs facturación/dunning |
-| US4 | P1 | RF-007 O105 | Esc. 10, 11, 11b; quickstart D |
-| US5 | P2 | RF-003 O104 | Esc. 3–5, 4b, 4c |
-| US6 | P2 | RF-008 O109, RF-009 O110 | Esc. 12, 13; renovación + cancelación |
-| US7 | P2 | RF-006 O108 | Esc. 14; quickstart F |
+| US2 | P1 | RF-002 O29 | Esc. 1, 1b, 2 |
+| US3 | P1 | RF-004 O30, RF-005 O31 | Esc. 6, 6b, 7–9; jobs facturación/dunning |
+| US4 | P1 | RF-007 O35/O36 | Esc. 10, 11, 11b; quickstart D |
+| US5 | P2 | RF-003 O33/O34 | Esc. 3–5, 4b, 4c |
+| US6 | P2 | RF-008 O32, RF-009 O37 | Esc. 12, 13; renovación + cancelación |
+| US7 | P2 | RF-006 O38 | Esc. 14; quickstart F |
 | US8 | P2 | Frontend Angular | guards + pages + API services |
 
 ---

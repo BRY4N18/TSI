@@ -96,7 +96,7 @@ class AccidenteListCreateView(APIView):
                         "code": "409",
                         "advertencias": exc.advertencias,
                         # El caso duplicado no existe todavía: el 409 rechaza el
-                        # alta, así que la fusión (CU-O41) opera sobre
+                        # alta, así que la fusión (CU-O57) opera sobre
                         # `idaccidente_similar`, el reporte ya registrado.
                         "idaccidente_similar": dup_id,
                         "idaccidente_principal_sugerido": exc.parent_suggested,

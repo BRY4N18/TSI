@@ -9,6 +9,10 @@
 
 ## Clarifications
 
+### Session 2026-08-07 (auditoría — continuidad registro→demo)
+
+- Q: ¿Cómo llega el visitante real de `registro-publico` a `demo-interactiva`? → A: **Bug corregido.** La página de registro descartaba `demo_grant`/`idprospecto` de la respuesta del POST y la demo exigía tecleo manual — un prospecto real nunca podía llegar a la demo. Corregido: `registro-publico.page.ts` captura ambos valores y muestra un botón "Probar la demo interactiva ahora" con `routerLink` + `queryParams` (`idprospecto`, `grant`) hacia `/ventas-crm/demo`; `demo-interactiva.page.ts` lee esos query params en `ngOnInit` y abre la sesión automáticamente si están presentes. El form manual se conserva como fallback (acceso directo a `/ventas-crm/demo` sin query params).
+
 ### Session 2026-07-30 (UI)
 
 - Q: ¿Autenticación demo? → A: Sin JWT usuario; `DemoSessionInterceptor` envía token de sesión demo en interacciones (RF-NV-001, RN-NV-005).
@@ -30,7 +34,8 @@ Mismo grant reemite token si demo aún activa — sin nuevo inicio_sesion en UI 
 
 ## Functional Requirements (UI)
 
-- **FR-UI-001**: Página `demo-interactiva` — form grant + idprospecto; estados error grant inválido/expirado (RF-NV-001).
+- **FR-UI-001**: Página `demo-interactiva` — lee `idprospecto`/`grant` de query params (continuación desde `registro-publico`) y abre sesión automáticamente si están presentes; conserva form manual como fallback; estados error grant inválido/expirado (RF-NV-001).
+- **FR-UI-010**: Página `registro-publico` (`commercial-pipeline-prospects/frontend`) captura `demo_grant`/`idprospecto` de la respuesta de registro y enlaza a `/ventas-crm/demo` con esos query params — continuación natural del embudo hacia la demo (SRS §3.1.2).
 - **FR-UI-002**: Tras canje exitoso, UI demo emite eventos click/tiempo_seccion vía API (RF-NV-001).
 - **FR-UI-003**: `DemoSessionInterceptor` adjunta token demo en requests de interacción (RN-NV-005).
 - **FR-UI-004**: `DemoApiService` — start/resume/interact según contrato backend.

@@ -94,6 +94,33 @@ import { TipoCliente } from '../../models/prospectos.types';
             />
           </label>
 
+          <h2 class="m-0 text-base font-semibold text-text-primary">
+            Administrador local (primer usuario de la cuenta)
+          </h2>
+
+          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
+            Nombres
+            <input
+              formControlName="admin_nombres"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
+            Apellidos
+            <input
+              formControlName="admin_apellidos"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            />
+          </label>
+          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
+            Correo electrónico
+            <input
+              type="email"
+              formControlName="admin_gmail"
+              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            />
+          </label>
+
           @if (error()) {
             <div
               class="flex items-center gap-2 rounded-md border border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
@@ -140,13 +167,29 @@ export class EntradaDirectaPage {
     razon_social: ['', Validators.required],
     tipo: ['Municipio' as TipoCliente, Validators.required],
     nit_identificacion: ['', Validators.required],
+    admin_nombres: ['', Validators.required],
+    admin_apellidos: ['', Validators.required],
+    admin_gmail: ['', [Validators.required, Validators.email]],
   });
 
   enviar(): void {
     if (this.form.invalid) return;
     this.loading.set(true);
     this.error.set(null);
-    this.api.entradaDirecta(this.form.getRawValue()).subscribe({
+    const raw = this.form.getRawValue();
+    this.api
+      .entradaDirecta({
+        nombre: raw.nombre,
+        razon_social: raw.razon_social,
+        tipo: raw.tipo,
+        nit_identificacion: raw.nit_identificacion,
+        admin_local: {
+          nombres: raw.admin_nombres,
+          apellidos: raw.admin_apellidos,
+          gmail: raw.admin_gmail.trim().toLowerCase(),
+        },
+      })
+      .subscribe({
       next: () => {
         this.loading.set(false);
         this.success.set(true);
@@ -168,6 +211,9 @@ export class EntradaDirectaPage {
       razon_social: '',
       tipo: 'Municipio',
       nit_identificacion: '',
+      admin_nombres: '',
+      admin_apellidos: '',
+      admin_gmail: '',
     });
   }
 }

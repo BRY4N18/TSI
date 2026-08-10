@@ -11,12 +11,12 @@
 
 ## Summary
 
-Implementar gestión de cuenta corporativa (CU-O03, CU-O10, CU-O11) con enfoque **contract-first**: primero contrato OpenAPI REST bajo `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía Kafka; finalmente frontend Angular 17+ con servicios tipados, guards de autorización y aislamiento por cuenta.
+Implementar gestión de cuenta corporativa (CU-O13/CU-O14, CU-O15, CU-O16) con enfoque **contract-first**: primero contrato OpenAPI REST bajo `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía Kafka; finalmente frontend Angular 17+ con servicios tipados, guards de autorización y aislamiento por cuenta.
 
 ## Traceability
 
 - **Objetivo Operacional (OP)**: OP-TSI-CTA-01 (autogestión de cuenta corporativa con trazabilidad y seguridad).
-- **UC cubiertos**: CU-O03, CU-O10, CU-O11.
+- **UC cubiertos**: CU-O13/CU-O14, CU-O15, CU-O16.
 - **Mapeo de cumplimiento**:
   - Contract-first REST versionado (`/api/v1/cuentas-clientes/...`).
   - Patrón Vista→Servicio→Repositorio; Kafka como único canal de escritura.
@@ -47,7 +47,7 @@ Implementar gestión de cuenta corporativa (CU-O03, CU-O10, CU-O11) con enfoque 
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Functional Suitability: PASS — cubre CU-O03/O10/O11 y criterios CA-CTA-001..006.
+- Functional Suitability: PASS — cubre CU-O13/O14/O15/O16 y criterios CA-CTA-001..006.
 - Reliability: PASS — baja expulsa sesiones; notificación fallida no revierte operación (RN-CTA-006).
 - Performance Efficiency: PASS — objetivos p95 y disponibilidad 99.9% explicitados.
 - Interaction Capability: PASS — guards Angular separan admin local, scope de cuenta y rol Administrador.

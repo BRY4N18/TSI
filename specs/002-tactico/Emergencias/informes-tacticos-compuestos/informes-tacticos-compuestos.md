@@ -9,6 +9,8 @@
 
 **Estado (2026-08-02):** capa **backend completa y verificada contra el stack real** — 3 DAGs corriendo en `tactico-airflow-scheduler` (horario `@daily`, activos), 3 tablas materializadas en ClickHouse, 3 endpoints Django probados con `curl` de punta a punta (Pinot → DAG → ClickHouse → HTTP). Suite completa del backend: 1006 passed, 0 rotos. Pendiente: `frontend/` (integrar las 3 tarjetas en los workpanels de `informes-tacticos-simples/frontend`, que tampoco existe todavía).
 
+**Actualización (2026-08-06):** los 3 DAGs migraron a `dags/` (raíz del repo, reemplaza `docker/tactico/airflow-dags/`) y al patrón extract/transform/load-parquet definido en `../../infraestructura/`. Ver `backend/data-model.md` y `backend/tasks.md` (Addendum 2026-08-06) para el detalle — esquemas ClickHouse y endpoints Django sin cambios.
+
 ## Capas
 
 | Capa | Ruta Speckit | Autoridad | Artefactos |

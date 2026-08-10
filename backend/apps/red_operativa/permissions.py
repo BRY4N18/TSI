@@ -45,6 +45,20 @@ class IsAdministradorRedOperativa(BasePermission):
         return ROLE_ADMIN in getattr(user, "roles", [])
 
 
+class IsProveedorFlotaOrAdministrador(BasePermission):
+    """CU-O42 baja: autoservicio del Proveedor + única excepción de baja forzada
+    con despacho activo, reservada a Administrador (RF-O42.4). La validación de
+    quién puede completar la baja forzada vive en BajaUnidadService, no aquí."""
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        if ROLE_ADMIN in getattr(user, "roles", []):
+            return True
+        return IsProveedorFlota().has_permission(request, view)
+
+
 class IsDirectorTecnologico(BasePermission):
     """Exclusivo para CU-O61 (re-evaluar/despublicar región en producción)."""
 

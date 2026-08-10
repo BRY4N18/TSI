@@ -1,4 +1,4 @@
-"""CU-O23 — notificación push/SMS con fail-fast."""
+"""CU-O60 — notificación push/SMS con fail-fast."""
 
 from __future__ import annotations
 

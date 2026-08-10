@@ -1,4 +1,4 @@
-"""RF-TIC-006 / RF-TIC-002 paso 7 (CU-O92) — confirmación de cierre y auto-cierre."""
+"""RF-TIC-006 / RF-TIC-002 paso 7 (CU-O87) — confirmación de cierre y auto-cierre."""
 
 from __future__ import annotations
 
@@ -22,10 +22,14 @@ class ConfirmarCierreService:
         self.reclamo_repo = reclamo_repo or ReclamoRepository()
         self.historial_repo = historial_repo or HistorialTicketRepository()
 
-    def confirmar(self, id_reclamo: int, *, idusuario: int | None = None) -> dict:
+    def confirmar(
+        self, id_reclamo: int, *, idcliente: int, idusuario: int | None = None
+    ) -> dict:
         reclamo = self.reclamo_repo.find_by_id(id_reclamo)
         if not reclamo:
             raise LookupError(f"Ticket {id_reclamo} no encontrado")
+        if reclamo.get("idcliente") != idcliente:
+            raise PermissionError("Ticket no pertenece al cliente")
         if reclamo["estado"] != ESTADO_RESUELTO:
             raise ValueError("El ticket no está en Resuelto")
 

@@ -1,6 +1,6 @@
 # Quickstart — Validación Seguimiento y Cierre de Casos
 
-Guía de validación end-to-end contract-first para CU-O25–O29, O37, O39, O42, O44 y RF-SEG-001–011.
+Guía de validación end-to-end contract-first para CU-O68–O82, O69, O71, O72, O81 y RF-SEG-001–011.
 
 ## Prerrequisitos
 
@@ -16,15 +16,15 @@ Guía de validación end-to-end contract-first para CU-O25–O29, O37, O39, O42,
 |--------|------|-------|
 | `GET` | `/api/v1/seguimiento/mapa` | RF-SEG-007 |
 | `GET` | `/api/v1/seguimiento/stream` | RF-SEG-007 (SSE) |
-| `GET` | `/api/v1/accidentes/{idaccidente}/seguimiento` | O25/O26 |
-| `POST` | `/api/v1/mi-seguimiento/posicion` | CU-O25 |
-| `POST` | `/api/v1/mi-seguimiento/despachos/{iddespacho}/llegada` | CU-O26 |
-| `POST` | `/api/v1/mi-seguimiento/despachos/{iddespacho}/abortar` | CU-O39 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/cerrar` | CU-O28 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/cancelar` | CU-O42 |
-| `POST` | `/api/v1/despachos/{iddespacho}/forzar-retiro` | CU-O44 |
+| `GET` | `/api/v1/accidentes/{idaccidente}/seguimiento` | O68/O70 |
+| `POST` | `/api/v1/mi-seguimiento/posicion` | CU-O68 |
+| `POST` | `/api/v1/mi-seguimiento/despachos/{iddespacho}/llegada` | CU-O70 |
+| `POST` | `/api/v1/mi-seguimiento/despachos/{iddespacho}/abortar` | CU-O71 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/cerrar` | CU-O80 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/cancelar` | CU-O72 |
+| `POST` | `/api/v1/despachos/{iddespacho}/forzar-retiro` | CU-O81 |
 | `GET` | `/api/v1/emergencias/historial` | RF-SEG-005 |
-| `GET` | `/api/v1/emergencias/historial/{idaccidente}/expediente` | CU-O29 |
+| `GET` | `/api/v1/emergencias/historial/{idaccidente}/expediente` | CU-O82 |
 | `GET` | `/api/v1/cliente/expedientes` | RF-SEG-006 |
 | `GET` | `/api/v1/cliente/expedientes/{idaccidente}` | RF-SEG-006 |
 | `GET` | `/api/v1/cliente/expedientes/{idaccidente}/pdf` | RF-SEG-006 |
@@ -36,53 +36,53 @@ Convenciones (`api-standards.md`):
 - `Idempotency-Key` en escrituras
 - SSE: `Accept: text/event-stream`
 
-**Flujos internos (sin REST):** geofencing O26, job O37, job depuración GPS, consumer `DespachoAbortado` — ver `plan.md`.
+**Flujos internos (sin REST):** geofencing O70, job O69, job depuración GPS, consumer `DespachoAbortado` — ver `plan.md`.
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio + Kafka)
 
-### Escenario A — Rastreo GPS O25
+### Escenario A — Rastreo GPS O68
 
 1. Despacho Confirmado (`despacho-inteligente` quickstart escenario B).
 2. Login como `Unidad`; `POST /mi-seguimiento/posicion` cada 10s con `Idempotency-Key` único.
 3. **Esperado:** eventos en `Dim_HistorialUbicacionUnidadEmergencia_topic` y `Dim_UnidadEmergencia_topic`; operador ve posición en SSE `seguimiento.posicion`.
 
-### Escenario B — Llegada manual O26
+### Escenario B — Llegada manual O70
 
 1. Unidad en camino cerca del sitio.
 2. `POST .../llegada`.
 3. **Esperado:** historial `En_sitio`, `fechahorallegada` en `Fact_Despacho`, caso `EN_ATENCION`.
 
-### Escenario C — Llegada geofencing O26
+### Escenario C — Llegada geofencing O70
 
 1. Enviar posiciones GPS dentro de 100m del accidente por >30s.
 2. **Esperado:** llegada automática en respuesta GPS (`llegada_automatica: true`); notificación a app unidad.
 
-### Escenario D — Cierre multi-despacho O28
+### Escenario D — Cierre multi-despacho O80
 
 1. Caso con grúa + ambulancia; ambulancia ya Retirado.
 2. Operador `POST .../cerrar` con `resultado_atencion`.
 3. **Esperado:** grúa auto-retirada con `idusuario` = operador; `horafin`/`duracionminutos`; caso `CERRADO`; unidades `Activa`.
 
-### Escenario E — Cancelación O42
+### Escenario E — Cancelación O72
 
 1. Caso falsa alarma con unidad despachada.
 2. `POST .../cancelar` con `{ "motivo": "Falsa alarma" }`.
 3. **Esperado:** CERRADO + `horafin`; motivo en `Dim_NotaAccidente`; **sin** campos RF-SEG-004 ni `Dim_EvidenciaFoto`.
 
-### Escenario F — Forzar retiro O44
+### Escenario F — Forzar retiro O81
 
 1. Técnico olvida retiro; operador `POST /despachos/{id}/forzar-retiro`.
 2. **Esperado:** Retirado con `idusuario` operador; si todos retirados → CERRADO; si no → `EN_ATENCION`.
 
-### Escenario G — Abortar misión O39
+### Escenario G — Abortar misión O71
 
 1. Unidad `POST .../abortar`.
-2. **Esperado:** historial `Abortado`, unidad `Activa`, evento `DespachoAbortado_topic`, consumer despacho dispara O36.
+2. **Esperado:** historial `Abortado`, unidad `Activa`, evento `DespachoAbortado_topic`, consumer despacho dispara O63.
 
-### Escenario H — Pérdida señal GPS O37
+### Escenario H — Pérdida señal GPS O69
 
 1. Detener POST posición >60s con unidad en camino.
-2. Ejecutar job O37.
+2. Ejecutar job O69.
 3. **Esperado:** alerta `Dim_NotaAccidente` tipo `alerta`; `Fact_Despacho` sin cambios; SSE `seguimiento.alerta_gps`.
 
 ### Escenario I — Historial operador y expediente cliente
@@ -123,7 +123,7 @@ Escenarios UI mínimos:
 
 - Contract tests por endpoint (`tests/api/test_seguimiento_*_contract.py`) contra OpenAPI.
 - Unit tests `CerrarCasoService` (auto-retiro, idusuario), `GeofencingEvaluator`, `ExpedienteService` (filtro condado).
-- Job tests O37 y depuración GPS (3 puntos conservados).
+- Job tests O69 y depuración GPS (3 puntos conservados).
 
 **Frontend:**
 
@@ -135,7 +135,7 @@ Escenarios UI mínimos:
 1. Validar OpenAPI como gate (`contracts/seguimiento-cierre-de-casos.openapi.yaml`).
 2. Repositorios Kafka + topics en `settings.py`.
 3. Servicios dominio (GPS → geofencing → cierre).
-4. Jobs O37 + depuración.
+4. Jobs O69 + depuración.
 5. Views DRF + permisos JWT.
 6. Contract tests.
 7. Módulo Angular `seguimiento/` (servicios → guards → páginas).

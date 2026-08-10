@@ -1,4 +1,4 @@
-"""RF-TIC-005 (CU-O97) — reapertura de ticket cerrado con renovación de SLA.
+"""RF-TIC-005 (CU-O88) — reapertura de ticket cerrado con renovación de SLA.
 
 research.md Decision 8 (clarificación Session 2026-07-21): reutiliza
 `AsignacionSLAService` para recalcular el SLA contra la configuración vigente
@@ -47,6 +47,7 @@ class ReabrirTicketService:
         self,
         id_reclamo: int,
         *,
+        idcliente: int,
         idusuario: int | None = None,
         motivo: str | None = None,
         adjuntos: list[tuple[bytes, str]] | None = None,
@@ -54,6 +55,8 @@ class ReabrirTicketService:
         reclamo = self.reclamo_repo.find_by_id(id_reclamo)
         if not reclamo:
             raise LookupError(f"Ticket {id_reclamo} no encontrado")
+        if reclamo.get("idcliente") != idcliente:
+            raise PermissionError("Ticket no pertenece al cliente")
         if reclamo["estado"] != ESTADO_CERRADO:
             raise ValueError("Solo un ticket Cerrado puede reabrirse")
 

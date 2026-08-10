@@ -3,9 +3,11 @@ info:
   title: TSI Incorporación de Clientes API
   version: 1.2.0
   description: >
-    Contrato (2026-07-25): CU-O14 autorregistro, CU-O16 aprobar/rechazar/anular,
-    CU-O02/O09 onboarding (logo cliente), CU-O08 reenviar invitación.
-    CU-O01 y CU-O12 retirados (HTTP 410). Plan → Suscripciones.
+    Numeración de CU corregida 2026-08-08 al catálogo vigente (TSI-Catalogo-CU-RF-RNF.md).
+    Contrato (2026-07-25): CU-O09 autorregistro, CU-O10 aprobar/rechazar/anular,
+    CU-O11 onboarding (incluye RF-O11.2 guardar progreso; logo cliente), CU-O12 reenviar invitación.
+    Registro directo y config. plan+logo (legado, sin CU vigente) retirados (HTTP 410) —
+    no confundir con el CU-O12 vigente de arriba. Plan → Suscripciones.
 servers:
   - url: /api/v1
 tags:
@@ -15,12 +17,12 @@ tags:
   - name: Invitacion
   - name: Logo
   - name: Retirado
-    description: CU-O01/O12 — responden 410 Gone
+    description: Registro directo / config. plan+logo (legado, sin CU vigente) — responden 410 Gone
 paths:
   /cuentas-clientes/autorregistro:
     post:
       tags: [Autorregistro]
-      summary: Autorregistro (CU-O14) — estado Pendiente_Aprobación
+      summary: Autorregistro (CU-O09) — estado Pendiente_Aprobación
       operationId: autorregistrarProveedor
       security: []
       parameters:
@@ -46,7 +48,7 @@ paths:
   /cuentas-clientes/solicitudes:
     get:
       tags: [Aprobacion]
-      summary: Listar solicitudes Pendiente_Aprobación o Rechazado (CU-O16)
+      summary: Listar solicitudes Pendiente_Aprobación o Rechazado (CU-O10)
       operationId: listarSolicitudesProveedor
       security:
         - bearerAuth: []
@@ -72,7 +74,7 @@ paths:
   /cuentas-clientes/{idcliente}/aprobacion:
     post:
       tags: [Aprobacion]
-      summary: Aprobar o rechazar solicitud (CU-O16)
+      summary: Aprobar o rechazar solicitud (CU-O10)
       operationId: decidirSolicitudProveedor
       security:
         - bearerAuth: []
@@ -106,7 +108,7 @@ paths:
   /cuentas-clientes/{idcliente}/anular-rechazo:
     post:
       tags: [Aprobacion]
-      summary: Soft-anular Rechazado → Rechazado_Anulado (libera NIT para nuevo O14)
+      summary: Soft-anular Rechazado → Rechazado_Anulado (libera NIT para nuevo O09)
       operationId: anularRechazoProveedor
       security:
         - bearerAuth: []
@@ -133,19 +135,19 @@ paths:
     post:
       tags: [Retirado]
       deprecated: true
-      summary: "[RETIRADO] CU-O01 — responde 410 Gone"
+      summary: "[RETIRADO] Registro directo (legado, sin CU vigente) — responde 410 Gone"
       operationId: registrarCuentaCliente
       security:
         - bearerAuth: []
       responses:
         '410':
-          description: Endpoint retirado — usar autorregistro O14 + aprobación O16
+          description: Endpoint retirado — usar autorregistro CU-O09 + aprobación CU-O10
 
   /cuentas-clientes/{idcliente}/configuracion:
     patch:
       tags: [Retirado]
       deprecated: true
-      summary: "[RETIRADO] CU-O12 — responde 410 Gone"
+      summary: "[RETIRADO] Config. plan+logo (legado, sin CU vigente) — responde 410 Gone"
       operationId: configurarCuentaCliente
       security:
         - bearerAuth: []
@@ -158,7 +160,7 @@ paths:
   /cuentas-clientes/{idcliente}/logo/upload-url:
     post:
       tags: [Logo]
-      summary: URL firmada para subir logo (cliente en onboarding O02 / perfil — no Admin)
+      summary: URL firmada para subir logo (cliente en onboarding CU-O11 / perfil — no Admin)
       operationId: createOnboardingLogoUploadUrl
       security:
         - bearerAuth: []
@@ -189,7 +191,7 @@ paths:
   /cuentas-clientes/{idcliente}/onboarding/progreso:
     get:
       tags: [Onboarding]
-      summary: Consultar progreso y etapa actual del onboarding (CU-O09)
+      summary: Consultar progreso y etapa actual del onboarding (CU-O11, RF-O11.2)
       operationId: getOnboardingProgreso
       security:
         - bearerAuth: []
@@ -212,7 +214,7 @@ paths:
   /cuentas-clientes/{idcliente}/onboarding/etapas:
     post:
       tags: [Onboarding]
-      summary: Completar una etapa del onboarding digital (CU-O02)
+      summary: Completar una etapa del onboarding digital (CU-O11)
       operationId: completarOnboardingEtapa
       security:
         - bearerAuth: []
@@ -246,7 +248,7 @@ paths:
   /cuentas-clientes/{idcliente}/invitacion/reenviar:
     post:
       tags: [Invitacion]
-      summary: Reenviar invitación con contraseña temporal (CU-O08)
+      summary: Reenviar invitación con contraseña temporal (CU-O12)
       operationId: reenviarInvitacion
       security:
         - bearerAuth: []

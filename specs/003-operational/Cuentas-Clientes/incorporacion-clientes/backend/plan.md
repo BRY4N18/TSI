@@ -11,16 +11,18 @@
 
 ## Summary
 
-**Actualización 2026-07-25:** Phase 10 — O01/O12 **retirados** (410); O16 + email SMTP + soft-anular `Rechazado_Anulado`; O08 UI en solicitudes/wizard; login permitido en pendiente. Ver `spec.md` Session 2026-07-25.
+**Numeración de CU corregida 2026-08-08** al catálogo vigente (ver `spec.md` Clarifications). En las secciones históricas de abajo, "O01" y las menciones de "O12" ligadas a plan/logo/configuración son las **capacidades retiradas sin CU vigente** (registro directo / config. plan+logo) — no confundir con el **CU-O12 vigente** (reenviar invitación).
 
-Plan original (2026-07-09): alta/configuración/onboarding (antes O01, O12, O02, O09, O08) contract-first.
+**Actualización 2026-07-25:** Phase 10 — registro directo / config. plan+logo **retirados** (410); CU-O10 + email SMTP + soft-anular `Rechazado_Anulado`; CU-O12 (reenviar invitación) con UI en solicitudes/wizard; login permitido en pendiente. Ver `spec.md` Session 2026-07-25.
+
+Plan original (2026-07-09): alta/configuración/onboarding (antes registro directo, config. plan+logo, onboarding, guardar progreso, reenviar invitación) contract-first.
 
 ## Traceability
 
 - **Objetivo Operacional (OP)**: OP-TSI-ONB-01.
-- **UC cubiertos (canónicos)**: CU-O14, CU-O16 (aprobar/rechazar/anular), CU-O02, CU-O09, CU-O08.
-- **Retirados (410)**: CU-O01, CU-O12.
-- **Delta 2026-07-25**: soft-anular; email O16; hard-kill O01/O12; login OK en pendiente.
+- **UC cubiertos (canónicos)**: CU-O09 (autorregistro), CU-O10 (aprobar/rechazar/anular), CU-O11 (onboarding, incluye RF-O11.2 guardar progreso), CU-O12 (reenviar invitación).
+- **Retirados (410), sin CU vigente**: registro directo, config. plan+logo.
+- **Delta 2026-07-25**: soft-anular; email CU-O10; hard-kill registro directo / config. plan+logo; login OK en pendiente.
 
 ## Technical Context
 
@@ -36,7 +38,7 @@ Plan original (2026-07-09): alta/configuración/onboarding (antes O01, O12, O02,
 
 **Project Type**: Aplicación web (backend + frontend)
 
-**Performance Goals**: Autorregistro O14 < 3 min usuario (RNF-ONB-001); p95 autorregistro API ≤ 800 ms; p95 etapa onboarding ≤ 500 ms; onboarding 24/7 (RNF-ONB-002)
+**Performance Goals**: Autorregistro CU-O09 < 3 min usuario (RNF-ONB-001); p95 autorregistro API ≤ 800 ms; p95 etapa onboarding ≤ 500 ms; onboarding 24/7 (RNF-ONB-002)
 
 **Constraints**: `/api/v1/`, envelope estándar, `Idempotency-Key` en escrituras, sin INSERT/UPDATE directo a Pinot, scope Cliente vía `admin_local_id`
 
@@ -46,11 +48,11 @@ Plan original (2026-07-09): alta/configuración/onboarding (antes O01, O12, O02,
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Functional Suitability: PASS — O14/O16/O02/O09/O08; O01/O12 retirados (410); CA-ONB-001..011.
+- Functional Suitability: PASS — CU-O09/O10/O11/O12; registro directo / config. plan+logo retirados (410); CA-ONB-001..011.
 - Reliability: PASS — progreso persistido en Fact_Onboarding; reanudación sin pérdida (RN-ONB-005).
-- Performance Efficiency: PASS — RNF-ONB-001/002 explicitados; objetivos p95 O14/onboarding.
+- Performance Efficiency: PASS — RNF-ONB-001/002 explicitados; objetivos p95 CU-O09/onboarding.
 - Interaction Capability: PASS — design-system tokens + HTML separado; wizard con guards (CA-ONB-011).
-- Security: PASS — JWT + sesión; O16 solo Administrador; scope por `admin_local_id`; O01/O12 410.
+- Security: PASS — JWT + sesión; CU-O10 solo Administrador; scope por `admin_local_id`; registro directo / config. plan+logo 410.
 - Compatibility: PASS — contrato OpenAPI versionado; reutiliza patrones auth y gestion-cuentas (logo Blob).
 - Maintainability: PASS — capas Vista→Servicio→Repositorio; tipos TS alineados al contrato.
 - Flexibility: PASS — etapas opcionales por plan diferidas; SMTP por env.
@@ -79,13 +81,13 @@ specs/003-operational/Cuentas-Clientes/incorporacion-clientes/backend/
 backend/
 ├── apps/cuentas_clientes/
 │   ├── views/
-│   │   └── onboarding_views.py           # O14, O16, O02/O09, O08; O01/O12 → 410
+│   │   └── onboarding_views.py           # CU-O09, CU-O10, CU-O11 (incluye RF-O11.2), CU-O12; registro directo / config. plan+logo → 410
 │   ├── services/
-│   │   ├── autorregistro_proveedor_service.py  # CU-O14
-│   │   ├── aprobacion_proveedor_service.py     # CU-O16 (+ anular)
-│   │   ├── onboarding_service.py               # CU-O02, O09
-│   │   ├── invitacion_service.py               # CU-O08
-│   │   └── onboarding_notificacion_service.py  # O14/O16/O08 SMTP
+│   │   ├── autorregistro_proveedor_service.py  # CU-O09
+│   │   ├── aprobacion_proveedor_service.py     # CU-O10 (+ anular)
+│   │   ├── onboarding_service.py               # CU-O11, O09
+│   │   ├── invitacion_service.py               # CU-O12
+│   │   └── onboarding_notificacion_service.py  # O09/O10/O12 SMTP
 │   ├── management/commands/
 │   │   └── send_onboarding_reminders.py  # RN-ONB-004
 │   └── tests/
@@ -113,9 +115,9 @@ frontend/src/app/
 │   │   ├── onboarding-pendiente.guard.ts
 │   │   └── onboarding-completado.guard.ts
 │   └── pages/
-│       ├── autorregistro/                # Público: O14 (+ HTML design-system)
-│       ├── aprobacion-solicitudes/       # Admin: O16 + O08
-│       └── onboarding-wizard/            # Cliente: O02 + O08
+│       ├── autorregistro/                # Público: O09 (+ HTML design-system)
+│       ├── aprobacion-solicitudes/       # Admin: O10 + O12
+│       └── onboarding-wizard/            # Cliente: O11 + O12
 └── core/guards/
     └── administrador.guard.ts            # reutilizar
 ```
@@ -136,12 +138,12 @@ frontend/src/app/
 |-------------------|---------------|------------|
 | `CuentaUsuarioRepository` usa `Dim_Usuario_Cliente` hoy | Implementado antes de clarificación RN-ONB-007 | Refactor en tarea de alineación post-onboarding |
 | Etapas opcionales por plan sin catálogo | Fuera de alcance spec §13 | Hook en `OnboardingService` para extensión futura |
-| Servicios `registro_cuenta` / `configuracion_cuenta` residuales | O01/O12 retirados en HTTP | Vistas 410; servicios no llamados; tests service skipped |
+| Servicios `registro_cuenta` / `configuracion_cuenta` residuales | registro directo / config. plan+logo retirados en HTTP | Vistas 410; servicios no llamados; tests service skipped |
 
 ## Phase 10 (2026-07-25) — Cierre gaps
 
-1. Hard-kill O01/O12 (410 + FE sin rutas).
-2. Soft-anular + email O16 + tests.
-3. Reubicar UI O08 (solicitudes + wizard).
+1. Hard-kill registro directo / config. plan+logo (410 + FE sin rutas).
+2. Soft-anular + email CU-O10 + tests.
+3. Reubicar UI CU-O12 (reenviar invitación, solicitudes + wizard).
 4. Sync spec / plan / tasks / OpenAPI 1.2.0 / quickstart / traceability.
-5. Remediation analyze: UI design-system (T106–T107), orphans FE (T108), p95 O14 (T109), check-prerequisites (T110).
+5. Remediation analyze: UI design-system (T106–T107), orphans FE (T108), p95 CU-O09 (T109), check-prerequisites (T110).

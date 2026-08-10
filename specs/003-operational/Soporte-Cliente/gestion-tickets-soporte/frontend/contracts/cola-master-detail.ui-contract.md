@@ -9,7 +9,7 @@
 | Panel | Contenido |
 |-------|-----------|
 | Lista (izq.) | `id_reclamo`, asunto, badges prioridad/estado/`sla_status`, selección con acento |
-| Detalle (der.) | Asunto + id, acciones CU-O92 (tomar/escalar/resolver), historial, composer |
+| Detalle (der.) | Asunto + id, acciones CU-O84-O87 (tomar/escalar/resolver), historial, composer |
 
 ## Filtros
 

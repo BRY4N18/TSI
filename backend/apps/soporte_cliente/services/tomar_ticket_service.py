@@ -1,4 +1,4 @@
-"""RF-TIC-002 paso 1 (CU-O92) — agente toma el ticket."""
+"""RF-TIC-002 paso 1 (CU-O84) — agente toma el ticket."""
 
 from __future__ import annotations
 

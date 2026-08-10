@@ -65,7 +65,7 @@ class IsSoporteAgenteOrNivelEscalado(BasePermission):
 
 
 class IsAdministradorSLA(BasePermission):
-    """Administrador — configura Dim_SLAConfig (CU-O95)."""
+    """Administrador — configura Dim_SLAConfig (CU-O97)."""
 
     def has_permission(self, request, view) -> bool:
         user = request.user

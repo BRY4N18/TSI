@@ -1,4 +1,4 @@
-"""Fact_Reclamo repository — el ticket de soporte (CU-O91, O92, O96, O97)."""
+"""Fact_Reclamo repository — el ticket de soporte (CU-O83, O84-O87, O88, O89)."""
 
 from __future__ import annotations
 
@@ -42,6 +42,17 @@ class ReclamoRepository:
             {"id_reclamo": id_reclamo},
         )
         return rows[0] if rows else None
+
+    def find_disputa_abierta_por_factura(self, idfactura: str) -> dict[str, Any] | None:
+        """RF-O83.2 — una factura admite una sola disputa (ticket) abierta a la vez.
+
+        `idfactura` es STRING: `Fact_Factura.id_factura` es un UUID.
+        """
+        rows = self.pinot.query("SELECT * FROM Fact_Reclamo", {})
+        for row in rows:
+            if str(row.get("idfactura") or "") == str(idfactura) and row.get("estado") != "Cerrado":
+                return row
+        return None
 
     def list(
         self,

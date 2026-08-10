@@ -14,12 +14,12 @@
 **Autoridad UI:** Interaction Capability en [`../frontend/plan.md`](../frontend/plan.md) / [`../frontend/tasks.md`](../frontend/tasks.md). Este plan BE no es superficie de trabajo UI.
 
 
-Implementar el módulo de gestión de tickets de soporte con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/gestion-tickets-soporte.openapi.yaml`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**; finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O91, O92, O95, O96, O97 y RF-TIC-001–007.
+Implementar el módulo de gestión de tickets de soporte con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/gestion-tickets-soporte.openapi.yaml`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**; finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O83, O84-O87, O97, O89, O88 y RF-TIC-001–007.
 
 ## Traceability
 
 - **Objetivo operacional:** canalizar y resolver incidencias de clientes dentro de los SLA contractuales (BSC — retención y satisfacción de clientes).
-- **UC cubiertos:** CU-O91, O92, O95, O96, O97.
+- **UC cubiertos:** CU-O83, O84-O87, O97, O89, O88.
 - **Dependencias:** `autenticacion-y-rbac` (roles), `incorporacion-clientes` (cliente con cuenta activa), `subscriptions-and-billing` (`Fact_Suscripcion`/`idplan`).
 - **Consumidores downstream:** ninguno declarado en el spec (módulo terminal del módulo Soporte-Cliente).
 
@@ -27,7 +27,7 @@ Implementar el módulo de gestión de tickets de soporte con enfoque **contract-
 
 **Language/Version**: Python 3.11 (backend), TypeScript 5.x / Angular 17+ (frontend)
 
-**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery/APScheduler (job CU-O96), RxJS
+**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery/APScheduler (job CU-O89), RxJS
 
 **Storage**: Apache Pinot (lectura vía repositorios), Kafka (único canal escritura dominio)
 
@@ -49,7 +49,7 @@ Implementar el módulo de gestión de tickets de soporte con enfoque **contract-
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O91–O97 + CA-TIC-001–015 trazables al contrato y data-model (CA-TIC-014/015 = Cola de soporte UI) |
+| Functional Suitability | PASS | CU-O83–O88 + CA-TIC-001–015 trazables al contrato y data-model (CA-TIC-014/015 = Cola de soporte UI) |
 | Reliability | PASS | Historial append-only (RNF-TIC-002), job idempotente, SLA independiente del estado del ticket (RN-TIC-001) |
 | Performance Efficiency | PASS | RNF-TIC-001 (job 1 min), RNF-TIC-003 (registro <3s) declarados como criterios medibles |
 | Interaction Capability | PASS | RF-TIC-008 + RNF-TIC-004 + CA-TIC-014/015: Cola de soporte master-detail (lista+detalle), filtros OpenAPI, empty state explícito, badges semánticos; UI por rol (Cliente / agente / admin); notas internas ocultas al Cliente (RN-TIC-002) |
@@ -89,20 +89,20 @@ backend/
 │       ├── urls.py
 │       ├── permissions.py                    # IsCliente, IsSoporteAgente, IsAdministradorSLA, IsSupervisorSoporte, etc.
 │       ├── services/
-│       │   ├── registrar_ticket_service.py         # O91
-│       │   ├── clasificacion_automatica_service.py # O91 paso 2 (Decision 4)
-│       │   ├── asignacion_sla_service.py            # O91 paso 4 + O97 renovación (Decision 5, 8)
-│       │   ├── tomar_ticket_service.py              # O92
-│       │   ├── comentar_ticket_service.py           # O92
-│       │   ├── escalar_ticket_service.py            # O92 (manual)
-│       │   ├── resolver_ticket_service.py           # O92
-│       │   ├── confirmar_cierre_service.py          # O92 / RF-TIC-006
-│       │   ├── configurar_sla_service.py            # O95
-│       │   ├── monitoreo_sla_service.py             # O96 (job)
-│       │   ├── reabrir_ticket_service.py            # O97
+│       │   ├── registrar_ticket_service.py         # O83
+│       │   ├── clasificacion_automatica_service.py # O83 paso 2 (Decision 4)
+│       │   ├── asignacion_sla_service.py            # O83 paso 4 + O88 renovación (Decision 5, 8)
+│       │   ├── tomar_ticket_service.py              # O84-O87
+│       │   ├── comentar_ticket_service.py           # O84-O87
+│       │   ├── escalar_ticket_service.py            # O84-O87 (manual)
+│       │   ├── resolver_ticket_service.py           # O84-O87
+│       │   ├── confirmar_cierre_service.py          # O84-O87 / RF-TIC-006
+│       │   ├── configurar_sla_service.py            # O97
+│       │   ├── monitoreo_sla_service.py             # O89 (job)
+│       │   ├── reabrir_ticket_service.py            # O88
 │       │   └── dashboard_soporte_service.py         # RF-TIC-007
 │       ├── jobs/
-│       │   └── monitoreo_sla_job.py                 # O96, cada 1 min
+│       │   └── monitoreo_sla_job.py                 # O89, cada 1 min
 │       └── tests/
 │           ├── api/
 │           ├── services/
@@ -164,7 +164,7 @@ Artefacto: `contracts/gestion-tickets-soporte.openapi.yaml`
 
 | CU | Mecanismo |
 |----|-----------|
-| O96 | Job programado cada 1 minuto (`monitoreo_sla_job.py`) |
+| O89 | Job programado cada 1 minuto (`monitoreo_sla_job.py`) |
 
 ### Backend — mapeo Vista → Servicio → Repositorio
 
@@ -182,7 +182,7 @@ Artefacto: `contracts/gestion-tickets-soporte.openapi.yaml`
 | `SLAConfigView` | `ConfigurarSLAService` | `SLAConfigRepository` |
 | `MonitoreoSLAJob` | `MonitoreoSLAService` | `ReclamoRepository`, `HistorialTicketRepository`, `SupervisorSoporteRepository` |
 
-**Flujo escritura Kafka (ejemplo registro de ticket, O91):**
+**Flujo escritura Kafka (ejemplo registro de ticket, O83):**
 
 ```text
 POST /soporte/tickets

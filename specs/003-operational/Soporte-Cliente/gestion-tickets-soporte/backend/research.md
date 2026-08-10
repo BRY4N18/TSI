@@ -2,10 +2,10 @@
 
 ## Decision 1: Contract-first OpenAPI bajo `/api/v1/soporte`
 
-- **Decision:** Definir primero `contracts/gestion-tickets-soporte.openapi.yaml` con endpoints HTTP para CU-O91, O92, O95, O97 (registro, transiciones, configuración SLA, reapertura); CU-O96 (monitoreo/escalado SLA) se documenta como job de fondo sin endpoint público (solo lectura vía dashboard RF-TIC-007).
+- **Decision:** Definir primero `contracts/gestion-tickets-soporte.openapi.yaml` con endpoints HTTP para CU-O83, O84-O87, O97, O88 (registro, transiciones, configuración SLA, reapertura); CU-O89 (monitoreo/escalado SLA) se documenta como job de fondo sin endpoint público (solo lectura vía dashboard RF-TIC-007).
 - **Rationale:** Cumple constitution (Principio VI, Compatibility API-First) y el orden ya usado en `despacho-inteligente`: contrato REST → Django → Angular.
 - **Alternatives considered:**
-  - Exponer el job O96 como endpoint invocable manualmente (rechazado: el spec lo define como job programado autónomo, no una acción de usuario).
+  - Exponer el job O89 como endpoint invocable manualmente (rechazado: el spec lo define como job programado autónomo, no una acción de usuario).
 
 ## Decision 2: Django capas Vista → Servicio → Repositorio en `apps/soporte_cliente/`
 
@@ -26,7 +26,7 @@
   1. Si el ticket referencia un `idaccidente` con `Fact_AccidenteTipoEstadoAccidente` activo (no Cerrado/Descartado) → `prioridad='crítico'`, `tipo_incidencia='emergencia_activa'`.
   2. Si no, evalúa keywords en `asunto`/`descripcion` contra un mapping configurable (`tipo` del formulario + palabras clave: "no responde", "error 500", "caído" → `tipo_incidencia='tecnica'`; "acceso", "login", "contraseña" → `tipo_incidencia='acceso'`; "cómo", "duda", "consulta" → `tipo_incidencia='consulta_funcional'`).
   3. Si ninguna regla coincide → no clasificable, `idestadosoporte=Pendiente_de_clasificacion`, `idslaconfig=NULL` (RF-TIC-001 paso 4, RN-TIC-003).
-  - `prioridad` (fuera del caso crítico) se deriva de `tipo_incidencia` + `idplan` del cliente: mapping configurable, análogo a `Dim_ParametrosDespacho` pero embebido como reglas de servicio en esta primera versión (no hay CU de configuración de reglas de clasificación en el spec, solo de SLA vía CU-O95).
+  - `prioridad` (fuera del caso crítico) se deriva de `tipo_incidencia` + `idplan` del cliente: mapping configurable, análogo a `Dim_ParametrosDespacho` pero embebido como reglas de servicio en esta primera versión (no hay CU de configuración de reglas de clasificación en el spec, solo de SLA vía CU-O97).
 - **Rationale:** Mismo patrón que `despacho-inteligente` Decision 9 (severidad por keywords, sin NLP/ML) — resuelve la ambigüedad sin sobre-diseñar; el spec solo exige "reglas predefinidas", no un motor de reglas configurable.
 - **Alternatives considered:**
   - Motor de reglas configurable en BD (rechazado: no hay CU ni tabla que lo respalde; fuera de alcance según `## 13. Fuera de alcance` del spec, que no lo menciona pero tampoco lo requiere).
@@ -65,15 +65,15 @@
   - `Cliente` → registrar/ver sus propios tickets, comentar, confirmar cierre, reabrir.
   - `Soporte al cliente` (agente) → tomar, comentar (incl. notas internas), escalar, resolver.
   - `Desarrollador de APIs` / `Director Tecnológico` → recibir y gestionar tickets escalados a su nivel.
-  - `Administrador` → configurar `Dim_SLAConfig` (CU-O95), ver dashboard completo.
-  - `Sistema` (rol de servicio) → ejecución del job O96, igual patrón que consumers/jobs internos de `despacho-inteligente`.
+  - `Administrador` → configurar `Dim_SLAConfig` (CU-O97), ver dashboard completo.
+  - `Sistema` (rol de servicio) → ejecución del job O89, igual patrón que consumers/jobs internos de `despacho-inteligente`.
 - **Rationale:** Dependencia `autenticacion-y-rbac`; RN-TIC-002 exige que notas internas nunca sean visibles al cliente — se aplica a nivel de serializer/vista, filtrando `es_nota_interna=true` para el rol `Cliente`.
 - **Alternatives considered:** Filtrar notas internas solo en el frontend (rechazado: viola Principio V, Security by Design — debe validarse en servidor).
 
 ## Decision 10: Angular — servicios tipados + guards (skills `angular-architect`, `typescript-expert`)
 
 - **Decision:** Módulo `frontend/src/app/modules/soporte-cliente/` con:
-  - `TicketApiService` (registro, transiciones, dashboard), `SlaConfigApiService` (CU-O95), tipos en `models/soporte.types.ts` alineados al OpenAPI.
+  - `TicketApiService` (registro, transiciones, dashboard), `SlaConfigApiService` (CU-O97), tipos en `models/soporte.types.ts` alineados al OpenAPI.
   - `ClienteSoporteGuard`, `AgenteSoporteGuard`, `AdministradorSlaGuard`.
   - Rutas lazy `soporte-cliente.routes.ts`; componentes sin lógica de dominio.
 - **Rationale:** Mismo patrón que `despacho/` en `project-structure.md`.

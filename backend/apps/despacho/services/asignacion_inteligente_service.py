@@ -1,4 +1,4 @@
-"""CU-O22 — asignación automática inteligente."""
+"""CU-O59 — asignación automática inteligente."""
 
 from __future__ import annotations
 

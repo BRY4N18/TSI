@@ -28,7 +28,7 @@ class TestConfirmarCierreService:
         id_reclamo = _registrar_y_resolver()
 
         # Act
-        actualizado = ConfirmarCierreService().confirmar(id_reclamo, idusuario=3)
+        actualizado = ConfirmarCierreService().confirmar(id_reclamo, idcliente=1, idusuario=3)
 
         # Assert
         assert actualizado["estado"] == "Cerrado"
@@ -42,7 +42,15 @@ class TestConfirmarCierreService:
 
         # Act / Assert
         with pytest.raises(ValueError):
-            ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idusuario=3)
+            ConfirmarCierreService().confirmar(reclamo["id_reclamo"], idcliente=1, idusuario=3)
+
+    def test_confirmar_when_otro_cliente_raises_permission_error(self, mock_pinot, mock_kafka):
+        # Arrange — RF-O87.1: solo el cliente dueño del ticket puede confirmar el cierre
+        id_reclamo = _registrar_y_resolver()
+
+        # Act / Assert
+        with pytest.raises(PermissionError):
+            ConfirmarCierreService().confirmar(id_reclamo, idcliente=999, idusuario=3)
 
     def test_cerrar_automaticamente_vencidos_cuando_pasaron_5_dias(
         self, mock_pinot, mock_kafka, pinot_store

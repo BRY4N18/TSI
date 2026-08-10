@@ -1,4 +1,4 @@
-"""CU-O42 — cancelación falsa alarma (solo motivo + tiempos SLA)."""
+"""CU-O72 — cancelación falsa alarma (solo motivo + tiempos SLA)."""
 
 from __future__ import annotations
 

@@ -67,7 +67,7 @@
   - Cada request protegida valida JWT y consulta estado de sesión.
   - Estados `Cierre sesion` o `Expulsado` invalidan acceso inmediato.
 
-## 6) Entidades de servidor (CU-O15)
+## 6) Entidades de servidor (CU-O08)
 
 - `Dim_UsuariosServidor`
 - `Dim_RolesServidor`

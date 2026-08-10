@@ -181,3 +181,18 @@ Task: "Ejecutar paso 3 de quickstart.md (Airflow UI carga y autentica)"
 - Esta feature no tiene tests de código porque no hay código de aplicación — la "prueba" de cada historia es su tramo correspondiente de `quickstart.md`, convertido en tareas ejecutables (T010-T013, T014-T017, T018-T020)
 - Confirmar cada checkpoint antes de pasar a la siguiente fase
 - No se toca `docker/docker-compose.infraestructura.yml` ni `docker/accidentes.yml` en ninguna tarea (restricción dura de FR-002/FR-003)
+
+---
+
+## Addendum (2026-08-06): migración a staging en Parquet
+
+- [X] T025 Crear `docker/tactico/airflow/Dockerfile` + `requirements.txt` (`pandas==2.1.4`, `pyarrow==16.1.0`, `pytest==8.2.2`) y cambiar `x-airflow-common` en `docker-compose.tactico.yml` de `image:` a `build:`
+- [X] T026 Cambiar los bind mounts de `x-airflow-common` de `../docker/tactico/airflow-dags` a `../dags` (raíz del repo) y añadir `../ETL:/opt/airflow/ETL` + variable `ETL_ROOT`
+- [X] T027 Crear `dags/` en la raíz del repo (`etl/`, `quality/`, `operations/`, `lib/`, `tests/`), mover `lib/*` y `tests/*` desde `docker/tactico/airflow-dags/` sin cambios, y eliminar `docker/tactico/airflow-dags/` por completo
+- [X] T028 Crear `dags/lib/parquet_io.py` (`stage_path`/`write_parquet`/`read_parquet`, ruta `ETL/<fecha>/<hora>/<stage>_data.parquet`, formato de hora `HH-MM` — no `HH:MM`, inválido en rutas de Windows, verificado con Docker Desktop)
+- [X] T029 Migrar los 3 DAGs de negocio a 3 tareas (`extract`/`transform`/`load`) vía staging Parquet, moviendo las funciones a `dags/lib/*_tasks.py` (no en el archivo del DAG) para que `dag_backfill.py` las reutilice sin re-importar un archivo de DAG (anti-patrón de Airflow: causa `AirflowDagDuplicatedIdException`)
+- [X] T030 Crear `dags/etl/dag_etl_principal.py` (referencia del patrón) y `dags/etl/dag_backfill.py` (reproceso manual parametrizado, Dynamic Task Mapping sobre las mismas funciones extract/transform/load)
+- [X] T031 Crear DAGs operativos: `dags/quality/dag_validacion_calidad.py`, `dags/operations/dag_limpieza_staging.py`, `dags/operations/dag_mantenimiento_bd.py`, `dags/operations/dag_system_health.py`
+- [X] T032 Crear `dags/tests/test_parquet_io.py` y `dags/tests/test_dag_integrity.py` (pytest plano, no un DAG); confirmar que la suite completa (26 tests) pasa dentro del contenedor
+- [X] T033 Actualizar `contracts/docker-compose-contract.md`, `spec.md` y `data-model.md` de esta carpeta con el nuevo patrón y las nuevas rutas
+- [X] T034 Verificación end-to-end: `airflow dags test` de cada uno de los 9 DAGs, confirmando parquet generados en `ETL/` y filas correctas en ClickHouse

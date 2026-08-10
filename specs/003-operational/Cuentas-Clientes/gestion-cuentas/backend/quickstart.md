@@ -1,6 +1,6 @@
 # Quickstart - Validación de Gestión de Cuenta de Cliente
 
-Guía de validación end-to-end contract-first para CU-O03, CU-O10 y CU-O11.
+Guía de validación end-to-end contract-first para CU-O13 (perfil), CU-O14 (preferencias), CU-O15 (transferencia) y CU-O16 (baja). Numeración corregida 2026-08-08 al catálogo vigente; el CU-O03 histórico de este módulo (perfil+preferencias combinado) se dividió en CU-O13/CU-O14.
 
 ## Prerequisitos
 
@@ -26,14 +26,14 @@ Revisar endpoints definidos:
 
 | Método | Ruta | UC | Rol |
 |--------|------|-----|-----|
-| GET | `/api/v1/cuentas-clientes/{idcliente}/perfil` | O03 | Cliente / Administrador |
-| PATCH | `/api/v1/cuentas-clientes/{idcliente}/perfil` | O03 | Cliente / Administrador |
-| GET | `/api/v1/cuentas-clientes/{idcliente}/preferencias` | O03 | Cliente |
-| PATCH | `/api/v1/cuentas-clientes/{idcliente}/preferencias` | O03 | Cliente |
-| GET | `/api/v1/cuentas-clientes/{idcliente}/usuarios-elegibles` | O10 | Cliente (admin local) |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/transferencia-propiedad` | O10 | Cliente (admin local) |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/baja` | O11 | Administrador |
-| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | O03 | Cliente / Administrador |
+| GET | `/api/v1/cuentas-clientes/{idcliente}/perfil` | CU-O13 | Cliente / Administrador |
+| PATCH | `/api/v1/cuentas-clientes/{idcliente}/perfil` | CU-O13 | Cliente / Administrador |
+| GET | `/api/v1/cuentas-clientes/{idcliente}/preferencias` | CU-O14 | Cliente |
+| PATCH | `/api/v1/cuentas-clientes/{idcliente}/preferencias` | CU-O14 | Cliente |
+| GET | `/api/v1/cuentas-clientes/{idcliente}/usuarios-elegibles` | CU-O15 | Cliente (admin local) |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/transferencia-propiedad` | CU-O15 | Cliente (admin local) |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/baja` | CU-O16 | Administrador |
+| POST | `/api/v1/cuentas-clientes/{idcliente}/logo/upload-url` | CU-O13 | Cliente / Administrador |
 
 Convenciones (`api-standards.md`):
 
@@ -45,7 +45,7 @@ Convenciones (`api-standards.md`):
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio)
 
-### Escenario A — Perfil y preferencias (O03)
+### Escenario A — Perfil y preferencias (CU-O13 / CU-O14)
 
 1. Login como Cliente → obtener JWT.
 2. `GET .../perfil` → 200 con `tipo` y `nit_identificacion` en respuesta.
@@ -53,13 +53,13 @@ Convenciones (`api-standards.md`):
 4. `PATCH .../preferencias` con `telefono_sms` y `umbrales_alerta` → 200.
 5. Verificar eventos Kafka en `Dim_Cliente_topic` y `Dim_Preferencias_Cliente_topic` (no escritura directa Pinot).
 
-### Escenario B — Logo (O03)
+### Escenario B — Logo (CU-O13)
 
 1. `POST .../logo/upload-url` con `content_type: image/png` → `upload_url` + `logo_url`.
 2. Subir binario a `upload_url` (PUT Azure Blob).
 3. `PATCH .../perfil` con `{ "logo_url": "<logo_url del paso 1>" }` → 200.
 
-### Escenario C — Transferencia inmediata (O10)
+### Escenario C — Transferencia inmediata (CU-O15)
 
 1. Login como admin local actual.
 2. `GET .../usuarios-elegibles` → lista con usuarios activos de la cuenta.
@@ -67,7 +67,7 @@ Convenciones (`api-standards.md`):
 4. Verificar `Dim_Cliente_topic` con nuevo `admin_local_id`.
 5. Verificar emails enviados a nuevo y anterior admin (o log si SMTP no configurado).
 
-### Escenario D — Baja con expulsión de sesiones (O11)
+### Escenario D — Baja con expulsión de sesiones (CU-O16)
 
 1. Login como Administrador.
 2. `POST .../baja` con `{ "motivo": "Cierre contractual" }` → 200, `estado: Dado de baja`, `sesiones_expulsadas >= 1`.
@@ -125,9 +125,9 @@ npm test -- --include='**/gestion-cuenta/**/*.spec.ts'
 ## 5) Criterios de salida
 
 - [X] Contrato OpenAPI aprobado y alineado con spec clarificada.
-- [X] CU-O03: perfil, preferencias y logo operativos con auditoría en logs.
-- [X] CU-O10: transferencia inmediata + notificación SMTP (o log de fallo).
-- [X] CU-O11: baja lógica + expulsión masiva de sesiones + notificación.
+- [X] CU-O13/CU-O14: perfil, preferencias y logo operativos con auditoría en logs.
+- [X] CU-O15: transferencia inmediata + notificación SMTP (o log de fallo).
+- [X] CU-O16: baja lógica + expulsión masiva de sesiones + notificación.
 - [X] Patrón Vista→Servicio→Repositorio y Kafka-only-write verificados.
 - [X] Guards Angular restringen scope, admin local y rol Administrador.
 

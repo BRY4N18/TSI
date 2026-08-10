@@ -1,4 +1,4 @@
-"""Vistas historial operador (CU-O29)."""
+"""Vistas historial operador (CU-O82)."""
 
 from __future__ import annotations
 

@@ -73,7 +73,11 @@ class IsAdministradorOrDespachoService(BasePermission):
 
 
 class IsUnidadEmergenciaSelfOrAdmin(BasePermission):
-    """Unidad sees own unit; Administrador/Despacho see any unit."""
+    """Unidad sees own unit; Administrador/Despacho see any unit.
+
+    Solo para LECTURA (GET). Nunca usar para declarar disponibilidad — ver
+    IsUnidadEmergenciaSelfStrict.
+    """
 
     def has_permission(self, request, view) -> bool:
         user = request.user
@@ -89,3 +93,22 @@ class IsUnidadEmergenciaSelfOrAdmin(BasePermission):
             own = UnidadEmergenciaRepository().find_by_usuario(user.idusuario)
             return own is not None and own["idunidademergencia"] == int(unit_id)
         return False
+
+
+class IsUnidadEmergenciaSelfStrict(BasePermission):
+    """SRS 3.5.1/3.6.3: la disponibilidad de una unidad la declara siempre y
+    únicamente la propia unidad autenticada — ningún tercero (ni Administrador
+    ni Despacho) la declara en su nombre. Sin excepción de rol.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        if ROLE_UNIDAD not in getattr(user, "roles", []):
+            return False
+        unit_id = view.kwargs.get("idunidademergencia")
+        if unit_id is None:
+            return True
+        own = UnidadEmergenciaRepository().find_by_usuario(user.idusuario)
+        return own is not None and own["idunidademergencia"] == int(unit_id)

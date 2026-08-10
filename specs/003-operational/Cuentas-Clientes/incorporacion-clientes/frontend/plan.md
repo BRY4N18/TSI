@@ -5,7 +5,7 @@
 
 ## Summary
 
-UI de alta B2B: autorregistro público, bandeja Admin O16 y wizard onboarding O02/O09 con guards de elegibilidad.
+UI de alta B2B: autorregistro público (CU-O09), bandeja Admin CU-O10 y wizard onboarding CU-O11 (incluye RF-O11.2 guardar progreso) con guards de elegibilidad.
 
 ## Technical Context
 

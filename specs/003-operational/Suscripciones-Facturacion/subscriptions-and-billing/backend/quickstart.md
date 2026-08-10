@@ -14,17 +14,17 @@ Guía de validación end-to-end **contract-first** para RF-SUSF-001…010.
 
 | Método | Path | CU/RF |
 |--------|------|-------|
-| POST | `/suscripciones` | O111 alta |
+| POST | `/suscripciones` | O28 alta |
 | GET | `/suscripciones/mia` | estado + acceso |
-| POST | `/suscripciones/mia/cancelar` | O110 |
-| POST | `/suscripciones/mia/reintentar-cobro` | O105 |
-| GET/POST | `/suscripciones/metodos-pago` | O101 |
-| POST | `/suscripciones/solicitudes-cambio-plan` | O104 |
-| POST | `/suscripciones/solicitudes-cambio-plan/{id}/aprobar` | O104 admin |
-| POST | `/suscripciones/solicitudes-cambio-plan/{id}/rechazar` | O104 admin |
-| GET/POST | `/suscripciones/planes` | O106 — GET: Proveedor/Admin/Director; POST: Director |
-| PATCH | `/suscripciones/planes/{idplan}` | O106 — Director |
-| GET | `/suscripciones/facturas` | O108 |
+| POST | `/suscripciones/mia/cancelar` | O37 |
+| POST | `/suscripciones/mia/reintentar-cobro` | O36 (reactivar) |
+| GET/POST | `/suscripciones/metodos-pago` | O29 |
+| POST | `/suscripciones/solicitudes-cambio-plan` | O33 (solicitar) |
+| POST | `/suscripciones/solicitudes-cambio-plan/{id}/aprobar` | O34 (aprobar/rechazar) admin |
+| POST | `/suscripciones/solicitudes-cambio-plan/{id}/rechazar` | O34 (aprobar/rechazar) admin |
+| GET/POST | `/suscripciones/planes` | O26 — GET: Proveedor/Admin/Director; POST: Director |
+| PATCH | `/suscripciones/planes/{idplan}` | O26 edición / O27 activar-desactivar — Director |
+| GET | `/suscripciones/facturas` | O38 |
 
 Headers: `Authorization: Bearer <jwt>`, escrituras con `Idempotency-Key`.
 

@@ -1,4 +1,4 @@
-"""CU-O30 — declarar y consultar disponibilidad de unidad."""
+"""CU-O78 — declarar y consultar disponibilidad de unidad."""
 
 from __future__ import annotations
 

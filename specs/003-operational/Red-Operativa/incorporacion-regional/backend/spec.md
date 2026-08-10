@@ -21,6 +21,10 @@ Asegurar que una nueva región operativa cumpla los requisitos de operatividad a
 - Q: El borrador trata `Dim_RegionOperativaEstadoRegion` como historial insert-only de Producción/En_Alerta/Despublicada. ¿Correcto? → A: **No.** Esa tabla es **puente geográfico**. El ciclo de vida es el campo directo `Dim_RegionOperativa.estadoregion` (UPDATE). Ver `flujoscorreguidos/flujo-red-operativa-canonico.md`.
 - Q: RN-REGON-005 aún cita `zonacobertura`. → A: Ese campo fue reemplazado por `idcondado` en `alta-unidades`; sigue **sin FK** unidad↔región — el disparo de CU-O62 permanece pendiente.
 
+### Corrección 2026-08-08 (auditoría vs. SRS §3.5.2)
+
+El punto 5 de RF-REGON-001 quedó implementado de forma más laxa de lo que el SRS exige: el endpoint `POST .../regiones/validaciones` aceptaba `resultado='Aprobada'` tanto de Administrador como de Director Tecnológico, permitiendo que un Administrador solo — sin el Director Tecnológico — pusiera una región en producción. El SRS es explícito: *"dos actores en secuencia, no indistintos... el Director Tecnológico es quien queda registrado como responsable de la aprobación final"*. Corregido: `ValidacionRegionService.ejecutar()` ahora exige el rol `DirectorTecnologico` cuando `resultado='Aprobada'` (levanta `PermissionError` → 403 en caso contrario); el Administrador conserva la capacidad de ejecutar el protocolo y registrar `resultado='Rechazada'`, y de crear la región inicial en `En_Validación`. El endpoint sigue aceptando ambos roles (`IsAdministradorOrDirectorTecnologico`) porque el Administrador todavía necesita poder rechazar; la restricción de "quién aprueba" vive en el servicio, no en el permiso de la vista.
+
 ## 2. Contexto
 
 Antes de que TSI pueda operar en una nueva zona geográfica, esa región debe pasar por un protocolo de validación de operatividad. Una vez en producción, la región puede degradarse (alerta) o despublicarse — manualmente por el Director Tecnológico, o automáticamente por el sistema si pierde toda cobertura de unidades activas. El modelo real es deliberadamente simple: el estado de la región vive en un campo directo (`Dim_RegionOperativa.estadoregion`), sin tabla de historial de transiciones — a diferencia del patrón usado para unidades de emergencia (`Fact_HistorialEstadoUnidad`), aquí no existe esa tabla equivalente.
@@ -46,8 +50,8 @@ Antes de que TSI pueda operar en una nueva zona geográfica, esa región debe pa
 
 | Actor | Rol en este spec | Interacción principal |
 |---|---|---|
-| **Administrador** | Ejecutor del protocolo | Corre las validaciones automáticas de una región nueva (`CU-O55`), gestiona la remediación tras un rechazo (`CU-O60`). |
-| **Director Tecnológico** | Validador final y responsable de degradación | Queda registrado como `idusuario` en la aprobación final de `CU-O55`. Ejecuta `CU-O61` (re-evaluar/despublicar). |
+| **Administrador** | Ejecutor del protocolo | Corre las validaciones de una región nueva y puede registrar `resultado='Rechazada'` (`CU-O55`); gestiona la remediación tras un rechazo (`CU-O60`). **No** puede registrar `resultado='Aprobada'` (corrección 2026-08-08). |
+| **Director Tecnológico** | Validador final y responsable de degradación | Único rol que puede registrar `resultado='Aprobada'` en `CU-O55` (queda como `idusuario` en `Dim_ValidacionRegion`). Ejecuta `CU-O61` (re-evaluar/despublicar). |
 | **Sistema** | Ejecutor automático | Ejecuta `CU-O62` sin intervención humana ante pérdida total de cobertura. |
 
 ## 4. Requisitos funcionales
@@ -60,7 +64,7 @@ El Administrador y el Director Tecnológico deben poder validar una región:
 2. Insertar en `Dim_ValidacionRegion`: `idregionoperativa`, `idusuario` (quien ejecuta), `resultado` (`'Aprobada'` o `'Rechazada'`), `motivo` (obligatorio solo si `Rechazada`), `fechahora`.
 3. **Si el resultado es `Aprobada`:** actualizar `Dim_RegionOperativa.estadoregion = 'Producción'`. Esto aplica sin importar el `estadoregion` previo de la región (`En_Validación`, `En_Alerta` o `Despublicada`) — `CU-O55` es el único camino documentado hacia `Producción`, incluyendo reactivación de regiones degradadas o despublicadas.
 4. **Si el resultado es `Rechazada`:** `Dim_RegionOperativa.estadoregion` permanece en `'En_Validación'`; el flujo continúa en `CU-O60`.
-5. **Actores duales, secuencial no indistinto:** el Administrador ejecuta el protocolo (recolecta los criterios y coordina la revisión); el Director Tecnológico es quien queda registrado como `idusuario` en `Dim_ValidacionRegion` cuando la aprobación requiere validación final. No existe un estado "pendiente de aprobación" separado — la región permanece en `En_Validación` hasta que se inserta la fila con `resultado='Aprobada'`.
+5. **Actores duales, secuencial no indistinto:** el Administrador ejecuta el protocolo (recolecta los criterios y coordina la revisión, y puede registrar `resultado='Rechazada'`); **solo el Director Tecnológico puede registrar `resultado='Aprobada'`** — un Administrador que lo intenta recibe `403` (corrección 2026-08-08, RF-REGON-001 antes lo permitía a ambos roles indistintamente, violando el SRS). No existe un estado "pendiente de aprobación" separado — la región permanece en `En_Validación` hasta que el Director Tecnológico inserta la fila con `resultado='Aprobada'`.
 6. **Naturaleza de la validación:** el protocolo es una revisión manual — el Administrador/Director Tecnológico evalúan los criterios de operatividad fuera del sistema (no hay checklist técnico automatizado de conectividad/healthcheck respaldado por tabla, ver Sección 13). El sistema únicamente registra el resultado final (`resultado`, `motivo`) en `Dim_ValidacionRegion`; no ejecuta validaciones automáticas propias.
 7. **Concurrencia:** si dos ejecuciones de `CU-O55` ocurren casi simultáneamente para la misma región, ambas filas se insertan en `Dim_ValidacionRegion` (auditoría completa, sin pérdida de intentos) y `Dim_RegionOperativa.estadoregion` refleja el resultado de la última escritura procesada (último `INSERT` gana), sin bloqueo optimista ni mecanismo de versionado.
 

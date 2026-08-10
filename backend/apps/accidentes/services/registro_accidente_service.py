@@ -1,4 +1,4 @@
-"""CU-O21 registro de accidente (Fase 1 — solo datos a distancia)."""
+"""CU-O56 registro de accidente (Fase 1 — solo datos a distancia)."""
 
 from __future__ import annotations
 
@@ -81,9 +81,21 @@ class RegistroAccidenteService:
             estado_final = ESTADO_REPORTADO
 
         # Clima / elementos físicos / conductores / implicados: solo Técnico en sitio
-        # (evidencia-unidad CU-O46). No se escriben en CU-O21.
+        # (evidencia-unidad CU-O75/CU-O76). No se escriben en CU-O56.
 
-        self.audit.log_action(action="crear", user_id=idusuario, idaccidente=idaccidente)
+        # RN-REG-004/RNF-REG-004: el registro retrospectivo (>24h) exige
+        # justificacionRetrospectiva y debe quedar auditado — antes se validaba
+        # pero nunca se pasaba al log, perdiéndose tras cumplir su único uso.
+        audit_extra: dict[str, Any] = {}
+        if data.get("registroRetrospectivo"):
+            audit_extra["registroRetrospectivo"] = True
+            audit_extra["justificacionRetrospectiva"] = data.get("justificacionRetrospectiva")
+        self.audit.log_action(
+            action="crear",
+            user_id=idusuario,
+            idaccidente=idaccidente,
+            extra=audit_extra or None,
+        )
 
         return {
             "message": "Accidente registrado exitosamente",

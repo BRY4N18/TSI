@@ -3,13 +3,13 @@ info:
   title: TSI Evidencia en Sitio y Disponibilidad de Unidad API
   version: 1.0.0
   description: >
-    Contrato contract-first para CU-O27 (adjuntar evidencias), CU-O46 (enriquecer datos
+    Contrato contract-first para CU-O74 (adjuntar evidencias), CU-O75/CU-O76 (enriquecer datos
     estructurados en sitio: clima/período, elementos físicos, conductores/vehículos,
     implicados no conductores — RF-EVI-010),
-    CU-O30 (disponibilidad) y CU-O43 (sync diferida). Alineado a
+    CU-O78 (disponibilidad) y CU-O77 (sync diferida). Alineado a
     flujoscorreguidos/flujo-emergencias-canonico.md: escritura de enriquecimiento
-    exclusiva del Técnico/Unidad (sin precarga CU-O21).
-    CU-O30 (gestionar disponibilidad) y CU-O43 (sincronizar evidencia/enriquecimiento
+    exclusiva del Técnico/Unidad (sin precarga CU-O56).
+    CU-O78 (gestionar disponibilidad) y CU-O77 (sincronizar evidencia/enriquecimiento
     en diferido). Sigue api-standards.md y spec evidencia-unidad.
 servers:
   - url: /api/v1
@@ -137,7 +137,7 @@ paths:
   /accidentes/{idaccidente}/evidencias/sincronizar:
     post:
       tags: [Evidencias]
-      summary: Sincronización diferida de evidencia y enriquecimiento offline (CU-O43 / RF-EVI-006)
+      summary: Sincronización diferida de evidencia y enriquecimiento offline (CU-O77 / RF-EVI-006)
       operationId: sincronizarEvidenciaDiferida
       security:
         - bearerAuth: []
@@ -165,7 +165,7 @@ paths:
                 enriquecimiento:
                   type: string
                   description: >
-                    JSON opcional con ítems pendientes CU-O46:
+                    JSON opcional con ítems pendientes CU-O75/CU-O76:
                     clima, elementos_fisicos[], conductores[], implicados[] (ver SincronizarEnriquecimientoRequest)
       responses:
         '200':
@@ -186,7 +186,7 @@ paths:
   /accidentes/{idaccidente}/enriquecimiento:
     get:
       tags: [Enriquecimiento]
-      summary: Consultar enriquecimiento estructurado del caso (CU-O46)
+      summary: Consultar enriquecimiento estructurado del caso (CU-O75/CU-O76)
       operationId: consultarEnriquecimientoAccidente
       security:
         - bearerAuth: []
@@ -701,7 +701,7 @@ paths:
 
     post:
       tags: [UnidadesEmergencia]
-      summary: Declarar nuevo estado de disponibilidad (CU-O30 / RF-EVI-001)
+      summary: Declarar nuevo estado de disponibilidad (CU-O78 / RF-EVI-001)
       operationId: declararEstadoDisponibilidadUnidad
       security:
         - bearerAuth: []
@@ -751,7 +751,7 @@ paths:
 
     post:
       tags: [MiUnidadEmergencia]
-      summary: Cambiar disponibilidad de la unidad autenticada (CU-O30)
+      summary: Cambiar disponibilidad de la unidad autenticada (CU-O78)
       operationId: declararMiEstadoDisponibilidad
       security:
         - bearerAuth: []

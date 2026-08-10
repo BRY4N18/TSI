@@ -16,24 +16,30 @@ Tráfico Seguro Integral (TSI) opera como orquestador digital SaaS + APIs que co
 ## 2.1 Trazabilidad obligatoria (Constitution)
 
 - **Objetivo Operacional (OP)**: OP-TSI-SEG-01 — garantizar acceso seguro, trazable y por rol a capacidades operativas del sistema.
-- **Casos de uso (UC) trazados**: CU-O04, CU-O05, CU-O06, CU-O07, CU-O13, CU-O15.
+- **Casos de uso (UC) trazados**: CU-O01, CU-O02, CU-O03, CU-O05, CU-O06, CU-O07, CU-O08 (catálogo vigente `TSI-Catalogo-CU-RF-RNF.md`; renumerado 2026-08-08, ver nota abajo).
 - **Razón de trazabilidad**: este módulo es precondición de control de acceso para todos los demás módulos operativos y cumple la regla de trazabilidad mandatada por constitution.
 
 **Casos de uso incluidos en este spec:**
-- **CU-O05: Iniciar sesión** — autentica credenciales, valida activo y estadocredencial, escribe Fact_Session con estadosession='Inicio sesion'. Si estadocredencial='Cambio contraseña', fuerza cambio de contraseña.
-- **CU-O04: Gestionar usuarios** — alta, edición y desactivación lógica (activo=false) de usuarios en Dim_Usuarios. Un usuario desactivado no puede autenticar.
-- **CU-O13: Gestionar roles** — administración de roles de negocio en Dim_Rol y su asignación a usuarios mediante Dim_Usuario_Rol. El rol es el permiso: no existe tabla de permisos separada.
-- **CU-O15: Gestionar usuarios y roles a nivel de servidor** — capa técnica de acceso a infraestructura mediante Dim_UsuariosServidor, Dim_RolesServidor, Dim_UsuariosServidorRolesServidor y Dim_RolesServidorRoles.
-- **CU-O06: Recuperar y restablecer contraseña** — genera contraseña temporal, la escribe en Dim_Credencial, marca estadocredencial='Cambio contraseña' y la envía por correo. Mismo mecanismo que O08.
-- **CU-O07: Revocar sesión activa** — actualiza Fact_Session.estadosession='Expulsado' y fechahoracierresesion.
+- **CU-O01: Iniciar sesión** — autentica credenciales, valida activo y estadocredencial, escribe Fact_Session con estadosession='Inicio sesion'. Si estadocredencial='Cambio contraseña', fuerza cambio de contraseña.
+- **CU-O06: Gestionar usuarios** — alta, edición y desactivación lógica (activo=false) de usuarios en Dim_Usuarios. Un usuario desactivado no puede autenticar.
+- **CU-O07: Gestionar roles** — administración de roles de negocio en Dim_Rol y su asignación a usuarios mediante Dim_Usuario_Rol. El rol es el permiso: no existe tabla de permisos separada.
+- **CU-O08: Gestionar usuarios y roles a nivel de servidor** — capa técnica de acceso a infraestructura mediante Dim_UsuariosServidor, Dim_RolesServidor, Dim_UsuariosServidorRolesServidor y Dim_RolesServidorRoles.
+- **CU-O03: Recuperar y restablecer contraseña** — genera contraseña temporal, la escribe en Dim_Credencial, marca estadocredencial='Cambio contraseña' y la envía por correo. Mismo mecanismo que CU-O12 (reenviar invitación, spec `incorporacion-clientes`).
+- **CU-O05: Revocar sesión activa** — actualiza Fact_Session.estadosession='Expulsado' y fechahoracierresesion.
+- **CU-O02: Cerrar sesión** — actualiza Fact_Session.estadosession='Cierre sesion' e invalida el token vigente (RF-AUT-008). No tenía CU asignado en la trazabilidad original de este spec; corregido 2026-08-08.
 
 ## Clarifications
+
+### Session 2026-08-08 (renumeración a catálogo vigente)
+
+- Q: ¿Los CU-Oxx de este spec (O04, O05, O06, O07, O13, O15) eran los del catálogo limpio? → A: **No.** Este spec usaba una numeración propia previa a la limpieza, sin ningún alias declarado — cada número apuntaba a un caso de uso distinto del `TSI-Catalogo-CU-RF-RNF.md` vigente. Se renumeró íntegramente: O05→**O01** (Iniciar sesión), O04→**O06** (Gestionar usuarios), O13→**O07** (Gestionar roles), O15→**O08** (servidor), O06→**O03** (Recuperar contraseña), O07→**O05** (Revocar sesión). Se agregó además **CU-O02** (Cerrar sesión) a RF-AUT-008, que no tenía CU asignado.
+- Q: ¿El cambio de contraseña forzado (RF-AUT-001 punto 5, RN-AUT-005) es el mismo caso de uso que CU-O03? → A: No exactamente — CU-O03 (Recuperar contraseña olvidada) genera la credencial temporal; el forzar el cambio en el siguiente login es **CU-O04** (Cambiar contraseña temporal de forma forzada) del catálogo, que este spec no separa como flujo propio (queda implícito dentro de RF-AUT-001/RF-AUT-006). Sin cambio de comportamiento, solo de trazabilidad.
 
 ### Session 2026-07-09
 
 - Q: ¿Qué fuente de verdad define si un JWT sigue siendo válido durante su vida útil? → A: Validar firma JWT y consultar Fact_Session en cada request para confirmar que la sesión no esté cerrada ni expulsada.
 - Q: Para intentos fallidos de login por usuario/IP, ¿qué política es obligatoria? → A: Se difiere la política obligatoria de rate limiting/bloqueo para una fase posterior de arquitectura/operación.
-- Q: ¿Qué SLO mínimo se fija para CU-O05? → A: p95 <= 500 ms y disponibilidad mensual >= 99.5% para el endpoint de autenticación.
+- Q: ¿Qué SLO mínimo se fija para CU-O01? → A: p95 <= 500 ms y disponibilidad mensual >= 99.5% para el endpoint de autenticación.
 - Q: ¿Cuál es el mecanismo oficial de recuperación de contraseña en producción? → A: Se mantiene contraseña temporal enviada por correo electrónico.
 - Q: ¿Qué política de refresh token se aplicará? → A: Refresh token estático de 14 días, sin rotación.
 
@@ -43,12 +49,12 @@ Tráfico Seguro Integral (TSI) opera como orquestador digital SaaS + APIs que co
 |---|---|---|
 | **Usuario del sistema** | Solicitante de autenticación | Inicia sesión con correo y contraseña. Recibe token. Recupera contraseña. Cambia contraseña forzado. |
 | **Administrador** | Gestor de identidades y accesos | Crea, edita, desactiva usuarios. Gestiona roles de negocio. Gestiona accesos a servidor. Revoca sesiones activas. |
-| **Director Tecnológico** | Gestor de acceso a infraestructura | Gestiona usuarios y roles a nivel de servidor (CU-O15). |
+| **Director Tecnológico** | Gestor de acceso a infraestructura | Gestiona usuarios y roles a nivel de servidor (CU-O08). |
 | **Sistema** | Guardián de seguridad | Valida credenciales contra Dim_Credencial. Valida activo en Dim_Usuarios. Valida estadocredencial. Emite y verifica tokens. Registra Fact_Session. |
 
 ### 3.1 Catálogo de roles de negocio (`Dim_Rol`)
 
-El rol es dinámico (lo gestiona el Administrador vía CU-O13), pero los siguientes valores son los roles semilla que otros módulos operativos ya asumen como existentes. Se documentan aquí como referencia única — hasta ahora solo vivían dispersos en código (guards de frontend, `permissions.py` de backend):
+El rol es dinámico (lo gestiona el Administrador vía CU-O07), pero los siguientes valores son los roles semilla que otros módulos operativos ya asumen como existentes. Se documentan aquí como referencia única — hasta ahora solo vivían dispersos en código (guards de frontend, `permissions.py` de backend):
 
 | Valor de rol (`Dim_Rol.rol`) | Usado por (módulo) |
 |---|---|
@@ -57,12 +63,27 @@ El rol es dinámico (lo gestiona el Administrador vía CU-O13), pero los siguien
 | `Unidad` | despacho-inteligente, evidencia-unidad (disponibilidad) |
 | `Tecnico` | evidencia-unidad (captura y galería de evidencia) |
 | `Despacho` | despacho-inteligente, seguimiento-cierre-de-casos, evidencia-unidad (flota) |
-| `DirectorTecnologico` | despacho-inteligente (parámetros del algoritmo), CU-O15 |
+| `DirectorTecnologico` | despacho-inteligente (parámetros del algoritmo), CU-O08 |
 | `Cliente` | seguimiento-cierre-de-casos (expedientes propios) |
+| `DesarrolladorAPIs` | partner-api-onboarding (registra partners y asigna planes de acceso) |
+| `DirectorEstrategia` | subscriptions-and-billing (catálogo `Dim_Plan`, CU-O26) |
+| `PartnerIntegracion` 🆕 | partner-api-onboarding, api-monitoring-and-billing, partner-access-management (autoservicio del partner) |
+
+**Fuente única del catálogo en código:** `backend/scripts/_demo_seed_common.py` → `ROLES_DEMO`. No hardcodear ids en otros seeds.
+
+#### Nota 2026-08-08 — alta de `PartnerIntegracion` (idrol 15) y corrección de `DesarrolladorAPIs`
+
+El SRS define **«Partner de integración»** como actor propio: *«Área técnica de un cliente integrador»* que obtiene credenciales, consume datos y ve su consumo (SRS L121, L820). Ninguno de los 14 roles existentes lo cubría, de modo que un partner **no tenía forma de autenticarse** y todo el autoservicio de CU-O49 era inalcanzable.
+
+**Por qué un rol nuevo y no reutilizar `Cliente`.** Todo partner pertenece a un cliente (`Dim_Partner.idcliente` es obligatorio), pero son **personas distintas de la misma organización con permisos distintos**: el Cliente titular gestiona plan, facturas y tickets; el área técnica solo gestiona credenciales. Darle el rol `Cliente` al partner le abriría la facturación de su empresa; darle `PartnerIntegracion` al titular le quitaría su portal. Tampoco vale `DesarrolladorAPIs` (idrol 5), que es el equipo **de TSI** que registra partners, no quien consume.
+
+**Corrección asociada:** la descripción de `DesarrolladorAPIs` decía *«Consumo de integraciones via API»* — eso describía al partner, no al desarrollador, y confundía ambos actores. Ahora dice *«Equipo técnico de integraciones: registra partners, asigna planes y vigila consumo»*, conforme al SRS L124.
+
+Aplicado con `database/migra_rol_partner_y_limite_minuto.py` y verificado en Pinot. Ver `decisiones-pendientes.md` #19.
 
 ## 4. Requisitos funcionales
 
-### RF-AUT-001: Inicio de sesión con credenciales (CU-O05)
+### RF-AUT-001: Inicio de sesión con credenciales (CU-O01)
 
 El sistema debe permitir a cualquier usuario registrado iniciar sesión proporcionando correo electrónico y contraseña:
 
@@ -83,25 +104,25 @@ El sistema debe permitir a cualquier usuario registrado iniciar sesión proporci
 
 ### RF-AUT-002: Validación de token en cada solicitud
 
-El sistema debe interceptar toda petición a endpoints protegidos validando el token JWT. La verificación debe incluir consulta a `Fact_Session` en cada solicitud para confirmar que la sesión asociada al token no esté en `estadosession = 'Expulsado'` ni `estadosession = 'Cierre sesion'` (CU-O07 y RF-AUT-008).
+El sistema debe interceptar toda petición a endpoints protegidos validando el token JWT. La verificación debe incluir consulta a `Fact_Session` en cada solicitud para confirmar que la sesión asociada al token no esté en `estadosession = 'Expulsado'` ni `estadosession = 'Cierre sesion'` (CU-O05 y RF-AUT-008).
 
-### RF-AUT-003: Gestión de usuarios (CU-O04)
+### RF-AUT-003: Gestión de usuarios (CU-O06)
 
 El sistema debe permitir al Administrador:
 1. Crear usuarios en `Dim_Usuarios` con datos: nombres, apellidos, gmail, identificacion, genero, telefono, fechanacimiento.
 2. Editar datos de usuarios existentes.
 3. Desactivar usuarios: `activo = false` (soft-delete). Nunca se borra físicamente.
-4. Un usuario con `activo = false` no puede autenticar en CU-O05.
+4. Un usuario con `activo = false` no puede autenticar en CU-O01.
 5. Asignar roles de negocio mediante `Dim_Usuario_Rol`.
 
-### RF-AUT-004: Gestión de roles de negocio (CU-O13)
+### RF-AUT-004: Gestión de roles de negocio (CU-O07)
 
 El sistema debe permitir al Administrador:
 1. Administrar el catálogo de roles en `Dim_Rol` (crear, editar, desactivar).
 2. Asignar roles a usuarios mediante `Dim_Usuario_Rol`.
 3. En este modelo, el rol es el permiso: no existe tabla de permisos separada. Si un usuario tiene el rol "Operador", el código sabe qué acciones están permitidas.
 
-### RF-AUT-005: Gestión de usuarios y roles de servidor (CU-O15)
+### RF-AUT-005: Gestión de usuarios y roles de servidor (CU-O08)
 
 El sistema debe permitir al Administrador o Director Tecnológico gestionar accesos a nivel de infraestructura, independiente del RBAC de negocio:
 1. Administrar usuarios de servidor en `Dim_UsuariosServidor`.
@@ -109,9 +130,9 @@ El sistema debe permitir al Administrador o Director Tecnológico gestionar acce
 3. Asignar usuarios a roles de servidor mediante `Dim_UsuariosServidorRolesServidor`.
 4. Opcionalmente, mapear roles de servidor a roles de aplicativo mediante `Dim_RolesServidorRoles`.
 
-Esta capa es completamente independiente de CU-O04/O13: una cosa es quién opera el sistema como negocio, otra distinta es quién accede a la infraestructura que lo sostiene.
+Esta capa es completamente independiente de CU-O06/CU-O07: una cosa es quién opera el sistema como negocio, otra distinta es quién accede a la infraestructura que lo sostiene.
 
-### RF-AUT-006: Recuperar y restablecer contraseña (CU-O06)
+### RF-AUT-006: Recuperar y restablecer contraseña (CU-O03)
 
 El sistema debe permitir a un usuario recuperar su contraseña:
 1. El usuario solicita recuperación con su correo registrado.
@@ -119,10 +140,10 @@ El sistema debe permitir a un usuario recuperar su contraseña:
 3. Sobrescribe `Dim_Credencial.contrasena` con el hash de la nueva contraseña temporal.
 4. Marca `Dim_Credencial.estadocredencial = 'Cambio contraseña'`.
 5. Envía la contraseña temporal por correo electrónico.
-6. En el siguiente inicio de sesión (CU-O05), el sistema detecta `estadocredencial = 'Cambio contraseña'` y fuerza el cambio de contraseña antes de continuar.
+6. En el siguiente inicio de sesión (CU-O01), el sistema detecta `estadocredencial = 'Cambio contraseña'` y fuerza el cambio de contraseña antes de continuar.
 7. No existe tabla de tokens de recuperación independiente: la propia `Dim_Credencial` hace las veces de estado del proceso.
 
-### RF-AUT-007: Revocar sesión activa (CU-O07)
+### RF-AUT-007: Revocar sesión activa (CU-O05)
 
 El sistema debe permitir al Administrador revocar una sesión activa de un usuario:
 1. El Administrador selecciona una sesión activa de Fact_Session.
@@ -131,7 +152,7 @@ El sistema debe permitir al Administrador revocar una sesión activa de un usuar
 4. Cualquier verificación posterior de sesión activa debe revisar `estadosession`, no solo la validez del token.
 5. Estados posibles de `estadosession`: 'Inicio sesion', 'Cierre sesion', 'Expulsado'.
 
-### RF-AUT-008: Cierre de sesión
+### RF-AUT-008: Cierre de sesión (CU-O02)
 
 El sistema debe permitir a cualquier usuario cerrar su sesión voluntariamente:
 1. Actualiza `Fact_Session.estadosession = 'Cierre sesion'`.
@@ -156,7 +177,7 @@ Toda operación de inicio de sesión, cierre, revocación, creación de usuario,
 
 ### RNF-AUT-004: Rendimiento y disponibilidad del login
 
-Para CU-O05, el endpoint de autenticación debe cumplir p95 <= 500 ms y disponibilidad mensual >= 99.5%.
+Para CU-O01, el endpoint de autenticación debe cumplir p95 <= 500 ms y disponibilidad mensual >= 99.5%.
 
 ### RNF-AUT-005: Política diferida de protección por intentos fallidos
 
@@ -184,23 +205,23 @@ Nunca se eliminan registros de `Dim_Usuarios`. Solo se marcan con `activo = fals
 
 ## 7. Entradas
 
-### Para inicio de sesión (CU-O05)
+### Para inicio de sesión (CU-O01)
 - Correo electrónico (string, mapea a Dim_Usuarios.gmail).
 - Contraseña (string, se compara contra Dim_Credencial.contrasena).
 
-### Para gestión de usuarios (CU-O04)
+### Para gestión de usuarios (CU-O06)
 - nombres, apellidos, gmail, identificacion, genero, telefono, fechanacimiento, rol(es), activo.
 
-### Para gestión de roles (CU-O13)
+### Para gestión de roles (CU-O07)
 - `rol` (STRING, nombre del rol en `Dim_Rol`), `descripcion`. Para la asignación: `idusuario`, `idrol` (se escriben en `Dim_Usuario_Rol`, no en `Dim_Rol`).
 
-### Para gestión de servidor (CU-O15)
+### Para gestión de servidor (CU-O08)
 - `usuario` (STRING, campo real en `Dim_UsuariosServidor`), `contrasena`; `rolservidor` (STRING, campo real en `Dim_RolesServidor`); asignaciones vía `Dim_UsuariosServidorRolesServidor`.
 
-### Para recuperación de contraseña (CU-O06)
+### Para recuperación de contraseña (CU-O03)
 - Correo electrónico registrado.
 
-### Para revocación de sesión (CU-O07)
+### Para revocación de sesión (CU-O05)
 - `idsession` (INT, PK real de `Fact_Session`).
 
 ## 8. Salidas
@@ -230,7 +251,7 @@ Nunca se eliminan registros de `Dim_Usuarios`. Solo se marcan con `activo = fals
 ### Estados de Fact_Session.estadosession
 - **Inicio sesion**: sesión activa.
 - **Cierre sesion**: logout voluntario.
-- **Expulsado**: sesión terminada forzadamente por Administrador (CU-O07).
+- **Expulsado**: sesión terminada forzadamente por Administrador (CU-O05).
 
 ### Estados de Dim_Usuarios
 - **activo = true**: usuario puede autenticar.
@@ -286,7 +307,7 @@ Administrador puede revocar sesión activa: Fact_Session.estadosession='Expulsad
 La validación de endpoints protegidos verifica JWT y estado de sesión en Fact_Session en cada solicitud, rechazando tokens asociados a sesiones en 'Cierre sesion' o 'Expulsado'.
 
 ### CA-AUT-010
-El endpoint CU-O05 cumple p95 <= 500 ms y disponibilidad mensual >= 99.5%.
+El endpoint CU-O01 cumple p95 <= 500 ms y disponibilidad mensual >= 99.5%.
 
 ## 12. Dependencias
 

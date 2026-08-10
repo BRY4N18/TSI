@@ -7,7 +7,7 @@ Esquemas verificados contra `database/esquemas.json` (Apache Pinot).
 ### 1) `Fact_Reclamo` (el ticket)
 
 - **PK:** `id_reclamo` (INT, autoincremental — no usar formato texto tipo `TKT-2026-00145`, ver `## 8. Salidas` del spec)
-- **FKs:** `idcliente` → `Dim_Cliente`, `idestadosoporte` → `Dim_Estado_Soporte`, `idservicio` → `Dim_Servicio`, `idslaconfig` → `Dim_SLAConfig`, `id_agente_asignado` → `Dim_Usuarios` (auth-rbac)
+- **FKs:** `idcliente` → `Dim_Cliente`, `idestadosoporte` → `Dim_Estado_Soporte`, `idservicio` → `Dim_Servicio`, `idfactura` → `Fact_Factura`, `idslaconfig` → `Dim_SLAConfig`, `id_agente_asignado` → `Dim_Usuarios` (auth-rbac)
 - **Campos:** `tipo` (STRING, del formulario), `tipo_incidencia` (STRING, clasificación automática), `prioridad` (STRING), `asunto`, `descripcion`, `activo` (BOOLEAN), `estado` (STRING denormalizado, ver RN-TIC-007), `sla_status` (STRING: `en curso` | `en riesgo` | `cumplido` | `incumplido` | `null`), `cierreconfirmadocliente` (BOOLEAN)
 - **Métricas:** `sla_primera_respuesta` (LONG, epoch ms — deadline), `sla_resolucion` (LONG, epoch ms — deadline), `tiempo_solucion` (INT)
 - **Fechas:** `fechahora` (creación), `fechahoraconfirmacioncierre`, `fecha_actualizacion`
@@ -15,7 +15,9 @@ Esquemas verificados contra `database/esquemas.json` (Apache Pinot).
   - `idestadosoporte` y `estado` deben actualizarse siempre juntos (RN-TIC-007).
   - `sla_status` es independiente de `idestadosoporte` (RN-TIC-001): un ticket "En_progreso" puede tener `sla_status='en riesgo'`.
   - Sin clasificación automática exitosa: `idestadosoporte=Pendiente_de_clasificacion`, `idslaconfig=NULL`, `sla_status=NULL` (RN-TIC-003).
-  - **Nota de esquema:** `idservicio` (FK a `Dim_Servicio`) es **opcional** en CU-O91 (RF-TIC-001, clarificación Session 2026-07-29). Vincula el ticket al servicio/API afectado cuando aplica; no bloquea clasificación ni asignación de SLA. PK del catálogo: `Dim_Servicio.id_servicio` (guion bajo) vs FK `Fact_Reclamo.idservicio` (sin guion) — preservar ambas grafías del esquema real.
+  - **Nota de esquema:** `idservicio` (FK a `Dim_Servicio`) es **opcional** en CU-O83 (RF-TIC-001, clarificación Session 2026-07-29). Vincula el ticket al servicio/API afectado cuando aplica; no bloquea clasificación ni asignación de SLA. PK del catálogo: `Dim_Servicio.id_servicio` (guion bajo) vs FK `Fact_Reclamo.idservicio` (sin guion) — preservar ambas grafías del esquema real.
+  - **Corrección de tipo 2026-08-08:** `idfactura` pasó de **INT a STRING**. `Fact_Factura.id_factura` es un **UUID** (`str(uuid.uuid4())` en `factura_repository.py`), así que el vínculo nunca habría enlazado: un UUID no cabe en un INT. Se detectó al especificar Partners y API (CU-O54 depende de este vínculo para las disputas de facturas de excedente). Migración con recreación de tabla y republicación de las 8 filas existentes — su topic Kafka estaba purgado, así que Pinot era la única copia; ver `database/migra_factura_reclamo.py` y `decisiones-pendientes.md` #17. `defaultNullValue = ""` (Pinot no almacena NULL). Los 8 tickets existentes no tenían factura vinculada (valían el centinela INT `-2147483648`) y quedaron en `""`.
+  - **Nota de esquema (RF-O83.2):** `idfactura` (STRING, FK a `Fact_Factura`, opcional) — añadido en la auditoría posterior a la limpieza de CU; el spec original no lo definía. Vincula el ticket a una factura en disputa. Pinot no soporta `UNIQUE`/FK declarativos, así que "una factura admite una sola disputa abierta" se aplica **a nivel de aplicación**: `RegistrarTicketService.registrar()` consulta `ReclamoRepository.find_disputa_abierta_por_factura()` (cualquier `Fact_Reclamo` con el mismo `idfactura` y `estado != 'Cerrado'`) y rechaza el registro con `422` si ya existe una. No se normaliza a una tabla puente porque la relación es 1 factura → 0..1 disputa abierta a la vez, no muchos-a-muchos.
 
 ### 2) `Fact_Historial_Ticket` (append-only)
 
@@ -67,13 +69,13 @@ Esquemas verificados contra `database/esquemas.json` (Apache Pinot).
 
 ```text
 Pendiente_de_clasificacion → Abierto      (agente clasifica manualmente, arranca SLA)
-Abierto → En_progreso                     (agente toma el ticket, CU-O92)
-En_progreso → Escalado                    (escalado manual o automático CU-O96)
+Abierto → En_progreso                     (agente toma el ticket, CU-O84-O87)
+En_progreso → Escalado                    (escalado manual o automático CU-O89)
 En_progreso → Resuelto                    (agente resuelve)
 Escalado → En_progreso                    (nivel superior devuelve)
 Escalado → Resuelto                       (nivel superior resuelve)
 Resuelto → Cerrado                        (confirmación cliente o auto-cierre 5 días)
-Cerrado → Reabierto                       (CU-O97, renueva SLA — Decision 8)
+Cerrado → Reabierto                       (CU-O88, renueva SLA — Decision 8)
 Reabierto → En_progreso                   (agente retoma)
 ```
 
@@ -93,14 +95,14 @@ cumplido      (resuelto dentro de ambos plazos)
 
 | Topic | Productor | Disparador |
 |-------|-----------|------------|
-| `Fact_Reclamo_topic` | `ReclamoRepository` | O91 (INSERT), O92/O96/O97 (UPDATE) |
+| `Fact_Reclamo_topic` | `ReclamoRepository` | O83 (INSERT), O84-O87/O89/O88 (UPDATE) |
 | `Fact_Historial_Ticket_topic` | `HistorialTicketRepository` | Toda transición/comentario/alerta |
-| `Dim_SLAConfig_topic` | `SLAConfigRepository` | O95 (INSERT alta, UPDATE+INSERT modificación) |
-| `Fact_ArchivosAdjuntosReclamos_topic` | `ArchivoAdjuntoRepository` | O91, O97 |
+| `Dim_SLAConfig_topic` | `SLAConfigRepository` | O97 (INSERT alta, UPDATE+INSERT modificación) |
+| `Fact_ArchivosAdjuntosReclamos_topic` | `ArchivoAdjuntoRepository` | O83, O88 |
 
 ## Índices / consultas Pinot críticas
 
 - Tickets activos por agente/estado: `Fact_Reclamo.idestadosoporte != Cerrado` filtrado por `id_agente_asignado`.
-- Job de monitoreo SLA (O96): `Fact_Reclamo` con `idestadosoporte != Cerrado` y `idslaconfig IS NOT NULL`, comparando `fechahora + sla_primera_respuesta` y `fechahora + sla_resolucion` contra `now`.
+- Job de monitoreo SLA (O89): `Fact_Reclamo` con `idestadosoporte != Cerrado` y `idslaconfig IS NOT NULL`, comparando `fechahora + sla_primera_respuesta` y `fechahora + sla_resolucion` contra `now`.
 - Configuración SLA vigente: `Dim_SLAConfig` con `activo=true` filtrado por `idplan`, `tipoincidencia`, `prioridad`.
 - Dashboard (RF-TIC-007): agregaciones por `idestadosoporte`, `prioridad`, `tipo_incidencia`, `idcliente`; tasa de reapertura vía `Fact_Historial_Ticket.tipo_accion='reapertura'` / total tickets cerrados.

@@ -1,4 +1,4 @@
-"""CU-O25 — ingestión GPS + geofencing O26."""
+"""CU-O68 — ingestión GPS + geofencing O70."""
 
 from __future__ import annotations
 

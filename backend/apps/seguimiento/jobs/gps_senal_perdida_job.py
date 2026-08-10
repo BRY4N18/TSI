@@ -1,4 +1,4 @@
-"""Job O37 — señal GPS perdida."""
+"""Job O69 — señal GPS perdida."""
 
 from apps.seguimiento.services.gps_senal_perdida_service import GpsSenalPerdidaService
 

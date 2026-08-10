@@ -18,7 +18,7 @@ describe('CatalogoPlanesPage', () => {
     precio: 149,
     nivel: 'Profesional' as const,
     activo: true,
-    limites: { unidades_max: 25, usuarios_max: 10, api_calls_mes: 10000 },
+    limites: { unidades_max: 25, usuarios_max: 10, api_calls_mes: 10000, api_calls_minuto: 120 },
   };
 
   beforeEach(async () => {

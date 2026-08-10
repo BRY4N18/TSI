@@ -1,4 +1,4 @@
-"""CU-O44 — forzar retiro unitario desde central."""
+"""CU-O81 — forzar retiro unitario desde central."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class ForzarRetiroService:
         despacho = self.despachos.find_by_id(iddespacho)
         if not despacho:
             raise LookupError("Despacho no encontrado")
-        result = self.retiro.retirar(iddespacho=iddespacho, idusuario=idusuario)
+        result = self.retiro.retirar(iddespacho=iddespacho, idusuario=idusuario, forzado=True)
         idaccidente = despacho["idaccidente"]
         caso_cerrado = False
         estado_caso = self.estado.get_current_estado(idaccidente) or ESTADO_EN_ATENCION

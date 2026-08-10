@@ -29,9 +29,10 @@ class TestPlanesContract:
                     "idplan": i,
                     "nombre": f"Extra {i}",
                     "nivel": "Profesional" if i % 2 == 0 else "Básico",
-                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1}',
+                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1, "api_calls_minuto": 1}',
                     "activo": True,
                     "precio": 10.0,
+                    "precio_excedente_llamada": 0.05,
                     "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
                 }
             )
@@ -117,11 +118,15 @@ class TestPlanesContract:
             {
                 "nombre": "Nuevo",
                 "precio": 55,
+                "precio_excedente_llamada": 0.05,
                 "nivel": "Básico",
+                "periodicidad": "Mensual",
+                "severidades_desbloqueadas": ["Baja"],
                 "limites": {
                     "unidades_max": 2,
                     "usuarios_max": 2,
                     "api_calls_mes": 100,
+                    "api_calls_minuto": 10,
                 },
             },
             format="json",
@@ -136,11 +141,13 @@ class TestPlanesContract:
             {
                 "nombre": "Bloqueado",
                 "precio": 55,
+                "precio_excedente_llamada": 0.05,
                 "nivel": "Básico",
                 "limites": {
                     "unidades_max": 2,
                     "usuarios_max": 2,
                     "api_calls_mes": 100,
+                    "api_calls_minuto": 10,
                 },
             },
             format="json",
@@ -235,11 +242,15 @@ class TestIdempotencyKeyContract:
         payload = {
             "nombre": "Idem",
             "precio": 12,
+            "precio_excedente_llamada": 0.05,
             "nivel": "Básico",
+            "periodicidad": "Mensual",
+            "severidades_desbloqueadas": ["Baja"],
             "limites": {
                 "unidades_max": 1,
                 "usuarios_max": 1,
                 "api_calls_mes": 1,
+                "api_calls_minuto": 1,
             },
         }
         r1 = api_client.post(

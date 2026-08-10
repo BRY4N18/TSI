@@ -18,6 +18,19 @@ class TestDescartarCasoService:
         # Assert
         assert result["estado"] == ESTADO_DESCARTADO
 
+    def test_descartar_when_sin_motivo_sets_inactivo(
+        self, mock_pinot, mock_kafka, seed_accidente
+    ):
+        # Arrange — SRS 3.6.1 / RF-REG-007.4: el motivo es opcional, no obligatorio.
+        aid = seed_accidente(idaccidente="ACC-D-SVC3", estado=ESTADO_BORRADOR)
+        service = DescartarCasoService()
+
+        # Act
+        result = service.descartar(idaccidente=aid, idusuario=2)
+
+        # Assert
+        assert result["estado"] == ESTADO_DESCARTADO
+
     def test_descartar_when_not_borrador_raises(self, mock_pinot, mock_kafka, seed_accidente):
         # Arrange
         aid = seed_accidente(idaccidente="ACC-D-SVC2", estado="REPORTADO")

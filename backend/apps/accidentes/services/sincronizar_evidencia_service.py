@@ -1,4 +1,4 @@
-"""CU-O43 — sincronización diferida de evidencia offline."""
+"""CU-O77 — sincronización diferida de evidencia offline."""
 
 from __future__ import annotations
 

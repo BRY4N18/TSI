@@ -1,4 +1,4 @@
-"""Comando de gestión para el job CU-O96 (RNF-TIC-001): monitoreo periódico de SLA.
+"""Comando de gestión para el job CU-O89 (RNF-TIC-001): monitoreo periódico de SLA.
 
 Uso:
   python manage.py run_monitoreo_sla_job              # loop continuo cada 60s
@@ -20,7 +20,7 @@ DEFAULT_INTERVAL_SECONDS = 60
 
 
 class Command(BaseCommand):
-    help = "Ejecuta el job CU-O96 de monitoreo de SLA (una vez o en loop continuo)"
+    help = "Ejecuta el job CU-O89 de monitoreo de SLA (una vez o en loop continuo)"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -40,12 +40,12 @@ class Command(BaseCommand):
         interval = options["interval"]
         if once:
             resultado = run_monitoreo_sla_job()
-            self.stdout.write(self.style.SUCCESS(f"Job CU-O96 ejecutado: {resultado}"))
+            self.stdout.write(self.style.SUCCESS(f"Job CU-O89 ejecutado: {resultado}"))
             return
-        self.stdout.write(self.style.SUCCESS(f"Job CU-O96 iniciado en loop continuo (cada {interval}s)"))
+        self.stdout.write(self.style.SUCCESS(f"Job CU-O89 iniciado en loop continuo (cada {interval}s)"))
         while True:
             try:
                 run_monitoreo_sla_job()
             except Exception:
-                logger.exception("Error ejecutando job CU-O96 de monitoreo de SLA")
+                logger.exception("Error ejecutando job CU-O89 de monitoreo de SLA")
             time.sleep(interval)

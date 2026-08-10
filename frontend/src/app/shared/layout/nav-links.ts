@@ -264,4 +264,40 @@ export const NAV_LINKS: NavLink[] = [
     icon: 'circle-check',
     group: 'Suscripciones',
   },
+
+  // --- Partners y API ---
+  // Dos superficies de departamentos distintos: los sidebars NO se fusionan
+  // (design-system § 5). El partner nunca ve la consola y viceversa.
+  {
+    label: 'Partners',
+    description: 'Incorporar partners y asignarles su plan de acceso',
+    path: '/partners/consola',
+    roles: ['Administrador', 'DesarrolladorAPIs'],
+    icon: 'license',
+    group: 'Partners y API',
+  },
+  {
+    label: 'Solicitudes pendientes',
+    description: 'Aprobar o rechazar el paso a producción',
+    path: '/partners/consola/solicitudes',
+    roles: ['Administrador', 'DesarrolladorAPIs'],
+    icon: 'clock',
+    group: 'Partners y API',
+  },
+  {
+    label: 'Mi integración',
+    description: 'Tu estado, tu cupo y tus credenciales de API',
+    path: '/partners/portal',
+    roles: ['PartnerIntegracion'],
+    icon: 'key',
+    group: 'Partners y API',
+  },
+  {
+    label: 'Contrato de integración',
+    description: 'Versión vigente y versiones soportadas por servicio',
+    path: '/partners/portal/contrato',
+    roles: ['PartnerIntegracion'],
+    icon: 'license',
+    group: 'Partners y API',
+  },
 ];

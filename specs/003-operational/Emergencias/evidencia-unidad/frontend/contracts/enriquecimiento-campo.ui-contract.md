@@ -1,4 +1,4 @@
-# UI Contract: Enriquecimiento en Sitio (CU-O46)
+# UI Contract: Enriquecimiento en Sitio (CU-O75/CU-O76)
 
 **Capa**: `evidencia-unidad/frontend` | **Date**: 2026-07-30
 **API**: paths `/accidentes/{id}/enriquecimiento/*`, `/catalogos/*`

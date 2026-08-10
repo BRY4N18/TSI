@@ -245,13 +245,13 @@ const FORM_VACIO: UnidadFormState = {
           @if (mode === 'create') {
             <label class="block sm:col-span-2">
               <span class="mb-1 block text-sm font-medium text-text-secondary">
-                Gmail unidad (requerido — login CU-O30)
+                Gmail unidad (opcional — sin él, la unidad no podrá declarar disponibilidad hasta
+                que se le asigne login)
               </span>
               <input
                 type="email"
                 [(ngModel)]="form.gmail"
                 name="gmail"
-                required
                 data-testid="input-gmail"
                 class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
               />
@@ -526,10 +526,6 @@ export class FormularioPage implements OnInit, AfterViewInit {
       this.errorMensaje = 'Completa los campos requeridos (condado, placa y nombre).';
       return;
     }
-    if (!this.form.gmail.trim()) {
-      this.errorMensaje = 'El gmail de la unidad es requerido.';
-      return;
-    }
 
     const body: UnidadCreateRequest = {
       idcondado: this.form.idcondado,
@@ -539,7 +535,7 @@ export class FormularioPage implements OnInit, AfterViewInit {
       contactoproveedor: this.form.contactoproveedor.trim() || undefined,
       unidademergencia: this.form.unidademergencia.trim(),
       tipounidademergencia: this.form.tipounidademergencia,
-      gmail: this.form.gmail.trim(),
+      gmail: this.form.gmail.trim() || undefined,
     };
 
     this.guardando = true;

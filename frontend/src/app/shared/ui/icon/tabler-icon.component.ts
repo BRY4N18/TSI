@@ -42,7 +42,16 @@ export type TablerIconName =
   | 'plus'
   | 'trash'
   | 'chevron-up'
-  | 'chevron-down';
+  | 'chevron-down'
+  // --- Partners y API (estados derivados, entornos y credenciales) ---
+  | 'user-plus'
+  | 'license'
+  | 'flask'
+  | 'clock'
+  | 'ban'
+  | 'bolt'
+  | 'key'
+  | 'copy';
 
 const ICON_PATHS: Record<TablerIconName, string[]> = {
   dashboard: [
@@ -155,6 +164,40 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
   ],
   'chevron-up': ['M6 15l6 -6l6 6'],
   'chevron-down': ['M6 9l6 6l6 -6'],
+  // --- Partners y API ---
+  'user-plus': [
+    'M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0',
+    'M16 19h6',
+    'M19 16v6',
+    'M6 21v-2a4 4 0 0 1 4 -4h4',
+  ],
+  license: [
+    'M15 21h-9a3 3 0 0 1 -3 -3v-1h10v2a2 2 0 0 0 4 0v-14a2 2 0 1 1 2 2h-2m2 -4h-11a3 3 0 0 0 -3 3v11',
+    'M9 7l4 0',
+    'M9 11l4 0',
+  ],
+  flask: [
+    'M9 3l6 0',
+    'M10 9l4 0',
+    'M10 3v6l-3.5 7a1.7 1.7 0 0 0 1.5 2.5h8a1.7 1.7 0 0 0 1.5 -2.5l-3.5 -7v-6',
+  ],
+  clock: [
+    'M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0',
+    'M12 7v5l3 3',
+  ],
+  ban: [
+    'M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0',
+    'M5.7 5.7l12.6 12.6',
+  ],
+  bolt: ['M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11'],
+  key: [
+    'M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z',
+    'M15 9h.01',
+  ],
+  copy: [
+    'M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z',
+    'M4.012 16.737a2 2 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1',
+  ],
 };
 
 /** Paths crudos de un ícono — para reutilizar el mismo lenguaje visual fuera de Angular (ej. marcadores de Leaflet). */

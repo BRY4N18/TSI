@@ -1,10 +1,12 @@
 # Traceability — Gestión de Cuenta de Cliente
 
+Numeración de CU corregida 2026-08-08 al catálogo vigente (`TSI-Catalogo-CU-RF-RNF.md`); ver `spec.md` Clarifications. El antiguo CU-O03 (perfil+preferencias combinado) se dividió en CU-O13 (perfil) y CU-O14 (preferencias).
+
 | CU | RF/RNF/CA | Task IDs | Status |
 |----|-----------|----------|--------|
-| CU-O03 | RF-CTA-001, RF-CTA-002, CA-CTA-001 | T017–T036 | ✓ Validated |
-| CU-O10 | RF-CTA-003, RF-CTA-005, CA-CTA-002, CA-CTA-006 | T037–T048 | ✓ Validated |
-| CU-O11 | RF-CTA-004, RF-CTA-005, CA-CTA-003..006 | T049–T061 | ✓ Validated |
+| CU-O13 / CU-O14 | RF-CTA-001, RF-CTA-002, CA-CTA-001 | T017–T036 | ✓ Validated |
+| CU-O15 | RF-CTA-003, RF-CTA-005, CA-CTA-002, CA-CTA-006 | T037–T048 | ✓ Validated |
+| CU-O16 | RF-CTA-004, RF-CTA-005, CA-CTA-003..006 | T049–T061 | ✓ Validated |
 | Transversal | RNF-CTA-002, RNF-CTA-003 | T006–T016, T062–T066 | ✓ Validated |
 
 ## Acceptance criteria mapping

@@ -1,4 +1,4 @@
-"""RF-TIC-003 (CU-O95) — configuración de SLA con vigencia temporal."""
+"""RF-TIC-003 (CU-O97) — configuración de SLA con vigencia temporal."""
 
 from __future__ import annotations
 

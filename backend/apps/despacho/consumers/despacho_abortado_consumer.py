@@ -1,4 +1,4 @@
-"""Consumer O36 — re-asignación tras aborto de misión."""
+"""Consumer O63 — re-asignación tras aborto de misión."""
 
 from __future__ import annotations
 

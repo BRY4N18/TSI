@@ -42,6 +42,7 @@ import {
   Plan,
   PlanLimites,
   PlanListQuery,
+  SeveridadPlan,
 } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { billingBadge } from '../../billing-ui';
@@ -305,6 +306,19 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
       `${limites.unidades_max} unidades`,
       `${limites.usuarios_max} usuarios`,
       `${limites.api_calls_mes} API/mes`,
+      `${limites.api_calls_minuto} API/min`,
     ].join(' · ');
+  }
+
+  severidadesTexto(severidades?: SeveridadPlan[] | string): string {
+    if (!severidades) return 'Sin configurar';
+    if (typeof severidades === 'string') {
+      try {
+        return this.severidadesTexto(JSON.parse(severidades) as SeveridadPlan[]);
+      } catch {
+        return 'Sin configurar';
+      }
+    }
+    return severidades.length ? severidades.join(' · ') : 'Sin configurar';
   }
 }

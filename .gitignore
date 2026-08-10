@@ -50,7 +50,10 @@ backend/config/keys/*.pem
 .cursor/
 
 # Heavy / generated local data (not source)
-database/
+# `database/` SÍ se versiona: sus scripts de migración, siembra y verificación
+# contra Pinot real son fuente, y son la única red de seguridad de los cambios
+# de esquema. Se excluyen solo los artefactos regenerables de dentro.
+database/_respaldos/
 e2e/
 frontend/chrome/
 
@@ -59,6 +62,9 @@ frontend/chrome/
 /bocetos-dashboards/
 /informestacticos
 /flujoscorreguidos
+
+# ETL staging (parquet): artefactos regenerables del pipeline tactico, no código fuente
+/ETL/**/*.parquet
 
 # Note: `specs/`, `.specify/` and `docker/` ARE tracked.
 # OSRM map binaries stay out via `docker/osrm/.gitignore` (data/*).

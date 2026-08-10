@@ -1,0 +1,2609 @@
+[
+  {
+    "tableName": "Dim_Prospecto",
+    "schemaName": "Dim_Prospecto",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Prospecto_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Interaccion_Demo",
+    "schemaName": "Fact_Interaccion_Demo",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "timestamp_evento",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Interaccion_Demo_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "timestamp_evento"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Pipeline",
+    "schemaName": "Fact_Pipeline",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_transicion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Pipeline_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_transicion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_NotificacionVentas",
+    "schemaName": "Fact_NotificacionVentas",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahoranotificacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_NotificacionVentas_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahoranotificacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Asignacion",
+    "schemaName": "Fact_Asignacion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahoraasignacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Asignacion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahoraasignacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Cliente",
+    "schemaName": "Dim_Cliente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Cliente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Plan",
+    "schemaName": "Dim_Plan",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Plan_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Suscripcion",
+    "schemaName": "Fact_Suscripcion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_inicio",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Suscripcion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_inicio"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Factura",
+    "schemaName": "Fact_Factura",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_emision",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Factura_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_emision"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Solicitud_Cambio_Plan",
+    "schemaName": "Fact_Solicitud_Cambio_Plan",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_solicitud",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Solicitud_Cambio_Plan_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_solicitud"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_MetodoPago",
+    "schemaName": "Dim_MetodoPago",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_MetodoPago_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Usuarios",
+    "schemaName": "Dim_Usuarios",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Usuarios_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Rol",
+    "schemaName": "Dim_Rol",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Rol_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Usuario_Rol",
+    "schemaName": "Dim_Usuario_Rol",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Usuario_Rol_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Credencial",
+    "schemaName": "Dim_Credencial",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Credencial_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_UsuariosServidor",
+    "schemaName": "Dim_UsuariosServidor",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_UsuariosServidor_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_RolesServidor",
+    "schemaName": "Dim_RolesServidor",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_RolesServidor_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_UsuariosServidorRolesServidor",
+    "schemaName": "Dim_UsuariosServidorRolesServidor",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_UsuariosServidorRolesServidor_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_RolesServidorRoles",
+    "schemaName": "Dim_RolesServidorRoles",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_RolesServidorRoles_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Preferencias_Cliente",
+    "schemaName": "Dim_Preferencias_Cliente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Preferencias_Cliente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Session",
+    "schemaName": "Fact_Session",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahorainiciosesion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Session_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahorainiciosesion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Onboarding",
+    "schemaName": "Fact_Onboarding",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_completado",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Onboarding_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_completado"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Reclamo",
+    "schemaName": "Fact_Reclamo",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Reclamo_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Historial_Ticket",
+    "schemaName": "Fact_Historial_Ticket",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_accion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Historial_Ticket_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_accion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Servicio",
+    "schemaName": "Dim_Servicio",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Servicio_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Estado_Soporte",
+    "schemaName": "Dim_Estado_Soporte",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Estado_Soporte_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_SLAConfig",
+    "schemaName": "Dim_SLAConfig",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechavigenciadesde",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_SLAConfig_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechavigenciadesde"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_ArchivosAdjuntosReclamos",
+    "schemaName": "Fact_ArchivosAdjuntosReclamos",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahorasubida",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_ArchivosAdjuntosReclamos_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahorasubida"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Accidente",
+    "schemaName": "Fact_Accidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahoraaccidente",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Accidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahoraaccidente"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Severidad",
+    "schemaName": "Dim_Severidad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Severidad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Pais",
+    "schemaName": "Dim_Pais",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Pais_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Calle",
+    "schemaName": "Dim_Calle",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Calle_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Ciudad",
+    "schemaName": "Dim_Ciudad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Ciudad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Condado",
+    "schemaName": "Dim_Condado",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Condado_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Estado",
+    "schemaName": "Dim_Estado",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Estado_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Elementos_Fisicos",
+    "schemaName": "Dim_Elementos_Fisicos",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Elementos_Fisicos_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ElementoFisicoAccidente",
+    "schemaName": "Dim_ElementoFisicoAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ElementoFisicoAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_TipoEstadoAccidente",
+    "schemaName": "Dim_TipoEstadoAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_TipoEstadoAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_AccidenteTipoEstadoAccidente",
+    "schemaName": "Fact_AccidenteTipoEstadoAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahoramodificado",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_AccidenteTipoEstadoAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahoramodificado"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_TipoReportado",
+    "schemaName": "Dim_TipoReportado",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_TipoReportado_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ReferenciaEstacion",
+    "schemaName": "Dim_ReferenciaEstacion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ReferenciaEstacion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Conductor_Accidente",
+    "schemaName": "Fact_Conductor_Accidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Conductor_Accidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Vehiculo",
+    "schemaName": "Dim_Vehiculo",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Vehiculo_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Estado_Conductor",
+    "schemaName": "Dim_Estado_Conductor",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Estado_Conductor_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Conductor",
+    "schemaName": "Dim_Conductor",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Conductor_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EvidenciaFoto",
+    "schemaName": "Dim_EvidenciaFoto",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EvidenciaFoto_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_NotaAccidente",
+    "schemaName": "Dim_NotaAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_NotaAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_PeriodosDias",
+    "schemaName": "Dim_PeriodosDias",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_PeriodosDias_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EstadosClimas",
+    "schemaName": "Dim_EstadosClimas",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EstadosClimas_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_Despacho",
+    "schemaName": "Fact_Despacho",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahoradespacho",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_Despacho_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahoradespacho"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_NotificacionDespacho",
+    "schemaName": "Fact_NotificacionDespacho",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_NotificacionDespacho_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Implicado",
+    "schemaName": "Dim_Implicado",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Implicado_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ElementoClimaticosAccidente",
+    "schemaName": "Dim_ElementoClimaticosAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ElementoClimaticosAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EstadoDespacho",
+    "schemaName": "Dim_EstadoDespacho",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EstadoDespacho_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_HistorialDespachoUnidad",
+    "schemaName": "Fact_HistorialDespachoUnidad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_HistorialDespachoUnidad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_HistorialUbicacionUnidadEmergencia",
+    "schemaName": "Dim_HistorialUbicacionUnidadEmergencia",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_HistorialUbicacionUnidadEmergencia_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_HistorialEstadoUnidad",
+    "schemaName": "Fact_HistorialEstadoUnidad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_HistorialEstadoUnidad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_OrigenDespacho",
+    "schemaName": "Dim_OrigenDespacho",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_OrigenDespacho_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_UnidadEmergencia",
+    "schemaName": "Dim_UnidadEmergencia",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_UnidadEmergencia_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EstadoUnidadEmergencia",
+    "schemaName": "Dim_EstadoUnidadEmergencia",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EstadoUnidadEmergencia_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_BajaUnidad",
+    "schemaName": "Fact_BajaUnidad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_BajaUnidad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_RegionOperativa",
+    "schemaName": "Dim_RegionOperativa",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_RegionOperativa_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ValidacionRegion",
+    "schemaName": "Dim_ValidacionRegion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ValidacionRegion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EstadoRegion",
+    "schemaName": "Dim_EstadoRegion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EstadoRegion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_RegionOperativaEstadoRegion",
+    "schemaName": "Dim_RegionOperativaEstadoRegion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_RegionOperativaEstadoRegion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Partner",
+    "schemaName": "Dim_Partner",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Partner_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_CredencialAPI",
+    "schemaName": "Dim_CredencialAPI",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_CredencialAPI_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_HistorialAccesoPartner",
+    "schemaName": "Fact_HistorialAccesoPartner",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_cambio",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_HistorialAccesoPartner_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_cambio"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_APIIntegracion",
+    "schemaName": "Fact_APIIntegracion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_APIIntegracion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechahora"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_EstadoIntegracion",
+    "schemaName": "Dim_EstadoIntegracion",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_EstadoIntegracion_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_LogLlamadaAPI",
+    "schemaName": "Fact_LogLlamadaAPI",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechallamada",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_LogLlamadaAPI_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fechallamada"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ParametrosDespacho",
+    "schemaName": "Dim_ParametrosDespacho",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ParametrosDespacho_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_ParametrosSeguimiento",
+    "schemaName": "Dim_ParametrosSeguimiento",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_ParametrosSeguimiento_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_CierreAccidente",
+    "schemaName": "Fact_CierreAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_CierreAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_HistorialSeveridadAccidente",
+    "schemaName": "Fact_HistorialSeveridadAccidente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_HistorialSeveridadAccidente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Fact_HistorialTransferenciaPropiedad",
+    "schemaName": "Fact_HistorialTransferenciaPropiedad",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fechahora",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Fact_HistorialTransferenciaPropiedad_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_Usuario_Cliente",
+    "schemaName": "Dim_Usuario_Cliente",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_Usuario_Cliente_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_CondadoVecino",
+    "schemaName": "Dim_CondadoVecino",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_CondadoVecino_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  },
+  {
+    "tableName": "Dim_VersionContratoAPI",
+    "schemaName": "Dim_VersionContratoAPI",
+    "tableType": "REALTIME",
+    "segmentsConfig": {
+      "timeColumnName": "fecha_actualizacion",
+      "replication": "1",
+      "replicasPerPartition": "1"
+    },
+    "tenants": {},
+    "tableIndexConfig": {
+      "loadMode": "MMAP",
+      "streamConfigs": {
+        "streamType": "kafka",
+        "stream.kafka.topic.name": "Dim_VersionContratoAPI_topic",
+        "stream.kafka.broker.list": "kafka:29092",
+        "stream.kafka.consumer.type": "lowlevel",
+        "stream.kafka.consumer.prop.auto.offset.reset": "smallest",
+        "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+        "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder"
+      }
+    },
+    "routing": {
+      "instanceSelectorType": "strictReplicaGroup"
+    },
+    "upsertConfig": {
+      "mode": "FULL",
+      "comparisonColumn": "fecha_actualizacion"
+    },
+    "metadata": {
+      "customConfigs": {}
+    }
+  }
+]

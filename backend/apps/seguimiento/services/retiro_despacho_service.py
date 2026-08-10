@@ -1,4 +1,4 @@
-"""Retiro unitario de despacho — compartido O28/O42/O44."""
+"""Retiro unitario de despacho — compartido O80/O72/O81."""
 
 from __future__ import annotations
 
@@ -29,7 +29,9 @@ class RetiroDespachoService:
         self.historial = historial_repo or HistorialDespachoRepository()
         self.historial_unidad = historial_unidad or HistorialEstadoUnidadRepository()
 
-    def retirar(self, *, iddespacho: int, idusuario: int) -> dict[str, Any]:
+    def retirar(
+        self, *, iddespacho: int, idusuario: int, forzado: bool = False
+    ) -> dict[str, Any]:
         despacho = self.despachos.find_by_id(iddespacho)
         if not despacho:
             raise LookupError("Despacho no encontrado")
@@ -47,13 +49,15 @@ class RetiroDespachoService:
         )
         self.despachos.publish_update(
             iddespacho,
-            {"fechahoraretiro": now, "activo": False},
+            {"fechahoraretiro": now, "activo": False, "retiro_forzado": forzado},
         )
         idunidad = int(despacho["idunidademergencia"])
-        estado_unidad_actual, _ = self.historial_unidad.get_current_estado(idunidad)
+        # RN-SEG-003: restaurar el estado que la unidad tenía ANTES de este
+        # despacho (capturado en ConfirmarDespachoService), no el estado actual
+        # (que siempre es En_Mision desde la confirmación).
         estado_unidad_destino = (
             ESTADO_FUERA_SERVICIO
-            if estado_unidad_actual == ESTADO_FUERA_SERVICIO
+            if despacho.get("estado_unidad_previo") == ESTADO_FUERA_SERVICIO
             else ESTADO_ACTIVA
         )
         self.historial_unidad.append_estado(

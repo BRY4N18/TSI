@@ -1,4 +1,4 @@
-"""CU-O28 — cierre multi-despacho con auto-retiro."""
+"""CU-O80 — cierre multi-despacho con auto-retiro."""
 
 from __future__ import annotations
 
@@ -21,6 +21,9 @@ from core.repositories.despacho.historial_despacho_repository import (
     ESTADO_RETIRADO,
     HistorialDespachoRepository,
 )
+from core.repositories.seguimiento.cierre_accidente_repository import (
+    CierreAccidenteRepository,
+)
 
 
 class CerrarCasoService:
@@ -31,12 +34,14 @@ class CerrarCasoService:
         despacho_repo: DespachoRepository | None = None,
         historial_repo: HistorialDespachoRepository | None = None,
         retiro: RetiroDespachoService | None = None,
+        cierre_repo: CierreAccidenteRepository | None = None,
     ):
         self.accidentes = accidente_repo or AccidenteRepository()
         self.estado = estado_repo or EstadoAccidenteRepository()
         self.despachos = despacho_repo or DespachoRepository()
         self.historial = historial_repo or HistorialDespachoRepository()
         self.retiro = retiro or RetiroDespachoService()
+        self.cierre_repo = cierre_repo or CierreAccidenteRepository()
 
     def cerrar(
         self,
@@ -69,16 +74,22 @@ class CerrarCasoService:
         update_fields = {
             "horafin": now,
             "duracionminutos": duracion,
-            "resultado_atencion": payload["resultado_atencion"],
             "activo": False,
         }
-        for key in ("numvehiculos", "numvictimas", "numheridos", "numfallecidos", "calificacion"):
+        for key in ("numvehiculos", "numvictimas", "numheridos", "numfallecidos"):
             if key in payload and payload[key] is not None:
                 update_fields[key] = payload[key]
-        if payload.get("observaciones_finales"):
-            update_fields["observaciones_finales"] = payload["observaciones_finales"]
 
         self.accidentes.update(idaccidente, update_fields)
+        # RF-SEG-004: resultado/calificación/observaciones no existen en el
+        # esquema real de Fact_Accidente — se guardan en la tabla auxiliar
+        # Fact_CierreAccidente (corrección 2026-08-08).
+        self.cierre_repo.registrar(
+            idaccidente=idaccidente,
+            resultado_atencion=payload["resultado_atencion"],
+            calificacion=payload.get("calificacion"),
+            observaciones_finales=payload.get("observaciones_finales"),
+        )
         self.estado.append_estado(idaccidente=idaccidente, estado=ESTADO_CERRADO, idusuario=idusuario)
 
         return {

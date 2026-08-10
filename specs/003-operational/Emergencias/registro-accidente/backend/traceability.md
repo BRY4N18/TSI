@@ -14,7 +14,7 @@
 | CA-REG-007 | Edición complementaria con auditoría | T049, T052 | `test_patch_when_increment_numvehiculos_returns_200` | ✓ |
 | CA-REG-008 | 403 roles no autorizados | T016, T080 | `test_escalar_when_operador_returns_403` | ✓ |
 | CA-REG-009 | Descarte solo BORRADOR | T058-T061 | `test_descartar_when_borrador_returns_200` | ✓ |
-| CA-REG-010 | Escalamiento O40 | T072-T080 | `test_escalar_when_valid_returns_200` | ✓ |
+| CA-REG-010 | Escalamiento O73 | T072-T080 | `test_escalar_when_valid_returns_200` | ✓ |
 | CA-REG-011 | Padre sugerido: primera transición BORRADOR/REPORTADO por historial (RN-REG-010b); fallback a `fechahoraaccidente` más antigua sin historial | T066, T067 | `test_suggest_parent_returns_oldest_candidate` | ✓ (corregido 2026-07-15, ver `.specify/docs/changelog.md` G6) |
 | CA-REG-012 | Escalamiento requiere despacho | T075 | `test_escalar_when_no_despacho_raises` | ✓ |
 | CA-REG-013 | Retrospectivo >24h | T025 | `test_validate_registro_when_retrospective_without_justification_blocks` | ✓ |
@@ -33,10 +33,10 @@
 
 | CU | Descripción | Tareas |
 |----|-------------|--------|
-| CU-O21 | Registro accidente | T022-T045 |
-| CU-O32 | Descartar caso | T058-T062 |
-| CU-O40 | Escalar severidad | T072-T082 |
-| CU-O41 | Fusionar duplicados | T064-T070 |
+| CU-O56 | Registro accidente | T022-T045 |
+| CU-O58 | Descartar caso | T058-T062 |
+| CU-O73 | Escalar severidad | T072-T082 |
+| CU-O57 | Fusionar duplicados | T064-T070 |
 
 ## RNF
 

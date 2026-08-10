@@ -42,9 +42,7 @@ class EvaluacionReglasDemoService:
         self.prospecto_repo = prospecto_repo or ProspectoRepository()
         self.interaccion_repo = interaccion_repo or InteraccionDemoRepository()
         self.notificacion_repo = notificacion_repo or NotificacionVentasRepository()
-        self.despacho = despacho or DespachoNotificacionVentasService(
-            prospecto_repo=self.prospecto_repo
-        )
+        self.despacho = despacho or DespachoNotificacionVentasService()
 
     def run(self, *, now: datetime | None = None) -> dict:
         now = now or datetime.now(timezone.utc)

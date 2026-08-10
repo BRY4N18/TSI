@@ -1,4 +1,4 @@
-"""RF-TIC-004 (CU-O96) — monitoreo y escalado automático de SLA.
+"""RF-TIC-004 (CU-O89) — monitoreo y escalado automático de SLA.
 
 Clarificación Session 2026-07-21: `sla_primera_respuesta` y `sla_resolucion`
 se vigilan de forma independiente — cualquiera de los dos que cruce el umbral

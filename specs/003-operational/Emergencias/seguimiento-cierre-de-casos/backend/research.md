@@ -2,7 +2,7 @@
 
 ## Decision 1: Contract-first OpenAPI bajo `/api/v1/seguimiento`, `/api/v1/mi-seguimiento`, `/api/v1/emergencias` y `/api/v1/cliente`
 
-- **Decision:** Definir primero `contracts/seguimiento-cierre-de-casos.openapi.yaml` con endpoints HTTP para CU-O25/O26/O28/O29/O39/O42/O44 y RF-SEG-005–007; flujos O37 (job GPS), geofencing O26 y depuración GPS (RNF-SEG-004) como jobs/servicios internos sin endpoint público.
+- **Decision:** Definir primero `contracts/seguimiento-cierre-de-casos.openapi.yaml` con endpoints HTTP para CU-O68/O70/O80/O82/O71/O72/O81 y RF-SEG-005–007; flujos O69 (job GPS), geofencing O70 y depuración GPS (RNF-SEG-004) como jobs/servicios internos sin endpoint público.
 - **Rationale:** Orden solicitado (contrato REST → Django → Angular); constitution API-First; habilita contract tests y tipos TypeScript.
 - **Alternatives considered:**
   - Reutilizar solo rutas `/despacho/*` (rechazado: despacho cubre asignación; seguimiento tiene ciclo de vida distinto post-confirmación).
@@ -11,7 +11,7 @@
 ## Decision 2: Nueva app Django `apps/seguimiento/` (tercera app Emergencias)
 
 - **Decision:** Crear `apps/seguimiento/` con Vista → Servicio → Repositorio; repositorios en `core/repositories/seguimiento/` reutilizando lectura de `core/repositories/despacho/` donde aplique (`DespachoRepository`, `HistorialDespachoRepository`, `GeografiaRepository`).
-- **Rationale:** `module-map.md` lista spec propio; volumen CU-O25–O44 y jobs independientes justifican separación de `despacho/` (misma excepción documentada que accidentes/despacho en `project-structure.md`).
+- **Rationale:** `module-map.md` lista spec propio; volumen CU-O68–O81 y jobs independientes justifican separación de `despacho/` (misma excepción documentada que accidentes/despacho en `project-structure.md`).
 - **Alternatives considered:**
   - Extender solo `apps/despacho/` (rechazado: acoplamiento y mezcla asignación vs. cierre).
 
@@ -32,40 +32,40 @@
 ## Decision 5: JWT + RBAC (skills `api-authentication`, `django-expert`)
 
 - **Decision:** Bearer JWT RS256; permisos DRF en `apps/seguimiento/permissions.py`:
-  - `Operador de emergencias` → mapa, SSE, historial completo, cerrar, cancelar, forzar retiro O44.
+  - `Operador de emergencias` → mapa, SSE, historial completo, cerrar, cancelar, forzar retiro O81.
   - `Unidad de emergencia` → `mi-seguimiento/*` (GPS, llegada, abortar, cerrar/cancelar propio caso).
   - `Cliente` → solo `cliente/expedientes/*` (cerrados, filtro condado); HTTP 403 en mapa/SSE/activos.
 - **Rationale:** RN-SEG-005/006; validación servidor obligatoria.
 - **Alternatives considered:**
   - Guards Angular únicamente (rechazado: seguridad).
 
-## Decision 6: Geofencing O26 en pipeline de ingestión GPS
+## Decision 6: Geofencing O70 en pipeline de ingestión GPS
 
 - **Decision:** `RegistrarPosicionGpsService` evalúa radio 100m + histéresis 30s tras cada POST posición; si cumple y no hay llegada previa, registra En_sitio automáticamente y notifica unidad.
 - **Rationale:** RF-SEG-002/RNF-SEG-002; evita job separado y reduce latencia.
 - **Alternatives considered:**
   - Job batch cada 10s (rechazado: mayor latencia llegada automática).
 
-## Decision 7: O39 aborto → re-asignación O36 vía Kafka (sin llamada directa a despacho)
+## Decision 7: O71 aborto → re-asignación O63 vía Kafka (sin llamada directa a despacho)
 
-- **Decision:** `AbortarMisionService` publica evento dominio `DespachoAbortado_topic`; consumer en `apps/despacho/` invoca `ReasignacionDespachoService` (O36).
+- **Decision:** `AbortarMisionService` publica evento dominio `DespachoAbortado_topic`; consumer en `apps/despacho/` invoca `ReasignacionDespachoService` (O63).
 - **Rationale:** `architectural-patterns.md` — comunicación inter-módulo solo Kafka.
 - **Alternatives considered:**
   - Import síncrono `ReasignacionDespachoService` (rechazado: acoplamiento).
 
-## Decision 8: Cierre multi-despacho O28 con atribución auditoría
+## Decision 8: Cierre multi-despacho O80 con atribución auditoría
 
-- **Decision:** `CerrarCasoService` auto-retira despachos pendientes con `idusuario` = ejecutor del cierre (clarificación B); distinto de O44 (forzado unitario por operador).
+- **Decision:** `CerrarCasoService` auto-retira despachos pendientes con `idusuario` = ejecutor del cierre (clarificación B); distinto de O81 (forzado unitario por operador).
 - **Rationale:** RN-SEG-012; trazabilidad SLA.
 - **Alternatives considered:**
   - `idusuario=Sistema` en auto-retiros (rechazado en clarify).
 
-## Decision 9: O42 cancelación — formulario mínimo
+## Decision 9: O72 cancelación — formulario mínimo
 
 - **Decision:** Solo `motivo` + `horafin`/`duracionminutos`; sin RF-SEG-004 ni `Dim_EvidenciaFoto`.
 - **Rationale:** Clarificación A Session 2026-07-09.
 - **Alternatives considered:**
-  - Mismo formulario O28 (rechazado).
+  - Mismo formulario O80 (rechazado).
 
 ## Decision 10: Filtro expedientes Cliente por condado
 
@@ -74,10 +74,10 @@
 - **Alternatives considered:**
   - Polígonos GeoJSON (rechazado en clarify).
 
-## Decision 11: Jobs programados O37 y depuración GPS
+## Decision 11: Jobs programados O69 y depuración GPS
 
 - **Decision:**
-  - **O37:** job cada 30s (`gps_senal_perdida_job`) — umbral configurable default 60s.
+  - **O69:** job cada 30s (`gps_senal_perdida_job`) — umbral configurable default 60s.
   - **Depuración:** job diario (`gps_depuracion_job`) — 90 días post-cierre, conserva 3 puntos por `iddespacho` (RNF-SEG-004).
 - **Rationale:** RNF-SEG-004/005; operación desacoplada de HTTP.
 - **Alternatives considered:**

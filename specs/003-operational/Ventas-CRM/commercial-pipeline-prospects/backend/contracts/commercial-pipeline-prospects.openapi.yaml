@@ -335,8 +335,9 @@ components:
             type: string
             enum: [Baja, Media, Alta]
           description: >
-            Derivadas de nivel (Decision 10): Básico→[Baja]; Profesional→[Baja,Media];
-            Empresarial→[Baja,Media,Alta]; desconocido→[]
+            Dim_Plan.severidades_desbloqueadas — campo independiente y configurable por el
+            Director de Estrategia (corrección 2026-08-08, ya no derivado de nivel; ver
+            subscriptions-and-billing RN-SUSF-002). Ausente/no configurado → []
 
     PlanesListEnvelope:
       type: object

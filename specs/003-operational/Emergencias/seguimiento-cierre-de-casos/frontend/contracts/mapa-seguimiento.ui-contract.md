@@ -31,7 +31,7 @@
 
 - Clic marcador → panel resumen (id, severidad/estado, ETA)
 - Unidad en camino: polyline origen→destino; ETA + distancia
-- Acción «Forzar retiro» por despacho (O44) desde detalle embebido
+- Acción «Forzar retiro» por despacho (O81) desde detalle embebido
 
 ## Acceso
 

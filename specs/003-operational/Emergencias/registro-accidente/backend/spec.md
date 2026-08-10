@@ -13,12 +13,12 @@ Capturar de forma rápida, precisa y estructurada toda la información inicial d
 El registro de accidentes es el punto de entrada al ciclo operativo de TSI. Cada accidente registrado correctamente activa el algoritmo de despacho inteligente, alimenta los reportes de siniestralidad para clientes y nutre los modelos predictivos de IA. La calidad, velocidad y precisión de este registro determinan la efectividad de toda la cadena de respuesta a emergencias.
 
 **Casos de uso incluidos:**
-- **CU-O21**: Registrar accidente de tránsito en tiempo real: geolocalización, tipo, severidad y datos del incidente. Nuevos campos: `horainicio`, `descripcion`, `codigopostal`, `numvehiculos`, `numvictimas`, `numheridos`, `numfallecidos`, `horafin`, `duracionminutos`, `idaccidenteorigen`. Estado inicial cambia de "Reportado" a **BORRADOR**.
-- **CU-O32**: Descartar caso antes de despacho. Permite al Operador marcar un caso como DESCARTADO cuando la alerta resulta ser falsa o no requiere intervención.
-- **CU-O40**: Escalar severidad en sitio. La Unidad de emergencia puede actualizar la severidad, heridos y fallecidos con información real observada en el lugar.
-- **CU-O41**: Fusionar reportes duplicados. El Sistema detecta y el Operador confirma la fusión de dos reportes que corresponden al mismo accidente.
+- **CU-O56**: Registrar accidente de tránsito en tiempo real: geolocalización, tipo, severidad y datos del incidente. Nuevos campos: `horainicio`, `descripcion`, `codigopostal`, `numvehiculos`, `numvictimas`, `numheridos`, `numfallecidos`, `horafin`, `duracionminutos`, `idaccidenteorigen`. Estado inicial cambia de "Reportado" a **BORRADOR**.
+- **CU-O58**: Descartar caso antes de despacho. Permite al Operador marcar un caso como DESCARTADO cuando la alerta resulta ser falsa o no requiere intervención.
+- **CU-O73**: Escalar severidad en sitio. La Unidad de emergencia puede actualizar la severidad, heridos y fallecidos con información real observada en el lugar.
+- **CU-O57**: Fusionar reportes duplicados. El Sistema detecta y el Operador confirma la fusión de dos reportes que corresponden al mismo accidente.
 
-El registro utiliza las tablas `Fact_Accidente`, `Dim_Calle`, `Dim_Ciudad`, `Dim_Condado`, `Dim_Estado`, `Dim_Pais`, `Dim_Severidad`, `Dim_TipoReportado`, `Dim_ReferenciaEstacion`, `Dim_TipoEstadoAccidente`, `Fact_AccidenteTipoEstadoAccidente` y `Dim_NotaAccidente` (esta última solo en CU-O40). El DDL de puentes clima/físico, conductores e implicados vive en el esquema de Registro, pero **su escritura en runtime es Fase 3** (`evidencia-unidad` CU-O46, Técnico de campo). Ver `flujoscorreguidos/flujo-emergencias-canonico.md`.
+El registro utiliza las tablas `Fact_Accidente`, `Dim_Calle`, `Dim_Ciudad`, `Dim_Condado`, `Dim_Estado`, `Dim_Pais`, `Dim_Severidad`, `Dim_TipoReportado`, `Dim_ReferenciaEstacion`, `Dim_TipoEstadoAccidente`, `Fact_AccidenteTipoEstadoAccidente` y `Dim_NotaAccidente` (esta última solo en CU-O73). El DDL de puentes clima/físico, conductores e implicados vive en el esquema de Registro, pero **su escritura en runtime es Fase 3** (`evidencia-unidad` CU-O75/CU-O76, Técnico de campo). Ver `flujoscorreguidos/flujo-emergencias-canonico.md`.
 
 ## Clarifications
 
@@ -30,30 +30,30 @@ El registro utiliza las tablas `Fact_Accidente`, `Dim_Calle`, `Dim_Ciudad`, `Dim
 - Q: ¿El ID en la lista debe ser enlace? → A: **No.** `idaccidente` como texto plano (sin estilo de link ni navegación al clic). Apertura solo vía Acciones (ojo / lápiz).
 - Q: En modo Detalles, ¿siguen disponibles Descartar / Escalar y demás acciones operativas? → A: **Sí (opción A).** Detalles solo bloquea edición de campos complementarios y oculta Guardar; Descartar, Escalar y acciones del módulo siguen según estado/rol vigentes.
 - Q: ¿Feedback de selección en lista? → A: Al volver a la lista, la fila/card del último caso abierto se distingue con acento de marca (no teñir por severidad/estado; esos van en badge/ícono).
-- Q: ¿CTA Nuevo registro? → A: Se mantiene arriba en la lista, vinculado al flujo CU-O21 existente (sin rediseñar registro).
+- Q: ¿CTA Nuevo registro? → A: Se mantiene arriba en la lista, vinculado al flujo CU-O56 existente (sin rediseñar registro).
 - Q: En modo Detalles, ¿galería y datos del siniestro también solo lectura? → A: **Sí (opción A).** Detalles: enlaces de consulta («Ver galería», «Ver datos del siniestro») y páginas destino en modo view (sin CTAs de subir/completar). Editar (lápiz): CTAs de completar/captura según rol.
 - Q: Al restaurar borrador local (RNF-REG-006), ¿cómo descartarlo? → A: **Opción B.** CTA en el banner (p. ej. «Descartar borrador») con **confirmación breve en lenguaje de usuario** (sin términos técnicos como «cache»/«localStorage»; p. ej. «¿Descartar el borrador y empezar de nuevo?»); al confirmar: borra el borrador local y deja el formulario en blanco.
 
 ### Session 2026-07-29
 
-- Q: ¿El Operador puede precargar clima / elementos físicos en el registro inicial (CU-O21)? → A: **No.** Clima, período, elementos físicos, conductores, implicados, fotos y notas de campo son **exclusivos del Técnico de campo (o Unidad) en sitio** vía `evidencia-unidad` CU-O46 / CU-O27. CU-O21 solo captura lo conocido a distancia.
+- Q: ¿El Operador puede precargar clima / elementos físicos en el registro inicial (CU-O56)? → A: **No.** Clima, período, elementos físicos, conductores, implicados, fotos y notas de campo son **exclusivos del Técnico de campo (o Unidad) en sitio** vía `evidencia-unidad` CU-O75/CU-O76 / CU-O74. CU-O56 solo captura lo conocido a distancia.
 - Q: ¿Fuente normativa del flujo por fases? → A: `flujoscorreguidos/flujo-emergencias-canonico.md` (IDs CU = module-map / specs Emergencias).
 
 ### Session 2026-07-09
 
-- Q: ¿Cuándo y cómo debe ocurrir la transición BORRADOR → REPORTADO tras el registro inicial (CU-O21)? → A: Condicional: sin advertencias → auto-promoción a REPORTADO en la misma transacción; con advertencias forzadas → queda en BORRADOR hasta confirmación manual.
+- Q: ¿Cuándo y cómo debe ocurrir la transición BORRADOR → REPORTADO tras el registro inicial (CU-O56)? → A: Condicional: sin advertencias → auto-promoción a REPORTADO en la misma transacción; con advertencias forzadas → queda en BORRADOR hasta confirmación manual.
 - Q: ¿Cómo debe definirse el "área de cobertura operativa" para validar coordenadas GPS? → A: GPS dentro de un `Dim_EstadoRegion` vinculado a una `Dim_RegionOperativa` con `estadoregion='Producción'` vía `Dim_RegionOperativaEstadoRegion`.
 - Q: ¿Cómo debe modelarse el "registro retrospectivo" cuando `fechahoraaccidente` es anterior a más de 24 horas? → A: Campos explícitos `registroRetrospectivo` (BOOLEAN) y `justificacionRetrospectiva` (STRING, obligatorio si `registroRetrospectivo=true`); solo así se permite fecha >24h.
-- Q: ¿En qué estados del accidente puede ejecutarse el escalamiento de severidad en sitio (CU-O40)? → A: En `ASIGNADO` o `EN_ATENCIÓN` con despacho activo confirmado para ese accidente.
-- Q: Al fusionar reportes duplicados (CU-O41), ¿cómo debe determinarse el caso "padre" por defecto? → A: Preselección del registro más antiguo (primer `fechahoramodificado` en BORRADOR/REPORTADO); el Operador puede cambiar antes de confirmar.
+- Q: ¿En qué estados del accidente puede ejecutarse el escalamiento de severidad en sitio (CU-O73)? → A: En `ASIGNADO` o `EN_ATENCIÓN` con despacho activo confirmado para ese accidente.
+- Q: Al fusionar reportes duplicados (CU-O57), ¿cómo debe determinarse el caso "padre" por defecto? → A: Preselección del registro más antiguo (primer `fechahoramodificado` en BORRADOR/REPORTADO); el Operador puede cambiar antes de confirmar.
 
 ## 3. Actores
 
 | Actor | Rol en este módulo | Interacción principal |
 |---|---|---|
 | **Operador de emergencias** | Registrador principal | Recibe alertas de accidentes (por llamada, app o integración), ingresa los datos en el sistema, valida la información capturada, descarta casos, fusiona reportes duplicados y dispara el proceso de despacho. |
-| **Sistema** | Validador automático y fusionador | Valida coordenadas GPS, completitud de campos obligatorios, coherencia de datos y consistencia cruzada. Detecta automáticamente reportes duplicados y propone fusión (CU-O41). Clasifica inicialmente el incidente. |
-| **Unidad de emergencia** | Escalador de severidad | Actualiza la severidad del accidente con información real observada en sitio (CU-O40). |
+| **Sistema** | Validador automático y fusionador | Valida coordenadas GPS, completitud de campos obligatorios, coherencia de datos y consistencia cruzada. Detecta automáticamente reportes duplicados y propone fusión (CU-O57). Clasifica inicialmente el incidente. |
+| **Unidad de emergencia** | Escalador de severidad | Actualiza la severidad del accidente con información real observada en sitio (CU-O73). |
 
 ## 4. Requisitos funcionales
 
@@ -89,7 +89,7 @@ El sistema debe permitir al Operador agregar los siguientes datos complementario
 - **Duración preliminar:** `duracionminutos` (INT, opcional).
 - **Hora fin:** `horafin` (STRING, opcional, completada al cerrar el caso).
 
-**Fuera de RF-REG-002 / CU-O21:** período del día, condiciones climáticas, elementos físicos, conductores, vehículos, implicados no conductores, fotos y notas de campo. Dueño = **`evidencia-unidad` (CU-O46 / CU-O27)**, actor **Técnico de campo** (Unidad puede colaborar).
+**Fuera de RF-REG-002 / CU-O56:** período del día, condiciones climáticas, elementos físicos, conductores, vehículos, implicados no conductores, fotos y notas de campo. Dueño = **`evidencia-unidad` (CU-O75/CU-O76 / CU-O74)**, actor **Técnico de campo** (Unidad puede colaborar).
 
 ### RF-REG-003: Validación automática de datos del accidente
 
@@ -98,7 +98,7 @@ El sistema debe ejecutar automáticamente las siguientes validaciones al registr
 1. **Coordenadas GPS:** `latitudinicio` y `longitudinicio` deben estar dentro del rango válido global (-90 a 90, -180 a 180) y dentro del **área de cobertura operativa**, definida así: las coordenadas deben geocodificarse a un `Dim_EstadoRegion` que esté vinculado — vía `Dim_RegionOperativaEstadoRegion` — a al menos una `Dim_RegionOperativa` con `estadoregion='Producción'` y `activo=true`. Si las coordenadas no caen en ningún estado/provincia de una región en Producción, el sistema debe emitir advertencia de "fuera de cobertura" (no bloqueante; ver RF-REG-003 párrafo final).
 2. **Consistencia temporal:** `fechahoraaccidente` no puede ser una fecha futura. No puede ser anterior a más de 24 horas desde el momento del registro **salvo** registro retrospectivo explícito (`registroRetrospectivo=true` con `justificacionRetrospectiva` no vacía). Sin esos campos, fechas >24h retornan HTTP 422.
 3. **Coherencia geográfica:** el `idcalle` sugerido debe ser consistente con las coordenadas GPS (geocodificación inversa) y su jerarquía completa (`Dim_Calle → Dim_Ciudad → Dim_Condado → Dim_EstadoRegion → Dim_Pais`) debe resolver sin ambigüedad. Si hay discrepancia, el sistema debe advertir al Operador.
-4. **Duplicados:** no debe existir otro accidente con coordenadas y timestamp idénticos en un radio de 50 metros y 5 minutos (posible duplicado). Si se detecta, el sistema debe advertir, sugerir fusión (O41) y preseleccionar como caso padre el registro más antiguo según RN-REG-010b.
+4. **Duplicados:** no debe existir otro accidente con coordenadas y timestamp idénticos en un radio de 50 metros y 5 minutos (posible duplicado). Si se detecta, el sistema debe advertir, sugerir fusión (O57) y preseleccionar como caso padre el registro más antiguo según RN-REG-010b.
 5. **Campos obligatorios:** todos los campos marcados como requeridos deben tener valores no nulos ni vacíos.
 
 Si alguna validación falla, el sistema debe mostrar una advertencia pero permitir el registro forzado por el Operador bajo su criterio (excepto coordenadas fuera de rango válido global, que bloquean el registro). Un registro forzado con advertencias activas queda en estado **BORRADOR** y no avanza a **REPORTADO** hasta confirmación manual (RF-REG-010).
@@ -109,14 +109,14 @@ El sistema debe gestionar el ciclo de vida del accidente a través de la tabla `
 
 | Estado | Origen | Significado |
 |---|---|---|
-| **BORRADOR** | O21 (registro inicial o forzado con advertencias) | El accidente ha sido creado. Pendiente de confirmación manual para pasar a REPORTADO, descarte (O32) o fusión (O41). |
-| **REPORTADO** | O21 (post-validación sin advertencias) u O21/RF-REG-010 (confirmación manual desde BORRADOR) | El accidente ha sido validado y está pendiente de asignación de unidad. |
-| **BUSCANDO_UNIDAD** | O22 (asignación automática) | El sistema está buscando una unidad disponible para asignar al caso. |
-| **ASIGNADO** | O24 (confirmación de despacho) | Una unidad de emergencia ha confirmado el despacho. |
-| **EN_ATENCIÓN** | O26 (llegada al sitio) | La unidad llegó al sitio y está atendiendo la emergencia. |
-| **CERRADO** | O28/O44 (cierre del caso) | El caso ha sido cerrado. Todos los despachos tienen fechahoraretiro no nulo. |
-| **DESCARTADO** | O32 (descarte) | El caso fue descartado antes de cualquier despacho. `activo=false`. |
-| **FUSIONADO** | O41 (fusión) | El reporte fue fusionado con otro caso. `idaccidenteorigen` apunta al caso padre. |
+| **BORRADOR** | O56 (registro inicial o forzado con advertencias) | El accidente ha sido creado. Pendiente de confirmación manual para pasar a REPORTADO, descarte (O58) o fusión (O57). |
+| **REPORTADO** | O56 (post-validación sin advertencias) u O56/RF-REG-010 (confirmación manual desde BORRADOR) | El accidente ha sido validado y está pendiente de asignación de unidad. |
+| **BUSCANDO_UNIDAD** | O59 (asignación automática) | El sistema está buscando una unidad disponible para asignar al caso. |
+| **ASIGNADO** | O61 (confirmación de despacho) | Una unidad de emergencia ha confirmado el despacho. |
+| **EN_ATENCIÓN** | O70 (llegada al sitio) | La unidad llegó al sitio y está atendiendo la emergencia. |
+| **CERRADO** | O80/O81 (cierre del caso) | El caso ha sido cerrado. Todos los despachos tienen fechahoraretiro no nulo. |
+| **DESCARTADO** | O58 (descarte) | El caso fue descartado antes de cualquier despacho. `activo=false`. |
+| **FUSIONADO** | O57 (fusión) | El reporte fue fusionado con otro caso. `idaccidenteorigen` apunta al caso padre. |
 
 Cada cambio de estado debe insertar un nuevo registro en `Fact_AccidenteTipoEstadoAccidente` con `fechahoramodificado` e `idusuario`.
 
@@ -131,7 +131,7 @@ El Operador de emergencias debe poder consultar la lista de accidentes activos (
    - **Lápiz** → modo **Editar**: título intuitivo de edición (p. ej. «Editar caso»), campos complementarios editables ya permitidos (`numvehiculos`, `numheridos`, `numfallecidos`, `descripcion` y demás vigentes) y CTA primario **Guardar cambios** en la zona superior del workpanel (texto «Guardando…» durante el envío). CTAs hacia galería/enriquecimiento de captura o completar en sitio según rol (dueño funcional = `evidencia-unidad`).
 4. Tras Guardar cambios exitoso: confirmación no bloqueante y conservar el mismo caso en el workpanel. Ante fallo de red/guardado: aviso explícito sin descartar en silencio los valores ingresados.
 5. Al volver a la lista, marcar visualmente la fila/card del último caso abierto (acento de marca sutil). Severidad y estado se comunican solo en su celda (ícono+texto / badge), sin teñir la fila entera.
-6. Mantener CTA **Nuevo registro** arriba en la lista (Operadores autorizados) hacia el flujo CU-O21 existente, sin rediseñar campos ni reglas BORRADOR/REPORTADO.
+6. Mantener CTA **Nuevo registro** arriba en la lista (Operadores autorizados) hacia el flujo CU-O56 existente, sin rediseñar campos ni reglas BORRADOR/REPORTADO.
 7. Corregir errores en datos del registro inicial cuando el modo Editar y las reglas del módulo lo permitan.
 
 **Navegación:** workpanel en ruta de detalle/edición (no master-detail lista+detalle en el mismo viewport). Ejemplo: ojo → `/accidentes/{id}`; lápiz → `/accidentes/{id}?focus=edit`. Desde Detalles, galería/enriquecimiento con indicador de solo lectura (p. ej. `?mode=view`); desde Editar, sin forzar view.
@@ -149,7 +149,7 @@ Al ingresar las coordenadas GPS (`latitudinicio`, `longitudinicio`), el sistema 
 2. Sugerir los valores al Operador, quien puede confirmarlos o corregirlos manualmente.
 3. Si la geocodificación no encuentra resultados precisos, permitir al Operador seleccionar manualmente de las listas de `Dim_Calle`, `Dim_Ciudad`, etc.
 
-### RF-REG-007: Descartar caso antes de despacho (CU-O32)
+### RF-REG-007: Descartar caso antes de despacho (CU-O58)
 
 El Operador debe poder descartar un caso en estado BORRADOR cuando la alerta resulta ser falsa o no requiere intervención.
 
@@ -159,9 +159,9 @@ Al descartar, el sistema debe:
 3. No modificar `Fact_Despacho` ni `Fact_HistorialEstadoUnidad` (en BORRADOR no existe ningún despacho creado).
 4. No se requiere motivo obligatorio, pero el sistema debe ofrecer un campo opcional de nota.
 
-Restricción: solo se puede descartar un caso en estado BORRADOR. Si ya existe algún despacho, el descarte debe hacerse mediante CU-O42 (Cancelar caso con unidad despachada).
+Restricción: solo se puede descartar un caso en estado BORRADOR. Si ya existe algún despacho, el descarte debe hacerse mediante CU-O72 (Cancelar caso con unidad despachada).
 
-### RF-REG-008: Escalar severidad en sitio (CU-O40)
+### RF-REG-008: Escalar severidad en sitio (CU-O73)
 
 La Unidad de emergencia debe poder escalar la severidad del accidente cuando la información real observada difiere de la severidad inicial registrada (en ruta o en sitio).
 
@@ -172,11 +172,11 @@ Al escalar severidad, el sistema debe:
 2. Insertar un registro en `Dim_NotaAccidente` con `tipo=escalamiento` y `nota` descriptiva.
 3. Registrar el `idusuario` de la Unidad que realizó el escalamiento.
 4. Mantener el estado actual del caso (no cambia por el escalamiento).
-5. **Opcionalmente disparar CU-O38** (despacho múltiple) si el body incluye `idunidademergencia_adicional`. Si el campo está ausente, solo se escala (disparo opt-in hacia `CoordinacionMultipleService`).
+5. **Opcionalmente disparar CU-O66** (despacho múltiple) si el body incluye `idunidademergencia_adicional`. Si el campo está ausente, solo se escala (disparo opt-in hacia `CoordinacionMultipleService`).
 
 El sistema debe validar que `numheridos` y `numfallecidos` solo puedan incrementarse (nunca decrecer).
 
-### RF-REG-009: Fusionar reportes duplicados (CU-O41)
+### RF-REG-009: Fusionar reportes duplicados (CU-O57)
 
 El sistema debe detectar automáticamente reportes duplicados durante el registro (RF-REG-003 punto 4) y el Operador debe poder fusionar dos reportes que correspondan al mismo accidente.
 
@@ -239,11 +239,11 @@ Esta regla aplica el principio de "resiliencia de captura en campo" definido en 
 
 ### RN-REG-001
 
-Solo el Operador de emergencias puede registrar un nuevo accidente. El Cliente no tiene permiso para registrar accidentes desde su portal; solo puede consultar el historial (CU-O29).
+Solo el Operador de emergencias puede registrar un nuevo accidente. El Cliente no tiene permiso para registrar accidentes desde su portal; solo puede consultar el historial (CU-O82).
 
 ### RN-REG-002
 
-La severidad inicial asignada por el Operador en el registro puede ser modificada posteriormente por una Unidad de emergencia tras evaluar el sitio (CU-O40: Escalar severidad en sitio).
+La severidad inicial asignada por el Operador en el registro puede ser modificada posteriormente por una Unidad de emergencia tras evaluar el sitio (CU-O73: Escalar severidad en sitio).
 
 ### RN-REG-003
 
@@ -259,7 +259,7 @@ El `fechahoraaccidente` no puede ser futura ni anterior a más de 24 horas desde
 
 ### RN-REG-005
 
-Si el sistema detecta un posible duplicado (coordenadas similares en radio de 50m y timestamp en ventana de 5 minutos), debe advertir al Operador y sugerir fusión (O41). El Operador puede optar por crear un registro independiente si confirma que no es duplicado.
+Si el sistema detecta un posible duplicado (coordenadas similares en radio de 50m y timestamp en ventana de 5 minutos), debe advertir al Operador y sugerir fusión (O57). El Operador puede optar por crear un registro independiente si confirma que no es duplicado.
 
 ### RN-REG-006
 
@@ -271,11 +271,11 @@ Los campos `numvehiculos`, `numvictimas`, `numheridos` y `numfallecidos` solo pu
 
 ### RN-REG-008
 
-`idperiododia` / `idestadoclima` / elementos físicos **no** se capturan ni calculan en CU-O21. Su registro corresponde al Técnico de campo en `evidencia-unidad` (CU-O46, RF-EVI-007/008).
+`idperiododia` / `idestadoclima` / elementos físicos **no** se capturan ni calculan en CU-O56. Su registro corresponde al Técnico de campo en `evidencia-unidad` (CU-O75, RF-EVI-007/008).
 
 ### RN-REG-009 (Descarte)
 
-Solo se puede descartar un caso en estado **BORRADOR**. Si el caso ya tiene despachos asociados, debe usarse el flujo de cancelación (CU-O42).
+Solo se puede descartar un caso en estado **BORRADOR**. Si el caso ya tiene despachos asociados, debe usarse el flujo de cancelación (CU-O72).
 
 ### RN-REG-010 (Fusión)
 
@@ -283,7 +283,7 @@ La fusión de reportes duplicados solo procede si ambos casos están en estado *
 
 ### RN-REG-010b (Caso padre por defecto)
 
-Ante detección de posible duplicado, el sistema preselecciona como caso padre el `idaccidente` del registro existente más antiguo (primer `fechahoramodificado` en estado BORRADOR o REPORTADO). El Operador puede cambiar padre y duplicado antes de confirmar la fusión (CU-O41).
+Ante detección de posible duplicado, el sistema preselecciona como caso padre el `idaccidente` del registro existente más antiguo (primer `fechahoramodificado` en estado BORRADOR o REPORTADO). El Operador puede cambiar padre y duplicado antes de confirmar la fusión (CU-O57).
 
 ### RN-REG-011 (Escalamiento)
 
@@ -291,7 +291,7 @@ El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad 
 
 ## 7. Entradas
 
-### Para registro de accidente (CU-O21)
+### Para registro de accidente (CU-O56)
 - `latitudinicio` (DOUBLE, requerido, coordenada GPS latitud).
 - `longitudinicio` (DOUBLE, requerido, coordenada GPS longitud).
 - `fechahoraaccidente` (LONG, requerido, momento del accidente en epoch ms).
@@ -311,20 +311,20 @@ El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad 
 - `distanciamillas` (DOUBLE, opcional).
 - `duracionminutos` (INT, opcional).
 
-### Para descartar caso (CU-O32)
+### Para descartar caso (CU-O58)
 - `idaccidente` (STRING, requerido, path param).
 - `motivo` (STRING, opcional, nota de descarte).
 
-### Para escalar severidad (CU-O40)
+### Para escalar severidad (CU-O73)
 - `idaccidente` (STRING, requerido, path param).
 - `idseveridad` (INT, requerido, nuevo valor de severidad).
 - `numheridos` (INT, opcional, solo si incrementa).
 - `numfallecidos` (INT, opcional, solo si incrementa).
 - `descripcion` (STRING, opcional, actualización de la narrativa).
 - `nota` (STRING, requerido, descripción del escalamiento para `Dim_NotaAccidente`).
-- `idunidademergencia_adicional` (INT, opcional) — si se envía, dispara CU-O38 tras el escalamiento.
+- `idunidademergencia_adicional` (INT, opcional) — si se envía, dispara CU-O66 tras el escalamiento.
 
-### Para fusionar reportes (CU-O41)
+### Para fusionar reportes (CU-O57)
 - `idaccidente` (STRING, requerido, path param — el duplicado a fusionar).
 - `idaccidenteprincipal` (STRING, requerido, ID del caso padre).
 - `confirmacion` (BOOLEAN, requerido, confirmación explícita del Operador).
@@ -341,16 +341,16 @@ El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad 
 - **200 OK — Accidente actualizado:** `{ "message": "Accidente actualizado", "idaccidente": "ACC-...", "campos_modificados": ["numvehiculos", "numheridos"] }`
 - **200 OK — Detalle de accidente:** `{ "idaccidente": "ACC-...", "latitudinicio": 19.4326, "longitudinicio": -99.1332, "idseveridad": 3, "descripcion": "...", "estado_actual": "BORRADOR", "historial_estados": [...], ... }`
 - **200 OK — Lista de accidentes activos:** `{ "data": [...], "total": 25, "pagina": 1 }`
-- **200 OK — Caso descartado (O32):** `{ "message": "Caso descartado exitosamente", "idaccidente": "ACC-...", "estado": "DESCARTADO" }`
-- **200 OK — Severidad escalada (O40):** `{ "message": "Severidad escalada exitosamente", "idaccidente": "ACC-...", "idseveridad": 4, "estado": "ASIGNADO" | "EN_ATENCIÓN" }` — refleja el estado actual sin cambiarlo.
-- **200 OK — Reportes fusionados (O41):** `{ "message": "Reportes fusionados exitosamente", "idaccidente_duplicado": "ACC-...", "idaccidente_principal": "ACC-...", "estado_duplicado": "FUSIONADO" }`
+- **200 OK — Caso descartado (O58):** `{ "message": "Caso descartado exitosamente", "idaccidente": "ACC-...", "estado": "DESCARTADO" }`
+- **200 OK — Severidad escalada (O73):** `{ "message": "Severidad escalada exitosamente", "idaccidente": "ACC-...", "idseveridad": 4, "estado": "ASIGNADO" | "EN_ATENCIÓN" }` — refleja el estado actual sin cambiarlo.
+- **200 OK — Reportes fusionados (O57):** `{ "message": "Reportes fusionados exitosamente", "idaccidente_duplicado": "ACC-...", "idaccidente_principal": "ACC-...", "estado_duplicado": "FUSIONADO" }`
 
 ### Respuestas de error
 - **400 Bad Request** — Campos obligatorios faltantes o coordenadas fuera de rango global.
 - **401 Unauthorized** — Token no proporcionado, inválido o expirado.
-- **403 Forbidden** — Usuario sin rol de Operador de emergencias (O21, O32, O41) o Unidad de emergencia (O40).
-- **409 Conflict** — Posible duplicado detectado: incluye `idaccidente_similar` y `idaccidente_principal_sugerido` (registro más antiguo, RN-REG-010b); el sistema advierte pero permite forzar registro independiente o fusionar (O41). La fusión opera sobre `idaccidente_similar`: el reporte rechazado por el 409 nunca llegó a crearse, así que no hay un "duplicado" con id propio.
-- **409 Conflict** — Intento de escalamiento (O40) con caso no en ASIGNADO/EN_ATENCIÓN o sin despacho activo confirmado (RN-REG-011).
+- **403 Forbidden** — Usuario sin rol de Operador de emergencias (O56, O58, O57) o Unidad de emergencia (O73).
+- **409 Conflict** — Posible duplicado detectado: incluye `idaccidente_similar` y `idaccidente_principal_sugerido` (registro más antiguo, RN-REG-010b); el sistema advierte pero permite forzar registro independiente o fusionar (O57). La fusión opera sobre `idaccidente_similar`: el reporte rechazado por el 409 nunca llegó a crearse, así que no hay un "duplicado" con id propio.
+- **409 Conflict** — Intento de escalamiento (O73) con caso no en ASIGNADO/EN_ATENCIÓN o sin despacho activo confirmado (RN-REG-011).
 - **409 Conflict** — Intento de fusión con caso ya despachado (RN-REG-010).
 - **409 Conflict** — Intento de descarte con caso no en BORRADOR (RN-REG-009).
 - **422 Unprocessable Entity** — `fechahoraaccidente` anterior a más de 24 horas sin `registroRetrospectivo=true` y `justificacionRetrospectiva` (RN-REG-004).
@@ -370,20 +370,20 @@ El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad 
 | ASIGNADO | Una unidad confirmó el despacho. |
 | EN_ATENCIÓN | La unidad llegó al sitio y está atendiendo. |
 | CERRADO | Caso finalizado. Todos los despachos tienen estado "Retirado". |
-| DESCARTADO | Caso descartado antes de despacho (O32). `activo=false`. |
-| FUSIONADO | Reporte fusionado con otro caso (O41). `idaccidenteorigen` poblado. |
+| DESCARTADO | Caso descartado antes de despacho (O58). `activo=false`. |
+| FUSIONADO | Reporte fusionado con otro caso (O57). `idaccidenteorigen` poblado. |
 
 ### Transiciones
 ```
 BORRADOR → REPORTADO (auto-promoción en guardado sin advertencias, o confirmación manual RF-REG-010)
-BORRADOR → DESCARTADO (O32 — descarte antes de despacho)
-BORRADOR → FUSIONADO (O41 — fusión de duplicados)
-REPORTADO → FUSIONADO (O41 — fusión de duplicados)
-REPORTADO → BUSCANDO_UNIDAD (O22 — asignación automática)
-BUSCANDO_UNIDAD → ASIGNADO (O24 — unidad confirmó despacho)
-ASIGNADO → EN_ATENCIÓN (O26 — unidad llegó al sitio)
-EN_ATENCIÓN → CERRADO (O28 — cierre normal cuando todos los despachos están retirados)
-Cualquier estado con despacho activo → CERRADO (O42/O44 — cancelación o cierre forzado)
+BORRADOR → DESCARTADO (O58 — descarte antes de despacho)
+BORRADOR → FUSIONADO (O57 — fusión de duplicados)
+REPORTADO → FUSIONADO (O57 — fusión de duplicados)
+REPORTADO → BUSCANDO_UNIDAD (O59 — asignación automática)
+BUSCANDO_UNIDAD → ASIGNADO (O61 — unidad confirmó despacho)
+ASIGNADO → EN_ATENCIÓN (O70 — unidad llegó al sitio)
+EN_ATENCIÓN → CERRADO (O80 — cierre normal cuando todos los despachos están retirados)
+Cualquier estado con despacho activo → CERRADO (O72/O81 — cancelación o cierre forzado)
 ```
 
 ## 10. Escenarios
@@ -419,7 +419,7 @@ Entonces el sistema debe advertir del posible duplicado
 Y debe mostrar el `idaccidente` del registro similar
 Y debe preseleccionar como caso padre el registro más antiguo (`idaccidente_principal_sugerido`) y el nuevo como duplicado candidato
 Y debe ofrecer al Operador las opciones: (a) fusionar con el reporte existente (puede cambiar padre/duplicado antes de confirmar), (b) registrar como accidente independiente, (c) cancelar el registro.
-Si el Operador elige fusionar, el sistema ejecuta O41 con la asignación confirmada (por defecto o modificada).
+Si el Operador elige fusionar, el sistema ejecuta O57 con la asignación confirmada (por defecto o modificada).
 
 ### Escenario 4: Edición de datos complementarios
 
@@ -437,7 +437,7 @@ Entonces el sistema debe informar que no pudo determinar la ubicación automáti
 Y debe habilitar la selección manual de `idcalle` desde una lista desplegable (con búsqueda en cascada por ciudad/condado/estado/país para facilitar la ubicación)
 Y debe permitir al Operador continuar con el registro.
 
-### Escenario 6: Descarte de caso antes de despacho (O32)
+### Escenario 6: Descarte de caso antes de despacho (O58)
 
 Dado que un accidente está en estado BORRADOR
 Y el Operador determina que la alerta es falsa o no requiere intervención
@@ -447,7 +447,7 @@ Y debe actualizar `activo=false` en `Fact_Accidente`
 Y no debe modificar `Fact_Despacho` (no existe ningún despacho)
 Y debe retornar HTTP 200 con estado "DESCARTADO".
 
-### Escenario 7: Escalamiento de severidad en sitio (O40)
+### Escenario 7: Escalamiento de severidad en sitio (O73)
 
 Dado que una Unidad de emergencia tiene un despacho activo confirmado para el accidente
 Y el caso está en estado ASIGNADO o EN_ATENCIÓN
@@ -458,7 +458,7 @@ Y debe insertar un registro en `Dim_NotaAccidente` con `tipo=escalamiento`
 Y debe mantener el estado actual del caso (ASIGNADO o EN_ATENCIÓN)
 Y debe retornar HTTP 200 confirmando el escalamiento.
 
-### Escenario 8: Fusión de reportes duplicados (O41)
+### Escenario 8: Fusión de reportes duplicados (O57)
 
 Dado que existen dos reportes en estado BORRADOR con coordenadas casi idénticas
 Y el Operador confirma que corresponden al mismo accidente
@@ -496,7 +496,7 @@ El sistema valida que las coordenadas estén en rango global (-90 a 90, -180 a 1
 La geocodificación inversa sugiere automáticamente calle, ciudad, condado, estado y país basándose en las coordenadas GPS.
 
 ### CA-REG-004
-El sistema detecta posibles duplicados (mismas coordenadas en radio de 50m y misma ventana de 5 minutos) y ofrece fusión (O41).
+El sistema detecta posibles duplicados (mismas coordenadas en radio de 50m y misma ventana de 5 minutos) y ofrece fusión (O57).
 
 ### CA-REG-005
 En la lista de accidentes activos: ID como texto plano (sin link); Acciones ojo → modo **Detalles** (título de solo lectura, sin Guardar, campos no editables; Descartar/Escalar siguen según reglas; galería y datos del siniestro solo como consulta / modo view); lápiz → modo **Editar** (título de edición, Guardar cambios arriba, campos complementarios permitidos; CTAs de completar/captura según rol). Tras guardar: confirmación no bloqueante y mismo caso. Fallo de guardado: aviso sin perder captura. Fila/card del último caso abierto marcada al volver. CTA Nuevo registro arriba intacto. La edición queda en logs. No se editan clima/físicos/conductores de evidencia desde el workpanel de registro.
@@ -510,13 +510,13 @@ Cada cambio de estado del accidente genera automáticamente un nuevo registro en
 ### CA-REG-008
 Solo el Operador de emergencias puede registrar accidentes. Otros roles reciben HTTP 403.
 
-### CA-REG-009 (O32)
+### CA-REG-009 (O58)
 El Operador puede descartar un caso en estado BORRADOR. El sistema marca `activo=false` y registra estado DESCARTADO. Si el caso no está en BORRADOR, retorna HTTP 409.
 
-### CA-REG-010 (O40)
+### CA-REG-010 (O73)
 La Unidad de emergencia puede escalar la severidad de un accidente en estado ASIGNADO o EN_ATENCIÓN con despacho activo confirmado. El sistema actualiza `Fact_Accidente` e inserta nota en `Dim_NotaAccidente` con `tipo=escalamiento`. Si el estado no es ASIGNADO/EN_ATENCIÓN o no hay despacho confirmado, retorna HTTP 409.
 
-### CA-REG-011 (O41)
+### CA-REG-011 (O57)
 El Operador puede fusionar dos reportes duplicados. El sistema preselecciona como padre el registro más antiguo (RN-REG-010b), permite cambiar la asignación, setea `idaccidenteorigen` en el duplicado y registra estado FUSIONADO. Si algún caso ya fue despachado, retorna HTTP 409.
 
 ### CA-REG-012
@@ -537,12 +537,12 @@ El sistema valida cobertura operativa resolviendo el `Dim_EstadoRegion` de las c
 
 ## 13. Fuera de alcance
 
-- **Registro de conductores, vehículos e implicados no conductores:** dueño = **`evidencia-unidad` (CU-O46)** — Técnico de campo (o Unidad) en sitio vía `Dim_Conductor`, `Dim_Vehiculo`, `Dim_Estado_Conductor`, `Fact_Conductor_Accidente` y `Dim_Implicado`. Este módulo no implementa ese flujo.
-- **Clima / período / elementos físicos en sitio:** dueño exclusivo = **`evidencia-unidad` (CU-O46)** — Técnico de campo. **No** hay precarga desde CU-O21.
-- **Asignación de unidad de emergencia:** eso corresponde al spec despacho-inteligente (CU-O22, O33, O34).
-- **Captura de evidencia fotográfica y notas de campo:** eso corresponde al spec **`evidencia-unidad`** (Técnico de campo, CU-O27). *(Nota: no existe spec `field-operations`.)*
+- **Registro de conductores, vehículos e implicados no conductores:** dueño = **`evidencia-unidad` (CU-O76)** — Técnico de campo (o Unidad) en sitio vía `Dim_Conductor`, `Dim_Vehiculo`, `Dim_Estado_Conductor`, `Fact_Conductor_Accidente` y `Dim_Implicado`. Este módulo no implementa ese flujo.
+- **Clima / período / elementos físicos en sitio:** dueño exclusivo = **`evidencia-unidad` (CU-O75)** — Técnico de campo. **No** hay precarga desde CU-O56.
+- **Asignación de unidad de emergencia:** eso corresponde al spec despacho-inteligente (CU-O59, O64, O65).
+- **Captura de evidencia fotográfica y notas de campo:** eso corresponde al spec **`evidencia-unidad`** (Técnico de campo, CU-O74). *(Nota: no existe spec `field-operations`.)*
 - **Cálculo de tiempos de respuesta y SLAs:** eso corresponde al spec seguimiento-cierre-de-casos.
-- **Consulta de historial por parte del cliente:** el cliente consulta expedientes cerrados a través del spec seguimiento-cierre-de-casos (CU-O29).
-- **Coordinación de despacho múltiple:** corresponde al spec despacho-inteligente (CU-O38).
-- **Cancelación de caso con unidad ya despachada:** corresponde al spec seguimiento-y-cierre (CU-O42).
-- **Forzar cierre desde central:** corresponde al spec seguimiento-y-cierre (CU-O44).
+- **Consulta de historial por parte del cliente:** el cliente consulta expedientes cerrados a través del spec seguimiento-cierre-de-casos (CU-O82).
+- **Coordinación de despacho múltiple:** corresponde al spec despacho-inteligente (CU-O66).
+- **Cancelación de caso con unidad ya despachada:** corresponde al spec seguimiento-y-cierre (CU-O72).
+- **Forzar cierre desde central:** corresponde al spec seguimiento-y-cierre (CU-O81).

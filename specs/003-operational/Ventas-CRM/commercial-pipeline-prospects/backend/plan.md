@@ -59,13 +59,13 @@ Implementar el embudo comercial de prospectos (**RF-CPP-000** portal público de
 | Interaction Capability | PASS | Portal/listados con loading/vacío/error (RNF-CPP-005); catálogo vacío = vacío accionable hacia registro |
 | Security | PASS | JWT Bearer + RBAC en mutaciones; **GET /planes** y registro públicos; planes desactivados no se filtran al Visitante |
 | Compatibility | PASS | Contract-first OpenAPI `/api/v1/`; co-escritura `Dim_Cliente`; lectura `Dim_Plan` sin usurpar ownership de Suscripciones |
-| Maintainability | PASS | Vista→Servicio→Repositorio; un servicio por caso de uso; mapa `nivel→severidades` en servicio (Decision 10) |
+| Maintainability | PASS | Vista→Servicio→Repositorio; un servicio por caso de uso; parseo de `severidades_desbloqueadas` (campo independiente, corrección 2026-08-08) en servicio (Decision 10) |
 | Flexibility | Not applicable | Spec RNF-CPP-008 |
 | Safety | Not applicable | Spec RNF-CPP-009 |
 
 **Post-Design Gate:** PASS — sin violaciones. RF-CPP-000 no introduce escritura cruzada de módulo.
 
-**Tie-Breaker:** Maintainability + Functional Suitability para el mapa de severidades en código de servicio (sin schema nuevo ni duplicar administración de planes).
+**Tie-Breaker:** Maintainability + Functional Suitability para el parseo de `severidades_desbloqueadas` en código de servicio (sin schema nuevo ni duplicar administración de planes).
 
 ## Project Structure
 
@@ -147,14 +147,14 @@ frontend/
 
 ## Phase 0: Research
 
-Ver `research.md` — Decisiones 1–9 (embudo) + **Decision 10** (portal público / mapa severidades / ownership de lectura).
+Ver `research.md` — Decisiones 1–9 (embudo) + **Decision 10** (portal público / severidades independientes / ownership de lectura).
 
 ## Phase 1: Design & Contracts
 
 | Artefacto | Contenido |
 |-----------|-----------|
 | `contracts/commercial-pipeline-prospects.openapi.yaml` | **8** paths REST: + `GET /ventas-crm/planes` público; embudo previo intacto |
-| `data-model.md` | + `Dim_Plan` lectura referencial; mapa nivel→severidades; sin topic write |
+| `data-model.md` | + `Dim_Plan` lectura referencial; `severidades_desbloqueadas` como campo independiente; sin topic write |
 | `quickstart.md` | Paso 0 = catálogo público; luego registro → … |
 
 ### Mapa Vista → Servicio → Repositorio

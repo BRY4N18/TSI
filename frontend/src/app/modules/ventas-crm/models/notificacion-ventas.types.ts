@@ -2,6 +2,10 @@ export type CanalNotificacion = 'email' | 'slack' | 'push';
 export type TipoEventoDemo = 'click' | 'tiempo_seccion' | 'inicio_sesion' | 'fin_sesion';
 export type ReglaDisparada = 'tiempo_seccion_precios_5min' | 'visito_pricing_3x';
 
+/** Query params usados para pasar el grant de demo desde /registro a /demo (SRS §3.1.2 — continuación natural del registro). */
+export const DEMO_QUERY_PARAM_IDPROSPECTO = 'idprospecto';
+export const DEMO_QUERY_PARAM_GRANT = 'grant';
+
 export interface ApiEnvelope<T> {
   data: T;
   meta?: {

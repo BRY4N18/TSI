@@ -1,4 +1,4 @@
-"""RF-EVI-010 — implicados no conductores (CU-O46), ontología Dim_Implicado."""
+"""RF-EVI-010 — implicados no conductores (CU-O76), ontología Dim_Implicado."""
 
 from __future__ import annotations
 

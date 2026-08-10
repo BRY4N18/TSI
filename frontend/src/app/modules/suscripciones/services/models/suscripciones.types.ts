@@ -13,6 +13,8 @@ export interface PaginationMetaFields {
 
 export type EstadoSuscripcion = 'Activa' | 'Suspendida' | 'Cancelada';
 export type NivelPlan = 'Básico' | 'Profesional' | 'Empresarial';
+export type PeriodicidadPlan = 'Mensual' | 'Anual';
+export type SeveridadPlan = 'Baja' | 'Media' | 'Alta';
 export type TipoMetodoPago = 'tarjeta' | 'transferencia' | 'paypal';
 export type EstadoSolicitudCambioPlan = 'Pendiente' | 'Aprobada' | 'Rechazada';
 export type EstadoPagoFactura = 'Pendiente' | 'Pagada' | 'Fallida';
@@ -27,6 +29,10 @@ export interface Suscripcion {
   idcliente?: number;
   idplan?: number;
   precio?: number;
+  periodicidad?: PeriodicidadPlan;
+  nivel?: NivelPlan;
+  severidades_desbloqueadas?: SeveridadPlan[];
+  carga_lote_habilitada?: boolean;
   estado?: EstadoSuscripcion;
   activo?: boolean;
   renovacionautomatica?: boolean;
@@ -95,20 +101,37 @@ export interface PlanLimites {
   unidades_max: number;
   usuarios_max: number;
   api_calls_mes: number;
+  /**
+   * Límite de llamadas por minuto (RN-SUSF-019, añadido 2026-08-08).
+   * No es un prorrateo del mensual: protege contra ráfagas. Lo exige el SRS
+   * §3.4.1 y es el origen de `Dim_Partner.limitellamadasminuto` (RF-PON-003).
+   */
+  api_calls_minuto: number;
 }
 
 export interface PlanRequest {
   nombre: string;
   precio: number;
+  /** Precio unitario de cada llamada que supera el cupo (RF-O54.1). Distinto de `precio`, que es la suscripción. */
+  precio_excedente_llamada: number;
   limites: PlanLimites;
   nivel: NivelPlan;
+  periodicidad: PeriodicidadPlan;
+  severidades_desbloqueadas: SeveridadPlan[];
+  /** Habilita CU-O40 (carga en lote de unidades) para proveedores en este plan. Opcional, default false. */
+  carga_lote_habilitada?: boolean;
 }
 
 export interface PlanPatchRequest {
   nombre?: string;
   precio?: number;
+  /** Precio unitario de cada llamada que supera el cupo (RF-O54.1). Distinto de `precio`, que es la suscripción. */
+  precio_excedente_llamada?: number;
   limites?: PlanLimites;
   nivel?: NivelPlan;
+  periodicidad?: PeriodicidadPlan;
+  severidades_desbloqueadas?: SeveridadPlan[];
+  carga_lote_habilitada?: boolean;
   activo?: boolean;
 }
 
@@ -116,8 +139,13 @@ export interface Plan {
   idplan?: number;
   nombre?: string;
   precio?: number;
+  /** Precio unitario de cada llamada que supera el cupo (RF-O54.1). Distinto de `precio`, que es la suscripción. */
+  precio_excedente_llamada?: number;
   limites?: PlanLimites;
   nivel?: NivelPlan;
+  periodicidad?: PeriodicidadPlan;
+  severidades_desbloqueadas?: SeveridadPlan[];
+  carga_lote_habilitada?: boolean;
   activo?: boolean;
 }
 

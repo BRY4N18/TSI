@@ -77,6 +77,12 @@ Mismo envelope que `informes-tacticos-simples` (`{data, meta}`), con un caso adi
 
 Cuando sí hay datos, `materializado: true` y `data` trae las filas de la tabla ClickHouse correspondiente al rango pedido.
 
+## Addendum (2026-08-06): migración de los 3 DAGs a extract/transform/load-parquet
+
+Los 3 DAGs pasaron de 1 tarea (`PythonOperator` único: extract+transform+load en una sola llamada) a 3 tareas (`extract >> transform >> load`) siguiendo el patrón de staging en Parquet descrito en `../../infraestructura/spec.md` (Addendum 2026-08-06). **Los esquemas ClickHouse de arriba y el contrato de idempotencia (`ALTER TABLE ... DELETE WHERE periodo IN (...)` + `INSERT` por período) NO cambiaron** — solo cambió cómo se ejecuta el cálculo, no qué se calcula ni dónde se guarda.
+
+Las funciones `extract`/`transform`/`load` de cada DAG viven ahora en `dags/lib/perdida_senal_tasks.py`, `dags/lib/indice_calidad_tasks.py` y `dags/lib/rendimiento_proveedor_tasks.py` (no en el archivo del propio DAG), para que `dags/etl/dag_backfill.py` pueda reutilizarlas sin re-importar un archivo que también define un objeto `DAG` (evita `AirflowDagDuplicatedIdException`). Las funciones puras de negocio (`detectar_huecos`, `combinar_indice`, `agregar_por_proveedor` en `dags/lib/*_logic.py`) no cambiaron ni una línea — el nuevo código solo adapta `DataFrame ↔ list[dict]` alrededor de ellas.
+
 ## Fuera de alcance de esta fase
 
 - Ningún cambio de esquema de Pinot — las 3 tablas ClickHouse son destino, nunca origen.

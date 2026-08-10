@@ -4,7 +4,7 @@
 
 - Stack `tactico` levantado y verificado (`specs/002-tactico/infraestructura/quickstart.md`).
 - Stack operativo levantado con datos de prueba (Pinot poblado, incluyendo `Dim_HistorialUbicacionUnidadEmergencia` con al menos un hueco de señal conocido).
-- Los 3 DAGs (`perdida_senal_dag.py`, `indice_calidad_dag.py`, `rendimiento_proveedor_dag.py`) copiados a `docker/tactico/airflow-dags/` e implementados.
+- Los 3 DAGs (`perdida_senal_dag.py`, `indice_calidad_dag.py`, `rendimiento_proveedor_dag.py`) implementados en `dags/etl/` (raíz del repo — desde 2026-08-06 reemplaza a `docker/tactico/airflow-dags/`, ver Addendum en `tasks.md`).
 - Backend Django corriendo con los 3 endpoints de esta spec implementados.
 - Un token JWT de un usuario con rol `Administrador`.
 

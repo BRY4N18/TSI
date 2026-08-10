@@ -25,11 +25,11 @@
 
 | Story | Prioridad | CU/RF | Escenarios spec |
 |-------|-----------|-------|-----------------|
-| US1 | P1 🎯 MVP | CU-O91 | Escenarios 1, 2 |
-| US2 | P1 | CU-O92, RF-TIC-006 | Escenarios 3, 4 |
-| US3 | P1 | CU-O96 | Escenario 6 |
-| US4 | P2 | CU-O95 | Escenario 5 |
-| US5 | P2 | CU-O97 | Escenario 7 |
+| US1 | P1 🎯 MVP | CU-O83 | Escenarios 1, 2 |
+| US2 | P1 | CU-O84-O87, RF-TIC-006 | Escenarios 3, 4 |
+| US3 | P1 | CU-O89 | Escenario 6 |
+| US4 | P2 | CU-O97 | Escenario 5 |
+| US5 | P2 | CU-O88 | Escenario 7 |
 | US6 | P2 | RF-TIC-007 | quickstart §3 |
 | US7 | P2 | Frontend Angular (esqueleto API) | quickstart §3 |
 | US8 | P2 | RF-TIC-008, RNF-TIC-004, CA-TIC-014/015 | Cola de soporte master-detail |
@@ -77,7 +77,7 @@
 
 ## Phase 3: User Story 1 — Registro de ticket con clasificación automática y SLA (Priority: P1) 🎯 MVP
 
-**Goal**: CU-O91 — el cliente/soporte registra un ticket, el sistema clasifica automáticamente (`tipo_incidencia`, `prioridad`) y asigna SLA vigente según `idplan` (vía `Fact_Suscripcion`, `research.md` Decision 5).
+**Goal**: CU-O83 — el cliente/soporte registra un ticket, el sistema clasifica automáticamente (`tipo_incidencia`, `prioridad`) y asigna SLA vigente según `idplan` (vía `Fact_Suscripcion`, `research.md` Decision 5).
 
 **Independent Test**: Registrar ticket vinculado a emergencia activa → `prioridad='crítico'` automático, SLA asignado, historial `creacion` insertado; registrar ticket no clasificable → `Pendiente_de_clasificacion` sin SLA, luego clasificación manual arranca el timer.
 
@@ -106,7 +106,7 @@
 
 ## Phase 4: User Story 2 — Ciclo de vida del ticket (Priority: P1)
 
-**Goal**: CU-O92 + RF-TIC-006 — tomar, comentar (con notas internas ocultas al Cliente), escalar manualmente, resolver y confirmar/auto-cerrar.
+**Goal**: CU-O84-O87 + RF-TIC-006 — tomar, comentar (con notas internas ocultas al Cliente), escalar manualmente, resolver y confirmar/auto-cerrar.
 
 **Independent Test**: Agente toma ticket Abierto → `En_progreso`; comenta con `es_nota_interna=true` (no visible para Cliente); resuelve dentro de SLA; cliente confirma cierre → `sla_status='cumplido'`, `Cerrado`; o transcurren 5 días sin respuesta → auto-cierre.
 
@@ -143,7 +143,7 @@
 
 ## Phase 5: User Story 3 — Monitoreo y escalado automático de SLA (Priority: P1)
 
-**Goal**: CU-O96 — job cada 1 minuto vigila `sla_primera_respuesta` y `sla_resolucion` de forma independiente (clarificación), marca `en riesgo`/`incumplido` y escala automáticamente al Supervisor de Soporte.
+**Goal**: CU-O89 — job cada 1 minuto vigila `sla_primera_respuesta` y `sla_resolucion` de forma independiente (clarificación), marca `en riesgo`/`incumplido` y escala automáticamente al Supervisor de Soporte.
 
 **Independent Test**: Ticket "En_progreso" supera el 80% de cualquiera de los dos plazos → `sla_status='en riesgo'`; supera el 100% → `sla_status='incumplido'`, `idestadosoporte=Escalado`, `id_agente_asignado` = Supervisor de Soporte.
 
@@ -168,7 +168,7 @@
 
 ## Phase 6: User Story 4 — Configuración de SLA con vigencia temporal (Priority: P2)
 
-**Goal**: CU-O95 — el Administrador crea o modifica reglas de SLA por plan/tipo/prioridad sin afectar tickets ya creados (RN-TIC-006).
+**Goal**: CU-O97 — el Administrador crea o modifica reglas de SLA por plan/tipo/prioridad sin afectar tickets ya creados (RN-TIC-006).
 
 **Independent Test**: Crear nueva regla → INSERT `activo=true`; modificar regla vigente → fila anterior `activo=false`/`fechavigenciahasta=now` + fila nueva; tickets existentes conservan su `idslaconfig` original.
 
@@ -194,7 +194,7 @@
 
 ## Phase 7: User Story 5 — Reapertura de ticket cerrado (Priority: P2)
 
-**Goal**: CU-O97 — el cliente reabre un ticket Cerrado; el SLA se renueva contra la configuración vigente actual (clarificación, `research.md` Decision 8); se conserva el historial y se permiten nuevos adjuntos.
+**Goal**: CU-O88 — el cliente reabre un ticket Cerrado; el SLA se renueva contra la configuración vigente actual (clarificación, `research.md` Decision 8); se conserva el historial y se permiten nuevos adjuntos.
 
 **Independent Test**: Reabrir ticket Cerrado → `idestadosoporte=Reabierto`, `idslaconfig`/`sla_primera_respuesta`/`sla_resolucion` recalculados, historial previo intacto, nuevo adjunto insertado si se envía.
 
@@ -302,7 +302,7 @@
 ### Implementation for User Story 8
 
 - [X] T090 [Histórico-UI] [US8] Extender `TicketApiService.listar` para aceptar filtros `prioridad` / `idestadosoporte` (y tipado) en `frontend/src/app/modules/soporte-cliente/services/ticket-api.service.ts` y `models/soporte.types.ts`
-- [X] T091 [Histórico-UI] [US8] Rediseñar `cola-agente.page.ts` a master-detail: lista con badges (prioridad/estado/`sla_status` vía tokens design system), selección, panel detalle con historial + composer + acciones CU-O92 (tomar/resolver/escalar según estado); **sin** CTA reembolso ni "+ Nuevo ticket"
+- [X] T091 [Histórico-UI] [US8] Rediseñar `cola-agente.page.ts` a master-detail: lista con badges (prioridad/estado/`sla_status` vía tokens design system), selección, panel detalle con historial + composer + acciones CU-O84-O87 (tomar/resolver/escalar según estado); **sin** CTA reembolso ni "+ Nuevo ticket"
 - [X] T092 [Histórico-UI] [US8] Implementar filtros UI prioridad/estado cableados a `listar` y empty state "No hay tickets pendientes." con título "Cola de soporte" en `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.ts` (+ estilos del módulo si aplica)
 - [X] T093 [Histórico-UI] [US8] Asegurar responsive RNF-TIC-004: en viewport ≥1024px dos paneles; en viewports menores, stack lista→detalle sin perder acciones; confirmar label nav canónico "Cola de soporte" en `frontend/src/app/shared/layout/nav-links.ts`
 - [X] T094 [US8] Validar CA-TIC-014/015 y documentar en `specs/003-operational/Soporte-Cliente/gestion-tickets-soporte/backend/traceability.md` + actualizar escenarios UI en `quickstart.md`
@@ -384,7 +384,7 @@ T016+T017 supervisor_soporte_repository
 ### MVP First (User Story 1 Only)
 
 1. Completar Phase 1 + Phase 2
-2. Completar Phase 3 (CU-O91)
+2. Completar Phase 3 (CU-O83)
 3. **VALIDAR**: Escenario A quickstart — registro con clasificación automática exitosa en <3s
 4. Demo: ticket crítico vinculado a emergencia activa con SLA asignado automáticamente
 
@@ -403,7 +403,7 @@ T016+T017 supervisor_soporte_repository
 
 ### Suggested MVP Scope
 
-**US1 (CU-O91)** — el registro con clasificación automática y SLA es la base de todo el módulo; sin US1 no hay ticket que atender, monitorear o reabrir.
+**US1 (CU-O83)** — el registro con clasificación automática y SLA es la base de todo el módulo; sin US1 no hay ticket que atender, monitorear o reabrir.
 
 ---
 
@@ -411,7 +411,7 @@ T016+T017 supervisor_soporte_repository
 
 - Patrón AAA obligatorio; usar fixtures `mock_pinot`, `mock_kafka`, `auth_headers` de `backend/conftest.py`
 - Ningún repositorio escribe directo a Pinot — solo publicación Kafka
-- `AsignacionSLAService` es compartido por `RegistrarTicketService` (O91) y `ReabrirTicketService` (O97, Decision 8)
+- `AsignacionSLAService` es compartido por `RegistrarTicketService` (O83) y `ReabrirTicketService` (O88, Decision 8)
 - Notas internas (`es_nota_interna=true`) se filtran en `comentar_ticket_service.py`/serializers, nunca solo en el frontend (RN-TIC-002, Principio V constitution)
 - Markers: `repository` para repos, `service` para servicios/job, `api` para contract tests, `integration` para flujos end-to-end de este módulo (no forma parte del camino crítico de despacho, por eso no usa marker `critical_path`)
 - Commit sugerido tras cada par implementación+test o al cerrar cada checkpoint
@@ -421,7 +421,7 @@ T016+T017 supervisor_soporte_repository
 
 ## Phase 12: Remediation analyze 2026-07-29
 
-- [X] T095 Documentar mapa borrador→canónico (O68/O27/O28/O69/O70 → O95/O91/O92/O96/O97) en `spec.md` §2 + clarifications Session 2026-07-29; apuntar `.specify/feature.json` a `gestion-tickets-soporte`
+- [X] T095 Documentar mapa borrador→canónico (O68/O27/O28/O69/O70 → O97/O83/O84-O87/O89/O88) en `spec.md` §2 + clarifications Session 2026-07-29; apuntar `.specify/feature.json` a `gestion-tickets-soporte`
 - [X] T096 [P] Añadir `idservicio` opcional a OpenAPI/`RegistrarTicketRequest`, RF-TIC-001, `registrar_ticket_service`/`TicketsView` y tipos FE
 - [X] T097 [P] Añadir CA-TIC-016 (dashboard RF-TIC-007) en `spec.md` + `traceability.md` + gate US6
 - [X] T098 [P] Catálogo UI `Dim_Servicio`: `GET /soporte/servicios`, seed `scripts/seed_catalogos_soporte.py`, select en `mis-tickets`

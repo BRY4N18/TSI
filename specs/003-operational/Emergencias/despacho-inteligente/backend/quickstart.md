@@ -1,6 +1,6 @@
 # Quickstart — Validación Despacho Inteligente
 
-Guía de validación end-to-end contract-first para CU-O22–O24, O33–O36, O38, O45 y RF-DES-001–011.
+Guía de validación end-to-end contract-first para CU-O59–O61, O64–O63, O66, O62 y RF-DES-001–011.
 
 ## Prerrequisitos
 
@@ -16,14 +16,14 @@ Guía de validación end-to-end contract-first para CU-O22–O24, O33–O36, O38
 |--------|------|-------|
 | `GET` | `/api/v1/accidentes/{idaccidente}/despacho` | RF-DES-011 |
 | `GET` | `/api/v1/accidentes/{idaccidente}/despacho/stream` | RF-DES-011 (SSE) |
-| `GET` | `/api/v1/accidentes/{idaccidente}/despacho/unidades-candidatas` | O33 (UI) |
-| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/asignar-manual` | CU-O33 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/escalar-zona` | CU-O34 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/coordinar` | CU-O38 |
-| `GET` | `/api/v1/mi-despacho/pendientes` | O24/O45 (unidad) |
-| `GET` | `/api/v1/mi-despacho/{idnotificaciondespacho}` | O23 payload |
-| `POST` | `/api/v1/mi-despacho/{idnotificaciondespacho}/confirmar` | CU-O24 |
-| `POST` | `/api/v1/mi-despacho/{idnotificaciondespacho}/rechazar` | CU-O45 |
+| `GET` | `/api/v1/accidentes/{idaccidente}/despacho/unidades-candidatas` | O64 (UI) |
+| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/asignar-manual` | CU-O64 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/escalar-zona` | CU-O65 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/despacho/coordinar` | CU-O66 |
+| `GET` | `/api/v1/mi-despacho/pendientes` | O61/O62 (unidad) |
+| `GET` | `/api/v1/mi-despacho/{idnotificaciondespacho}` | O60 payload |
+| `POST` | `/api/v1/mi-despacho/{idnotificaciondespacho}/confirmar` | CU-O61 |
+| `POST` | `/api/v1/mi-despacho/{idnotificaciondespacho}/rechazar` | CU-O62 |
 | `GET` | `/api/v1/despacho/parametros` | RF-DES-010 |
 | `PATCH` | `/api/v1/despacho/parametros` | RF-DES-010 |
 
@@ -34,52 +34,52 @@ Convenciones (`api-standards.md`):
 - `Idempotency-Key` en escrituras
 - SSE: `Accept: text/event-stream`
 
-**Flujos internos (sin REST):** O22 consumer, O23 notificación, O35 job, O36 consumer — ver `plan.md`.
+**Flujos internos (sin REST):** O59 consumer, O60 notificación, O63 job, O63 consumer — ver `plan.md`.
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio + Kafka)
 
-### Escenario A — Asignación automática O22 tras REPORTADO
+### Escenario A — Asignación automática O59 tras REPORTADO
 
 1. Registrar accidente en REPORTADO (`registro-accidente` quickstart).
 2. Verificar consumer `AccidenteReportado` ejecuta `AsignacionInteligenteService`.
 3. **Esperado:** eventos en `Fact_NotificacionDespacho_topic`, `Fact_Despacho_topic`, `Fact_HistorialDespachoUnidad_topic`; caso → `BUSCANDO_UNIDAD`; candidatas del mismo condado.
 
-### Escenario B — Confirmación unidad O24
+### Escenario B — Confirmación unidad O61
 
 1. Login como `Unidad` con unidad vinculada.
 2. `GET /mi-despacho/pendientes` → copiar `idnotificaciondespacho`.
 3. `POST .../confirmar` con `Idempotency-Key`.
 4. **Esperado:** HTTP 200, `estado_caso=ASIGNADO` (primer confirmado), unidad `En Misión`, `Fact_Despacho.activo=true`.
 
-### Escenario C — Rechazo y re-asignación O45 + O36
+### Escenario C — Rechazo y re-asignación O62 + O63
 
 1. Unidad rechaza con `{ "motivo": "Muy lejos" }`.
-2. **Esperado:** `Fact_Despacho.activo=false`, historial Rechazado, nuevo intento O36 síncrono hacia siguiente candidata (excluye unidad que rechazó).
+2. **Esperado:** `Fact_Despacho.activo=false`, historial Rechazado, nuevo intento O63 síncrono hacia siguiente candidata (excluye unidad que rechazó).
 
-### Escenario D — Timeout O35 + O36 async
+### Escenario D — Timeout O63 + O63 async
 
 1. Simular despacho Pendiente sin respuesta > timeout (90s default).
-2. Ejecutar job O35.
-3. **Esperado:** Timeout en historial, `activo=false`, evento `DespachoTimeout_topic`; consumer O36 crea nuevo despacho.
+2. Ejecutar job O63.
+3. **Esperado:** Timeout en historial, `activo=false`, evento `DespachoTimeout_topic`; consumer O63 crea nuevo despacho.
 
-### Escenario E — Fallo entrega O23
+### Escenario E — Fallo entrega O60
 
 1. Mock `apps/notificaciones` fallando push y SMS tras reintento.
-2. **Esperado:** `No_entregada`, `activo=false`, O36 síncrono inmediato (sin esperar O35).
+2. **Esperado:** `No_entregada`, `activo=false`, O63 síncrono inmediato (sin esperar O63).
 
-### Escenario F — Escalamiento condado vecino O34
+### Escenario F — Escalamiento condado vecino O65
 
 1. Caso sin candidatas en condado local.
 2. `POST .../escalar-zona`.
 3. **Esperado:** despacho con `origen=Escalado_zona` o HTTP 202 con alerta `Dim_NotaAccidente`.
 4. **Sin candidatas en vecinos (CA-DES-011):** nota de escalamiento **y** email activo a usuarios con rol `Administrador` (`AlertaAdminService` / SMTP). Fallo SMTP no debe revertir la nota.
 
-### Escenario Fbis — Agotamiento O36 (CA-DES-007)
+### Escenario Fbis — Agotamiento O63 (CA-DES-007)
 
 1. Forzar reasignación sin candidatas locales ni vecinas (`incluir_vecinos=true`).
-2. **Esperado:** `Dim_NotaAccidente` tipo alerta + fan-out email a Administradores; operador escala a O33 manual.
+2. **Esperado:** `Dim_NotaAccidente` tipo alerta + fan-out email a Administradores; operador escala a O64 manual.
 
-### Escenario G — Despacho múltiple O38
+### Escenario G — Despacho múltiple O66
 
 1. Caso con grúa confirmada.
 2. `POST .../coordinar` con ambulancia disponible.
@@ -94,7 +94,7 @@ Convenciones (`api-standards.md`):
 ### Validaciones transversales
 
 - Sin escritura directa a Pinot (solo Kafka).
-- O22 completa en <5s (CA-DES-001).
+- O59 completa en <5s (CA-DES-001).
 - Roles incorrectos → HTTP 403.
 - Haversine usa posición efectiva (RN-DES-010).
 
@@ -123,8 +123,8 @@ Escenarios UI mínimos:
 
 - Contract tests por endpoint (`tests/api/test_despacho_*_contract.py`) contra OpenAPI.
 - Unit tests `AsignacionInteligenteService` (scoring, filtro condado, exclusión rechazo).
-- Consumer tests O22/O36 con mock Kafka.
-- Job test O35 timeout threshold.
+- Consumer tests O59/O63 con mock Kafka.
+- Job test O63 timeout threshold.
 
 **Frontend:**
 
@@ -135,7 +135,7 @@ Escenarios UI mínimos:
 ## 5) Criterios de salida
 
 - [ ] Todos los endpoints OpenAPI implementados y contract tests verdes
-- [ ] O22–O36 flujos internos validados con quickstart escenarios A–E
+- [ ] O59–O63 flujos internos validados con quickstart escenarios A–E
 - [ ] CA-DES-001–014 verificables manualmente o en integración (incl. Admin notify + hook plan)
 - [ ] Angular guards bloquean rutas por rol
 - [ ] Ningún repositorio escribe directo a Pinot

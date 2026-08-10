@@ -8,16 +8,45 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+import os
+
 import jwt
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+# Deben coincidir con los defaults de desarrollo en config/settings.py.
+# Fuera de modo debug, un valor igual al default indica que la variable de
+# entorno nunca se configuró — el grant/token de demo sería predecible.
+#
+# Nota: se lee DJANGO_DEBUG directamente de os.environ (no settings.DEBUG)
+# porque pytest-django fuerza settings.DEBUG=False durante los tests, lo
+# que rompería esta guarda en la suite aunque el entorno sea de desarrollo.
+_INSECURE_DEFAULTS = {
+    "DEMO_GRANT_SECRET": "dev-demo-grant-secret-min-32-chars!!",
+    "DEMO_SESSION_SECRET": "dev-demo-session-secret-min-32-chars!",
+}
+
+
+def _is_debug_env() -> bool:
+    return os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+
+
+def _require_configured_secret(setting_name: str) -> str:
+    value = str(getattr(settings, setting_name, ""))
+    if not _is_debug_env() and value == _INSECURE_DEFAULTS[setting_name]:
+        raise ImproperlyConfigured(
+            f"{setting_name} usa el valor por defecto de desarrollo con DJANGO_DEBUG=false; "
+            "configúralo explícitamente en el entorno."
+        )
+    return value
 
 
 def _grant_secret() -> bytes:
-    return str(getattr(settings, "DEMO_GRANT_SECRET", "dev-demo-grant-secret")).encode()
+    return _require_configured_secret("DEMO_GRANT_SECRET").encode()
 
 
 def _session_secret() -> str:
-    return str(getattr(settings, "DEMO_SESSION_SECRET", "dev-demo-session-secret"))
+    return _require_configured_secret("DEMO_SESSION_SECRET")
 
 
 def issue_demo_grant(idprospecto: int) -> str:

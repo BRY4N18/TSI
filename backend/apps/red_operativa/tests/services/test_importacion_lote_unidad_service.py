@@ -42,6 +42,19 @@ class TestImportacionLoteUnidadService:
             if str(u.get("placa", "")).startswith("LOTE-"):
                 assert u.get("idusuario") is not None
 
+    def test_importar_when_plan_no_habilita_lote_raises_permission_error(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Arrange — RF-O40.6/RF-O26.5 (2026-08-08): la carga en lote depende
+        # del campo congelado en la suscripción activa, no de Dim_Plan en vivo.
+        pinot_store["Fact_Suscripcion"][0]["carga_lote_habilitada"] = False
+        service = ImportacionLoteUnidadService()
+        filas = [self._fila_valida()]
+
+        # Act & Assert
+        with pytest.raises(PermissionError, match="no habilita"):
+            service.importar(filas, **PROVEEDOR)
+
     def test_importar_when_una_fila_invalida_no_inserta_ninguna(self, mock_pinot, mock_kafka):
         # Arrange
         service = ImportacionLoteUnidadService()

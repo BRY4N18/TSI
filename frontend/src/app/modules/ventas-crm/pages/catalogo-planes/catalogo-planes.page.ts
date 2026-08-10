@@ -22,6 +22,7 @@ const LABELS_LIMITES: Record<string, string> = {
   unidades_max: 'Unidades máx.',
   usuarios_max: 'Usuarios máx.',
   api_calls_mes: 'Llamadas API / mes',
+  api_calls_minuto: 'Llamadas API / minuto',
 };
 
 @Component({

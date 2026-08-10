@@ -15,13 +15,13 @@ class TestCadenaCriticaDespachoIntegration:
         # Arrange
         consumer = AccidenteReportadoConsumer()
 
-        # Act — O22
+        # Act — O59
         asignacion = consumer.handle(
             {"idaccidente": accidente_activo, "estado": ESTADO_REPORTADO, "idusuario": 2}
         )
         assert asignacion["asignado"] is True
 
-        # Act — O24
+        # Act — O61
         confirmacion = ConfirmarDespachoService().confirmar(
             idnotificaciondespacho=asignacion["idnotificaciondespacho"],
             idunidademergencia=1,

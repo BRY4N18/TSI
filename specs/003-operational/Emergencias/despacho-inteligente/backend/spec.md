@@ -13,17 +13,17 @@ Minimizar el tiempo de respuesta ante un accidente de tránsito mediante la asig
 
 ### Session 2026-07-09
 
-- Q: ¿El algoritmo O22 debe filtrar unidades geográficamente desde el primer intento o evaluar todas las unidades activas del sistema? → A: Mismo condado primero (vía `idcalle` → `Dim_Ciudad` → `Dim_Condado`); O34 amplía a condados vecinos.
+- Q: ¿El algoritmo O59 debe filtrar unidades geográficamente desde el primer intento o evaluar todas las unidades activas del sistema? → A: Mismo condado primero (vía `idcalle` → `Dim_Ciudad` → `Dim_Condado`); O65 amplía a condados vecinos.
 - Q: ¿Qué fuente de ubicación usar para el cálculo Haversine de cada unidad candidata? → A: `Dim_UnidadEmergencia.latitud/longitud` primario; si `Dim_HistorialUbicacionUnidadEmergencia` tiene fila más reciente (por `fechahora`), usar historial.
 - Q: ¿Cuándo debe pasar `Fact_Despacho.activo` a `false` tras rechazo o timeout? → A: `activo=false` inmediatamente al Rechazar o Timeout; permanece `activo=true` mientras Pendiente o Confirmado.
-- Q: ¿Cómo se dispara O36 tras el timeout O35? → A: Evento asíncrono: O35 publica evento de dominio; un worker O36 independiente consume y re-asigna.
-- Q: ¿Qué hacer si push y SMS fallan al notificar despacho (O23)? → A: Tras un reintento fallido en ambos canales, marcar fallo de entrega y disparar O36 inmediatamente (sin esperar timeout).
+- Q: ¿Cómo se dispara O63 tras el timeout O63? → A: Evento asíncrono: O63 publica evento de dominio; un worker O63 independiente consume y re-asigna.
+- Q: ¿Qué hacer si push y SMS fallan al notificar despacho (O60)? → A: Tras un reintento fallido en ambos canales, marcar fallo de entrega y disparar O63 inmediatamente (sin esperar timeout).
 
 ### Session 2026-07-24 (cambios diferidos + alerta Admin)
 
-- Q: ¿Filtro de elegibilidad por plan/severidad del proveedor? → A: ⛔ Bloqueado hasta Suscripciones-Facturación (`Dim_Plan`). Mientras tanto, dejar **hook de extensión** en la consulta de candidatas (O22/O36) sin filtrar por plan (fail-open: comportamiento actual).
+- Q: ¿Filtro de elegibilidad por plan/severidad del proveedor? → A: ⛔ Bloqueado hasta Suscripciones-Facturación (`Dim_Plan`). Mientras tanto, dejar **hook de extensión** en la consulta de candidatas (O59/O63) sin filtrar por plan (fail-open: comportamiento actual).
 - Q: ¿Priorizar planes superiores en el ranking? → A: ⛔ Bloqueado; mismo hook futuro.
-- Q: ¿Qué ocurre si no hay unidades en condado ni vecinos (O34) o se agotan candidatas (O36)? → A: Mantener `Dim_NotaAccidente` **y** notificar de forma **activa** a un **Administrador** (además del Operador), cerrando el escalón de respaldo radio → [plan bloqueado] → alerta Admin.
+- Q: ¿Qué ocurre si no hay unidades en condado ni vecinos (O65) o se agotan candidatas (O63)? → A: Mantener `Dim_NotaAccidente` **y** notificar de forma **activa** a un **Administrador** (además del Operador), cerrando el escalón de respaldo radio → [plan bloqueado] → alerta Admin.
 
 **Fuente de alineación:** `especificacion-cambios-implementacion.md`.
 
@@ -31,21 +31,21 @@ Minimizar el tiempo de respuesta ante un accidente de tránsito mediante la asig
 
 Cuando un accidente es registrado en TSI, el sistema ejecuta un algoritmo de asignación inteligente que evalúa en tiempo real todas las unidades disponibles, selecciona la óptima según criterios múltiples y notifica a la unidad para que confirme o rechace el despacho. El modelo de datos soporta una relación N-N (Caso ↔ Unidad) donde un caso puede tener múltiples despachos activos (grúa + ambulancia + policía) y se mantiene un historial completo de intentos fallidos (rechazos, timeouts, re-asignaciones).
 
-La cadena de oferta no cambia: **CU-O22 → CU-O23 → CU-O24 | CU-O45 | CU-O35 → CU-O36**, con **CU-O34** para ampliación a vecinos / sin unidades.
+La cadena de oferta no cambia: **CU-O59 → CU-O60 → CU-O61 | CU-O62 | CU-O63 → CU-O63**, con **CU-O65** para ampliación a vecinos / sin unidades.
 
 **Casos de uso incluidos:**
 
 | CU | Nombre | Actor | Tablas principales |
 |----|--------|-------|-------------------|
-| CU-O22 | Asignación automática de unidad | Sistema | Fact_NotificacionDespacho, Fact_Despacho, Fact_HistorialDespachoUnidad, Fact_AccidenteTipoEstadoAccidente |
-| CU-O23 | Notificar despacho | Sistema | Fact_NotificacionDespacho (UPDATE) |
-| CU-O24 | Confirmar despacho | Unidad de emergencia | Fact_NotificacionDespacho, Fact_HistorialDespachoUnidad, Fact_HistorialEstadoUnidad, Fact_AccidenteTipoEstadoAccidente |
-| CU-O33 | Asignar unidad manualmente | Operador | Igual que O22, idorigendespacho=Manual |
-| CU-O34 | Escalar caso a zona | Sistema / Operador | Igual que O22 (zona vecina) o Dim_NotaAccidente + notificación Admin (sin unidades) |
-| CU-O35 | Timeout de despacho | Sistema (job) | Fact_HistorialDespachoUnidad, evento `DespachoTimeout` |
-| CU-O36 | Re-asignación tras rechazo o timeout | Sistema (worker) | Igual que O22 (mismo idaccidente, nueva unidad); alerta Admin si se agotan |
-| CU-O38 | Coordinar despacho múltiple | Operador | Igual que O22 (nueva unidad, mismo caso activo) |
-| CU-O45 | Rechazar despacho | Unidad de emergencia | Fact_NotificacionDespacho (UPDATE con motivo), Fact_HistorialDespachoUnidad |
+| CU-O59 | Asignación automática de unidad | Sistema | Fact_NotificacionDespacho, Fact_Despacho, Fact_HistorialDespachoUnidad, Fact_AccidenteTipoEstadoAccidente |
+| CU-O60 | Notificar despacho | Sistema | Fact_NotificacionDespacho (UPDATE) |
+| CU-O61 | Confirmar despacho | Unidad de emergencia | Fact_NotificacionDespacho, Fact_HistorialDespachoUnidad, Fact_HistorialEstadoUnidad, Fact_AccidenteTipoEstadoAccidente |
+| CU-O64 | Asignar unidad manualmente | Operador | Igual que O59, idorigendespacho=Manual |
+| CU-O65 | Escalar caso a zona | Sistema / Operador | Igual que O59 (zona vecina) o Dim_NotaAccidente + notificación Admin (sin unidades) |
+| CU-O63 | Timeout de despacho | Sistema (job) | Fact_HistorialDespachoUnidad, evento `DespachoTimeout` |
+| CU-O63 | Re-asignación tras rechazo o timeout | Sistema (worker) | Igual que O59 (mismo idaccidente, nueva unidad); alerta Admin si se agotan |
+| CU-O66 | Coordinar despacho múltiple | Operador | Igual que O59 (nueva unidad, mismo caso activo) |
+| CU-O62 | Rechazar despacho | Unidad de emergencia | Fact_NotificacionDespacho (UPDATE con motivo), Fact_HistorialDespachoUnidad |
 
 **Tablas de base de datos:**
 
@@ -69,16 +69,16 @@ La cadena de oferta no cambia: **CU-O22 → CU-O23 → CU-O24 | CU-O45 | CU-O35 
 
 | Actor | Rol en este módulo | Interacción principal |
 |---|---|---|
-| **Sistema** | Algoritmo de despacho y jobs automáticos | Ejecuta el cálculo de unidad óptima, envía notificaciones, maneja re-asignaciones. Ejecuta job de timeout (O35). |
+| **Sistema** | Algoritmo de despacho y jobs automáticos | Ejecuta el cálculo de unidad óptima, envía notificaciones, maneja re-asignaciones. Ejecuta job de timeout (O63). |
 | **Sistema (job)** | Job programado de timeout | Compara `fechahoradespacho` contra umbral; marca Timeout, publica evento `DespachoTimeout`. |
-| **Sistema (worker O36)** | Consumidor de re-asignación | Consume eventos `DespachoTimeout` y ejecuta la lógica de re-asignación (O36). |
-| **Unidad de emergencia** | Receptor, confirmador y rechazador | Recibe notificación push/SMS. Confirma (O24) o rechaza con motivo (O45). |
-| **Operador de emergencias** | Supervisor humano | Asigna manualmente (O33), escala a zona vecina (O34), coordina despacho múltiple (O38), monitorea el proceso. |
-| **Administrador** | Receptor de escalamiento crítico | Recibe notificación **activa** cuando no hay unidades candidatas tras O34 / agotamiento en O36 (además de la nota en `Dim_NotaAccidente`). |
+| **Sistema (worker O63)** | Consumidor de re-asignación | Consume eventos `DespachoTimeout` y ejecuta la lógica de re-asignación (O63). |
+| **Unidad de emergencia** | Receptor, confirmador y rechazador | Recibe notificación push/SMS. Confirma (O61) o rechaza con motivo (O62). |
+| **Operador de emergencias** | Supervisor humano | Asigna manualmente (O64), escala a zona vecina (O65), coordina despacho múltiple (O66), monitorea el proceso. |
+| **Administrador** | Receptor de escalamiento crítico | Recibe notificación **activa** cuando no hay unidades candidatas tras O65 / agotamiento en O63 (además de la nota en `Dim_NotaAccidente`). |
 
 ## 4. Requisitos funcionales
 
-### RF-DES-001: Algoritmo de asignación inteligente (O22)
+### RF-DES-001: Algoritmo de asignación inteligente (O59)
 
 El Sistema debe ejecutar automáticamente el siguiente algoritmo cuando se registra un nuevo accidente (`Fact_Accidente`) en estado "Reportado":
 
@@ -108,9 +108,9 @@ El Sistema debe ejecutar automáticamente el siguiente algoritmo cuando se regis
    - INSERT en `Fact_HistorialDespachoUnidad`: `iddespacho`, `idestadodespacho` = Pendiente, `fechahora`.
    - INSERT en `Fact_AccidenteTipoEstadoAccidente`: estado `idtipoestadoincidente` = BUSCANDO_UNIDAD (solo si es el primer despacho del caso).
 
-### RF-DES-002: Notificar despacho a la unidad (O23)
+### RF-DES-002: Notificar despacho a la unidad (O60)
 
-Tras la inserción de O22/O33/O34, el Sistema debe enviar automáticamente una notificación a la unidad seleccionada (push + SMS de respaldo) que incluya:
+Tras la inserción de O59/O64/O65, el Sistema debe enviar automáticamente una notificación a la unidad seleccionada (push + SMS de respaldo) que incluya:
 
 - `idaccidente` y `idseveridad` (tipo y gravedad del accidente).
 - `descripcion` del accidente (narrativa ingresada por el Operador).
@@ -119,7 +119,7 @@ Tras la inserción de O22/O33/O34, el Sistema debe enviar automáticamente una n
 - Ruta sugerida desde la ubicación actual de la unidad hasta el sitio del accidente (mapa con trazo).
 - Tiempo estimado de llegada (ETA).
 
-Ambas notificaciones incluyen un botón/enlace para "Aceptar" (O24) o "Rechazar" (O45) el despacho.
+Ambas notificaciones incluyen un botón/enlace para "Aceptar" (O61) o "Rechazar" (O62) el despacho.
 
 **Entrega exitosa:** UPDATE `Fact_NotificacionDespacho.estadonotificaciondespacho` = "Notificada" cuando al menos un canal (push o SMS) confirma entrega.
 
@@ -127,9 +127,9 @@ Ambas notificaciones incluyen un botón/enlace para "Aceptar" (O24) o "Rechazar"
 - UPDATE `Fact_NotificacionDespacho.estadonotificaciondespacho` = "No_entregada", `motivo` = detalle del fallo.
 - UPDATE `Fact_Despacho`: `activo` = `false` para el `iddespacho` afectado.
 - INSERT en `Fact_HistorialDespachoUnidad`: `idestadodespacho` = Rechazado, `estadonuevo` = "No_entregada", `motivo` implícito = fallo de entrega (no es rechazo de la unidad; RN-DES-006 no aplica exclusión).
-- Disparar re-asignación O36 de forma **síncrona e inmediata** (sin esperar timeout O35).
+- Disparar re-asignación O63 de forma **síncrona e inmediata** (sin esperar timeout O63).
 
-### RF-DES-003: Confirmar despacho (O24)
+### RF-DES-003: Confirmar despacho (O61)
 
 La Unidad de emergencia debe poder responder a la notificación de despacho con "Confirmada". El sistema:
 
@@ -139,7 +139,7 @@ La Unidad de emergencia debe poder responder a la notificación de despacho con 
 - INSERT en `Fact_AccidenteTipoEstadoAccidente`: estado ASIGNADO (solo si es el primer despacho confirmado del caso; si ya hay otro despacho confirmado previamente, no se repite).
 - Notifica al Operador que la unidad fue asignada y está en camino.
 
-### RF-DES-004: Rechazar despacho con motivo (O45)
+### RF-DES-004: Rechazar despacho con motivo (O62)
 
 La Unidad de emergencia debe poder responder a la notificación de despacho con "Rechazada", incluyendo un campo `motivo` (texto libre). El sistema:
 
@@ -148,7 +148,7 @@ La Unidad de emergencia debe poder responder a la notificación de despacho con 
 - INSERT en `Fact_HistorialDespachoUnidad`: `idestadodespacho` = Rechazado.
 - Dispara automáticamente re-asignación (RF-DES-006).
 
-### RF-DES-005: Timeout de despacho sin respuesta (O35)
+### RF-DES-005: Timeout de despacho sin respuesta (O63)
 
 Un job programado debe ejecutarse periódicamente (por defecto cada 30 segundos) y:
 
@@ -156,48 +156,48 @@ Un job programado debe ejecutarse periódicamente (por defecto cada 30 segundos)
 2. Para cada uno, verificar que su último estado en `Fact_HistorialDespachoUnidad` sea "Pendiente".
 3. UPDATE `Fact_Despacho`: `activo` = `false` para el `iddespacho` en timeout.
 4. INSERT en `Fact_HistorialDespachoUnidad`: `idestadodespacho` = Timeout.
-5. Publicar evento de dominio `DespachoTimeout` (vía Kafka) con `idaccidente`, `iddespacho` y `fechahora`; **no** invocar O36 en el mismo ciclo del job.
+5. Publicar evento de dominio `DespachoTimeout` (vía Kafka) con `idaccidente`, `iddespacho` y `fechahora`; **no** invocar O63 en el mismo ciclo del job.
 
-### RF-DES-006: Re-asignación tras rechazo o timeout (O36)
+### RF-DES-006: Re-asignación tras rechazo o timeout (O63)
 
-Tras un rechazo (O45) o timeout (O35), el Sistema debe crear un nuevo intento de despacho:
+Tras un rechazo (O62) o timeout (O63), el Sistema debe crear un nuevo intento de despacho:
 
-- **Timeout (O35):** un worker O36 independiente consume el evento `DespachoTimeout` y ejecuta la lógica de re-asignación de forma asíncrona.
-- **Rechazo (O45):** dispara re-asignación de forma síncrona (invocación directa a la misma lógica O36).
-- **Fallo de entrega (O23):** dispara re-asignación de forma síncrona e inmediata (invocación directa a la misma lógica O36).
+- **Timeout (O63):** un worker O63 independiente consume el evento `DespachoTimeout` y ejecuta la lógica de re-asignación de forma asíncrona.
+- **Rechazo (O62):** dispara re-asignación de forma síncrona (invocación directa a la misma lógica O63).
+- **Fallo de entrega (O60):** dispara re-asignación de forma síncrona e inmediata (invocación directa a la misma lógica O63).
 
 - INSERT en `Fact_NotificacionDespacho` + `Fact_Despacho` (mismo `idaccidente`, nueva `idunidademergencia`).
-- `idorigendespacho` = Automático (o Escalado_zona si aplicó O34).
+- `idorigendespacho` = Automático (o Escalado_zona si aplicó O65).
 - El despacho anterior queda con `activo=false` y permanece en `Fact_HistorialDespachoUnidad` como historial del intento fallido.
 - El proceso continúa hasta que una unidad confirme o se agoten todas las candidatas.
 
 Si se agotan las candidatas:
 1. INSERT en `Dim_NotaAccidente` con alerta crítica (visible al Operador en el expediente).
 2. **Notificar de forma activa a un Administrador** (mismo canal de notificación ya usado en el sistema — push/email/inbox — según plan de implementación), no solo dejar la nota pasiva.
-3. Escalar al Operador para intervención manual (O33).
+3. Escalar al Operador para intervención manual (O64).
 
-### RF-DES-007: Asignación manual de unidad (O33)
+### RF-DES-007: Asignación manual de unidad (O64)
 
-El Operador debe poder seleccionar manualmente una unidad desde la interfaz de monitoreo. El sistema ejecuta el mismo patrón de persistencia que O22, con la única diferencia:
+El Operador debe poder seleccionar manualmente una unidad desde la interfaz de monitoreo. El sistema ejecuta el mismo patrón de persistencia que O59, con la única diferencia:
 
 - `Fact_Despacho.idorigendespacho` = Manual.
 - El registro de auditoría del despacho refleja al operador que decidió, no al algoritmo.
 
-### RF-DES-008: Escalamiento a zona vecina (O34)
+### RF-DES-008: Escalamiento a zona vecina (O65)
 
 Si el algoritmo no encuentra unidades disponibles en el condado del accidente (o si el Operador lo solicita explícitamente), el sistema debe:
 
 1. Ampliar la consulta de `Dim_UnidadEmergencia` a **condados vecinos** del condado del accidente (misma jerarquía `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado`; vecindad definida por condados adyacentes en la misma `Dim_Ciudad` o condados limítrofes según catálogo geográfico). El mismo **hook de plan/severidad** de RF-DES-001 aplica (hoy no-op).
-2. Si encuentra unidad(es): mismo patrón O22 con `idorigendespacho` = Escalado_zona.
+2. Si encuentra unidad(es): mismo patrón O59 con `idorigendespacho` = Escalado_zona.
 3. Si no encuentra ninguna:
    - INSERT en `Dim_NotaAccidente` (`idaccidente`, `idusuario`, `nota`="Sin unidades disponibles en condado ni condados vecinos", `tipo`=alerta o escalamiento, `activo=true`).
    - **Notificar de forma activa a un Administrador** (además de la visibilidad para el Operador).
 
-### RF-DES-009: Coordinar despacho múltiple (O38)
+### RF-DES-009: Coordinar despacho múltiple (O66)
 
 Para un caso que ya tiene uno o más despachos activos, el Operador debe poder asignar una nueva unidad adicional (ej. ambulancia sumándose a una grúa ya asignada). El sistema:
 
-- Ejecuta el mismo patrón que O22/O33 para el **mismo `idaccidente`** con una **nueva `idunidademergencia`**.
+- Ejecuta el mismo patrón que O59/O64 para el **mismo `idaccidente`** con una **nueva `idunidademergencia`**.
 - `idorigendespacho` = Manual.
 - Valida que la nueva unidad no tenga ya un despacho activo (`Fact_Despacho.activo=true`) para el mismo caso.
 - INSERT en `Fact_NotificacionDespacho` + `Fact_Despacho` + `Fact_HistorialDespachoUnidad`.
@@ -245,7 +245,7 @@ Las notificaciones push a la app móvil de la unidad deben entregarse en menos d
 
 ### RN-DES-001
 
-Solo las unidades con estado "Activa" (última fila en `Fact_HistorialEstadoUnidad`) y `activo = true` en `Dim_UnidadEmergencia` son consideradas candidatas para despacho. Una unidad en estado "Ocupada", "En Misión" o "Fuera_de_servicio" no puede recibir notificaciones de despacho. En el intento inicial (O22), las candidatas deben pertenecer al mismo `Dim_Condado` del accidente; el escalamiento (O34) amplía a condados vecinos.
+Solo las unidades con estado "Activa" (última fila en `Fact_HistorialEstadoUnidad`) y `activo = true` en `Dim_UnidadEmergencia` son consideradas candidatas para despacho. Una unidad en estado "Ocupada", "En Misión" o "Fuera_de_servicio" no puede recibir notificaciones de despacho. En el intento inicial (O59), las candidatas deben pertenecer al mismo `Dim_Condado` del accidente; el escalamiento (O65) amplía a condados vecinos.
 
 ### RN-DES-002
 
@@ -266,7 +266,7 @@ El Director Tecnológico puede modificar estas prioridades.
 
 ### RN-DES-005
 
-El algoritmo no tiene un número máximo de reintentos predefinido. El sistema sigue intentando con nuevas unidades (vía O36) hasta que una confirme o se agoten las candidatas disponibles. Cada intento fallido queda registrado como una fila en `Fact_HistorialDespachoUnidad`.
+El algoritmo no tiene un número máximo de reintentos predefinido. El sistema sigue intentando con nuevas unidades (vía O63) hasta que una confirme o se agoten las candidatas disponibles. Cada intento fallido queda registrado como una fila en `Fact_HistorialDespachoUnidad`.
 
 ### RN-DES-006
 
@@ -278,7 +278,7 @@ El tiempo transcurrido desde el registro del accidente hasta la confirmación de
 
 ### RN-DES-008
 
-El caso pasa a estado ASIGNADO solo cuando al menos un `Fact_Despacho` alcanza estado Confirmado (vía O24). Mientras tanto, permanece en BUSCANDO_UNIDAD aunque haya despachos Pendientes, Rechazados o Timeout. El estado del Caso es una función del conjunto de estados de sus despachos.
+El caso pasa a estado ASIGNADO solo cuando al menos un `Fact_Despacho` alcanza estado Confirmado (vía O61). Mientras tanto, permanece en BUSCANDO_UNIDAD aunque haya despachos Pendientes, Rechazados o Timeout. El estado del Caso es una función del conjunto de estados de sus despachos.
 
 ### RN-DES-009
 
@@ -290,20 +290,20 @@ La posición efectiva de una unidad para despacho se resuelve así: `Dim_UnidadE
 
 ### RN-DES-011
 
-Si push y SMS fallan tras un reintento en O23, el despacho no permanece en espera de timeout: se marca `No_entregada`, se desactiva el `Fact_Despacho` (`activo=false`) y se ejecuta O36 de inmediato. El fallo de entrega **no** excluye a la unidad de futuros despachos para el mismo accidente (a diferencia de un rechazo explícito en RN-DES-006).
+Si push y SMS fallan tras un reintento en O60, el despacho no permanece en espera de timeout: se marca `No_entregada`, se desactiva el `Fact_Despacho` (`activo=false`) y se ejecuta O63 de inmediato. El fallo de entrega **no** excluye a la unidad de futuros despachos para el mismo accidente (a diferencia de un rechazo explícito en RN-DES-006).
 
 ## 7. Entradas
 
-### Disparador automático (CU-O22, CU-O23)
+### Disparador automático (CU-O59, CU-O60)
 - `idaccidente` recién creado en `Fact_Accidente` con estado "Reportado".
 - Coordenadas GPS del accidente: `latitudinicio`, `longitudinicio`.
 - `idseveridad` para evaluar concordancia de tipo de unidad.
 
-### Asignación manual (CU-O33)
+### Asignación manual (CU-O64)
 - `idaccidente` existente en estado BUSCANDO_UNIDAD o ASIGNADO.
 - `idunidademergencia` seleccionada manualmente por el Operador.
 
-### Escalamiento a zona (CU-O34)
+### Escalamiento a zona (CU-O65)
 - `idaccidente` sin unidades disponibles en zona actual.
 - Depende de `Dim_CondadoVecino` (adyacencia) **y** de que el condado vecino tenga su
   propia geografía (`Dim_Condado`/`Dim_Ciudad`/`Dim_Calle`) y flota activa; una
@@ -312,18 +312,18 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
   completo verificado en `database/seed_catalogos.py` (condado 2, Benito Juárez) +
   `database/seed_flota_demo.py` (unidad 3) — ver `.specify/docs/changelog.md` S7.
 
-### Timeout (CU-O35)
+### Timeout (CU-O63)
 - Job programado: compara fechahoradespacho contra umbral configurable.
 
-### Re-asignación (CU-O36)
-- Disparado síncronamente tras O45 (rechazo) o fallo de entrega O23.
-- Disparado asíncronamente por worker O36 al consumir evento `DespachoTimeout` publicado por O35.
+### Re-asignación (CU-O63)
+- Disparado síncronamente tras O62 (rechazo) o fallo de entrega O60.
+- Disparado asíncronamente por worker O63 al consumir evento `DespachoTimeout` publicado por O63.
 
-### Coordinación múltiple (CU-O38)
+### Coordinación múltiple (CU-O66)
 - `idaccidente` con al menos un despacho activo.
 - `idunidademergencia` nueva para asignar al mismo caso.
 
-### Confirmación / Rechazo (CU-O24 / CU-O45)
+### Confirmación / Rechazo (CU-O61 / CU-O62)
 - `idunidademergencia` que responde.
 - `idaccidente` del despacho.
 - Respuesta: "Confirmada" o "Rechazada".
@@ -340,7 +340,7 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
 - **Notificación push/SMS a la unidad:** datos del accidente, coordenadas, ruta sugerida, botones Aceptar/Rechazar.
 - **Confirmación al Operador:** `{ "idaccidente": 12345, "idunidademergencia": 42, "unidademergencia": "Ambulancia 05", "fechahoradespacho": "...", "estado_caso": "ASIGNADO" }`
 - **Alerta de escalamiento:** cuando se agotan las unidades candidatas: `{ "tipo": "CRITICA", "idaccidente": 12345, "mensaje": "Sin unidades disponibles. Requiere intervención manual." }`
-- **Nota de alerta (O34):** cuando no hay unidades en condado ni condados vecinos: `{ "tipo": "alerta", "idaccidente": 12345, "nota": "Sin unidades disponibles en condado ni condados vecinos" }`
+- **Nota de alerta (O65):** cuando no hay unidades en condado ni condados vecinos: `{ "tipo": "alerta", "idaccidente": 12345, "nota": "Sin unidades disponibles en condado ni condados vecinos" }`
 
 ### Registro en base de datos
 - Nuevos registros en `Fact_NotificacionDespacho`, `Fact_Despacho`, `Fact_HistorialDespachoUnidad`, `Fact_HistorialEstadoUnidad`, `Fact_AccidenteTipoEstadoAccidente`.
@@ -357,9 +357,9 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
 - **Confirmado:** la unidad aceptó el despacho.
 - **Rechazado:** la unidad rechazó (con motivo registrado).
 - **Timeout:** la unidad no respondió en el tiempo configurado.
-- **Abortado:** la unidad abortó la misión en tránsito (CU-O39, fuera de este spec).
-- **En_sitio:** la unidad llegó al lugar del accidente (CU-O26, fuera de este spec).
-- **Retirado:** la unidad se retiró del sitio (CU-O28, fuera de este spec).
+- **Abortado:** la unidad abortó la misión en tránsito (CU-O71, fuera de este spec).
+- **En_sitio:** la unidad llegó al lugar del accidente (CU-O70, fuera de este spec).
+- **Retirado:** la unidad se retiró del sitio (CU-O80, fuera de este spec).
 
 ### Estado de la Unidad (Fact_HistorialEstadoUnidad + Dim_EstadoUnidadEmergencia)
 - **Activa:** disponible para recibir despachos.
@@ -372,14 +372,14 @@ Si push y SMS fallan tras un reintento en O23, el despacho no permanece en esper
 Reportado → BUSCANDO_UNIDAD (primer despacho creado)
 BUSCANDO_UNIDAD → Pendiente (notificación enviada)
 Pendiente → Confirmado (unidad acepta) → ASIGNADO (primer despacho confirmado del caso)
-Pendiente → Rechazado (unidad rechaza) → BUSCANDO_UNIDAD (se reinicia búsqueda vía O36)
-Pendiente → Timeout (no responde) → evento DespachoTimeout → BUSCANDO_UNIDAD (worker O36 reinicia búsqueda)
+Pendiente → Rechazado (unidad rechaza) → BUSCANDO_UNIDAD (se reinicia búsqueda vía O63)
+Pendiente → Timeout (no responde) → evento DespachoTimeout → BUSCANDO_UNIDAD (worker O63 reinicia búsqueda)
 BUSCANDO_UNIDAD → Sin unidades disponibles → Alerta crítica, escalar a Operador
 ```
 
 ## 10. Escenarios
 
-### Escenario 1: Despacho exitoso en primer intento (O22 + O23 + O24)
+### Escenario 1: Despacho exitoso en primer intento (O59 + O60 + O61)
 
 Dado que se registra un accidente grave (`idseveridad = 4`, Fatal) en `Fact_Accidente`
 Y hay 5 ambulancias activas en la región
@@ -389,9 +389,9 @@ Y debe priorizar ambulancias por concordancia de tipo (Fatal → Ambulancia)
 Y debe seleccionar la de mayor puntuación ponderada
 Y debe INSERT en Fact_NotificacionDespacho (Pendiente), Fact_Despacho (Automático), Fact_HistorialDespachoUnidad (Pendiente), Fact_AccidenteTipoEstadoAccidente (BUSCANDO_UNIDAD)
 Y debe notificar push y SMS a la unidad seleccionada
-Y si la unidad confirma (O24), debe UPDATE Fact_NotificacionDespacho → Confirmada, INSERT en Fact_HistorialDespachoUnidad → Confirmado, Fact_HistorialEstadoUnidad → En Misión, Fact_AccidenteTipoEstadoAccidente → ASIGNADO.
+Y si la unidad confirma (O61), debe UPDATE Fact_NotificacionDespacho → Confirmada, INSERT en Fact_HistorialDespachoUnidad → Confirmado, Fact_HistorialEstadoUnidad → En Misión, Fact_AccidenteTipoEstadoAccidente → ASIGNADO.
 
-### Escenario 2: Primera unidad rechaza, re-asignación a segunda (O45 + O36)
+### Escenario 2: Primera unidad rechaza, re-asignación a segunda (O62 + O63)
 
 Dado que la unidad "Ambulancia 05" recibe una notificación de despacho
 Y evalúa que está demasiado lejos (ETA > 15 min)
@@ -399,19 +399,19 @@ Cuando rechaza el despacho con motivo "Muy lejos"
 Entonces el sistema debe UPDATE Fact_NotificacionDespacho.estadonotificaciondespacho = "Rechazada", motivo = "Muy lejos"
 Y debe UPDATE Fact_Despacho.activo = false
 Y debe INSERT en Fact_HistorialDespachoUnidad con idestadodespacho = Rechazado
-Y debe ejecutar O36: nuevo Fact_NotificacionDespacho + Fact_Despacho (mismo idaccidente, nueva unidad)
+Y debe ejecutar O63: nuevo Fact_NotificacionDespacho + Fact_Despacho (mismo idaccidente, nueva unidad)
 Y debe notificar a la siguiente unidad óptima.
 
-### Escenario 3: Timeout sin respuesta (O35)
+### Escenario 3: Timeout sin respuesta (O63)
 
 Dado que la unidad "Grúa 08" recibe una notificación de despacho
 Y no responde en 90 segundos (timeout por defecto)
-Cuando el job de timeout (O35) ejecuta su ciclo
+Cuando el job de timeout (O63) ejecuta su ciclo
 Entonces debe verificar que el último estado en Fact_HistorialDespachoUnidad siga siendo "Pendiente"
 Y debe UPDATE Fact_Despacho.activo = false
 Y debe INSERT en Fact_HistorialDespachoUnidad con idestadodespacho = Timeout
 Y debe publicar evento DespachoTimeout en Kafka
-Y el worker O36 debe consumir el evento y ejecutar re-asignación a la siguiente unidad.
+Y el worker O63 debe consumir el evento y ejecutar re-asignación a la siguiente unidad.
 
 ### Escenario 4: Sin unidades disponibles
 
@@ -432,24 +432,24 @@ Entonces el sistema debe guardar los nuevos valores
 Y los despachos subsecuentes deben usar los nuevos parámetros
 Y el cambio debe registrarse en los logs del sistema.
 
-### Escenario 6: Asignación manual por el Operador (O33)
+### Escenario 6: Asignación manual por el Operador (O64)
 
 Dado que un accidente está en estado BUSCANDO_UNIDAD
 Y el Operador decide asignar manualmente una unidad específica
 Cuando selecciona la unidad desde la interfaz de monitoreo
-Entonces el sistema debe ejecutar el patrón O22 con idorigendespacho = Manual
+Entonces el sistema debe ejecutar el patrón O59 con idorigendespacho = Manual
 Y el auditoría del despacho debe reflejar al operador que lo asignó.
 
-### Escenario 7: Escalamiento a zona vecina (O34)
+### Escenario 7: Escalamiento a zona vecina (O65)
 
 Dado que un accidente ocurre en un condado sin unidades activas disponibles
 Cuando el Sistema (u Operador) solicita escalar la búsqueda
 Entonces el sistema debe ampliar la consulta a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado)
-Y si encuentra unidad en condado vecino, ejecutar O22 con idorigendespacho = Escalado_zona
+Y si encuentra unidad en condado vecino, ejecutar O59 con idorigendespacho = Escalado_zona
 Y si no encuentra ninguna, INSERT en Dim_NotaAccidente con alerta de "Sin unidades disponibles en condado ni condados vecinos"
 Y notifica activamente a un Administrador.
 
-### Escenario 8: Coordinación de despacho múltiple (O38)
+### Escenario 8: Coordinación de despacho múltiple (O66)
 
 Dado que un caso ya tiene una grúa confirmada (Fact_Despacho activo)
 Y el Operador decide asignar también una ambulancia
@@ -457,25 +457,25 @@ Cuando selecciona una ambulancia disponible desde la interfaz
 Entonces el sistema debe INSERT nueva Fact_NotificacionDespacho + Fact_Despacho (mismo idaccidente, nueva unidad)
 Y la nueva unidad recibe su propia notificación de despacho.
 
-### Escenario 9: Rechazo con motivo completo (O45)
+### Escenario 9: Rechazo con motivo completo (O62)
 
 Dado que la unidad "Patrulla 03" recibe una notificación de despacho
 Y está en medio de otra intervención
 Cuando rechaza el despacho ingresando motivo "Ya estoy atendiendo otro incidente"
 Entonces el sistema debe registrar el motivo completo en Fact_NotificacionDespacho.motivo
 Y debe INSERT Rechazado en Fact_HistorialDespachoUnidad
-Y debe disparar O36 para re-asignación.
+Y debe disparar O63 para re-asignación.
 
-### Escenario 10: Fallo de entrega de notificación (O23 + O36)
+### Escenario 10: Fallo de entrega de notificación (O60 + O63)
 
-Dado que el sistema selecciona una unidad y ejecuta O23
+Dado que el sistema selecciona una unidad y ejecuta O60
 Y push y SMS fallan en el primer intento
 Y ambos canales fallan nuevamente en el reintento
 Cuando se confirma el fallo de entrega
 Entonces debe UPDATE Fact_NotificacionDespacho.estadonotificaciondespacho = "No_entregada"
 Y debe UPDATE Fact_Despacho.activo = false
 Y debe INSERT Rechazado (No_entregada) en Fact_HistorialDespachoUnidad
-Y debe ejecutar O36 de forma síncrona e inmediata hacia la siguiente unidad candidata.
+Y debe ejecutar O63 de forma síncrona e inmediata hacia la siguiente unidad candidata.
 
 ## 11. Criterios de aceptación
 
@@ -495,7 +495,7 @@ Si la unidad confirma, se actualiza Fact_NotificacionDespacho a Confirmada, se i
 Si la unidad rechaza (con motivo), se actualiza Fact_NotificacionDespacho a Rechazada con motivo, Fact_Despacho.activo pasa a false, se inserta Rechazado en Fact_HistorialDespachoUnidad, y se dispara re-asignación.
 
 ### CA-DES-006
-Si la unidad no responde en el timeout configurado (por defecto 90s), el job O35 marca Fact_Despacho.activo=false, inserta Timeout, publica evento DespachoTimeout y el worker O36 re-asigna de forma asíncrona.
+Si la unidad no responde en el timeout configurado (por defecto 90s), el job O63 marca Fact_Despacho.activo=false, inserta Timeout, publica evento DespachoTimeout y el worker O63 re-asigna de forma asíncrona.
 
 ### CA-DES-007
 Si se agotan las unidades candidatas, se genera alerta en `Dim_NotaAccidente`, se notifica de forma **activa a un Administrador**, y se escala al Operador para intervención manual.
@@ -507,19 +507,19 @@ El Director Tecnológico puede configurar: timeout de respuesta, pesos del algor
 El proceso completo desde registro hasta confirmación se completa en menos de 2 minutos (P95).
 
 ### CA-DES-010
-La asignación manual (O33) persiste con idorigendespacho = Manual.
+La asignación manual (O64) persiste con idorigendespacho = Manual.
 
 ### CA-DES-011
-El escalamiento a zona vecina (O34) amplía la búsqueda desde el condado del accidente a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado); si no encuentra, inserta alerta en Dim_NotaAccidente **y** notifica activamente a un Administrador.
+El escalamiento a zona vecina (O65) amplía la búsqueda desde el condado del accidente a condados vecinos (Dim_Calle → Dim_Ciudad → Dim_Condado); si no encuentra, inserta alerta en Dim_NotaAccidente **y** notifica activamente a un Administrador.
 
 ### CA-DES-014
-La consulta de candidatas (O22/O36) expone un hook documentado de elegibilidad/prioridad por plan; mientras Suscripciones-Facturación no exista, el hook es no-op y no bloquea la asignación (fail-open).
+La consulta de candidatas (O59/O63) expone un hook documentado de elegibilidad/prioridad por plan; mientras Suscripciones-Facturación no exista, el hook es no-op y no bloquea la asignación (fail-open).
 
 ### CA-DES-012
-El despacho múltiple (O38) permite asignar una nueva unidad a un caso que ya tiene despacho(s) activo(s).
+El despacho múltiple (O66) permite asignar una nueva unidad a un caso que ya tiene despacho(s) activo(s).
 
 ### CA-DES-013
-Si push y SMS fallan tras reintento en O23, el sistema marca No_entregada, desactiva el despacho y ejecuta O36 inmediatamente sin esperar timeout.
+Si push y SMS fallan tras reintento en O60, el sistema marca No_entregada, desactiva el despacho y ejecuta O63 inmediatamente sin esperar timeout.
 
 ## 12. Dependencias
 
@@ -532,14 +532,14 @@ Si push y SMS fallan tras reintento en O23, el sistema marca No_entregada, desac
 ## 13. Fuera de alcance
 
 - **Filtro real y prioridad por plan/severidad del proveedor:** ⛔ Suscripciones-Facturación / `Dim_Plan` (solo hook no-op en esta oleada).
-- **Rastreo GPS en tiempo real de la unidad en tránsito:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O25).
-- **Registro de llegada al sitio:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O26).
-- **Cierre del caso y liberación de unidad:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O28).
-- **Aborto de misión en tránsito:** eso corresponde a CU-O39.
-- **Pérdida de señal GPS:** eso corresponde a CU-O37.
+- **Rastreo GPS en tiempo real de la unidad en tránsito:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O68).
+- **Registro de llegada al sitio:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O70).
+- **Cierre del caso y liberación de unidad:** eso corresponde al spec seguimiento-cierre-de-casos (CU-O80).
+- **Aborto de misión en tránsito:** eso corresponde a CU-O71.
+- **Pérdida de señal GPS:** eso corresponde a CU-O69.
 - **Cálculo de rutas óptimas con tráfico en tiempo real:** la ruta sugerida es una línea recta o ruta básica. La integración con servicios de navegación (Google Maps, Waze) para rutas con tráfico está fuera del alcance.
-- **Escalamiento de severidad en sitio:** eso corresponde a CU-O40.
-- **Fusión de reportes duplicados:** eso corresponde a CU-O41.
-- **Cancelación de caso con unidad despachada:** eso corresponde a CU-O42.
-- **Sincronización de evidencia en diferido:** eso corresponde a CU-O43.
-- **Forzar cierre desde central:** eso corresponde a CU-O44.
+- **Escalamiento de severidad en sitio:** eso corresponde a CU-O73.
+- **Fusión de reportes duplicados:** eso corresponde a CU-O57.
+- **Cancelación de caso con unidad despachada:** eso corresponde a CU-O72.
+- **Sincronización de evidencia en diferido:** eso corresponde a CU-O77.
+- **Forzar cierre desde central:** eso corresponde a CU-O81.

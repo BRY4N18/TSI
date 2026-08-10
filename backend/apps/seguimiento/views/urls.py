@@ -21,6 +21,7 @@ from apps.seguimiento.views.mapa_views import (
 )
 from apps.seguimiento.views.mi_seguimiento_views import (
     AbortarMisionView,
+    EscalarSeveridadView,
     MiSeguimientoActualView,
     RegistrarLlegadaView,
     RegistrarPosicionGpsView,
@@ -42,6 +43,7 @@ urlpatterns = [
         "mi-seguimiento/despachos/<int:iddespacho>/abortar",
         AbortarMisionView.as_view(),
     ),
+    path("accidentes/<str:idaccidente>/escalar-severidad", EscalarSeveridadView.as_view()),
     path("accidentes/<str:idaccidente>/cerrar", CerrarCasoView.as_view()),
     path("accidentes/<str:idaccidente>/cancelar", CancelarCasoView.as_view()),
     path("despachos/<int:iddespacho>/forzar-retiro", ForzarRetiroView.as_view()),

@@ -1,4 +1,12 @@
-"""Depuración GPS — conserva 3 puntos por despacho (origen, llegada, cierre)."""
+"""Retención GPS — reporta puntos fuera del período de retención configurado.
+
+Decisión 2026-08-08: las posiciones GPS **no se borran**. Se conservan
+indefinidamente como muestra histórica para análisis futuro (siniestralidad,
+auditoría de rutas). Este servicio nunca elimina filas de
+`Dim_HistorialUbicacionUnidadEmergencia`; solo identifica y cuenta qué puntos
+quedarían fuera de la ventana de retención configurada (`gps_retencion_dias`),
+para reporte/monitoreo — no ejecuta ninguna purga.
+"""
 
 from __future__ import annotations
 
@@ -51,10 +59,17 @@ class GpsDepuracionService:
         return conservar
 
     def depurar(self) -> dict[str, Any]:
+        """Reporta cuántos puntos GPS quedan fuera de la ventana de retención.
+
+        No borra nada (decisión 2026-08-08): todas las posiciones se conservan
+        como muestra histórica. `elegibles_para_muestreo` cuenta los puntos que,
+        de existir un proceso de análisis/archivado futuro, serían candidatos a
+        revisar primero por antigüedad — informativo únicamente.
+        """
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         retencion_dias = self.parametros.get()["gps_retencion_dias"]
         cutoff = now - retencion_dias * 86_400_000
-        total_depurados = 0
+        total_elegibles = 0
         for d in self.despachos.pinot.query("SELECT * FROM Fact_Despacho", {}):
             idd = int(d["iddespacho"])
             conservar = self.puntos_a_conservar(idd)
@@ -64,8 +79,8 @@ class GpsDepuracionService:
                 if pid in conservar:
                     continue
                 if int(p.get("fechahora", 0)) < cutoff:
-                    total_depurados += 1
-        return {"depurados": total_depurados, "retencion_dias": retencion_dias}
+                    total_elegibles += 1
+        return {"elegibles_para_muestreo": total_elegibles, "retencion_dias": retencion_dias}
 
     @staticmethod
     def _closest(puntos: list[dict[str, Any]], ts: int) -> dict[str, Any]:

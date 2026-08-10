@@ -17,6 +17,13 @@
 
 ## Clarifications
 
+### Session 2026-08-08 (renumeración a catálogo vigente + periodicidad + correcciones de esquema)
+
+- Q: ¿Los CU-O10x/O11x de este spec eran los del catálogo limpio? → A: **No.** Numeración propia (module-map interno de esta spec), distinta del catálogo `TSI-Catalogo-CU-RF-RNF.md` §5.3 (CU-O26–CU-O38). Renumerado en la tabla §0.1: O106→**O26+O27** (crear/editar + activar/desactivar, split porque el catálogo los separa), O101→**O29**, O104→**O33+O34** (solicitar + aprobar/rechazar), O107→**O30**, O102→**O31**, O108→**O38**, O105→**O35+O36** (suspender + reactivar), O109→**O32**, O110→**O37**, O111→**O28**.
+- Q: ¿`Dim_Plan.periodicidad` es un campo real o solo existe en el esquema sin uso? → A: **Es un campo real, exigido por el SRS §3.3.1** ("Cada plan tiene nombre, nivel, precio, periodicidad y límites de uso"). Estaba ausente de este spec, del código y de los datos sembrados — corregido: ahora es obligatorio en RF-SUSF-001, se propaga a `Fact_Suscripcion` en el alta y en cada cambio de plan aprobado, y determina la duración real del ciclo (`add_cycle`, §0.6) en vez de asumir siempre 1 mes. Ver RN-SUSF-029.
+- Q: ¿`Fact_Factura.id_factura` (UUID v4 por RN-SUSF-026) coincidía con el tipo de columna en el esquema Pinot real? → A: **No** — el esquema real (`database/esquemas.json`) declaraba `id_factura` como `INT`, lo que podía corromper o descartar silenciosamente el UUID generado por el código en cada factura. Corregido a `STRING` (junto con `id_factura_original`, mismo tipo, hoy sin uso hasta que existan notas de crédito). Requiere recrear la tabla en cualquier clúster Pinot ya desplegado con el esquema viejo — la corrección del archivo de esquema no migra datos existentes.
+- Q: ¿Las consultas de `FacturaRepository` (`list_by_cliente`, `find_by_suscripcion_periodo`, cálculo de `seq` de `numero_factura`) escaneaban la tabla completa sin filtro? → A: **Sí**, corregido. Ahora usan `WHERE` a nivel Pinot (por `id_cliente`, por `id_suscripcion`+`periodo`, o por `periodo` para el cálculo de `seq`) en vez de traer toda `Fact_Factura` a memoria de aplicación — mismo estándar que ya cumplía `PlanRepository` (RNF-SUSF-005a).
+
 ### Session 2026-07-30 (listado catálogo planes — paginación correcta)
 
 - Q: ¿El listado de `Dim_Plan` puede devolver el catálogo completo y paginar después en memoria de aplicación? → A: **No**. El listado **MUST** ser **paginado en origen** (página por defecto **20**). Está **prohibido** cargar todos los planes a memoria del servidor (o del cliente) para luego cortar una página.
@@ -27,7 +34,7 @@
 
 ### Session 2026-07-30
 
-- Q: ¿Quién gestiona el catálogo de planes (RF-SUSF-001 / CU-O106 / alias narrativo CU-O99)? → A: **Director de Estrategia** (rol JWT `DirectorEstrategia`), promovido a actor operativo en `actors.md`. El **Administrador** ya **no** crea/edita/desactiva `Dim_Plan`; conserva aprobaciones de downgrade (RF-SUSF-003) y consulta amplia de facturación (RF-SUSF-006). Pricing dinámico por región queda **fuera de v1** (solo CRUD de plan: nombre, precio, límites, nivel, activo).
+- Q: ¿Quién gestiona el catálogo de planes (RF-SUSF-001 / CU-O26+CU-O27 / alias narrativo CU-O99)? → A: **Director de Estrategia** (rol JWT `DirectorEstrategia`), promovido a actor operativo en `actors.md`. El **Administrador** ya **no** crea/edita/desactiva `Dim_Plan`; conserva aprobaciones de downgrade (RF-SUSF-003) y consulta amplia de facturación (RF-SUSF-006). Pricing dinámico por región queda **fuera de v1** (solo CRUD de plan: nombre, precio, límites, nivel, activo).
 
 ### Session 2026-07-26
 
@@ -53,29 +60,29 @@
 
 ### 0.1 Numeración de Casos de Uso (CU) — tabla canónica
 
-El identificador estable de requisito en esta spec es `RF-SUSF-###`. Los códigos CU sirven solo para trazabilidad.
+El identificador estable de requisito en esta spec es `RF-SUSF-###`. **Corrección 2026-08-08:** los códigos CU se realinearon al catálogo limpio vigente (`informestacticos/TSI-Catalogo-CU-RF-RNF.md` §5.3, CU-O26–CU-O38). Los códigos `CU-O10x` que este spec usaba antes (module-map propio de esta spec, distinto del catálogo) y el "CU narrativo" de `SuscripcionesFacturacion.md` quedan como equivalencia histórica únicamente.
 
-| RF | CU canónico (esta spec) | CU narrativo (`SuscripcionesFacturacion.md`) | Notas |
-|---|---|---|---|
-| RF-SUSF-001 | CU-O106 | CU-O99 | Catálogo de planes |
-| RF-SUSF-002 | CU-O101 | CU-O64 | Método de pago |
-| RF-SUSF-003 | CU-O104 | CU-O03 | Cambio de plan (no confundir con CU-O03 de `gestion-cuentas` = perfil) |
-| RF-SUSF-004 | CU-O107 | CU-O30 | Generación de facturas |
-| RF-SUSF-005 | CU-O102 | CU-O65 | Cobro automático |
-| RF-SUSF-006 | CU-O108 | CU-O04 | Historial de facturas |
-| RF-SUSF-007 | CU-O105 | CU-O66 | Suspensión / reactivación por mora |
-| RF-SUSF-008 | CU-O109 | CU-O34 | Renovación automática |
-| RF-SUSF-009 | CU-O110 | CU-O67 | Cancelación (sin par en la lista de 8 del module-map; se adopta O110) |
-| RF-SUSF-010 | CU-O111 | *(ausente en narrativa)* | Alta / contratación inicial de suscripción |
+| RF | CU canónico (catálogo vigente) | CU histórico (esta spec, `CU-O10x`) | CU narrativo (`SuscripcionesFacturacion.md`) | Notas |
+|---|---|---|---|---|
+| RF-SUSF-001 | **CU-O26** (crear/editar) + **CU-O27** (activar/desactivar) | CU-O106 | CU-O99 | Catálogo de planes — el catálogo separa alta/edición de la desactivación |
+| RF-SUSF-002 | **CU-O29** | CU-O101 | CU-O64 | Método de pago |
+| RF-SUSF-003 | **CU-O33** (solicitar) + **CU-O34** (aprobar/rechazar) | CU-O104 | CU-O03 | Cambio de plan (no confundir con CU-O13 de `gestion-cuentas` = perfil corporativo) |
+| RF-SUSF-004 | **CU-O30** | CU-O107 | CU-O30 | Generación de facturas |
+| RF-SUSF-005 | **CU-O31** | CU-O102 | CU-O65 | Cobro automático |
+| RF-SUSF-006 | **CU-O38** | CU-O108 | CU-O04 | Historial de facturas |
+| RF-SUSF-007 | **CU-O35** (suspender) + **CU-O36** (reactivar) | CU-O105 | CU-O66 | Suspensión / reactivación por mora |
+| RF-SUSF-008 | **CU-O32** | CU-O109 | CU-O34 | Renovación automática |
+| RF-SUSF-009 | **CU-O37** | CU-O110 | CU-O67 | Cancelación |
+| RF-SUSF-010 | **CU-O28** | CU-O111 | *(ausente en narrativa)* | Alta / contratación inicial de suscripción |
 
-**Regla:** en títulos, escenarios y trazabilidad de *este* módulo se usa solo la columna **CU canónico**. La columna narrativa queda como equivalencia histórica.
+**Regla:** en títulos, escenarios y trazabilidad de *este* módulo se usa solo la columna **CU canónico (catálogo vigente)**. Las demás columnas quedan como equivalencia histórica.
 
 ### 0.2 Correcciones de nombres (verificadas contra `data-model.md` / `tablas.json` / `esquemas.json`)
 
 | En la narrativa | Nombre real verificado | Nota |
 |---|---|---|
 | `Dim_metodopago` | `Dim_MetodoPago` | Solo capitalización |
-| `Dim_Plan.severidad_permitida` | `Dim_Plan.nivel` (STRING) | `nivel` ∈ {`Básico`,`Profesional`,`Empresarial`}; la severidad permitida se **deriva** por RN-SUSF-002 |
+| `Dim_Plan.severidad_permitida` | `Dim_Plan.severidades_desbloqueadas` (STRING, JSON-encoded list) | Campo **independiente** y configurable por el Director de Estrategia, no derivado de `nivel` (corrección 2026-08-08, RN-SUSF-002) |
 
 Este documento usa siempre los nombres verificados.
 
@@ -108,8 +115,9 @@ El acceso del Proveedor a las capacidades de la plataforma **no** se decide solo
 ### 0.6 Tiempo, ciclo de facturación y moneda (canónico)
 
 - **Zona horaria de negocio:** `America/Guayaquil` (UTC−5, sin DST). Todos los crons, “días” de dunning y comparaciones `now` vs `fecha_fin` usan esta zona.
-- **Ciclo mensual:** mes calendario. `fecha_fin = add_calendar_months(fecha_inicio, 1)` con *clamp* al último día del mes destino si el día de `fecha_inicio` no existe (ej. 31 ene → 28/29 feb).
-- **`periodo` de factura:** string `YYYY-MM` del ciclo que cubre (mes de `fecha_inicio` del ciclo facturado, en Guayaquil).
+- **Periodicidad del plan (corrección 2026-08-08):** el SRS §3.3.1 es explícito — *"Cada plan tiene nombre, nivel, precio, periodicidad y límites de uso"*. `Dim_Plan.periodicidad` ∈ {`Mensual`, `Anual`} es un campo real del plan, capturado por el Director de Estrategia en RF-SUSF-001, propagado a `Fact_Suscripcion.periodicidad` en el alta (RF-SUSF-010) y reafirmado en cada cambio de plan aprobado (RF-SUSF-003, rige desde el ciclo siguiente). Versiones anteriores de este spec restringían el ciclo a "siempre mensual" — esa restricción quedó retirada; no era una decisión de v1 documentada, sino una omisión.
+- **Ciclo:** `fecha_fin = add_cycle(fecha_inicio, periodicidad)` — Mensual: +1 mes calendario; Anual: +1 año calendario. *Clamp* al último día del mes/año destino si el día de `fecha_inicio` no existe (ej. 31 ene → 28/29 feb; 29 feb → 28 feb en año no bisiesto).
+- **`periodo` de factura:** string `YYYY-MM` del ciclo que cubre (mes de `fecha_inicio` del ciclo facturado, en Guayaquil) — se emite **una sola factura por ciclo**, sea Mensual o Anual (RN-SUSF-007 no cambia: una `Fact_Factura` por `id_suscripcion` + `periodo`).
 - **Moneda v1:** USD implícita en todos los montos. Sin multi-moneda.
 - **Ventana de jobs batch** (facturación, dunning, renovación, mantenimiento `activo`): **02:00–05:00** America/Guayaquil.
 
@@ -141,7 +149,7 @@ Orden sugerido de implementación: después de Cuentas-Clientes (`incorporacion-
 
 ## 4. Requisitos funcionales
 
-### RF-SUSF-010 — Contratar / alta inicial de suscripción *(CU-O111, Proveedor)*
+### RF-SUSF-010 — Contratar / alta inicial de suscripción *(CU-O28, Proveedor)*
 
 **Descripción:** crea la primera `Fact_Suscripcion` del cliente tras existir `Dim_Cliente`. Cierra el hueco dejado por el retiro de O12 en Cuentas-Clientes.
 
@@ -154,21 +162,21 @@ Orden sugerido de implementación: después de Cuentas-Clientes (`incorporacion-
 **Flujo principal:**
 1. El Proveedor elige `idplan` (solo planes con `activo=true`) y confirma `renovacionautomatica` (default `true`).
 2. El sistema valida precondiciones.
-3. `Fact_Suscripcion` — escribir (INSERT): `id_suscripcion`, `idcliente`, `idplan`, `precio` (= `Dim_Plan.precio` al momento del alta), `estado="Activa"`, `activo=true`, `renovacionautomatica`, `fecha_inicio=now` (Guayaquil), `fecha_fin=add_calendar_months(fecha_inicio, 1)`, `motivocancelacion=NULL`, `fechacancelacion=NULL`.
+3. `Fact_Suscripcion` — escribir (INSERT): `id_suscripcion`, `idcliente`, `idplan`, `precio` (= `Dim_Plan.precio` al momento del alta), `periodicidad` (= `Dim_Plan.periodicidad` al momento del alta), `estado="Activa"`, `activo=true`, `renovacionautomatica`, `fecha_inicio=now` (Guayaquil), `fecha_fin=add_cycle(fecha_inicio, periodicidad)` (§0.6), `motivocancelacion=NULL`, `fechacancelacion=NULL`.
 4. **Obligatorio:** publicar en `Dim_Cliente_topic` actualizando `plan_suscripcion` = `Dim_Plan.nombre` del plan elegido (campo denormalizado de conveniencia). Fuente de verdad del plan vigente: `Fact_Suscripcion.idplan`.
 5. Si existe método de pago `activo=true`: **debe** generar la factura del `periodo` actual (lógica RF-SUSF-004 para esta suscripción) y ejecutar RF-SUSF-005. Si no hay método: no factura; notificar para completar RF-SUSF-002 (RN-SUSF-018); suscripción queda `Activa` y el acceso sigue RN-SUSF-017.
 
 **Efecto en el modelo de datos:** `Fact_Suscripcion_topic` + `Dim_Cliente_topic` (+ `Fact_Factura_topic` si aplica paso 5).
 
-### RF-SUSF-001 — Gestionar catálogo de planes *(CU-O106, Director de Estrategia; alias narrativo CU-O99)*
+### RF-SUSF-001 — Gestionar catálogo de planes *(CU-O26 alta/edición + CU-O27 activar/desactivar, Director de Estrategia; alias narrativo CU-O99)*
 
 **Descripción:** el Director de Estrategia crea, edita o desactiva planes, y **consulta el catálogo en páginas filtradas**.
 
 **Precondiciones:** sesión con rol JWT `DirectorEstrategia` autorizada (mutaciones). Lectura de planes `activo=true` también disponible a actores que ya consumen el catálogo comercial (p. ej. Proveedor en alta/cambio); la lectura de inactivos queda restringida al Director.
 
 **Flujo principal — Alta / edición:**
-1. Ingresa/edita: `nombre`, `precio` (número ≥ 0, USD), `limites` (objeto JSON, RN-SUSF-019), `nivel` ∈ {`Básico`,`Profesional`,`Empresarial`}.
-2. Validación: campos obligatorios; `nivel` del enum; `limites` conforme al esquema. El orden upgrade/downgrade usa solo `nivel` (RN-SUSF-005).
+1. Ingresa/edita: `nombre`, `precio` (número ≥ 0, USD/mes), **`precio_excedente_llamada`** (número ≥ 0, USD por llamada que supera el cupo — RN-SUSF-030), `limites` (objeto JSON con `unidades_max`, `usuarios_max`, `api_calls_mes` y `api_calls_minuto`, RN-SUSF-019), `nivel` ∈ {`Básico`,`Profesional`,`Empresarial`}, `periodicidad` ∈ {`Mensual`,`Anual`} (RN-SUSF-029).
+2. Validación: campos obligatorios (incluye `periodicidad`); `nivel` del enum; `periodicidad` del enum; `limites` conforme al esquema. El orden upgrade/downgrade usa solo `nivel` (RN-SUSF-005).
 3. `Dim_Plan` — escribir: esos campos + `activo=true`.
 
 **Flujo principal — Listado (obligatorio, paginado):**
@@ -183,7 +191,7 @@ Orden sugerido de implementación: después de Cuentas-Clientes (`incorporacion-
 
 **Efecto:** `Dim_Plan_topic` (mutaciones). Listado: solo lectura.
 
-### RF-SUSF-002 — Gestionar método de pago *(CU-O101, Proveedor)*
+### RF-SUSF-002 — Gestionar método de pago *(CU-O29, Proveedor)*
 
 **Descripción:** registra o reemplaza el método principal de cobro.
 
@@ -204,7 +212,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** `Dim_MetodoPago_topic` (uno o dos eventos) (+ posible RF-SUSF-007).
 
-### RF-SUSF-003 — Solicitar / resolver cambio de plan *(CU-O104, Proveedor; Administrador en downgrade)*
+### RF-SUSF-003 — Solicitar / resolver cambio de plan *(CU-O33 solicitar + CU-O34 aprobar/rechazar, Proveedor; Administrador en downgrade)*
 
 **Descripción:** upgrade o downgrade sobre una suscripción ya existente (creada por RF-SUSF-010).
 
@@ -220,7 +228,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Flujo A — Upgrade (autoaprobado):**
 5. Solicitud → `estado="Aprobada"`, `idadminaprobador=NULL`, `fecha_resolucion=now`.
-6. `Fact_Suscripcion` — escribir de inmediato: `idplan=idplansolicitado`, `precio=<Dim_Plan.precio del nuevo plan>`.
+6. `Fact_Suscripcion` — escribir de inmediato: `idplan=idplansolicitado`, `precio=<Dim_Plan.precio del nuevo plan>`, `periodicidad=<Dim_Plan.periodicidad del nuevo plan>` (rige desde el ciclo siguiente; el ciclo en curso no se recalcula — RN-SUSF-006).
 7. `Dim_Cliente.plan_suscripcion` — escribir el `nombre` del nuevo plan.
 8. **Efecto económico (RN-SUSF-006):** no se modifica ni regenera ninguna `Fact_Factura` del ciclo en curso; la nueva tarifa aplica solo a facturas generadas **después** de esta aprobación. Sin prorrateo.
 
@@ -231,7 +239,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** `Fact_Solicitud_Cambio_Plan_topic` y, si aprueba, `Fact_Suscripcion_topic` + `Dim_Cliente_topic`.
 
-### RF-SUSF-004 — Generar facturas mensuales *(CU-O107, Sistema)*
+### RF-SUSF-004 — Generar facturas mensuales *(CU-O30, Sistema)*
 
 **Descripción:** batch de cierre de período: crea el documento de factura; **no cobra** (el cobro es RF-SUSF-005).
 
@@ -258,7 +266,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** `Fact_Factura_topic` (+ efectos de RF-SUSF-005).
 
-### RF-SUSF-005 — Cobro automático *(CU-O102, Sistema)*
+### RF-SUSF-005 — Cobro automático *(CU-O31, Sistema)*
 
 **Descripción:** un intento de cobro contra la pasarela para una factura `Pendiente`. Disparadores: RF-SUSF-004, RF-SUSF-008, reintentos de dunning, o regularización (RF-SUSF-007).
 
@@ -279,7 +287,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** `Fact_Factura_topic` por intento (+ posible RF-SUSF-007).
 
-### RF-SUSF-006 — Consultar historial de facturas *(CU-O108, Proveedor / Administrador)*
+### RF-SUSF-006 — Consultar historial de facturas *(CU-O38, Proveedor / Administrador)*
 
 **Descripción:** solo lectura.
 
@@ -294,7 +302,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** ninguno.
 
-### RF-SUSF-007 — Suspensión y reactivación por mora *(CU-O105, Sistema)*
+### RF-SUSF-007 — Suspensión y reactivación por mora *(CU-O35 suspender + CU-O36 reactivar, Sistema)*
 
 **Descripción:** solo actor **Sistema** en v1.
 
@@ -311,7 +319,7 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Efecto:** `Fact_Suscripcion_topic`, `Fact_Factura_topic`.
 
-### RF-SUSF-008 — Renovación automática *(CU-O109, Sistema)*
+### RF-SUSF-008 — Renovación automática *(CU-O32, Sistema)*
 
 **Descripción:** extiende el ciclo y genera+cobra la factura del nuevo período.
 
@@ -319,14 +327,14 @@ Si el cliente tiene `Fact_Suscripcion` con `activo=true` y `estado="Suspendida"`
 
 **Flujo:**
 1. Notificación previa: exactamente **3 días calendario** antes de `fecha_fin` (job diario en la misma ventana), vía `core/notificaciones/`.
-2. `Fact_Suscripcion` — escribir: `fecha_inicio` = `fecha_fin` anterior; `fecha_fin` = `add_calendar_months(fecha_inicio, 1)`.
+2. `Fact_Suscripcion` — escribir: `fecha_inicio` = `fecha_fin` anterior; `fecha_fin` = `add_cycle(fecha_inicio, periodicidad)` (usa la `periodicidad` vigente de la suscripción, §0.6 — no siempre 1 mes).
 3. **Generar factura** con la lógica de RF-SUSF-004 para el nuevo `periodo`.
 4. **Cobrar** con RF-SUSF-005.
 5. Si agota reintentos → RF-SUSF-007.
 
 **Efecto:** `Fact_Suscripcion_topic` + `Fact_Factura_topic` (+ RF-SUSF-005/007).
 
-### RF-SUSF-009 — Cancelar suscripción *(CU-O110, Proveedor)*
+### RF-SUSF-009 — Cancelar suscripción *(CU-O37, Proveedor)*
 
 **Descripción:** el Proveedor finaliza la suscripción.
 
@@ -383,11 +391,11 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 |---|---|
 | RN-SUSF-001 | Un plan solo se desactiva (`activo=false`); nunca delete físico. |
 | RN-SUSF-001a | El listado de planes **nunca** entrega el catálogo completo de golpe: siempre página acotada + filtros aplicados en origen (RF-SUSF-001 listado / RNF-SUSF-005a). |
-| RN-SUSF-002 | `Dim_Plan.nivel` → severidad: `Básico`→Baja; `Profesional`→Baja+Media; `Empresarial`→Baja+Media+Alta. |
+| RN-SUSF-002 | `Dim_Plan.severidades_desbloqueadas` es un campo **independiente y libremente configurable** por el Director de Estrategia al crear/editar un plan — subconjunto no vacío de {`Baja`,`Media`,`Alta`}; ya no se deriva de `nivel` (corrección 2026-08-08). |
 | RN-SUSF-003 | Como máximo un `Dim_MetodoPago.activo=true` por `idcliente`. |
 | RN-SUSF-004 | Sin PAN/CVV en modelo TSI; solo token + últimos 4 dígitos. *(Normativa de negocio; el RNF equivalente es RNF-SUSF-001.)* |
 | RN-SUSF-005 | Upgrade/downgrade **solo por `nivel`**: `Básico` < `Profesional` < `Empresarial`. Mayor = upgrade (auto). Menor o mismo nivel con otro `idplan` = downgrade (admin). |
-| RN-SUSF-006 | Tras aprobar cambio: `idplan`/`precio` inmediatos; tarifa nueva solo en próximas facturas; sin prorrateo. |
+| RN-SUSF-006 | Tras aprobar cambio: `idplan`/`precio`/`nivel`/`severidades_desbloqueadas` se congelan en `Fact_Suscripcion` de inmediato (mismo patrón que `precio`); tarifa nueva solo en próximas facturas; sin prorrateo. Una edición posterior de `Dim_Plan` **no** altera retroactivamente una suscripción ya contratada (R-04 del SRS). |
 | RN-SUSF-007 | Una sola `Fact_Factura` por `id_suscripcion` + `periodo` (`YYYY-MM`). |
 | RN-SUSF-008 | Dunning desde `fecha_emision`: día 0, día 3, día 7 (Guayaquil). Máx. 3 intentos. |
 | RN-SUSF-009 | `reintentos` inicia en 0; cada fallo suma 1; éxito no incrementa. |
@@ -400,7 +408,8 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 | RN-SUSF-016 | `Vencida` solo etiqueta derivada en lectura; nunca persistida. |
 | RN-SUSF-017 | Acceso permitido sii `activo=true` y (`estado="Activa"` **o** (`estado="Cancelada"` y `now <= fecha_fin`)). `Suspendida` deniega. |
 | RN-SUSF-018 | Sin método activo: no emitir factura en RF-004/008; notificar; no suspender solo por eso. |
-| RN-SUSF-019 | `limites` JSON mínimo: `unidades_max`, `usuarios_max`, `api_calls_mes` (ints ≥ 0). |
+| RN-SUSF-030 | `precio_excedente_llamada` (DOUBLE ≥ 0) es el **precio unitario de cada llamada a la API que supera el cupo del plan**, distinto de `precio` (importe de la suscripción). Lo exige RF-O54.1 y es el origen del importe que calcula CU-O54 en `api-monitoring-and-billing`. **Centinela `-1.0` = «sin tarifa configurada»**: no se usa `0.0` como defecto porque un cero significaría «excedente gratis» y el corte mensual emitiría facturas de importe cero sin que nadie lo note. El corte alerta en vez de facturar cuando encuentra `-1.0`. Añadido 2026-08-08. |
+| RN-SUSF-019 | `limites` JSON mínimo: `unidades_max`, `usuarios_max`, `api_calls_mes`, `api_calls_minuto` (ints ≥ 0). **`api_calls_minuto` añadido 2026-08-08**: el SRS §3.4.1 exige que el plan de acceso defina el límite de llamadas «mensual y por minuto», y es el origen de `Dim_Partner.limitellamadasminuto` (RF-PON-003 de `partner-api-onboarding`). No es un prorrateo del mensual: protege contra ráfagas. |
 | RN-SUSF-020 | Como máximo una `Fact_Suscripcion` con `activo=true` por `idcliente`. Al vencer acceso de `Cancelada` (`now > fecha_fin`), el job de mantenimiento escribe `activo=false`. |
 | RN-SUSF-021 | Tras RF-SUSF-002, si hay `Suspendida` + factura `Fallida`, el Sistema intenta regularización de inmediato. |
 | RN-SUSF-022 | Cambio de plan (RF-SUSF-003) solo con `estado="Activa"`. |
@@ -410,13 +419,15 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 | RN-SUSF-026 | `numero_factura`: `seq` de 8 dígitos por `periodo` vía `max(seq en Pinot)+1` con reintento si colisión; `id_factura` = UUID v4. |
 | RN-SUSF-027 | **Factura vigente** de una suscripción = la `Fact_Factura` con mismo `id_suscripcion` y `periodo` del ciclo actual (`fecha_inicio`..`fecha_fin` en Guayaquil). Si no existe, la más reciente del mismo `id_suscripcion` por `fecha_emision` con `estado_pago="Fallida"`. |
 | RN-SUSF-028 | El Proveedor puede invocar “Reintentar cobro” estando `Suspendida`, sin cambiar método; dispara el mismo camino de regularización que RN-SUSF-021. |
+| RN-SUSF-029 | `Dim_Plan.periodicidad` ∈ {`Mensual`, `Anual`}; obligatorio en alta/edición de plan (RF-SUSF-001). Se propaga a `Fact_Suscripcion.periodicidad` en el alta (RF-SUSF-010) y se resincroniza al aprobar un cambio de plan (RF-SUSF-003); determina la duración del ciclo vía `add_cycle` (§0.6). Planes existentes sin `periodicidad` se tratan como `Mensual` por compatibilidad. |
+| RN-SUSF-030 | `Dim_Plan.carga_lote_habilitada` (BOOLEAN, default `false`) es un campo **independiente y configurable** por el Director de Estrategia — determina si el plan habilita CU-O40 (carga en lote de unidades) de Red Operativa (RF-O26.5/RF-O40.6, corrección 2026-08-08). Se congela en `Fact_Suscripcion.carga_lote_habilitada` al alta y se resincroniza solo al aprobar un cambio de plan, mismo patrón que `nivel`/`severidades_desbloqueadas` (RN-SUSF-006). `alta-unidades` (Red Operativa) lee el valor congelado en la suscripción activa, no `Dim_Plan` en vivo. |
 
 ---
 
 ## 7. Entradas
 
 - Alta suscripción (Proveedor): `idplan`, `renovacionautomatica`.
-- Alta/edición plan (Director de Estrategia): `nombre`, `precio`, `limites`, `nivel`, `activo`.
+- Alta/edición plan (Director de Estrategia): `nombre`, `precio`, `precio_excedente_llamada`, `limites` (incluye `api_calls_minuto`), `nivel`, `periodicidad`, `activo`.
 - Método de pago: `tipo` + datos a tokenizar.
 - Cambio de plan: `idplansolicitado`, `motivo`.
 - Resolución admin: `Aprobada`\|`Rechazada`, `motivo_rechazo`.
@@ -660,16 +671,16 @@ Y al cambiar el filtro vuelve a la primera página (sin cursor previo).
 
 | RF | CU canónico | Escribe |
 |---|---|---|
-| RF-SUSF-010 | CU-O111 | `Fact_Suscripcion`, `Dim_Cliente` (+ `Fact_Factura` si hay método) |
-| RF-SUSF-001 | CU-O106 | `Dim_Plan` |
-| RF-SUSF-002 | CU-O101 | `Dim_MetodoPago` (+ RF-SUSF-007 si mora) |
-| RF-SUSF-003 | CU-O104 | `Fact_Solicitud_Cambio_Plan`, `Fact_Suscripcion`, `Dim_Cliente` (si aprueba) |
-| RF-SUSF-004 | CU-O107 | `Fact_Factura` |
-| RF-SUSF-005 | CU-O102 | `Fact_Factura` |
-| RF-SUSF-006 | CU-O108 | (solo lectura) |
-| RF-SUSF-007 | CU-O105 | `Fact_Suscripcion`, `Fact_Factura` |
-| RF-SUSF-008 | CU-O109 | `Fact_Suscripcion` + factura vía RF-SUSF-004 + cobro RF-SUSF-005 |
-| RF-SUSF-009 | CU-O110 | `Fact_Suscripcion` (+ mantenimiento posterior `activo=false`) |
+| RF-SUSF-010 | CU-O28 | `Fact_Suscripcion`, `Dim_Cliente` (+ `Fact_Factura` si hay método) |
+| RF-SUSF-001 | CU-O26 + CU-O27 | `Dim_Plan` |
+| RF-SUSF-002 | CU-O29 | `Dim_MetodoPago` (+ RF-SUSF-007 si mora) |
+| RF-SUSF-003 | CU-O33 + CU-O34 | `Fact_Solicitud_Cambio_Plan`, `Fact_Suscripcion`, `Dim_Cliente` (si aprueba) |
+| RF-SUSF-004 | CU-O30 | `Fact_Factura` |
+| RF-SUSF-005 | CU-O31 | `Fact_Factura` |
+| RF-SUSF-006 | CU-O38 | (solo lectura) |
+| RF-SUSF-007 | CU-O35 + CU-O36 | `Fact_Suscripcion`, `Fact_Factura` |
+| RF-SUSF-008 | CU-O32 | `Fact_Suscripcion` + factura vía RF-SUSF-004 + cobro RF-SUSF-005 |
+| RF-SUSF-009 | CU-O37 | `Fact_Suscripcion` (+ mantenimiento posterior `activo=false`) |
 
 ---
 
@@ -681,7 +692,7 @@ Y al cambiar el filtro vuelve a la primera página (sin cursor previo).
 4. `Vencida` solo derivada: **sí**.
 5. Post-cancelación = nueva alta: **sí**.
 6. Idempotencia cobro + reactivación por método: **sí**.
-7. `nivel` enum + severidad derivada: **sí**.
+7. `nivel` enum + `severidades_desbloqueadas` independiente y configurable (corrección 2026-08-08, ya no derivada): **sí**.
 8. Cambio de plan: escritura inmediata; cobro en próxima factura: **sí**.
 9. Acceso = RN-SUSF-017: **sí**.
 10. Alta = RF-SUSF-010: **sí**.

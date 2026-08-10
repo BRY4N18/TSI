@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.ventas_crm",
     "apps.suscripciones",
     "apps.informes_tacticos",
+    "apps.partners",
 ]
 
 MIDDLEWARE = [
@@ -154,6 +155,8 @@ KAFKA_TOPICS = {
     "onboarding": "Fact_Onboarding_topic",
     "accidente": "Fact_Accidente_topic",
     "accidente_estado": "Fact_AccidenteTipoEstadoAccidente_topic",
+    "historial_severidad_accidente": "Fact_HistorialSeveridadAccidente_topic",
+    "cierre_accidente": "Fact_CierreAccidente_topic",
     "elemento_climatico_accidente": "Dim_ElementoClimaticosAccidente_topic",
     "elemento_fisico_accidente": "Dim_ElementoFisicoAccidente_topic",
     "conductor": "Dim_Conductor_topic",
@@ -191,6 +194,14 @@ KAFKA_TOPICS = {
     "suscripcion": "Fact_Suscripcion_topic",
     "factura": "Fact_Factura_topic",
     "solicitud_cambio_plan": "Fact_Solicitud_Cambio_Plan_topic",
+    # --- Partners y API (CU-O48 a CU-O55) ---
+    "partner": "Dim_Partner_topic",
+    "credencial_api": "Dim_CredencialAPI_topic",
+    "historial_acceso_partner": "Fact_HistorialAccesoPartner_topic",
+    "version_contrato_api": "Dim_VersionContratoAPI_topic",
+    "api_integracion": "Fact_APIIntegracion_topic",
+    "log_llamada_api": "Fact_LogLlamadaAPI_topic",
+    "estado_integracion": "Dim_EstadoIntegracion_topic",
 }
 
 # --- Seguimiento (config compartida — no tabla de dominio del módulo) ---

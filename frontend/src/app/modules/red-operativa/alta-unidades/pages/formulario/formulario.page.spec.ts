@@ -92,19 +92,37 @@ describe('FormularioPage (alta-unidades)', () => {
     component = fixture.componentInstance;
   }
 
-  it('create_exige_gmail_antes_de_guardar', async () => {
+  it('create_permite_guardar_sin_gmail', async () => {
+    // Arrange — SRS 3.5.1 / RF-O39.5-6: gmail es opcional en el alta individual.
     await setup('create');
     fixture.detectChanges();
     expect(component.mode).toBe('create');
     expect(fixture.nativeElement.querySelector('[data-testid="input-gmail"]')).toBeTruthy();
+    facade.registrar.and.returnValue(
+      of({
+        ok: true,
+        data: {
+          idunidademergencia: 9,
+          placa: 'XYZ-1',
+          activo: true,
+          usuario_creado: false,
+          invitacion_enviada: false,
+        },
+      }),
+    );
 
+    // Act
     component.form.idcondado = 1;
     component.form.placa = 'XYZ-1';
     component.form.unidademergencia = 'U1';
     component.form.gmail = '';
     component.guardar();
-    expect(component.errorMensaje).toContain('gmail');
-    expect(facade.registrar).not.toHaveBeenCalled();
+
+    // Assert
+    expect(component.errorMensaje).toBeFalsy();
+    expect(facade.registrar).toHaveBeenCalled();
+    const body = facade.registrar.calls.mostRecent().args[0];
+    expect(body.gmail).toBeUndefined();
   });
 
   it('create_muestra_cascada_pais_estado_condado', async () => {

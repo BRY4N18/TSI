@@ -140,7 +140,7 @@
 
 ### Tests for User Story 3
 
-- [X] T048 [P] [US3] Crear test de contrato API (marker: api, AAA) para CU-O15 en `backend/apps/cuentas_clientes/tests/api/test_server_access_contract.py`
+- [X] T048 [P] [US3] Crear test de contrato API (marker: api, AAA) para CU-O08 en `backend/apps/cuentas_clientes/tests/api/test_server_access_contract.py`
 - [X] T049 [P] [US3] Crear test de repositorio (marker: repository, AAA) para entidades de servidor en `backend/apps/cuentas_clientes/tests/repositories/test_server_access_repository.py`
 - [X] T050 [P] [US3] Crear test de servicio (marker: service, AAA) para acceso servidor en `backend/apps/cuentas_clientes/tests/services/test_server_access_service.py`
 - [X] T051 [Histórico-UI] [P] [US3] Crear test unitario frontend (marker: unit, AAA) para admin acceso servidor en `frontend/src/app/modules/cuentas-clientes/auth/services/server-access-admin.service.spec.ts`
@@ -149,7 +149,7 @@
 
 - [X] T052 [US3] Implementar repositorio de acceso servidor en `backend/core/repositories/cuentas_clientes/server_access_repository.py`
 - [X] T053 [US3] Implementar servicio de acceso servidor en `backend/apps/cuentas_clientes/services/server_access_service.py`
-- [X] T054 [US3] Implementar vistas DRF de CU-O15 en `backend/apps/cuentas_clientes/views/server_access_views.py`
+- [X] T054 [US3] Implementar vistas DRF de CU-O08 en `backend/apps/cuentas_clientes/views/server_access_views.py`
 - [X] T055 [Histórico-UI] [US3] Implementar servicio frontend de acceso servidor en `frontend/src/app/modules/cuentas-clientes/auth/services/server-access-admin.service.ts`
 
 **Checkpoint**: US3 operativa sin romper US1/US2.

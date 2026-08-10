@@ -77,7 +77,7 @@
 
 ### Dim_Plan (read-only projection — RF-CPP-000)
 
-Esquema canónico (architecture data-model): `idplan`, `nombre`, `nivel` (STRING), `limites` (STRING), `activo` (BOOLEAN), `precio` (DOUBLE), `fecha_actualizacion`.
+Esquema canónico (architecture data-model): `idplan`, `nombre`, `nivel` (STRING), `limites` (STRING), `severidades_desbloqueadas` (STRING JSON), `activo` (BOOLEAN), `precio` (DOUBLE), `fecha_actualizacion`.
 
 | Field exposed to Visitante | Source | Rules |
 |----------------------------|--------|-------|
@@ -86,19 +86,11 @@ Esquema canónico (architecture data-model): `idplan`, `nombre`, `nivel` (STRING
 | precio | Dim_Plan | DOUBLE |
 | limites | Dim_Plan | STRING en Pinot; API puede devolver string o JSON parseado si el contenido es JSON válido |
 | nivel | Dim_Plan | STRING |
-| severidades_desbloqueadas | derived | Ver mapa abajo — **no** es columna física |
+| severidades_desbloqueadas | Dim_Plan | STRING JSON en Pinot, parseada a lista — campo **independiente y configurable** por el Director de Estrategia en el módulo dueño, **no** derivado de `nivel` (corrección 2026-08-08, ver `subscriptions-and-billing` RN-SUSF-002) |
 
 **Filtro obligatorio:** solo filas con `activo=true`.
 
-**Mapa `nivel` → severidades** (Decision 10 / research.md):
-
-| nivel | severidades_desbloqueadas |
-|-------|---------------------------|
-| Básico | Baja |
-| Profesional | Baja, Media |
-| Empresarial | Baja, Media, Alta |
-
-Nivel desconocido → lista vacía de severidades; el plan **sí** se lista.
+Sin configuración de severidades → lista vacía; el plan **sí** se lista.
 
 **Prohibido desde este feature:** INSERT/UPDATE/publish a `Dim_Plan_topic`; desactivar/crear planes.
 
@@ -148,4 +140,4 @@ No hay FK Visitante→Plan en este alcance; no se persiste `idplan` en el regist
 - Optimistic: `etapa_actual_esperada` / `idusuario_esperado`.
 - Terminal prospect: reject assign/pipeline/conversion.
 - Conversion precondition: `etapa_actual='Negociación'` AND `activo=true`.
-- Public plans: filter `activo=true`; derive severidades; never write `Dim_Plan`.
+- Public plans: filter `activo=true`; parse `severidades_desbloqueadas` (independent field); never write `Dim_Plan`.

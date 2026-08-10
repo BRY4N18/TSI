@@ -57,6 +57,10 @@
           <dd class="m-0 text-sm text-text-primary">{{ p.nivel || '—' }}</dd>
         </div>
         <div class="grid gap-1.5">
+          <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Periodicidad</dt>
+          <dd class="m-0 text-sm text-text-primary">{{ p.periodicidad || '—' }}</dd>
+        </div>
+        <div class="grid gap-1.5">
           <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Estado</dt>
           <dd class="m-0">
             <span [class]="p.activo !== false ? okBadge() : warnBadge()">
@@ -69,6 +73,22 @@
       <dl class="grid gap-1.5 border-t border-border-default pt-6">
         <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Límites</dt>
         <dd class="m-0 text-sm text-text-primary">{{ limitesTexto(p.limites) }}</dd>
+      </dl>
+      <dl class="grid gap-1.5 border-t border-border-default pt-6">
+        <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Severidades atendibles
+        </dt>
+        <dd class="m-0 text-sm text-text-primary">
+          {{ severidadesTexto(p.severidades_desbloqueadas) }}
+        </dd>
+      </dl>
+      <dl class="grid gap-1.5 border-t border-border-default pt-6">
+        <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Carga en lote de unidades
+        </dt>
+        <dd class="m-0 text-sm text-text-primary">
+          {{ p.carga_lote_habilitada ? 'Habilitada' : 'No habilitada' }}
+        </dd>
       </dl>
       <!-- Sin Guardar: página de solo lectura (FR-UI-015) -->
     </section>

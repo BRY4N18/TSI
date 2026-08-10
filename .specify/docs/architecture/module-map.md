@@ -69,11 +69,15 @@ Navegacion rapida entre modulos, specs, dependencias y tablas del modelo dimensi
 
 `specs/003-operational/Partners-API/`
 
+> **Renumeración CU 2026-08-08.** Este departamento usaba los CU legacy O71–O84 de `PortalPartnersAPI.md`, números que en el catálogo limpio (`TSI-Catalogo-CU-RF-RNF.md` §5.5) pertenecen a **Emergencias**. La numeración canónica vigente es **CU-O48–O55**. Mismo tratamiento que la renumeración de Soporte al Cliente (`decisiones-pendientes.md` #14).
+
 | Spec | Carpeta | CUs | Estado | Tablas | Dependencias |
 | ---- | ------- | --- | ------ | ------ | ------------ |
-| Onboarding de Partners API | `partner-api-onboarding/` | O71, O72, O73 | ⏳ Planificado (sin carpeta en disco) | Dim_Servicio, Dim_Cliente, Dim_Plan, Fact_Session | #02 |
-| Monitoreo y Facturacion de API | `api-monitoring-and-billing/` | O74, O75, O78, O79 | ⏳ Planificado (sin carpeta en disco) | Dim_Servicio, Dim_Cliente, Dim_Plan | #07 |
-| Gestion de Acceso de Partners | `partner-access-management/` | O76 | ⏳ Planificado (sin carpeta en disco) | Dim_Servicio, Dim_Cliente, Fact_Session | #07, #08 |
+| Onboarding de Partners API | `partner-api-onboarding/` (`partner-api-onboarding.md` + `backend/` + `frontend/`) | O48, O49, O50 | ✅ **Backend IMPLEMENTADO 2026-08-09** (81/81 tareas). 208 tests del módulo en verde, cobertura 97 %, p95 de emisión 217 ms (umbral 2000). Verificado además contra Pinot real: `verifica_partners.py` 16/16 (esquema) y `verifica_onboarding_e2e.py` 19/19 (servicios reales). FE: spec **cerrada 2026-08-09** (FR-UI-001…034, 6 historias US-FE-*, 8 Success Criteria, checklist 16/16) + `plan.md`, `research.md`, `data-model.md`, 2 `ui-contract.md` y `quickstart.md`. ✅ **Frontend IMPLEMENTADO 2026-08-09 (90/91 tareas)**: consola (lista Ver-only + workpanel + cola de solicitudes) y portal del partner (mi integración, entrega del secreto, contrato versionado). **459 tests en verde, cobertura del módulo 91,6 %**. Los dos deltas de backend están implementados: `BE-DELTA-01` (`GET /partners/me`) y `BE-DELTA-02` (el partner emite su credencial productiva, para que el Admin no vea secretos ajenos) — backend de 1250 a **1263 passed**, módulo de 208 a **221**. Grupo «Partners y API» en `nav-links.ts` y en la matriz rol→navegación. **T088 ejecutado parcialmente contra la app real**: verificados C, D (completo, incluido SC-004: cero fugas del secreto en storage/URL/título), F, J, K, L y el sidebar por rol; quedan A/E/G/H/I por limitaciones de la automatización o por datos consumidos. Aparecieron **tres deltas de backend** (`BE-DELTA-01/02/03`), todos implementados — módulo de 208 a **230 tests**, suite total **1272 passed**. Se añadió `database/seed_usuario_partner_demo.py`: el rol 15 existía pero **nadie lo tenía asignado**, así que el portal era inalcanzable en la demo | Dim_Partner, Dim_CredencialAPI, Fact_HistorialAccesoPartner + lectura de Dim_Cliente, Fact_Suscripcion, Dim_Plan | #02, #06 |
+| Monitoreo y Facturacion de API | `api-monitoring-and-billing/` (`api-monitoring-and-billing.md` + `backend/` + `frontend/`) | O51, O52, O53, O54 | ✅ Backend spec + plan + tasks (70) completos 2026-08-08, sin preguntas abiertas. FE stub | Fact_APIIntegracion, Fact_LogLlamadaAPI, Dim_EstadoIntegracion + lectura de Dim_Partner, Dim_CredencialAPI, Dim_Plan, Dim_Preferencias_Cliente; escribe Fact_Factura | #07 |
+| Gestion de Acceso de Partners | `partner-access-management/` (`partner-access-management.md` + `backend/` + `frontend/`) | O55 | ✅ Backend spec + plan + tasks (56) completos 2026-08-08, sin preguntas abiertas ni cambios de esquema. FE stub | Dim_Partner, Dim_CredencialAPI, Fact_HistorialAccesoPartner + lectura de Fact_Factura | #07, #08 |
+
+**Reparto de propiedad de escritura** (evita el solape que tenía la numeración legacy): `partner-api-onboarding` **emite y rota** credenciales; `partner-access-management` **invalida** (revocación por seguridad, cascada de suspensión); `api-monitoring-and-billing` es el único que escribe las tablas de consumo. `Fact_Factura` se escribe en Suscripciones y Facturación; la disputa vive en Soporte (CU-O83 / RF-O83.2).
 
 ---
 
@@ -150,6 +154,11 @@ Fuente de código: `frontend/src/app/shared/layout/nav-links.ts` +
 | **DirectorTecnologico** | `/red-operativa/incorporacion-regional/catalogo` | Despacho parámetros · Regiones · Soporte |
 | **Proveedor** / **Cliente** (flota) | Proveedor → catálogo unidades; Cliente → mis-tickets | Red operativa: Mis unidades · Seguimiento: Mis expedientes (Cliente) · Suscripciones propias |
 | **Soporte** | `/soporte-cliente/cola` | Cola / tickets |
+| **DesarrolladorAPIs** | `/partners/consola` | Partners y API: Partners · Solicitudes pendientes (solo lectura de la cola: **resolver la promoción es exclusivo de Administrador**, RF-PON-008) · Soporte |
+| **PartnerIntegracion** | `/partners/portal` | Partners y API: Mi integración · Contrato de integración — **nada más**. Es un departamento distinto del de la consola, así que los sidebars no se fusionan |
+
+> `Administrador` suma también el grupo **Partners y API** (Partners · Solicitudes pendientes), y es
+> el único rol que puede resolver una promoción a producción.
 
 **No confundir:** el login demo de unidad puede tener un gmail con la palabra “operador” en el local-part; el **rol JWT** es la verdad. Renombrar demos a `*unidad@…` cuando se re-siembren.
 
@@ -165,9 +174,9 @@ Fuente de código: `frontend/src/app/shared/layout/nav-links.ts` +
 | 4 | `commercial-pipeline-prospects` | Ventas-CRM | O116, O119, O117, O121 |
 | 5 | `notificacion-ventas` | Ventas-CRM | O118, O122 |
 | 6 | `subscriptions-and-billing` | Suscripciones-Facturacion | O106, O101, O104, O107, O102, O108, O105, O109 |
-| 7 | `partner-api-onboarding` | Partners-API | O71, O72, O73 |
-| 8 | `api-monitoring-and-billing` | Partners-API | O74, O75, O78, O79 |
-| 9 | `partner-access-management` | Partners-API | O76 |
+| 7 | `partner-api-onboarding` | Partners-API | O48, O49, O50 |
+| 8 | `api-monitoring-and-billing` | Partners-API | O51, O52, O53, O54 |
+| 9 | `partner-access-management` | Partners-API | O55 |
 | 10 | `infrastructure-and-resilience` | Infraestructura | O16, O17 |
 | 11 | `alta-unidades` | Red-Operativa | O54, O56, O57, O58, O59 |
 | 12 | `incorporacion-regional` | Red-Operativa | O55, O60, O61, O62 |

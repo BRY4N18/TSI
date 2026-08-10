@@ -13,6 +13,12 @@
 
 ## Clarifications
 
+### Session 2026-08-07 (auditoría post-limpieza de catálogo)
+
+- Q: ¿Los IDs O116/O117/O119/O121 de `module-map.md` siguen siendo la referencia canónica? → A: **No.** El catálogo limpio vigente es `informestacticos/TSI-Catalogo-CU-RF-RNF.md`. Los IDs de este spec quedan como **alias históricos**; la trazabilidad canónica actual es CU-O18 (RF-CPP-001), CU-O19 (RF-CPP-002/003), CU-O20/O21 (RF-CPP-004/005), CU-O22 (RF-CPP-006). Ver tabla de mapeo actualizada abajo.
+- Q: ¿A qué CU pertenece RF-CPP-007 (entrada directa)? → A: Se asignó **CU-O96** (fuera de secuencia, al final de la sección 5 del catálogo) — no existía CU dedicado; no es lo mismo que CU-O09/CU-O10 de Cuentas y Clientes (esos son un flujo de solicitud + aprobación; la entrada directa es creación instantánea por el Administrador).
+- Q: ¿RF-CPP-006 valida `tipo` además de `nit_identificacion`? → A: Sí, corregido. El código previo solo rechazaba por NIT ausente/duplicado y dejaba pasar `tipo` ausente o fuera de enum. Ahora `ConversionClienteService` (y por consistencia `EntradaDirectaService`) rechazan si `tipo` no está presente o no pertenece a `{Proveedor, Aseguradora, Municipio, Smart City}`, con mensaje de error propio (ya no comparte el mensaje "NIT ya registrado").
+
 ### Session 2026-07-25
 
 - Q: ¿Qué prospectos puede listar y mutar un Gerente (Ventas / Cuentas Públicas)? → A: Solo los asignados a él (`idusuario` propio); el Administrador ve y opera todos.
@@ -29,22 +35,22 @@
 
 | Tipo | Referencia | Notas |
 |---|---|---|
-| Módulo / mapa | `module-map.md` #4 Ventas-CRM | Spec canónico del embudo comercial |
-| CU canónicos | **O116, O117, O119, O121** | IDs oficiales del mapa; **no** reutilizar O05/O06/O61/O62 de otros módulos |
-| Alias de fuente | CU-O05→O116, CU-O62→O117, CU-O06→O119, CU-O64→O121, **CU-O123→(ID canónico a definir)** | Solo trazabilidad al documento `VentasCRM_Pre-venta.md`; CU-O123 **no** figura aún en `module-map.md` |
+| Catálogo canónico vigente | `informestacticos/TSI-Catalogo-CU-RF-RNF.md` §5.2 Ventas y CRM (CU-O17–O25) + §5.9 (CU-O96) | **Fuente de verdad actual**, sustituye a `module-map.md` para efectos de este spec (corrección 2026-08-07) |
+| CU canónicos (vigentes) | **CU-O18, CU-O19, CU-O20, CU-O21, CU-O22, CU-O96** | Ver mapeo actualizado abajo |
+| Alias históricos (obsoletos, no usar) | `module-map.md` O116/O117/O119/O121; fuente `VentasCRM_Pre-venta.md` CU-O05/O06/O62/O64 | Conservados solo para trazar el origen documental; **no** son la referencia vigente |
 | Objetivo de negocio | Adquisición comercial operativa (embudo pre-venta → cuenta cliente) | Se introduce formalmente este conjunto de CU operativos bajo Ventas-CRM; no colisiona con la ruta crítica de despacho de emergencias |
 
 ### Mapeo CU canónico ↔ requisito
 
-| CU canónico | Alias fuente | Requisitos |
+| CU canónico (catálogo vigente) | Alias histórico | Requisitos |
 |---|---|---|
-| *(ID canónico a definir)* | CU-O123 | **RF-CPP-000** — Portal público / catálogo de planes (solo lectura) |
-| **O116** | CU-O05 | RF-CPP-001 — Registro de prospecto |
-| **O117** | CU-O62 | RF-CPP-002, RF-CPP-003 — Asignación / reasignación |
-| **O119** | CU-O06 | RF-CPP-004, RF-CPP-005 — Transiciones de pipeline / pérdida |
-| **O121** | CU-O64 | RF-CPP-006 — Conversión a cliente |
-| *(sin CU dedicado en mapa)* | Parte 3 fuente | RF-CPP-007 — Entrada directa sin prospecto |
-| *(consulta operativa)* | — | RF-CPP-008 — Consulta de prospectos y pipeline |
+| CU-O17 | alias fuente CU-O123 / `module-map.md` (ID a definir) | **RF-CPP-000** — Portal público / catálogo de planes (solo lectura) |
+| **CU-O18** | `module-map.md` O116 / fuente CU-O05 | RF-CPP-001 — Registro de prospecto |
+| **CU-O19** | `module-map.md` O117 / fuente CU-O62 | RF-CPP-002, RF-CPP-003 — Asignación / reasignación |
+| **CU-O20 / CU-O21** | `module-map.md` O119 / fuente CU-O06 | RF-CPP-004, RF-CPP-005 — Transiciones de pipeline / pérdida |
+| **CU-O22** | `module-map.md` O121 / fuente CU-O64 | RF-CPP-006 — Conversión a cliente |
+| **CU-O96** (fuera de secuencia, §5.9 del catálogo) | Antes *sin CU dedicado en mapa* | RF-CPP-007 — Entrada directa sin prospecto |
+| *(consulta operativa, sin CU propio)* | — | RF-CPP-008 — Consulta de prospectos y pipeline |
 
 ---
 
@@ -161,7 +167,8 @@ Este spec es **dueño** de `Dim_Prospecto`, `Fact_Asignacion` y `Fact_Pipeline`.
 | nombre | STRING |
 | precio | según esquema de Suscripciones-Facturación |
 | limites | límites de uso del plan |
-| nivel | STRING — base para derivar severidades desbloqueadas (p. ej. Básico / Profesional / Empresarial → Baja / Media / Alta según reglas del módulo dueño) |
+| nivel | STRING — Básico / Profesional / Empresarial |
+| severidades_desbloqueadas | STRING JSON — campo independiente y configurable por el Director de Estrategia en el módulo dueño; ya no se deriva de `nivel` (corrección 2026-08-08, ver `subscriptions-and-billing` RN-SUSF-002) |
 | activo | BOOLEAN — el portal solo lista `activo=true` |
 
 ## 5. Requisitos funcionales
@@ -178,7 +185,7 @@ El sistema debe permitir a un **Visitante** externo, **sin autenticación y sin 
 - `nombre`
 - `precio`
 - `limites` (límites de uso asociados al plan)
-- **severidades desbloqueadas** por plan (derivadas de `Dim_Plan.nivel` / reglas del módulo dueño; p. ej. Básico → Baja; Profesional → Baja+Media; Empresarial → Baja+Media+Alta)
+- **severidades desbloqueadas** por plan (`Dim_Plan.severidades_desbloqueadas` — campo independiente y configurable en el módulo dueño, no derivado de `nivel`)
 
 **Comportamiento:**
 - `GET` público del catálogo; sin Bearer.
@@ -270,16 +277,17 @@ No se exige que ya exista una fila `Ganado` previa: la conversión es atómica.
    - `fecha_inicio_contrato=now`
 3. UPDATE `Dim_Prospecto`: `activo=false`, `motivo_inactividad='convertido'`, `etapa_actual='Ganado'`.
 
-**Errores:** rechazar si `activo=false`, si `etapa_actual ≠ 'Negociación'`, si faltan `tipo` / `nit_identificacion`, si ya existe cualquier `Dim_Cliente` con el mismo `nit_identificacion` (RN-CPP-010), o si la `etapa_actual` esperada no coincide (RN-CPP-011).
+**Errores:** rechazar si `activo=false`, si `etapa_actual ≠ 'Negociación'`, si falta `tipo` **o** no pertenece a `{Proveedor, Aseguradora, Municipio, Smart City}`, si falta `nit_identificacion`, si ya existe cualquier `Dim_Cliente` con el mismo `nit_identificacion` (RN-CPP-010), o si la `etapa_actual` esperada no coincide (RN-CPP-011). La validación de `tipo` (presencia + enum) y la de NIT son errores independientes con mensajes propios — no deben compartir el mismo mensaje de error.
 
 **Nota:** el Sistema **no** dispara conversión automática en este alcance; la conversión es acción explícita del Gerente.
 
-### RF-CPP-007 — Entrada directa de cliente sin prospecto (Parte 3; actor: Administrador)
+### RF-CPP-007 — Entrada directa de cliente sin prospecto (**CU-O96**, catálogo §5.9; actor: Administrador)
 
 **Comportamiento:**
-- INSERT `Dim_Cliente` con `idprospecto=NULL`, datos completos de cliente (`nombre`, `razon_social`, `tipo`, `nit_identificacion`), `estado='Activo'`, `estado_onboarding='Pendiente'`, `fecha_inicio_contrato=now`.
+- Crea el usuario administrador local (`Dim_Usuarios`, `activo=true`), su credencial temporal (`Dim_Credencial`, `estadocredencial='Cambio contraseña'`), le asigna el rol `Cliente` (`Dim_Usuario_Rol`) y le envía la invitación por correo — mismo mecanismo que `autorregistro-proveedor` (spec `incorporacion-clientes`, CU-O09). **Corrección 2026-08-08:** antes de esta corrección, `EntradaDirectaService` creaba `Dim_Cliente` con `admin_local_id=NULL` y ningún acceso, dejando la cuenta huérfana — nadie podía iniciar sesión en ella. La ruta que antes resolvía esto (registro directo con admin en un solo paso) fue retirada en Cuentas y Clientes (410); este RF asume ahora esa responsabilidad.
+- INSERT `Dim_Cliente` con `idprospecto=NULL`, datos completos de cliente (`nombre`, `razon_social`, `tipo`, `nit_identificacion`), `admin_local_id` = id del usuario recién creado, `estado='Activo'`, `estado_onboarding='Pendiente'`, `fecha_inicio_contrato=now`.
 - No crea filas en `Dim_Prospecto`, `Fact_Asignacion` ni `Fact_Pipeline`.
-- **Error:** rechazar si `nit_identificacion` ya existe en cualquier `Dim_Cliente` (RN-CPP-010).
+- **Error:** rechazar si falta `tipo` o no pertenece a `{Proveedor, Aseguradora, Municipio, Smart City}` (mismo enum que RF-CPP-006); rechazar si `nit_identificacion` ya existe en cualquier `Dim_Cliente` (RN-CPP-010); rechazar si falta `admin_local` (`nombres`, `apellidos`, `gmail`) o si el `gmail` ya está registrado en `Dim_Usuarios`.
 - Reporting: métricas de conversión de embudo deben filtrar `idprospecto IS NOT NULL`.
 
 ### RF-CPP-008 — Consultar prospectos y pipeline
@@ -364,7 +372,7 @@ No se exige que ya exista una fila `Ganado` previa: la conversión es atómica.
 - **CA-CPP-003:** reasignación/primera asignación manual exige `motivo` no nulo; primera de huérfano solo Administrador (RF-CPP-003, RN-CPP-007).
 - **CA-CPP-004:** pipeline impide saltos, retrocesos e impide `Ganado` fuera de conversión (RF-CPP-004, RN-CPP-002).
 - **CA-CPP-005:** `motivo_perdida` solo y siempre con `Perdido` (RF-CPP-005, RN-CPP-003).
-- **CA-CPP-006:** conversión desde `Negociación` hereda contacto/empresa, exige `tipo`+`nit`, y rechaza NIT duplicado (RF-CPP-006, RN-CPP-010).
+- **CA-CPP-006:** conversión desde `Negociación` hereda contacto/empresa, exige `tipo` (presente y en enum) + `nit`, y rechaza NIT duplicado (RF-CPP-006, RN-CPP-010).
 - **CA-CPP-007:** todo `activo=false` tiene `motivo_inactividad` explícito (RNF-CPP-010).
 - **CA-CPP-008:** entrada directa con `idprospecto=NULL` sin filas de embudo; rechaza NIT duplicado (RF-CPP-007, RN-CPP-010).
 - **CA-CPP-009:** listado de prospectos ≤ 500ms P95 bajo carga normal (RNF-CPP-003).
@@ -421,7 +429,7 @@ La primera asignación (RF-CPP-002) es interna (Sistema); no es endpoint públic
 
 ## 16. Assumptions (defaults adoptados al corregir el analyze)
 
-1. IDs canónicos = O116/O117/O119/O121; alias de fuente solo documentales (incluye **CU-O123** para RF-CPP-000; ID canónico a definir en `module-map.md`).
+1. IDs canónicos vigentes = **CU-O18/CU-O19/CU-O20/CU-O21/CU-O22/CU-O96** (`TSI-Catalogo-CU-RF-RNF.md`, corrección 2026-08-07); O116/O117/O119/O121 de `module-map.md` y CU-O123 son alias históricos, no la referencia actual.
 2. `tipo_organizacion` ∈ {`Público`,`Privado`}.
 3. Rate limit registro = 10 req/min/IP.
 4. UNIQUE `gmail` enforced en servicio, no en Pinot.
@@ -436,4 +444,4 @@ La primera asignación (RF-CPP-002) es interna (Sistema); no es endpoint públic
 13. NIT de cliente único: rechazo si ya existe en cualquier `Dim_Cliente` (clarificación 2026-07-25).
 14. Pipeline sin retrocesos: solo avance adyacente + `Perdido` (clarificación 2026-07-25).
 15. Concurrencia: optimistic check en mutaciones de pipeline/asignación/conversión (clarificación 2026-07-25).
-16. Portal de planes (RF-CPP-000): solo lectura de `Dim_Plan` activos; severidades derivadas de `nivel` según reglas del módulo dueño; sin JWT ni escrituras (clarificación 2026-07-26).
+16. Portal de planes (RF-CPP-000): solo lectura de `Dim_Plan` activos; severidades independientes y configurables (`severidades_desbloqueadas`, no derivadas de `nivel` — corrección 2026-08-08); sin JWT ni escrituras (clarificación 2026-07-26).

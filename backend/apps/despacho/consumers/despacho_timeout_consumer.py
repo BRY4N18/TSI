@@ -1,4 +1,4 @@
-"""Consumer O36 async — re-asignación tras evento DespachoTimeout."""
+"""Consumer O63 async — re-asignación tras evento DespachoTimeout."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class DespachoTimeoutConsumer:
             idusuario=idusuario,
             sincrono=False,
         )
-        logger.info("O36 timeout reasignación %s: %s", idaccidente, result)
+        logger.info("O63 timeout reasignación %s: %s", idaccidente, result)
         return result
 
 

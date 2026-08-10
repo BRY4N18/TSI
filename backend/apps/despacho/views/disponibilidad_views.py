@@ -12,6 +12,7 @@ from apps.despacho.permissions import (
     IsAdministradorOrDespachoService,
     IsUnidadEmergenciaOwn,
     IsUnidadEmergenciaSelfOrAdmin,
+    IsUnidadEmergenciaSelfStrict,
 )
 from apps.despacho.services.consulta_flota_service import ConsultaFlotaService
 from apps.despacho.services.disponibilidad_unidad_service import (
@@ -91,8 +92,15 @@ class UnidadDisponibilidadView(APIView):
 
 
 class UnidadHistorialEstadoView(APIView):
-    permission_classes = [IsAuthenticated401, IsUnidadEmergenciaSelfOrAdmin]
     parser_classes = [JSONParser]
+
+    def get_permissions(self):
+        # GET: Admin/Despacho pueden consultar cualquier unidad (visibilidad/auditoría).
+        # POST: SRS 3.5.1/3.6.3 — solo la propia unidad declara su disponibilidad,
+        # sin excepción de rol (ver IsUnidadEmergenciaSelfStrict).
+        if self.request.method == "POST":
+            return [IsAuthenticated401(), IsUnidadEmergenciaSelfStrict()]
+        return [IsAuthenticated401(), IsUnidadEmergenciaSelfOrAdmin()]
 
     def get(self, request: Request, idunidademergencia: int) -> Response:
         limit = min(int(request.query_params.get("limit", 20)), 100)

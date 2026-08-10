@@ -1,6 +1,6 @@
 # Quickstart — Validación Evidencia en Sitio y Disponibilidad de Unidad
 
-Guía de validación end-to-end contract-first para CU-O27, CU-O30 y CU-O43.
+Guía de validación end-to-end contract-first para CU-O74, CU-O78 y CU-O77.
 
 ## Prerrequisitos
 
@@ -17,20 +17,20 @@ Guía de validación end-to-end contract-first para CU-O27, CU-O30 y CU-O43.
 | `GET` | `/api/v1/accidentes/{idaccidente}/evidencias` | RF-EVI-005 |
 | `POST` | `/api/v1/accidentes/{idaccidente}/evidencias/fotos` | RF-EVI-002 |
 | `POST` | `/api/v1/accidentes/{idaccidente}/evidencias/notas` | RF-EVI-003 |
-| `POST` | `/api/v1/accidentes/{idaccidente}/evidencias/sincronizar` | CU-O43 / RF-EVI-006 |
+| `POST` | `/api/v1/accidentes/{idaccidente}/evidencias/sincronizar` | CU-O77 / RF-EVI-006 |
 | `GET` | `/api/v1/unidades-emergencia` | RF-EVI-004 |
 | `GET` | `/api/v1/unidades-emergencia/{id}/disponibilidad` | RF-EVI-004 / CA-EVI-002 |
 | `GET` | `/api/v1/unidades-emergencia/{id}/historial-estado` | CA-EVI-009 |
-| `POST` | `/api/v1/unidades-emergencia/{id}/historial-estado` | CU-O30 / RF-EVI-001 |
+| `POST` | `/api/v1/unidades-emergencia/{id}/historial-estado` | CU-O78 / RF-EVI-001 |
 | `GET` | `/api/v1/mi-unidad-emergencia/disponibilidad` | RF-EVI-004 |
-| `POST` | `/api/v1/mi-unidad-emergencia/disponibilidad` | CU-O30 |
-| `GET` | `/api/v1/accidentes/{id}/enriquecimiento` | CU-O46 |
+| `POST` | `/api/v1/mi-unidad-emergencia/disponibilidad` | CU-O78 |
+| `GET` | `/api/v1/accidentes/{id}/enriquecimiento` | CU-O75/CU-O76 |
 | `PUT` | `/api/v1/accidentes/{id}/enriquecimiento/clima` | RF-EVI-007 |
 | `GET/POST` | `/api/v1/accidentes/{id}/enriquecimiento/elementos-fisicos` | RF-EVI-008 |
 | `GET/POST` | `/api/v1/accidentes/{id}/enriquecimiento/conductores` | RF-EVI-009 |
 | `GET/POST` | `/api/v1/accidentes/{id}/enriquecimiento/implicados` | RF-EVI-010 |
 | `PATCH` | `/api/v1/accidentes/{id}/enriquecimiento/implicados/{idimplicado}` | RF-EVI-010 |
-| `GET` | `/api/v1/catalogos/periodos-dias` (y climas / físicos / estados-conductor) | CU-O46 |
+| `GET` | `/api/v1/catalogos/periodos-dias` (y climas / físicos / estados-conductor) | CU-O75/CU-O76 |
 
 Convenciones (`api-standards.md`):
 
@@ -138,7 +138,7 @@ Convenciones (`api-standards.md`):
 1. Técnico registra peatón/pasajero/testigo → `POST .../enriquecimiento/implicados` con `tipoimplicado` + `estadoimplicado` (opc. `genero`/`edad`).
 2. `GET .../enriquecimiento` incluye `implicados[]` (solo campos de ontología; sin PII de identidad).
 3. Soft-delete `PATCH .../implicados/{id}` `{ activo: false }`.
-4. Offline: borrador `LocalImplicado` sin cifrado PII hasta sync CU-O43.
+4. Offline: borrador `LocalImplicado` sin cifrado PII hasta sync CU-O77.
 
 ### Escenario M — PII offline cifrado (CA-EVI-013)
 

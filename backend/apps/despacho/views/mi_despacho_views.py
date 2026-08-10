@@ -1,4 +1,4 @@
-"""DRF views for /mi-despacho/* (CU-O24, CU-O45)."""
+"""DRF views for /mi-despacho/* (CU-O61, CU-O62)."""
 
 from __future__ import annotations
 

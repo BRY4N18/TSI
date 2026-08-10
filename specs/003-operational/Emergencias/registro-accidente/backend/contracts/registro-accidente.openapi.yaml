@@ -3,8 +3,8 @@ info:
   title: TSI Registro de Accidentes API
   version: 1.0.0
   description: >
-    Contrato contract-first para CU-O21 (registro), CU-O32 (descarte), CU-O40 (escalamiento),
-    CU-O41 (fusión) y RF-REG-010 (confirmar reporte desde BORRADOR).
+    Contrato contract-first para CU-O56 (registro), CU-O58 (descarte), CU-O73 (escalamiento),
+    CU-O57 (fusión) y RF-REG-010 (confirmar reporte desde BORRADOR).
     Sigue api-standards.md y spec registro-accidente.
 servers:
   - url: /api/v1
@@ -144,7 +144,7 @@ paths:
   /accidentes/tipos-reportado:
     get:
       tags: [Catalogos]
-      summary: Listar tipos de reporte activos (Dim_TipoReportado, CU-O21)
+      summary: Listar tipos de reporte activos (Dim_TipoReportado, CU-O56)
       operationId: listarTiposReportado
       security:
         - bearerAuth: []
@@ -163,7 +163,7 @@ paths:
   /accidentes/referencias-estacion:
     get:
       tags: [Catalogos]
-      summary: Listar estaciones de referencia activas (Dim_ReferenciaEstacion, CU-O21)
+      summary: Listar estaciones de referencia activas (Dim_ReferenciaEstacion, CU-O56)
       operationId: listarReferenciasEstacion
       security:
         - bearerAuth: []
@@ -182,7 +182,7 @@ paths:
   /accidentes/unidades-emergencia:
     get:
       tags: [Catalogos]
-      summary: Listar unidades de emergencia activas (selección CU-O40)
+      summary: Listar unidades de emergencia activas (selección CU-O73)
       operationId: listarUnidadesEmergenciaCatalogo
       security:
         - bearerAuth: []
@@ -296,7 +296,7 @@ paths:
 
     post:
       tags: [Accidentes]
-      summary: Registrar accidente en tiempo real (CU-O21)
+      summary: Registrar accidente en tiempo real (CU-O56)
       operationId: registrarAccidente
       security:
         - bearerAuth: []
@@ -427,7 +427,7 @@ paths:
   /accidentes/{idaccidente}/descartar:
     post:
       tags: [Acciones]
-      summary: Descartar caso en BORRADOR (CU-O32)
+      summary: Descartar caso en BORRADOR (CU-O58)
       operationId: descartarCaso
       security:
         - bearerAuth: []
@@ -459,7 +459,7 @@ paths:
   /accidentes/{idaccidente}/deshacer-descarte:
     post:
       tags: [Acciones]
-      summary: Deshacer descarte (snackbar CU-O32)
+      summary: Deshacer descarte (snackbar CU-O58)
       operationId: deshacerDescarte
       security:
         - bearerAuth: []
@@ -496,7 +496,7 @@ paths:
   /accidentes/{idaccidente}/escalar-severidad:
     post:
       tags: [Acciones]
-      summary: Escalar severidad en sitio (CU-O40)
+      summary: Escalar severidad en sitio (CU-O73)
       operationId: escalarSeveridad
       security:
         - bearerAuth: []
@@ -530,7 +530,7 @@ paths:
   /accidentes/{idaccidente}/fusionar:
     post:
       tags: [Acciones]
-      summary: Fusionar reporte duplicado con caso padre (CU-O41)
+      summary: Fusionar reporte duplicado con caso padre (CU-O57)
       operationId: fusionarReportes
       security:
         - bearerAuth: []
@@ -562,7 +562,7 @@ paths:
   /accidentes/{idaccidente}/deshacer-fusion:
     post:
       tags: [Acciones]
-      summary: Deshacer fusión (snackbar CU-O41)
+      summary: Deshacer fusión (snackbar CU-O57)
       operationId: deshacerFusion
       security:
         - bearerAuth: []
@@ -1050,7 +1050,7 @@ components:
           type: integer
           minimum: 1
           description: >
-            Opcional. Si se envía, dispara CU-O38 (despacho múltiple) tras escalar severidad.
+            Opcional. Si se envía, dispara CU-O66 (despacho múltiple) tras escalar severidad.
 
     EscalarSeveridadData:
       type: object
@@ -1068,7 +1068,7 @@ components:
         despacho_adicional:
           type: object
           nullable: true
-          description: Resultado CU-O38 si idunidademergencia_adicional fue enviado
+          description: Resultado CU-O66 si idunidademergencia_adicional fue enviado
           additionalProperties: true
 
     EscalarSeveridadResponse:

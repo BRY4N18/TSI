@@ -123,3 +123,11 @@ Como responsable de infraestructura, quiero que el orquestador (Airflow) tenga c
 - Esta fase no expone ningún puerto de ClickHouse ni de Airflow a internet — el alcance es entorno de desarrollo/interno, igual que el resto de `infrastructure.md`.
 - Las credenciales de administración de Airflow y de acceso a ClickHouse en esta fase son de desarrollo (no se define aquí un esquema de gestión de secretos productivo); eso queda fuera de alcance.
 - Ningún DAG de negocio, ninguna tabla de ClickHouse con modelo de datos real, ni ningún workpanel de frontend se define en esta spec — son objeto de specs posteriores dedicadas a informes simples e informes compuestos del departamento de Gestión de Emergencias.
+
+## Addendum (2026-08-06): patrón de staging en Parquet, vinculante para todo DAG `tactico`
+
+Amplía FR-004/FR-007: todo DAG bajo `dags/` (raíz del repo, reemplaza `docker/tactico/airflow-dags/`) sigue el patrón **extract.parquet → transform.parquet → loading.parquet** descrito en el contrato ([`contracts/docker-compose-contract.md`](./contracts/docker-compose-contract.md)). Airflow orquesta el orden de las tareas; no mueve ni transforma datos directamente — cada tarea lee/escribe únicamente en `ETL/<fecha>/<hora>/` (nueva carpeta en la raíz del repo, staging no versionado).
+
+Esto requirió cambiar la imagen de Airflow de la oficial stock a una custom con `pandas`/`pyarrow` (`docker/tactico/airflow/Dockerfile`) — el resto de garantías de esta spec (FR-001 a FR-003, FR-005, FR-006, FR-008 a FR-011) no cambian.
+
+**Justificación (Mantenibilidad, ISO/IEC 25010, prioridad ya declarada en la tabla de esta spec)**: separar extract/transform/load en tareas independientes con staging en disco permite reintentar una etapa sin repetir las anteriores y deja el contenido intermedio de cada corrida inspeccionable para depuración por el responsable único del proyecto.

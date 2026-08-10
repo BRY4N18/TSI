@@ -35,22 +35,33 @@ class FacturaRepository:
         return rows[0] if rows else None
 
     def list_by_cliente(self, idcliente: int, *, limit: int = 20) -> list[dict[str, Any]]:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Factura", {}) or [])
-        rows = [r for r in rows if r.get("id_cliente") == idcliente]
-        rows.sort(key=lambda r: r.get("fecha_emision") or 0, reverse=True)
-        return rows[:limit]
+        rows = self.pinot.query(
+            "SELECT * FROM Fact_Factura WHERE id_cliente = %(idcliente)s "
+            "ORDER BY fecha_emision DESC LIMIT %(limit)s",
+            {"idcliente": idcliente, "limit": int(limit)},
+        )
+        return list(rows or [])
 
     def find_by_suscripcion_periodo(self, id_suscripcion: int, periodo: str) -> dict[str, Any] | None:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Factura", {}) or [])
-        for r in rows:
-            if r.get("id_suscripcion") == id_suscripcion and r.get("periodo") == periodo:
-                return r
-        return None
+        rows = self.pinot.query(
+            "SELECT * FROM Fact_Factura WHERE id_suscripcion = %(id_suscripcion)s "
+            "AND periodo = %(periodo)s LIMIT 1",
+            {"id_suscripcion": id_suscripcion, "periodo": periodo},
+        )
+        return rows[0] if rows else None
 
-    def _next_seq(self, yyyymm: str) -> int:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Factura", {}) or [])
+    def _facturas_del_periodo(self, periodo: str) -> list[dict[str, Any]]:
+        """Acota el escaneo al período (RN-SUSF-026): numero_factura es único por periodo,
+        así que nunca hace falta leer la tabla completa para calcular el siguiente seq."""
+        rows = self.pinot.query(
+            "SELECT numero_factura FROM Fact_Factura WHERE periodo = %(periodo)s",
+            {"periodo": periodo},
+        )
+        return list(rows or [])
+
+    def _next_seq(self, yyyymm: str, *, del_periodo: list[dict[str, Any]]) -> int:
         max_seq = 0
-        for r in rows:
+        for r in del_periodo:
             m = _SEQ_RE.match(str(r.get("numero_factura") or ""))
             if m and m.group(1) == yyyymm:
                 max_seq = max(max_seq, int(m.group(2)))
@@ -60,9 +71,10 @@ class FacturaRepository:
         now = datetime.now(TZ)
         periodo = data["periodo"]
         yyyymm = periodo.replace("-", "")
-        seq = self._next_seq(yyyymm)
+        del_periodo = self._facturas_del_periodo(periodo)
+        seq = self._next_seq(yyyymm, del_periodo=del_periodo)
         numero = f"FAC-{yyyymm}-{seq:08d}"
-        existing = {r.get("numero_factura") for r in (self.pinot.query("SELECT * FROM Fact_Factura", {}) or [])}
+        existing = {r.get("numero_factura") for r in del_periodo}
         while numero in existing:
             seq += 1
             numero = f"FAC-{yyyymm}-{seq:08d}"

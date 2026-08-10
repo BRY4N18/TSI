@@ -8,16 +8,18 @@
 
 ## 1. Trazabilidad OE/OT/OP/CU → RF/RNF/CA
 
+Numeración de CU corregida 2026-08-08 al catálogo vigente (`TSI-Catalogo-CU-RF-RNF.md`); ver `spec.md` Clarifications para el mapeo desde la numeración previa.
+
 | OP/UC | RF/RNF | CA | Descripción | Tasks |
 |-------|--------|-----|-------------|-------|
 | OP-TSI-SEG-01 | RF-AUT-001, RF-AUT-002 | CA-AUT-001, CA-AUT-009 | Acceso seguro con JWT + validación de sesión | T026, T011, T029, T031-T033 |
-| CU-O05 | RF-AUT-001 | CA-AUT-001, CA-AUT-002, CA-AUT-003, CA-AUT-010 | Iniciar sesión | T019, T022, T026, T065-T066, T073 |
-| CU-O04 | RF-AUT-003 | CA-AUT-004 | Gestión de usuarios | T034, T036, T038, T041, T043, T045, T047 |
-| CU-O13 | RF-AUT-004 | CA-AUT-005 | Gestión de roles de negocio | T035, T037, T039, T042, T044, T046 |
-| CU-O15 | RF-AUT-005 | CA-AUT-006 | Acceso a infraestructura (servidor) | T048-T055 |
-| CU-O06 | RF-AUT-006 | CA-AUT-003, CA-AUT-007 | Recuperar/restablecer contraseña | T056-T064 |
-| CU-O07 | RF-AUT-007 | CA-AUT-008 | Revocar sesión activa | T021, T024, T028, T029 |
-| — | RF-AUT-008 | CA-AUT-008 | Cierre de sesión voluntario | T020, T023, T027, T029 |
+| CU-O01 | RF-AUT-001 | CA-AUT-001, CA-AUT-002, CA-AUT-003, CA-AUT-010 | Iniciar sesión | T019, T022, T026, T065-T066, T073 |
+| CU-O06 | RF-AUT-003 | CA-AUT-004 | Gestión de usuarios | T034, T036, T038, T041, T043, T045, T047 |
+| CU-O07 | RF-AUT-004 | CA-AUT-005 | Gestión de roles de negocio | T035, T037, T039, T042, T044, T046 |
+| CU-O08 | RF-AUT-005 | CA-AUT-006 | Acceso a infraestructura (servidor) | T048-T055 |
+| CU-O03 | RF-AUT-006 | CA-AUT-003, CA-AUT-007 | Recuperar/restablecer contraseña | T056-T064 |
+| CU-O05 | RF-AUT-007 | CA-AUT-008 | Revocar sesión activa | T021, T024, T028, T029 |
+| CU-O02 | RF-AUT-008 | CA-AUT-008 | Cierre de sesión voluntario | T020, T023, T027, T029 |
 | — | RF-AUT-002 | CA-AUT-009 | Validación JWT + Fact_Session por request | T011, T012, T015, T032 |
 | — | RNF-AUT-004 | CA-AUT-010 | SLO login p95 ≤ 500 ms, disponibilidad ≥ 99.5% | T065, T066, T073 |
 | — | RNF-AUT-005 | — | Rate limiting diferido | T018 |
@@ -32,7 +34,7 @@
 | RF-AUT-002 | Validación token + sesión | T011, T015 | T012, T025, T032, T069 |
 | RF-AUT-003 | Gestión usuarios | T041, T043, T045 | T034, T036, T038, T070 |
 | RF-AUT-004 | Gestión roles negocio | T042, T044, T045 | T035, T037, T039, T070 |
-| RF-AUT-005 | Acceso servidor CU-O15 | T052-T055 | T048-T051, T071 |
+| RF-AUT-005 | Acceso servidor CU-O08 | T052-T055 | T048-T051, T071 |
 | RF-AUT-006 | Password reset | T060-T062 | T056-T059, T072 |
 | RF-AUT-007 | Revocar sesión | T028, T029 | T021, T024, T069 |
 | RF-AUT-008 | Logout | T027, T029 | T020, T023, T069 |

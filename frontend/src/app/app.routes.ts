@@ -132,6 +132,11 @@ export const routes: Routes = [
             (m) => m.SUSCRIPCIONES_ROUTES,
           ),
       },
+      {
+        path: 'partners',
+        loadChildren: () =>
+          import('./modules/partners/partners.routes').then((m) => m.PARTNERS_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: 'ventas-crm/planes' },

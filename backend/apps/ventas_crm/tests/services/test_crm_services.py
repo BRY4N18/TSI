@@ -174,10 +174,65 @@ class TestConversionYEntrada:
                 "razon_social": "GAD Demo",
                 "tipo": "Municipio",
                 "nit_identificacion": "1760002",
+                "admin_local": {"nombres": "Ana", "apellidos": "Admin", "gmail": "gad.entrada@ex.com"},
             }
         )
         assert out["idprospecto"] is None
         assert out["estado_onboarding"] == "Pendiente"
+        assert out["admin_local_id"] is not None
+
+    def test_conversion_rechaza_tipo_faltante(self, mock_pinot, mock_kafka):
+        p = RegistroProspectoService().registrar({**PAYLOAD, "gmail": "conv-sintipo@ex.com"})
+        pipe = PipelineService()
+        cur = "Nuevo"
+        for nxt in ["Contactado", "Calificado", "Propuesta", "Negociación"]:
+            p = pipe.transicionar(
+                p["idprospecto"],
+                {"etapa_nueva": nxt, "etapa_actual_esperada": cur},
+                user_id=20,
+                roles=["GerenteVentas"],
+            )["prospecto"]
+            cur = nxt
+        with pytest.raises(ValidationError):
+            ConversionClienteService().convertir(
+                p["idprospecto"],
+                {"nit_identificacion": "1790099", "etapa_actual_esperada": "Negociación"},
+                user_id=20,
+                roles=["GerenteVentas"],
+                idempotency_key="22222222-2222-2222-2222-222222222222",
+            )
+
+    def test_conversion_rechaza_tipo_invalido(self, mock_pinot, mock_kafka):
+        p = RegistroProspectoService().registrar({**PAYLOAD, "gmail": "conv-tipomalo@ex.com"})
+        pipe = PipelineService()
+        cur = "Nuevo"
+        for nxt in ["Contactado", "Calificado", "Propuesta", "Negociación"]:
+            p = pipe.transicionar(
+                p["idprospecto"],
+                {"etapa_nueva": nxt, "etapa_actual_esperada": cur},
+                user_id=20,
+                roles=["GerenteVentas"],
+            )["prospecto"]
+            cur = nxt
+        with pytest.raises(ValidationError):
+            ConversionClienteService().convertir(
+                p["idprospecto"],
+                {"tipo": "Persona Natural", "nit_identificacion": "1790098", "etapa_actual_esperada": "Negociación"},
+                user_id=20,
+                roles=["GerenteVentas"],
+                idempotency_key="33333333-3333-3333-3333-333333333333",
+            )
+
+    def test_entrada_directa_rechaza_tipo_invalido(self, mock_pinot, mock_kafka):
+        with pytest.raises(ValidationError):
+            EntradaDirectaService().registrar(
+                {
+                    "nombre": "X",
+                    "razon_social": "X SA",
+                    "tipo": "Persona Natural",
+                    "nit_identificacion": "1760099",
+                }
+            )
 
 
 @pytest.mark.service

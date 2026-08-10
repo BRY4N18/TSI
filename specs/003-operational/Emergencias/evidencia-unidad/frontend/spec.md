@@ -5,7 +5,7 @@
 **Status**: Active (Fase B — Interaction extraída; implementación Angular en código)
 **Depends-on**: [`../backend/spec.md`](../backend/spec.md) (RF-EVI-*, RNF-EVI-*, CA-EVI-*, OpenAPI). Esta capa **MUST NOT** redefinir reglas de negocio, estados ni contratos REST.
 
-**Input**: Clarificaciones UI extraídas del backend: captura/enriquecimiento exclusivos Técnico+Unidad; offline mismo patrón CU-O43; `Dim_Implicado` solo ontología; `mode=view` desde registro-accidente.
+**Input**: Clarificaciones UI extraídas del backend: captura/enriquecimiento exclusivos Técnico+Unidad; offline mismo patrón CU-O77; `Dim_Implicado` solo ontología; `mode=view` desde registro-accidente.
 
 ## Clarifications
 
@@ -16,7 +16,7 @@
 
 ### Session 2026-07-28/29 (UI — extraído backend)
 
-- Q: ¿Enriquecimiento estructurado offline? → A: **Sí** — colas IndexedDB + sync batch CU-O43 (RNF-EVI-001).
+- Q: ¿Enriquecimiento estructurado offline? → A: **Sí** — colas IndexedDB + sync batch CU-O77 (RNF-EVI-001).
 - Q: ¿Operador precarga clima en registro? → A: **No** — enriquecimiento solo en este módulo; Operador entra `?mode=view` desde registro-accidente.
 - Q: ¿Campos `Dim_Implicado`? → A: UI solo `tipoimplicado`, `estadoimplicado`, `genero?`, `edad?` — sin PII identidad (RF-EVI-010).
 
@@ -70,7 +70,7 @@ Desde detalle accidente, Operador abre galería/enriquecimiento con `?mode=view`
 
 ## Out of Scope
 
-- Cambiar OpenAPI, Blob/Kafka, algoritmo despacho, registro inicial accidente (CU-O21).
+- Cambiar OpenAPI, Blob/Kafka, algoritmo despacho, registro inicial accidente (CU-O56).
 - PII en `Dim_Implicado`; precarga clima desde Operador en registro.
 
 ## ISO/IEC 25010:2023 — Justificación

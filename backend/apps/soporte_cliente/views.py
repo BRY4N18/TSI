@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.soporte_cliente.domain_constants import ROL_CLIENTE
 from apps.soporte_cliente.permissions import (
     IsAdministradorSLA,
+    IsClienteSoporte,
     IsSoporteAgente,
     IsSoporteAgenteOrCliente,
     IsSoporteAgenteOrNivelEscalado,
@@ -32,7 +33,7 @@ from core.repositories.soporte.reclamo_repository import ReclamoRepository
 
 
 class ServiciosCatalogoView(APIView):
-    """GET catálogo Dim_Servicio activos (CU-O91 idservicio opcional)."""
+    """GET catálogo Dim_Servicio activos (CU-O83 idservicio opcional)."""
 
     permission_classes = [IsAuthenticated401, IsSoporteAgenteOrCliente]
 
@@ -41,7 +42,7 @@ class ServiciosCatalogoView(APIView):
 
 
 class TicketsView(APIView):
-    """GET lista tickets (Cliente ve solo los suyos); POST registra (CU-O91)."""
+    """GET lista tickets (Cliente ve solo los suyos); POST registra (CU-O83, RF-O83.2 idfactura opcional)."""
 
     permission_classes = [IsAuthenticated401, IsSoporteAgenteOrCliente]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
@@ -98,16 +99,33 @@ class TicketsView(APIView):
                     status_code=400,
                 )
 
-        data = RegistrarTicketService().registrar(
-            idcliente=int(idcliente),
-            asunto=str(asunto),
-            descripcion=str(descripcion),
-            tipo=str(tipo),
-            idaccidente=request.data.get("idaccidente"),
-            idservicio=idservicio,
-            idusuario=request.user.idusuario,
-            adjuntos=archivos,
-        )
+        # `Fact_Factura.id_factura` es un UUID, no un entero: idfactura viaja como STRING.
+        raw_factura = request.data.get("idfactura")
+        idfactura = None
+        if raw_factura not in (None, ""):
+            idfactura = str(raw_factura).strip()
+            if not idfactura:
+                return error_response(
+                    "bad_request",
+                    "idfactura no puede ser una cadena vacia",
+                    "400",
+                    status_code=400,
+                )
+
+        try:
+            data = RegistrarTicketService().registrar(
+                idcliente=int(idcliente),
+                asunto=str(asunto),
+                descripcion=str(descripcion),
+                tipo=str(tipo),
+                idaccidente=request.data.get("idaccidente"),
+                idservicio=idservicio,
+                idfactura=idfactura,
+                idusuario=request.user.idusuario,
+                adjuntos=archivos,
+            )
+        except ValueError as exc:
+            return error_response("unprocessable_entity", str(exc), "422", status_code=422)
         return success_response(data, status_code=status.HTTP_201_CREATED)
 
 
@@ -165,10 +183,13 @@ class DashboardSoporteView(APIView):
 
 
 class ReabrirTicketView(APIView):
-    permission_classes = [IsAuthenticated401, IsSoporteAgenteOrCliente]
+    """CU-O88 — solo el Cliente dueño del ticket puede reabrirlo (RF-O88.1)."""
+
+    permission_classes = [IsAuthenticated401, IsClienteSoporte]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request: Request, id_reclamo: int) -> Response:
+        idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
         archivos = [
             (f.read(), f.content_type or "image/jpeg")
             for f in request.FILES.getlist("adjuntos")
@@ -176,19 +197,22 @@ class ReabrirTicketView(APIView):
         try:
             data = ReabrirTicketService().reabrir(
                 id_reclamo,
+                idcliente=idcliente,
                 idusuario=request.user.idusuario,
                 motivo=request.data.get("motivo"),
                 adjuntos=archivos,
             )
         except LookupError:
             return error_response("not_found", "Ticket no encontrado", "404", status_code=404)
+        except PermissionError:
+            return error_response("forbidden", "Ticket no pertenece al cliente", "403", status_code=403)
         except ValueError as exc:
             return error_response("unprocessable_entity", str(exc), "422", status_code=422)
         return success_response(data)
 
 
 class SLAConfigView(APIView):
-    """GET lista configuraciones; POST crea nueva regla (CU-O95)."""
+    """GET lista configuraciones; POST crea nueva regla (CU-O97)."""
 
     permission_classes = [IsAuthenticated401, IsAdministradorSLA]
     parser_classes = [JSONParser]
@@ -269,11 +293,19 @@ class ComentarTicketView(APIView):
         if not mensaje:
             return error_response("bad_request", "mensaje requerido", "400", status_code=400)
 
+        roles = set(getattr(request.user, "roles", []))
+        es_solo_cliente = roles == {ROL_CLIENTE}
+        if es_solo_cliente:
+            reclamo = ReclamoRepository().find_by_id(id_reclamo)
+            if not reclamo:
+                return error_response("not_found", "Ticket no encontrado", "404", status_code=404)
+            idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
+            if idcliente != reclamo.get("idcliente"):
+                return error_response("forbidden", "Ticket no pertenece al cliente", "403", status_code=403)
+
         # RN-TIC-002: solo agentes/admin pueden crear notas internas.
         es_nota_interna = bool(request.data.get("es_nota_interna", False))
-        if ROL_CLIENTE in getattr(request.user, "roles", []) and not (
-            set(getattr(request.user, "roles", [])) - {ROL_CLIENTE}
-        ):
+        if es_solo_cliente:
             es_nota_interna = False
 
         try:
@@ -336,15 +368,20 @@ class ResolverTicketView(APIView):
 
 
 class ConfirmarCierreTicketView(APIView):
-    permission_classes = [IsAuthenticated401, IsSoporteAgenteOrCliente]
+    """CU-O87 — solo el Cliente dueño del ticket puede confirmar el cierre (RF-O87.1)."""
+
+    permission_classes = [IsAuthenticated401, IsClienteSoporte]
 
     def post(self, request: Request, id_reclamo: int) -> Response:
+        idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
         try:
             data = ConfirmarCierreService().confirmar(
-                id_reclamo, idusuario=request.user.idusuario
+                id_reclamo, idcliente=idcliente, idusuario=request.user.idusuario
             )
         except LookupError:
             return error_response("not_found", "Ticket no encontrado", "404", status_code=404)
+        except PermissionError:
+            return error_response("forbidden", "Ticket no pertenece al cliente", "403", status_code=403)
         except ValueError as exc:
             return error_response("unprocessable_entity", str(exc), "422", status_code=422)
         return success_response(data)

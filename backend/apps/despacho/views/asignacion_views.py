@@ -1,4 +1,4 @@
-"""DRF views for operator assignment actions (O33, O34, O38)."""
+"""DRF views for operator assignment actions (O64, O65, O66)."""
 
 from __future__ import annotations
 

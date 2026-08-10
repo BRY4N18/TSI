@@ -1,4 +1,4 @@
-"""RF-TIC-002 paso 4 (CU-O92) — escalado manual a nivel superior."""
+"""RF-TIC-002 paso 4 (CU-O85) — escalado manual a nivel superior."""
 
 from __future__ import annotations
 

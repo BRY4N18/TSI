@@ -38,6 +38,7 @@ describe('ConversionApiService', () => {
         razon_social: 'Y',
         tipo: 'Municipio',
         nit_identificacion: '99',
+        admin_local: { nombres: 'Ana', apellidos: 'Admin', gmail: 'ana.admin@ex.com' },
       })
       .subscribe();
     const req = httpMock.expectOne('/api/v1/ventas-crm/clientes/entrada-directa');

@@ -38,7 +38,7 @@ class TestPlanRepository:
                     "idplan": i,
                     "nombre": f"Plan {i}",
                     "nivel": "Básico",
-                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1}',
+                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1, "api_calls_minuto": 1}',
                     "activo": True,
                     "precio": 10.0,
                     "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -78,7 +78,7 @@ class TestPlanRepository:
                 "nombre": "Plus",
                 "precio": 79.0,
                 "nivel": "Básico",
-                "limites": {"unidades_max": 8, "usuarios_max": 4, "api_calls_mes": 2000},
+                "limites": {"unidades_max": 8, "usuarios_max": 4, "api_calls_mes": 2000, "api_calls_minuto": 60},
             }
         )
         # Assert

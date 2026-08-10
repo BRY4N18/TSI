@@ -196,7 +196,7 @@
 
             <p [class]="priceClass(p)">
               {{ p.precio | currency: 'USD':'symbol':'1.2-2' }}
-              <span class="text-sm font-normal text-text-secondary"> / mes</span>
+              <span class="text-sm font-normal text-text-secondary"> / {{ p.periodicidad === 'Anual' ? 'año' : 'mes' }}</span>
             </p>
 
             <p class="m-0 min-h-10 text-sm leading-normal text-text-secondary">{{ slogan(p) }}</p>

@@ -11,7 +11,7 @@
 
 ### Session 2026-07-30 (UI)
 
-- Q: ¿Rutas CU-O01/O12 retiradas? → A: Sin ruta FE; pantallas legacy responden 410 — no enlazar desde UI.
+- Q: ¿Rutas de registro directo / config. plan+logo retiradas (numeración vieja "CU-O01/O12")? → A: Sin ruta FE; pantallas legacy responden 410 — no enlazar desde UI. Sin CU vigente en el catálogo (corregido 2026-08-08).
 - Q: ¿Login bloqueado en Pendiente_Aprobación? → A: **No** (RN-ONB-011); la UI bloquea onboarding y módulos que exijan cliente activo vía guards, no el login.
 - Q: ¿Logo en aprobación Admin? → A: Nunca en O16; logo solo en etapa `perfil_corporativo` del wizard (RN-ONB-012).
 
@@ -19,7 +19,7 @@
 
 ### US-FE-1 — Autorregistro público (P1)
 
-Solicitante completa formulario CU-O14 sin JWT; recibe confirmación de solicitud en estado `Pendiente_Aprobación` (RF-ONB-001, RNF-ONB-001).
+Solicitante completa formulario CU-O09 sin JWT; recibe confirmación de solicitud en estado `Pendiente_Aprobación` (RF-ONB-001, RNF-ONB-001).
 
 ### US-FE-2 — Aprobar, rechazar o anular (P1)
 
@@ -46,7 +46,7 @@ Guards impiden wizard si cuenta no está `Activo` o onboarding ya completado (RN
 - **FR-UI-005**: Etapa `perfil_corporativo` — upload/URL de logo gestionado por el cliente (RF-ONB-003, RN-ONB-012).
 - **FR-UI-006**: Etapa `preferencias` — formulario umbrales/canales/zonas; al guardar refleja creación backend de preferencias (RF-ONB-003, RN-ONB-010).
 - **FR-UI-007**: Reanudación: al entrar al wizard, posicionar en primera etapa pendiente según API progreso (RF-ONB-004, RN-ONB-005).
-- **FR-UI-008**: CTA reenviar invitación en solicitudes Admin (RF-ONB-005, CU-O08).
+- **FR-UI-008**: CTA reenviar invitación en solicitudes Admin (RF-ONB-005, CU-O12).
 - **FR-UI-009**: `AdminLocalOnboardingGuard`, `OnboardingPendienteGuard`, `OnboardingCompletadoGuard` en rutas wizard.
 - **FR-UI-010**: `OnboardingFacadeService` centraliza estado UI del wizard sin lógica de dominio duplicada.
 - **FR-UI-011**: Sin rutas ni enlaces a pantallas O01/O12 retiradas (RF-ONB-002b/c).

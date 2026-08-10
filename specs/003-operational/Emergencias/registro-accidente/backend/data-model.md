@@ -28,14 +28,16 @@
 
 ### 3) `Dim_ElementoClimaticosAccidente` / `Dim_ElementoFisicoAccidente` (ownership DDL)
 
-- **DDL** en esquema Registro; **escritura runtime = `evidencia-unidad` CU-O46** (Técnico de campo).
-- Este módulo **no** escribe estas tablas en CU-O21 (sin precarga de Operador).
+- **DDL** en esquema Registro; **escritura runtime = `evidencia-unidad` CU-O75/CU-O76** (Técnico de campo).
+- Este módulo **no** escribe estas tablas en CU-O56 (sin precarga de Operador).
 - Ver `evidencia-unidad/data-model.md` y `flujoscorreguidos/flujo-emergencias-canonico.md`.
 
-### 4) `Dim_NotaAccidente` (notas de escalamiento O40)
+### 4) `Dim_NotaAccidente` (notas de escalamiento O73)
 
 - **PK:** `idnotaaccidentes`
 - **Campos:** `idaccidente`, `idusuario`, `nota`, `tipo` (`escalamiento`), `sincronizado`, `activo`, `fechahora`, `fecha_actualizacion`
+
+**Corrección 2026-08-08 — CU-O73 movido a `seguimiento-cierre-de-casos`:** el SRS §3.6.4 narra el escalamiento de severidad en sitio dentro de Seguimiento y Cierre, no en Registro de Accidente. `EscalarSeveridadService` (antes `apps/accidentes/services/`) ahora vive en `apps/seguimiento/services/`, expuesto en `apps/seguimiento/views/urls.py`. Sigue usando `Dim_NotaAccidente` (arriba) y `Fact_Accidente` (mutación de `idseveridad`), y ahora además conserva la severidad inicial en `Fact_HistorialSeveridadAccidente` (RF-O73.2) — ver `seguimiento-cierre-de-casos/backend/data-model.md`.
 
 ## Dimensiones de lectura (join, no persistidas en hecho)
 
@@ -45,20 +47,20 @@
 | `Dim_Severidad` | Valores 1–4 (Leve…Fatal) |
 | `Dim_RegionOperativa` + `Dim_RegionOperativaEstadoRegion` | Cobertura operativa (`estadoregion='Producción'`) |
 | `Dim_TipoReportado`, `Dim_ReferenciaEstacion` | Datos complementarios a distancia (RF-REG-002) |
-| `Dim_PeriodosDias`, `Dim_EstadosClimas`, `Dim_Elementos_Fisicos` | Solo lectura si se muestran en detalle; escritura = evidencia CU-O46 |
-| `Fact_Despacho` | Precondición O40 (despacho activo confirmado) |
+| `Dim_PeriodosDias`, `Dim_EstadosClimas`, `Dim_Elementos_Fisicos` | Solo lectura si se muestran en detalle; escritura = evidencia CU-O75 |
+| `Fact_Despacho` | Precondición O73 (despacho activo confirmado) |
 
 ## Transiciones de estado (módulo registro-accidente)
 
 ```text
 BORRADOR → REPORTADO     (auto sin advertencias | RF-REG-010 manual)
-BORRADOR → DESCARTADO    (CU-O32)
-BORRADOR → FUSIONADO     (CU-O41)
-REPORTADO → FUSIONADO    (CU-O41)
+BORRADOR → DESCARTADO    (CU-O58)
+BORRADOR → FUSIONADO     (CU-O57)
+REPORTADO → FUSIONADO    (CU-O57)
 REPORTADO → BUSCANDO_UNIDAD  (despacho-inteligente, fuera de alcance)
 ```
 
-O40 **no** cambia estado; solo muta campos en `Fact_Accidente` + nota.
+O73 **no** cambia estado; solo muta campos en `Fact_Accidente` + nota.
 
 ## Validaciones de dominio (RF-REG-003)
 
@@ -78,9 +80,9 @@ O40 **no** cambia estado; solo muta campos en `Fact_Accidente` + nota.
 |-------|--------------|
 | `Fact_Accidente_topic` | Crear, editar, descartar (`activo`), fusionar (`idaccidenteorigen`), escalar severidad |
 | `Fact_AccidenteTipoEstadoAccidente_topic` | Toda transición de estado |
-| `Dim_NotaAccidente_topic` | Escalamiento O40 |
+| `Dim_NotaAccidente_topic` | Escalamiento O73 |
 
-> Topics de puentes clima/físico y conductores/implicados: escritura solo desde `evidencia-unidad` (CU-O46).
+> Topics de puentes clima/físico y conductores/implicados: escritura solo desde `evidencia-unidad` (CU-O75/CU-O76).
 
 Lecturas: queries Pinot vía repositorios (`core/repositories/accidentes/`).
 

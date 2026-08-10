@@ -1,4 +1,4 @@
-"""Job CU-O96 — escaneo periódico de SLA y cierre automático (RNF-TIC-001, RN-TIC-004)."""
+"""Job CU-O89 — escaneo periódico de SLA y cierre automático (RNF-TIC-001, RN-TIC-004)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def run_monitoreo_sla_job() -> dict[str, int]:
     resultado["cerrados_automaticamente"] = len(cerrados)
     if resultado["escalados"] or resultado["en_riesgo"] or resultado["cerrados_automaticamente"]:
         logger.info(
-            "job CU-O96: %d escalados, %d en riesgo, %d cerrados automáticamente",
+            "job CU-O89: %d escalados, %d en riesgo, %d cerrados automáticamente",
             resultado["escalados"],
             resultado["en_riesgo"],
             resultado["cerrados_automaticamente"],

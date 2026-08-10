@@ -42,10 +42,17 @@ describe('PlanFormPage', () => {
     page.form.setValue({
       nombre: 'Plan Demo',
       precio: 49,
+      precio_excedente_llamada: 0.05,
       nivel: 'Básico',
+      periodicidad: 'Mensual',
+      severidad_baja: true,
+      severidad_media: false,
+      severidad_alta: false,
+      carga_lote_habilitada: false,
       unidades_max: 5,
       usuarios_max: 3,
       api_calls_mes: 1000,
+      api_calls_minuto: 30,
     });
     page.guardar();
     expect(planApi.crear).toHaveBeenCalled();

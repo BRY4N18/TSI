@@ -77,7 +77,19 @@ class CambioPlanService:
             raise CambioPlanError("no_suscripcion", "Sin suscripción")
         self.suscripciones.update(
             sus["id_suscripcion"],
-            {"idplan": plan["idplan"], "precio": plan["precio"]},
+            {
+                "idplan": plan["idplan"],
+                "precio": plan["precio"],
+                # La periodicidad del plan nuevo rige desde el próximo ciclo (RN-SUSF-006:
+                # sin prorrateo del ciclo en curso); el ciclo activo no se recalcula aquí.
+                "periodicidad": plan.get("periodicidad") or "Mensual",
+                # nivel/severidades/carga_lote_habilitada se resincronizan solo en un cambio
+                # de plan explícito y aprobado — nunca por una edición directa de Dim_Plan
+                # (ver decisiones-pendientes.md #6).
+                "nivel": plan.get("nivel"),
+                "severidades_desbloqueadas": plan.get("severidades_desbloqueadas", "[]"),
+                "carga_lote_habilitada": bool(plan.get("carga_lote_habilitada", False)),
+            },
         )
         self.clientes.update(sol["idcliente"], {"plan_suscripcion": plan["nombre"]})
         return self.solicitudes.update(

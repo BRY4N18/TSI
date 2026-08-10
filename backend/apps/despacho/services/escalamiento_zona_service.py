@@ -1,4 +1,4 @@
-"""CU-O34 — escalamiento a condados vecinos."""
+"""CU-O65 — escalamiento a condados vecinos."""
 
 from __future__ import annotations
 

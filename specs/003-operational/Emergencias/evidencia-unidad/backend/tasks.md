@@ -6,7 +6,7 @@
 
 **Tests**: Incluidos por requerimiento explícito (`testing.md` + usuario); cada tarea de servicio/repositorio tiene test asociado con markers `unit`/`repository`/`service`/`api` y patrón AAA (Arrange-Act-Assert).
 
-**Organization**: Tareas agrupadas por historia de usuario (CU-O30, CU-O27, CU-O43, frontend, **CU-O46 enriquecimiento**, **remediación Dim_Implicado ontología**) para implementación y validación independiente.
+**Organization**: Tareas agrupadas por historia de usuario (CU-O78, CU-O74, CU-O77, frontend, **CU-O75/CU-O76 enriquecimiento**, **remediación Dim_Implicado ontología**) para implementación y validación independiente.
 
 
 > **Capas:** este archivo es autoridad de **dominio/API**.
@@ -67,7 +67,7 @@
 
 ## Phase 3: User Story 1 — Gestionar disponibilidad de unidad (Priority: P1) 🎯 MVP
 
-**Goal**: CU-O30 + RF-EVI-001/004 — unidad declara estado; consulta propia/flota; default Fuera de servicio sin historial.
+**Goal**: CU-O78 + RF-EVI-001/004 — unidad declara estado; consulta propia/flota; default Fuera de servicio sin historial.
 
 **Independent Test**: Unidad cambia a Ocupada vía `POST /mi-unidad-emergencia/disponibilidad`; consulta refleja estado; Admin lista flota; Técnico recibe 403.
 
@@ -102,7 +102,7 @@
 
 ## Phase 4: User Story 2 — Adjuntar evidencias en línea y galería (Priority: P1)
 
-**Goal**: CU-O27 + RF-EVI-002/003/005 — subida foto/nota con caso activo; galería con RBAC; multi-unidad.
+**Goal**: CU-O74 + RF-EVI-002/003/005 — subida foto/nota con caso activo; galería con RBAC; multi-unidad.
 
 **Independent Test**: Técnico sube 3 fotos y 1 nota; `GET evidencias` retorna items sincronizados; rol no autorizado → 403; caso cerrado → 422.
 
@@ -141,7 +141,7 @@
 
 ## Phase 5: User Story 3 — Sincronización diferida offline (Priority: P2)
 
-**Goal**: CU-O43 + RF-EVI-006 — batch sync parcial; reintento automático; evidencia local solo en capturador.
+**Goal**: CU-O77 + RF-EVI-006 — batch sync parcial; reintento automático; evidencia local solo en capturador.
 
 **Independent Test**: Cliente envía 3 ítems pendientes; 1 falla Blob → 2 sincronizados + 1 pendiente; galería local fusiona pendientes; otro usuario solo ve sincronizados.
 
@@ -205,9 +205,9 @@
 
 ---
 
-## Phase 8: User Story 5 — Enriquecimiento estructurado en sitio (Priority: P1) 🎯 CU-O46
+## Phase 8: User Story 5 — Enriquecimiento estructurado en sitio (Priority: P1) 🎯 CU-O75/CU-O76
 
-**Goal**: CU-O46 + RF-EVI-007/008/009 — Técnico (o Unidad) registra clima/período, elementos físicos y conductores/vehículos; catálogos; sync offline ampliada; consulta enriquecimiento.
+**Goal**: CU-O75/CU-O76 + RF-EVI-007/008/009 — Técnico (o Unidad) registra clima/período, elementos físicos y conductores/vehículos; catálogos; sync offline ampliada; consulta enriquecimiento.
 
 **Independent Test**: Técnico en caso activo hace PUT clima + POST elemento físico + POST conductor; GET enriquecimiento refleja datos; caso cerrado → 422; rol sin permiso → 403; misma `identificacion` reutiliza `idconductor`.
 
@@ -277,7 +277,7 @@
 
 ---
 
-## Phase 9: User Story 6 — Implicados no conductores (Priority: P1) 🎯 CU-O46 / RF-EVI-010
+## Phase 9: User Story 6 — Implicados no conductores (Priority: P1) 🎯 CU-O75/CU-O76 / RF-EVI-010
 
 **Goal**: Técnico registra `Dim_Implicado` por `idaccidente` (sin `iddespacho`), offline+sync, mismo RBAC que conductores.
 
@@ -294,7 +294,7 @@
 - [X] T131 [US6] Implementar `implicado_repository.py` en `backend/core/repositories/evidencia/implicado_repository.py` + topic Kafka
 - [X] T132 [US6] Implementar `enriquecimiento_implicado_service.py` en `backend/apps/accidentes/services/enriquecimiento_implicado_service.py`
 - [X] T133 [US6] Extender vistas/rutas `/enriquecimiento/implicados` en `enriquecimiento_views.py` / `urls.py`
-- [X] T134 [US6] Integrar implicados en `consulta_enriquecimiento_service.py` y sync CU-O43
+- [X] T134 [US6] Integrar implicados en `consulta_enriquecimiento_service.py` y sync CU-O77
 - [X] T135 [US6] Extender `EnriquecimientoApiService` + offline store (PII cifrada) + UI panel Implicados en `enriquecimiento-accidente.page.*`
 - [X] T136 [US6] Actualizar `traceability.md` / `quickstart.md` con CA/escenarios RF-EVI-010
 
@@ -357,10 +357,10 @@
 
 ```text
 Phase 2 (Foundational)
-    ├── US1 (CU-O30 disponibilidad) ──┐
-    └── US2 (CU-O27 evidencia línea) ─┼── US4 (frontend integración)
-              └── US3 (CU-O43 sync) ──┘
-                    └── US5 (CU-O46 enriquecimiento)
+    ├── US1 (CU-O78 disponibilidad) ──┐
+    └── US2 (CU-O74 evidencia línea) ─┼── US4 (frontend integración)
+              └── US3 (CU-O77 sync) ──┘
+                    └── US5 (CU-O75/CU-O76 enriquecimiento)
                           └── US6 (implicados) ── Phase 10 remediación ontología
 ```
 
@@ -395,7 +395,7 @@ pytest backend/apps/accidentes/tests/repositories/test_implicado_repository.py -
 ### MVP First (User Story 1 Only)
 
 1. Completar Phase 1 + Phase 2
-2. Completar Phase 3 (CU-O30 disponibilidad)
+2. Completar Phase 3 (CU-O78 disponibilidad)
 3. **VALIDAR**: CA-EVI-001, CA-EVI-002 — unidad operativa para despacho
 4. Demo: cambio Activa→Ocupada reflejado en ≤5s
 
@@ -406,13 +406,13 @@ pytest backend/apps/accidentes/tests/repositories/test_implicado_repository.py -
 3. US2 evidencia en línea → valor documental inmediato
 4. US3 sync offline → operación en campo sin cobertura
 5. US4 + Polish → integración UX y auditoría
-6. **US5 CU-O46** → enriquecimiento estructurado (clima, físicos, conductores) por Técnico
+6. **US5 CU-O75/CU-O76** → enriquecimiento estructurado (clima, físicos, conductores) por Técnico
 7. **US6** → implicados (T128–T136)
 8. **Phase 10** → remediación ontología Dim_Implicado (T137–T150) ← **siguiente**
 
 ### Suggested MVP Scope (histórico)
 
-**US1 (CU-O30)** — gestión de disponibilidad es prerequisito Safety para `despacho-inteligente` (RNF-EVI-003).
+**US1 (CU-O78)** — gestión de disponibilidad es prerequisito Safety para `despacho-inteligente` (RNF-EVI-003).
 
 ### Suggested next increment (2026-07-29)
 
@@ -425,7 +425,7 @@ pytest backend/apps/accidentes/tests/repositories/test_implicado_repository.py -
 - Patrón AAA obligatorio en todos los tests; usar fixtures `mock_pinot`, `mock_kafka`, `auth_headers` de `backend/conftest.py`
 - Blob es escritura externa; no viola regla Kafka-only para dominio Pinot
 - `Dim_NotaAccidente` compartida con registro-accidente (tipo `escalamiento` vs tipos campo)
-- Puentes clima/físico compartidos con `registro-accidente`; dueño de flujo campo = este módulo (CU-O46)
+- Puentes clima/físico compartidos con `registro-accidente`; dueño de flujo campo = este módulo (CU-O75/CU-O76)
 - Topics nuevos conductor/vehículo deben añadirse a seed/ingest Pinot si aún no están cableados
 - **PII conductores:** nunca persistir `identificacion`/nombres en claro en IndexedDB (RN-EVI-020); ver Decision 11
 - **`Dim_Implicado`:** sin PII de identidad; offline sin AES-GCM; ver Decision 13 / RF-EVI-010 reescrito 2026-07-29

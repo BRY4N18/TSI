@@ -26,7 +26,7 @@
 - [X] T-FE-009 Rutas lazy + spec (backend T071, T070)
 - [X] T-FE-010 Nav Técnico + `accidentesLecturaGuard` (backend T072b)
 
-## Phase 4: Enriquecimiento CU-O46 (FR-UI-009–017)
+## Phase 4: Enriquecimiento CU-O75/CU-O76 (FR-UI-009–017)
 
 - [X] T-FE-011 `EnriquecimientoApiService` + spec (backend T111–T112)
 - [X] T-FE-012 Offline enriquecimiento + cifrado PII conductor (backend T113–T114, T121)

@@ -27,6 +27,7 @@ from core.repositories.red_operativa.validacion_region_repository import (
 )
 
 ESTADO_PRODUCCION = "Producción"
+ROLE_DIRECTOR_TECNOLOGICO = "DirectorTecnologico"
 
 
 class ValidacionRegionService:
@@ -40,12 +41,21 @@ class ValidacionRegionService:
         self.validacion_repo = validacion_repo or ValidacionRegionRepository()
         self.puente_repo = puente_repo or RegionOperativaEstadoRegionRepository()
 
-    def ejecutar(self, data: dict[str, Any], *, idusuario: int) -> dict[str, Any]:
+    def ejecutar(
+        self, data: dict[str, Any], *, idusuario: int, roles: list[str]
+    ) -> dict[str, Any]:
         resultado = data.get("resultado")
         if resultado not in (RESULTADO_APROBADA, RESULTADO_RECHAZADA):
             raise ValueError("resultado debe ser 'Aprobada' o 'Rechazada'")
         if resultado == RESULTADO_RECHAZADA and not data.get("motivo"):
             raise ValueError("motivo es requerido cuando resultado='Rechazada'")
+        if resultado == RESULTADO_APROBADA and ROLE_DIRECTOR_TECNOLOGICO not in roles:
+            # SRS 3.5.2: actores en secuencia, no indistintos — el Administrador
+            # ejecuta el protocolo (recolecta y puede rechazar); solo el Director
+            # Tecnológico queda registrado como responsable de la aprobación final.
+            raise PermissionError(
+                "Solo el Director Tecnológico puede aprobar una región para producción"
+            )
 
         idregionoperativa = data.get("idregionoperativa")
         if idregionoperativa is None:

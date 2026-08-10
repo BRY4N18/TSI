@@ -2,7 +2,7 @@
 
 ## Decision 1: Contract-first OpenAPI para endpoints de accidentes
 
-- **Decision:** Definir primero `contracts/registro-accidente.openapi.yaml` con todos los endpoints CU-O21/O32/O40/O41 y RF-REG-010 bajo `/api/v1/accidentes`.
+- **Decision:** Definir primero `contracts/registro-accidente.openapi.yaml` con todos los endpoints CU-O56/O58/O73/O57 y RF-REG-010 bajo `/api/v1/accidentes`.
 - **Rationale:** Cumple constitution (API-First Compatibility) y alinea backend Django con frontend Angular antes de implementar.
 - **Alternatives considered:**
   - Implementar ViewSets y documentar después (rechazado: menor trazabilidad y riesgo de drift spec↔código).
@@ -26,7 +26,7 @@
 
 ## Decision 4: Autenticación JWT + RBAC por rol (dependencia `autenticacion-y-rbac`)
 
-- **Decision:** Endpoints protegidos con `Authorization: Bearer`; permisos DRF por rol canónico `Operador de emergencias` (O21/O32/O41/edición) y `Unidad de emergencia` (O40). Validación JWT + estado de sesión en cada request.
+- **Decision:** Endpoints protegidos con `Authorization: Bearer`; permisos DRF por rol canónico `Operador de emergencias` (O56/O58/O57/edición) y `Unidad de emergencia` (O73). Validación JWT + estado de sesión en cada request.
 - **Rationale:** Spec y skill `api-authentication`; reutiliza permisos/interceptor ya definidos en Cuentas-Clientes.
 - **Alternatives considered:**
   - Solo validación de firma JWT (rechazado: tokens revocados seguirían vigentes).
@@ -53,7 +53,7 @@
 - **Rationale:** Patrón establecido en auth; componentes sin lógica de dominio (`architectural-patterns.md`).
 - **Alternatives considered:**
   - Llamadas HTTP directas en componentes (rechazado).
-  - Un solo guard genérico sin separación operador/unidad (rechazado: menor claridad para O40).
+  - Un solo guard genérico sin separación operador/unidad (rechazado: menor claridad para O73).
 
 ## Decision 8: Cobertura operativa vía lectura de regiones en Producción
 

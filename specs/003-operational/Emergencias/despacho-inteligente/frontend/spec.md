@@ -5,14 +5,14 @@
 **Status**: Active (Fase B — Interaction extraída; implementación Angular en código)
 **Depends-on**: [`../backend/spec.md`](../backend/spec.md) (RF-DES-*, RNF-DES-*, CA-DES-*, OpenAPI). Esta capa **MUST NOT** redefinir reglas de negocio, estados ni contratos REST.
 
-**Input**: Clarificaciones UI: monitoreo operador RF-DES-011; unidad confirma/rechaza O24/O45; asignación manual O33; parámetros algoritmo RF-DES-010; alerta Admin sin unidades (notificación activa — backend).
+**Input**: Clarificaciones UI: monitoreo operador RF-DES-011; unidad confirma/rechaza O61/O62; asignación manual O64; parámetros algoritmo RF-DES-010; alerta Admin sin unidades (notificación activa — backend).
 
 ## Clarifications
 
 ### Session 2026-07-09 / 2026-07-24 (UI — extraído backend)
 
 - Q: ¿Superficie operador? → A: **Monitoreo despacho** — estado proceso, historial intentos, mapa accidente+candidatas (RF-DES-011).
-- Q: ¿Unidad responde despacho? → A: Pantalla **Mi despacho** — Aceptar O24 / Rechazar O45 con motivo obligatorio.
+- Q: ¿Unidad responde despacho? → A: Pantalla **Mi despacho** — Aceptar O61 / Rechazar O62 con motivo obligatorio.
 - Q: ¿Sin unidades candidatas? → A: UI operador muestra alerta crítica + nota caso; Admin notificado por backend (no CTA reembolso ni flujos fuera spec).
 
 ## User Scenarios & Testing
@@ -31,7 +31,7 @@ Unidad recibe notificación, ve detalle accidente/ruta/ETA, confirma o rechaza c
 
 ### US-FE-3 — Asignación manual y múltiple (P2)
 
-Operador asigna unidad manual O33 o coordina adicional O38 desde asignación manual.
+Operador asigna unidad manual O64 o coordina adicional O66 desde asignación manual.
 
 **Independent Test**: `/despacho/asignacion/:idaccidente` — lista candidatas + confirmar.
 
@@ -48,10 +48,10 @@ Director Tecnológico ajusta timeout, pesos ranking, prioridades severidad→tip
 - **FR-UI-003**: Detalle: temporizador tiempo desde registro accidente — RF-DES-011.
 - **FR-UI-004**: Detalle: mapa accidente + posiciones unidades candidatas/asignadas — RF-DES-011.
 - **FR-UI-005**: Actualizaciones monitoreo vía SSE `DespachoSseService` alineado seguimiento — RF-DES-011 / patrón RF-SEG-007.
-- **FR-UI-006**: CTA «Asignar manualmente» → ruta asignación — CU-O33.
-- **FR-UI-007**: CTA «Coordinar unidad adicional» (despacho múltiple O38) cuando ya hay despacho activo — RF-DES-009.
+- **FR-UI-006**: CTA «Asignar manualmente» → ruta asignación — CU-O64.
+- **FR-UI-007**: CTA «Coordinar unidad adicional» (despacho múltiple O66) cuando ya hay despacho activo — RF-DES-009.
 - **FR-UI-008**: Mi despacho: card notificación con severidad, dirección, coordenadas, ETA, mapa ruta sugerida — RF-DES-002.
-- **FR-UI-009**: Mi despacho: Aceptar (O24) y Rechazar (O45) — motivo texto libre **requerido** en rechazo — RF-DES-003/004.
+- **FR-UI-009**: Mi despacho: Aceptar (O61) y Rechazar (O62) — motivo texto libre **requerido** en rechazo — RF-DES-003/004.
 - **FR-UI-010**: Asignación manual: tabla/lista candidatas filtradas (Activa, mismo condado) + selección unidad — RF-DES-007.
 - **FR-UI-011**: Asignación manual: confirmación antes de persistir origen Manual — RF-DES-007.
 - **FR-UI-012**: Parámetros algoritmo: form timeout (30–300s), pesos distancia/tipo/disponibilidad, mapping severidad→tipo — RF-DES-010.
@@ -61,7 +61,7 @@ Director Tecnológico ajusta timeout, pesos ranking, prioridades severidad→tip
 
 ## Out of Scope
 
-- Cambiar algoritmo Haversine, jobs timeout O35, workers Kafka O36, hook plan Suscripciones (fail-open).
+- Cambiar algoritmo Haversine, jobs timeout O63, workers Kafka O63, hook plan Suscripciones (fail-open).
 - Rastreo GPS tránsito (dueño seguimiento-cierre-de-casos).
 
 ## ISO/IEC 25010:2023 — Justificación

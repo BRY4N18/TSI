@@ -1,0 +1,3709 @@
+[
+  {
+    "schemaName": "Dim_Prospecto",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idprospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombres",
+        "dataType": "STRING"
+      },
+      {
+        "name": "apellidos",
+        "dataType": "STRING"
+      },
+      {
+        "name": "gmail",
+        "dataType": "STRING"
+      },
+      {
+        "name": "empresa",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipo_organizacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "cargo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "telefono",
+        "dataType": "STRING"
+      },
+      {
+        "name": "como_nos_conocio",
+        "dataType": "STRING"
+      },
+      {
+        "name": "etapa_actual",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "demo_expiracion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "motivo_inactividad",
+        "dataType": "STRING"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "valor_estimado",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_registro",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idprospecto"
+    ]
+  },
+  {
+    "schemaName": "Fact_Interaccion_Demo",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idinteraccion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idprospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipo_evento",
+        "dataType": "STRING"
+      },
+      {
+        "name": "seccion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "metadata",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "timestamp_evento",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idinteraccion"
+    ]
+  },
+  {
+    "schemaName": "Fact_Pipeline",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_transicion",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_prospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "etapa_anterior",
+        "dataType": "STRING"
+      },
+      {
+        "name": "etapa_nueva",
+        "dataType": "STRING"
+      },
+      {
+        "name": "notas",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo_perdida",
+        "dataType": "STRING"
+      },
+      {
+        "name": "gerente_id",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_transicion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_transicion"
+    ]
+  },
+  {
+    "schemaName": "Fact_NotificacionVentas",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idnotificacion",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_prospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "idinteraccion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuariogerentenotificado",
+        "dataType": "INT"
+      },
+      {
+        "name": "regladisparada",
+        "dataType": "STRING"
+      },
+      {
+        "name": "canal",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado_envio",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahoranotificacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idnotificacion"
+    ]
+  },
+  {
+    "schemaName": "Fact_Asignacion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idasignacion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idprospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuariogerenteanterior",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuariogerenteactual",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipoasignacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahoraasignacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idasignacion"
+    ]
+  },
+  {
+    "schemaName": "Dim_Cliente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idprospecto",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "razon_social",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "nit_identificacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "plan_suscripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "logo_url",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado_onboarding",
+        "dataType": "STRING"
+      },
+      {
+        "name": "admin_local_id",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_inicio_contrato",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_creacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcliente"
+    ]
+  },
+  {
+    "schemaName": "Dim_Plan",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idplan",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "nivel",
+        "dataType": "STRING"
+      },
+      {
+        "name": "limites",
+        "dataType": "STRING"
+      },
+      {
+        "name": "periodicidad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "severidades_desbloqueadas",
+        "dataType": "STRING"
+      },
+      {
+        "name": "carga_lote_habilitada",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "precio",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "precio_excedente_llamada",
+        "dataType": "DOUBLE",
+        "defaultNullValue": -1.0
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idplan"
+    ]
+  },
+  {
+    "schemaName": "Fact_Suscripcion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_suscripcion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idplan",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "renovacionautomatica",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "motivocancelacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "periodicidad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "nivel",
+        "dataType": "STRING"
+      },
+      {
+        "name": "severidades_desbloqueadas",
+        "dataType": "STRING"
+      },
+      {
+        "name": "carga_lote_habilitada",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "precio",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_inicio",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_fin",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechacancelacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_suscripcion"
+    ]
+  },
+  {
+    "schemaName": "Fact_Factura",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_factura",
+        "dataType": "STRING"
+      },
+      {
+        "name": "id_cliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_suscripcion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idmetodopago",
+        "dataType": "INT"
+      },
+      {
+        "name": "numero_factura",
+        "dataType": "STRING"
+      },
+      {
+        "name": "periodo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado_pago",
+        "dataType": "STRING"
+      },
+      {
+        "name": "desglose_cargos",
+        "dataType": "STRING"
+      },
+      {
+        "name": "resultado_ultimo_reintento",
+        "dataType": "STRING"
+      },
+      {
+        "name": "id_factura_original",
+        "dataType": "STRING"
+      },
+      {
+        "name": "es_nota_credito",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "motivo_anulacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING",
+        "defaultNullValue": "suscripcion"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "reintentos",
+        "dataType": "INT"
+      },
+      {
+        "name": "monto_base",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "impuestos",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "monto_total",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_emision",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_vencimiento",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_factura"
+    ]
+  },
+  {
+    "schemaName": "Fact_Solicitud_Cambio_Plan",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idsolicitud",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idplanactual",
+        "dataType": "INT"
+      },
+      {
+        "name": "idplansolicitado",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idadminaprobador",
+        "dataType": "INT"
+      },
+      {
+        "name": "motivo_rechazo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_solicitud",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_resolucion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idsolicitud"
+    ]
+  },
+  {
+    "schemaName": "Dim_MetodoPago",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idmetodopago",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tokenpasarela",
+        "dataType": "STRING"
+      },
+      {
+        "name": "ultimosdigitos",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechaexpiracion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idmetodopago"
+    ]
+  },
+  {
+    "schemaName": "Dim_Usuarios",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "apellidos",
+        "dataType": "STRING"
+      },
+      {
+        "name": "nombres",
+        "dataType": "STRING"
+      },
+      {
+        "name": "gmail",
+        "dataType": "STRING"
+      },
+      {
+        "name": "identificacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "genero",
+        "dataType": "STRING"
+      },
+      {
+        "name": "telefono",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechanacimiento",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idusuario"
+    ]
+  },
+  {
+    "schemaName": "Dim_Rol",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idrol",
+        "dataType": "INT"
+      },
+      {
+        "name": "rol",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idrol"
+    ]
+  },
+  {
+    "schemaName": "Dim_Usuario_Rol",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idusuariorol",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "idrol",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idusuariorol"
+    ]
+  },
+  {
+    "schemaName": "Dim_Credencial",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcredencial",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "contrasena",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadocredencial",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_solicitud_cambio",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcredencial"
+    ]
+  },
+  {
+    "schemaName": "Dim_UsuariosServidor",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idusuarioservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "usuario",
+        "dataType": "STRING"
+      },
+      {
+        "name": "contrasena",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idusuarioservidor"
+    ]
+  },
+  {
+    "schemaName": "Dim_RolesServidor",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idrolservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "rolservidor",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idrolservidor"
+    ]
+  },
+  {
+    "schemaName": "Dim_UsuariosServidorRolesServidor",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idusuarioservidorrolservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuarioservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idrolservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idusuarioservidorrolservidor"
+    ]
+  },
+  {
+    "schemaName": "Dim_RolesServidorRoles",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idrolservidor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idrol",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idrolservidor",
+      "idrol"
+    ]
+  },
+  {
+    "schemaName": "Dim_Preferencias_Cliente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_preferencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_cliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "umbrales_alerta",
+        "dataType": "STRING"
+      },
+      {
+        "name": "frecuencia_reportes",
+        "dataType": "STRING"
+      },
+      {
+        "name": "formato_reportes",
+        "dataType": "STRING"
+      },
+      {
+        "name": "canales_notificacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "telefono_sms",
+        "dataType": "STRING"
+      },
+      {
+        "name": "zonas_geograficas",
+        "dataType": "STRING"
+      },
+      {
+        "name": "destinatarios_reportes",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_preferencia"
+    ]
+  },
+  {
+    "schemaName": "Fact_Session",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idsession",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "navegador",
+        "dataType": "STRING"
+      },
+      {
+        "name": "token",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadosession",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahorainiciosesion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechahoracierresesion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idsession"
+    ]
+  },
+  {
+    "schemaName": "Fact_Onboarding",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_onboarding",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_cliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "etapa",
+        "dataType": "STRING"
+      },
+      {
+        "name": "completado",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_completado",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_onboarding"
+    ]
+  },
+  {
+    "schemaName": "Fact_Reclamo",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_reclamo",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestadosoporte",
+        "dataType": "INT"
+      },
+      {
+        "name": "idservicio",
+        "dataType": "INT"
+      },
+      {
+        "name": "idslaconfig",
+        "dataType": "INT"
+      },
+      {
+        "name": "idfactura",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "asunto",
+        "dataType": "STRING"
+      },
+      {
+        "name": "prioridad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "id_agente_asignado",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipo_incidencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "sla_status",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "cierreconfirmadocliente",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "sla_primera_respuesta",
+        "dataType": "LONG"
+      },
+      {
+        "name": "sla_resolucion",
+        "dataType": "LONG"
+      },
+      {
+        "name": "tiempo_solucion",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechahoraconfirmacioncierre",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_reclamo"
+    ]
+  },
+  {
+    "schemaName": "Fact_Historial_Ticket",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_historial",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_reclamo",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipo_accion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "mensaje",
+        "dataType": "STRING"
+      },
+      {
+        "name": "es_nota_interna",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado_anterior",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado_nuevo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_accion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_historial"
+    ]
+  },
+  {
+    "schemaName": "Dim_Servicio",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_servicio",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_servicio"
+    ]
+  },
+  {
+    "schemaName": "Dim_Estado_Soporte",
+    "dimensionFieldSpecs": [
+      {
+        "name": "id_estado_soporte",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "id_estado_soporte"
+    ]
+  },
+  {
+    "schemaName": "Dim_SLAConfig",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idslaconfig",
+        "dataType": "INT"
+      },
+      {
+        "name": "idplan",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipoincidencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "prioridad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "tiemporespuestamax",
+        "dataType": "LONG"
+      },
+      {
+        "name": "tiemporesolucionmax",
+        "dataType": "LONG"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechavigenciadesde",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechavigenciahasta",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idslaconfig"
+    ]
+  },
+  {
+    "schemaName": "Fact_ArchivosAdjuntosReclamos",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idarchivoadjuntoreclamo",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_reclamo",
+        "dataType": "INT"
+      },
+      {
+        "name": "urlarchivo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahorasubida",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idarchivoadjuntoreclamo"
+    ]
+  },
+  {
+    "schemaName": "Fact_Accidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idseveridad",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcalle",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "idtiporeportado",
+        "dataType": "INT"
+      },
+      {
+        "name": "idreferenciaestacion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidenteorigen",
+        "dataType": "STRING"
+      },
+      {
+        "name": "horainicio",
+        "dataType": "STRING"
+      },
+      {
+        "name": "horafin",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "codigopostal",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "duracionminutos",
+        "dataType": "INT"
+      },
+      {
+        "name": "numvehiculos",
+        "dataType": "INT"
+      },
+      {
+        "name": "numvictimas",
+        "dataType": "INT"
+      },
+      {
+        "name": "numheridos",
+        "dataType": "INT"
+      },
+      {
+        "name": "numfallecidos",
+        "dataType": "INT"
+      },
+      {
+        "name": "latitudinicio",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "longitudinicio",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "distanciamillas",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahoraaccidente",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idaccidente"
+    ]
+  },
+  {
+    "schemaName": "Dim_Severidad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idseveridad",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "severidad",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idseveridad"
+    ]
+  },
+  {
+    "schemaName": "Dim_Pais",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idpais",
+        "dataType": "INT"
+      },
+      {
+        "name": "pais",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idpais"
+    ]
+  },
+  {
+    "schemaName": "Dim_Calle",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcalle",
+        "dataType": "INT"
+      },
+      {
+        "name": "calle",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idciudad",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcalle"
+    ]
+  },
+  {
+    "schemaName": "Dim_Ciudad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idciudad",
+        "dataType": "INT"
+      },
+      {
+        "name": "ciudad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idcondado",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idciudad"
+    ]
+  },
+  {
+    "schemaName": "Dim_Condado",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcondado",
+        "dataType": "INT"
+      },
+      {
+        "name": "condado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idestado",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcondado"
+    ]
+  },
+  {
+    "schemaName": "Dim_Estado",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestado",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idpais",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestado"
+    ]
+  },
+  {
+    "schemaName": "Dim_Elementos_Fisicos",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idelementofisico",
+        "dataType": "INT"
+      },
+      {
+        "name": "elementofisico",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idelementofisico"
+    ]
+  },
+  {
+    "schemaName": "Dim_ElementoFisicoAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idelementosfisicosaccidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idelementofisico",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idelementosfisicosaccidente"
+    ]
+  },
+  {
+    "schemaName": "Dim_TipoEstadoAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idtipoestadoincidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipoestadoincidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idtipoestadoincidente"
+    ]
+  },
+  {
+    "schemaName": "Fact_AccidenteTipoEstadoAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idaccidentetipoestadoaccidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idtipoestadoincidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahoramodificado",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idaccidentetipoestadoaccidente"
+    ]
+  },
+  {
+    "schemaName": "Dim_TipoReportado",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idtiporeportado",
+        "dataType": "INT"
+      },
+      {
+        "name": "tiporeportado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idtiporeportado"
+    ]
+  },
+  {
+    "schemaName": "Dim_ReferenciaEstacion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idreferenciaestacion",
+        "dataType": "INT"
+      },
+      {
+        "name": "codigoaeropuerto",
+        "dataType": "STRING"
+      },
+      {
+        "name": "zonahoraria",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idreferenciaestacion"
+    ]
+  },
+  {
+    "schemaName": "Fact_Conductor_Accidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idconductoraccidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idconductor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestadoconductor",
+        "dataType": "INT"
+      },
+      {
+        "name": "idvehiculo",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idconductoraccidente"
+    ]
+  },
+  {
+    "schemaName": "Dim_Vehiculo",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idvehiculo",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipovehiculo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "modelovehiculo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "categoriausovehiculo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "mercanciapeligrosa",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "ejes",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idvehiculo"
+    ]
+  },
+  {
+    "schemaName": "Dim_Estado_Conductor",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadoconductor",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadosobriedad",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "nivelatencion",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "condicionfisica",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "usoseguridad",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadoconductor"
+    ]
+  },
+  {
+    "schemaName": "Dim_Conductor",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idconductor",
+        "dataType": "INT"
+      },
+      {
+        "name": "apellidos",
+        "dataType": "STRING"
+      },
+      {
+        "name": "nombres",
+        "dataType": "STRING"
+      },
+      {
+        "name": "identificacion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "genero",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipolicencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadolicencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "ciudadresidencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "aniosexperiencia",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idconductor"
+    ]
+  },
+  {
+    "schemaName": "Dim_EvidenciaFoto",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idevidenciafoto",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "sincronizado",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "urlevidenciafoto",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_sincronizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idevidenciafoto"
+    ]
+  },
+  {
+    "schemaName": "Dim_NotaAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idnotaaccidentes",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "sincronizado",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "nota",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idnotaaccidentes"
+    ]
+  },
+  {
+    "schemaName": "Dim_PeriodosDias",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idperiododia",
+        "dataType": "INT"
+      },
+      {
+        "name": "amaneceranochecer",
+        "dataType": "STRING"
+      },
+      {
+        "name": "crepusculocivil",
+        "dataType": "STRING"
+      },
+      {
+        "name": "crepusculonautico",
+        "dataType": "STRING"
+      },
+      {
+        "name": "crepusculoastronomico",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idperiododia"
+    ]
+  },
+  {
+    "schemaName": "Dim_EstadosClimas",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadoclima",
+        "dataType": "INT"
+      },
+      {
+        "name": "direccionviento",
+        "dataType": "STRING"
+      },
+      {
+        "name": "condicionclima",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "temperaturaf",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "sensaciontermicaf",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "humedadporcentaje",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "presionpulgadas",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "visibilidadmillas",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "velocidadvientomph",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "precipitacionpulgadas",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadoclima"
+    ]
+  },
+  {
+    "schemaName": "Fact_Despacho",
+    "dimensionFieldSpecs": [
+      {
+        "name": "iddespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idnotificaciondespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "idorigendespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "estado_unidad_previo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "retiro_forzado",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahoradespacho",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechahorallegada",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechahoraretiro",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "iddespacho"
+    ]
+  },
+  {
+    "schemaName": "Fact_NotificacionDespacho",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idnotificaciondespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idunidaddemergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "estadonotificaciondespacho",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "numheridos",
+        "dataType": "INT"
+      },
+      {
+        "name": "numvehiculos",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idnotificaciondespacho"
+    ]
+  },
+  {
+    "schemaName": "Dim_Implicado",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idimplicado",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipoimplicado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "genero",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadoimplicado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "edad",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idimplicado"
+    ]
+  },
+  {
+    "schemaName": "Dim_ElementoClimaticosAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idelementoclimaticoaccidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idperiododia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idestadoclima",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idelementoclimaticoaccidente"
+    ]
+  },
+  {
+    "schemaName": "Dim_EstadoDespacho",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadodespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadodespacho",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadodespacho"
+    ]
+  },
+  {
+    "schemaName": "Fact_HistorialDespachoUnidad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorialdespachounidad",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadoanterior",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadonuevo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "iddespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestadodespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT",
+        "defaultNullValue": -2147483648
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorialdespachounidad"
+    ]
+  },
+  {
+    "schemaName": "Dim_HistorialUbicacionUnidadEmergencia",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorialunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "latitud",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "longitud",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorialunidademergencia"
+    ]
+  },
+  {
+    "schemaName": "Fact_HistorialEstadoUnidad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorialestadosunidadesemergencias",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadoanterior",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadonuevo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idestadounidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorialestadosunidadesemergencias"
+    ]
+  },
+  {
+    "schemaName": "Dim_OrigenDespacho",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idorigendespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "origendespacho",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idorigendespacho"
+    ]
+  },
+  {
+    "schemaName": "Dim_UnidadEmergencia",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "tipopropiedad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "placa",
+        "dataType": "STRING"
+      },
+      {
+        "name": "capacidad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idcondado",
+        "dataType": "INT"
+      },
+      {
+        "name": "zonacobertura",
+        "dataType": "STRING"
+      },
+      {
+        "name": "contactoproveedor",
+        "dataType": "STRING"
+      },
+      {
+        "name": "unidademergencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipounidademergencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "latitud",
+        "dataType": "DOUBLE"
+      },
+      {
+        "name": "longitud",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_creacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idunidademergencia"
+    ]
+  },
+  {
+    "schemaName": "Dim_EstadoUnidadEmergencia",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadounidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadounidademergencia",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadounidademergencia"
+    ]
+  },
+  {
+    "schemaName": "Fact_BajaUnidad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idbajaunidad",
+        "dataType": "INT"
+      },
+      {
+        "name": "idunidademergencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      },
+      {
+        "name": "tipobaja",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idbajaunidad"
+    ]
+  },
+  {
+    "schemaName": "Dim_RegionOperativa",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idregionoperativa",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestado",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombreregion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estadoregion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idregionoperativa"
+    ]
+  },
+  {
+    "schemaName": "Dim_ValidacionRegion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idvalidacionregion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idregionoperativa",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "resultado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idvalidacionregion"
+    ]
+  },
+  {
+    "schemaName": "Dim_EstadoRegion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadoregion",
+        "dataType": "INT"
+      },
+      {
+        "name": "estadoregion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadoregion"
+    ]
+  },
+  {
+    "schemaName": "Dim_RegionOperativaEstadoRegion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idregionoperativaestadoregion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idregionoperativa",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestadoregion",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombreregion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idregionoperativaestadoregion"
+    ]
+  },
+  {
+    "schemaName": "Dim_Partner",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idpartner",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombrepartner",
+        "dataType": "STRING"
+      },
+      {
+        "name": "planapi",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "contacto_tecnico_nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "contacto_tecnico_gmail",
+        "dataType": "STRING"
+      },
+      {
+        "name": "fecha_suspension",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "motivo_suspension",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "limitellamadasmes",
+        "dataType": "INT",
+        "defaultNullValue": -1
+      },
+      {
+        "name": "limitellamadasminuto",
+        "dataType": "INT",
+        "defaultNullValue": -1
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "sandbox_activado",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS",
+        "defaultNullValue": 0
+      },
+      {
+        "name": "sandbox_expiracion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS",
+        "defaultNullValue": 0
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idpartner"
+    ]
+  },
+  {
+    "schemaName": "Dim_CredencialAPI",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcredencial",
+        "dataType": "INT"
+      },
+      {
+        "name": "idpartner",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "client_secret_hash",
+        "dataType": "STRING"
+      },
+      {
+        "name": "entorno",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      },
+      {
+        "name": "nombre_credencial",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_creacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_expiracion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS",
+        "defaultNullValue": 253402300799000
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcredencial"
+    ]
+  },
+  {
+    "schemaName": "Fact_HistorialAccesoPartner",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorial",
+        "dataType": "INT"
+      },
+      {
+        "name": "idpartner",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcredencial",
+        "dataType": "INT",
+        "defaultNullValue": -1
+      },
+      {
+        "name": "tipo_cambio",
+        "dataType": "STRING"
+      },
+      {
+        "name": "ejecutado_por",
+        "dataType": "STRING"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "estado_anterior",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "estado_nuevo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_cambio",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorial"
+    ]
+  },
+  {
+    "schemaName": "Fact_APIIntegracion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idapiintegracion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idservicio",
+        "dataType": "INT"
+      },
+      {
+        "name": "idestadointegracion",
+        "dataType": "INT"
+      },
+      {
+        "name": "idpartner",
+        "dataType": "INT"
+      },
+      {
+        "name": "entorno",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "llamadas",
+        "dataType": "INT"
+      },
+      {
+        "name": "errores",
+        "dataType": "INT"
+      },
+      {
+        "name": "latencia",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idapiintegracion"
+    ]
+  },
+  {
+    "schemaName": "Dim_EstadoIntegracion",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idestadointegracion",
+        "dataType": "INT"
+      },
+      {
+        "name": "nombre",
+        "dataType": "STRING"
+      },
+      {
+        "name": "descripcion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idestadointegracion"
+    ]
+  },
+  {
+    "schemaName": "Fact_LogLlamadaAPI",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idlogllamadaapi",
+        "dataType": "INT"
+      },
+      {
+        "name": "idpartner",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcredencialapi",
+        "dataType": "INT"
+      },
+      {
+        "name": "endpoint",
+        "dataType": "STRING"
+      },
+      {
+        "name": "metodohttp",
+        "dataType": "STRING"
+      },
+      {
+        "name": "codigohttp",
+        "dataType": "INT"
+      },
+      {
+        "name": "iporigen",
+        "dataType": "INT"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "latenciams",
+        "dataType": "DOUBLE"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechallamada",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idlogllamadaapi"
+    ]
+  },
+  {
+    "schemaName": "Dim_ParametrosDespacho",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idparametrosdespacho",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "timeout_respuesta_seg",
+        "dataType": "INT"
+      },
+      {
+        "name": "peso_distancia_pct",
+        "dataType": "INT"
+      },
+      {
+        "name": "peso_concordancia_pct",
+        "dataType": "INT"
+      },
+      {
+        "name": "peso_disponibilidad_pct",
+        "dataType": "INT"
+      },
+      {
+        "name": "prioridades_por_severidad",
+        "dataType": "STRING"
+      },
+      {
+        "name": "keywords_severidad_moderada",
+        "dataType": "STRING"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idparametrosdespacho"
+    ]
+  },
+  {
+    "schemaName": "Dim_ParametrosSeguimiento",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idparametrosseguimiento",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "gps_umbral_senal_perdida_seg",
+        "dataType": "INT"
+      },
+      {
+        "name": "gps_job_intervalo_seg",
+        "dataType": "INT"
+      },
+      {
+        "name": "geofence_radio_metros",
+        "dataType": "INT"
+      },
+      {
+        "name": "geofence_histéresis_seg",
+        "dataType": "INT"
+      },
+      {
+        "name": "gps_retencion_dias",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idparametrosseguimiento"
+    ]
+  },
+  {
+    "schemaName": "Fact_CierreAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "resultado_atencion",
+        "dataType": "STRING"
+      },
+      {
+        "name": "observaciones_finales",
+        "dataType": "STRING"
+      }
+    ],
+    "metricFieldSpecs": [
+      {
+        "name": "calificacion",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idaccidente"
+    ]
+  },
+  {
+    "schemaName": "Fact_HistorialSeveridadAccidente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorialseveridadaccidente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idaccidente",
+        "dataType": "STRING"
+      },
+      {
+        "name": "idseveridadanterior",
+        "dataType": "INT"
+      },
+      {
+        "name": "idseveridadnueva",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "motivo",
+        "dataType": "STRING"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorialseveridadaccidente"
+    ]
+  },
+  {
+    "schemaName": "Fact_HistorialTransferenciaPropiedad",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idhistorialtransferencia",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuarioanterior",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuarionuevo",
+        "dataType": "INT"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fechahora",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idhistorialtransferencia"
+    ]
+  },
+  {
+    "schemaName": "Dim_Usuario_Cliente",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idusuariocliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "idusuario",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcliente",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idusuariocliente"
+    ]
+  },
+  {
+    "schemaName": "Dim_CondadoVecino",
+    "dimensionFieldSpecs": [
+      {
+        "name": "idcondadovecinorel",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcondado",
+        "dataType": "INT"
+      },
+      {
+        "name": "idcondadovecino",
+        "dataType": "INT"
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ],
+    "primaryKeyColumns": [
+      "idcondadovecinorel"
+    ]
+  },
+  {
+    "schemaName": "Dim_VersionContratoAPI",
+    "primaryKeyColumns": [
+      "idversion"
+    ],
+    "dimensionFieldSpecs": [
+      {
+        "name": "idversion",
+        "dataType": "INT"
+      },
+      {
+        "name": "id_servicio",
+        "dataType": "INT"
+      },
+      {
+        "name": "version",
+        "dataType": "STRING"
+      },
+      {
+        "name": "estado",
+        "dataType": "STRING"
+      },
+      {
+        "name": "spec_url",
+        "dataType": "STRING",
+        "defaultNullValue": ""
+      },
+      {
+        "name": "activo",
+        "dataType": "BOOLEAN"
+      }
+    ],
+    "dateTimeFieldSpecs": [
+      {
+        "name": "fecha_publicacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fecha_retiro",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS",
+        "defaultNullValue": 0
+      },
+      {
+        "name": "fecha_actualizacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      }
+    ]
+  }
+]

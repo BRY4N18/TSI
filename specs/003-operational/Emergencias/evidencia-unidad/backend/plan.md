@@ -11,7 +11,7 @@
 
 ## Summary
 
-Implementar evidencia fotográfica/notas de campo, **enriquecimiento estructurado en sitio (CU-O46: clima/período, elementos físicos, conductores/vehículos, implicados no conductores RF-EVI-010 alineado a ontología `Dim_Implicado`: `tipoimplicado`, `genero`, `estadoimplicado`, `edad`, `activo` — sin PII de identidad; Pinot `database/` sin cambio)**, gestión de disponibilidad de unidades y sincronización offline con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/evidencia-unidad.openapi.yaml`) alineado a `api-standards.md` y a `flujoscorreguidos/flujo-emergencias-canonico.md` (escritura de enriquecimiento **exclusiva** del Técnico/Unidad; sin precarga CU-O21); luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura de dominio exclusiva vía **Kafka** y binarios en **Azure Blob**; finalmente frontend Angular 17+ con servicios tipados, store offline y guards por rol. Cubre CU-O27, CU-O46, CU-O30 y CU-O43.
+Implementar evidencia fotográfica/notas de campo, **enriquecimiento estructurado en sitio (CU-O75/CU-O76: clima/período, elementos físicos, conductores/vehículos, implicados no conductores RF-EVI-010 alineado a ontología `Dim_Implicado`: `tipoimplicado`, `genero`, `estadoimplicado`, `edad`, `activo` — sin PII de identidad; Pinot `database/` sin cambio)**, gestión de disponibilidad de unidades y sincronización offline con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/evidencia-unidad.openapi.yaml`) alineado a `api-standards.md` y a `flujoscorreguidos/flujo-emergencias-canonico.md` (escritura de enriquecimiento **exclusiva** del Técnico/Unidad; sin precarga CU-O56); luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura de dominio exclusiva vía **Kafka** y binarios en **Azure Blob**; finalmente frontend Angular 17+ con servicios tipados, store offline y guards por rol. Cubre CU-O74, CU-O75/CU-O76, CU-O78 y CU-O77.
 
 ### Remediación activa 2026-07-29 (app → ontología)
 
@@ -20,7 +20,7 @@ El contrato/spec/data-model ya describen la ontología. El **código y tests** a
 ## Traceability
 
 - **Objetivo operacional:** enriquecer expediente de accidente (evidencia + datos estructurados) y mantener flota despachable en tiempo real.
-- **UC cubiertos:** CU-O27, CU-O46, CU-O30, CU-O43.
+- **UC cubiertos:** CU-O74, CU-O75/CU-O76, CU-O78, CU-O77.
 - **Dependencias:** `autenticacion-y-rbac`, `registro-accidente`, `despacho-inteligente`, `seguimiento-cierre-de-casos`.
 - **Consumidores downstream:** `despacho-inteligente` (estado unidad), aseguradoras/auditoría/analítica (evidencia + enriquecimiento).
 
@@ -50,7 +50,7 @@ El contrato/spec/data-model ya describen la ontología. El **código y tests** a
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O27/O46/O30/O43 + CA-EVI-001–**015** (implicados ontología) |
+| Functional Suitability | PASS | CU-O74/O46/O78/O77 + CA-EVI-001–**015** (implicados ontología) |
 | Reliability | PASS | Sync parcial con reintento; idempotencia; fail-safe estado default; enriquecimiento no bloquea despacho |
 | Performance Efficiency | PASS | RNF-EVI-003/004/006 (despacho/sync/consulta estado) + **RNF-EVI-007/008** (catálogos ≤2s, alta conductor ≤3s p95) |
 | Interaction Capability | PASS | Galería offline+online; indicador sync; **RNF-EVI-010 / CA-EVI-014** UI enriquecimiento; CA-EVI-015 sin campos PII en implicado |
@@ -60,13 +60,13 @@ El contrato/spec/data-model ya describen la ontología. El **código y tests** a
 | Flexibility | PASS | Offline-first; Blob desacoplado de Pinot; catálogos Pinot multi-región |
 | Safety | PASS | Default Fuera de servicio; Ocupada excluye despacho; enriquecimiento no altera asignación |
 
-**Post-Design Gate (re-check 2026-07-28 tras CU-O46):** PASS — gaps Principle V (at-rest/offline PII) y Performance/Interaction del enriquecimiento cerrados en spec/plan/research/tasks.
+**Post-Design Gate (re-check 2026-07-28 tras CU-O75/CU-O76):** PASS — gaps Principle V (at-rest/offline PII) y Performance/Interaction del enriquecimiento cerrados en spec/plan/research/tasks.
 
 **Post-Design Gate (re-check 2026-07-29 remediación Dim_Implicado):** PASS condicionado a implementar remediación en `/speckit-tasks` + `/speckit-implement` — spec/contrato/data-model ya alineados; código pendiente (gap canónico #12).
 
 **Tie-Breaker:**
 1. Maintainability vs Performance (histórico) — documentado en `research.md` Decision tie-breaker original.
-2. **Security vs Maintainability (CU-O46 PII conductores):** dominio de identidad → **Information Security** prioriza sobre Maintainability (nunca sobre Safety). Ver Decision 11.
+2. **Security vs Maintainability (CU-O75/CU-O76 PII conductores):** dominio de identidad → **Information Security** prioriza sobre Maintainability (nunca sobre Safety). Ver Decision 11.
 3. **Maintainability vs Functional Suitability ampliada (implicados):** ontología dimensional gana sobre modelo PII inventado en app — Decision 13.
 ## Project Structure
 
@@ -151,7 +151,7 @@ Artefacto: `contracts/evidencia-unidad.openapi.yaml`
 
 | Rol | Endpoints |
 |-----|-----------|
-| Técnico de campo | Galería, captura foto/nota, sync, **enriquecimiento CU-O46** (clima/físico/conductores/**implicados**) |
+| Técnico de campo | Galería, captura foto/nota, sync, **enriquecimiento CU-O75/CU-O76** (clima/físico/conductores/**implicados**) |
 | Unidad de emergencia | Idem evidencia + enriquecimiento + propia disponibilidad (`/mi-unidad-emergencia/*`) |
 | Administrador | Galería/enriquecimiento lectura + flota completa |
 | Servicio despacho | `GET /unidades-emergencia` (flota para algoritmo) |
@@ -274,7 +274,7 @@ Sin violaciones abiertas de constitution. Trade-offs:
 
 - Estado default **Fuera de servicio** evita despacho accidental a unidades sin historial.
 - **Ocupada** / **Fuera de servicio** excluyen del algoritmo (RN-EVI-002).
-- Evidencia y **enriquecimiento CU-O46 no alteran despacho** directamente; enriquecen expediente post-asignación.
+- Evidencia y **enriquecimiento CU-O75/CU-O76 no alteran despacho** directamente; enriquecen expediente post-asignación.
 - Transiciones automáticas Ocupada/Activa por `despacho-inteligente` y `seguimiento-cierre-de-casos` permanecen en esos módulos (mismo topic Kafka).
 
 ## Artifacts Generated

@@ -14,6 +14,12 @@
 
 ## Clarifications
 
+### Session 2026-08-07 (auditoría post-limpieza de catálogo)
+
+- Q: ¿Los IDs O118/O122 de `module-map.md` siguen siendo la referencia canónica? → A: **No.** El catálogo limpio vigente es `informestacticos/TSI-Catalogo-CU-RF-RNF.md` §5.2: **CU-O23** (demo, RF-NV-001), **CU-O24** (interacciones, parte de RF-NV-001), **CU-O25** (notificación, RF-NV-002/003). Los IDs O118/O122 quedan como alias históricos.
+- Q: ¿El despacho por `email` (RF-NV-002) enviaba la alerta al destinatario correcto? → A: **No** — bug confirmado y corregido (2026-08-07). `DespachoNotificacionVentasService` resolvía el correo con `Dim_Prospecto.gmail` (el prospecto) en vez de `idusuariogerentenotificado` contra `Dim_Usuarios` (el gerente). El SRS §3.1.2 y RF-O25.2 del catálogo son explícitos: la notificación es *"al ejecutivo comercial asignado"*. Corregido: ahora resuelve el gmail vía `UserRepository.find_by_id(idusuariogerentenotificado)`; si el gerente no existe o no tiene `gmail`, falla explícito (`CanalNoDisponibleError`) en vez de enviar a un destinatario incorrecto.
+- Q: ¿`DEMO_GRANT_SECRET`/`DEMO_SESSION_SECRET` podían quedar en su valor de desarrollo en un despliegue real? → A: **Sí, sin ninguna barrera** — corregido (2026-08-07). `demo_tokens.py` ahora falla explícito (`ImproperlyConfigured`) si `DJANGO_DEBUG=false` y el secreto sigue igual al default de `config/settings.py`. La detección lee `DJANGO_DEBUG` directo de `os.environ` (no `settings.DEBUG`) porque `pytest-django` fuerza `settings.DEBUG=False` durante los tests, lo que habría disparado el guard también en la suite.
+
 ### Session 2026-07-25
 
 - Q: ¿IDs canónicos de CU? → A: **O118** (demo) y **O122** (notificar), según `module-map.md`; alias de fuente CU-O65→O118, CU-O31→O122.
@@ -33,19 +39,20 @@
 
 | Tipo | Referencia | Notas |
 |---|---|---|
-| Módulo / mapa | `module-map.md` #5 Ventas-CRM | Spec canónico de demo + alerta a ventas |
-| CU canónicos | **O118, O122** | IDs oficiales del mapa |
-| Alias de fuente | CU-O65→O118, CU-O31→O122 | Solo trazabilidad a `VentasCRM_Pre-venta.md` |
+| Catálogo canónico vigente | `informestacticos/TSI-Catalogo-CU-RF-RNF.md` §5.2 Ventas y CRM | **Fuente de verdad actual**, sustituye a `module-map.md` para efectos de este spec (corrección 2026-08-07) |
+| CU canónicos (vigentes) | **CU-O23, CU-O24, CU-O25** | Ver mapeo actualizado abajo |
+| Alias históricos (obsoletos, no usar) | `module-map.md` O118/O122; fuente `VentasCRM_Pre-venta.md` CU-O65/CU-O31 | Conservados solo para trazar el origen documental; **no** son la referencia vigente |
 | Objetivo de negocio | Señalización comercial operativa (detectar intención en demo → avisar al ejecutivo) | Se introduce formalmente este conjunto de CU bajo Ventas-CRM; **no** colisiona con la ruta crítica de despacho de emergencias |
 
 ### Mapeo CU canónico ↔ requisito
 
-| CU canónico | Alias fuente | Requisitos |
+| CU canónico (catálogo vigente) | Alias histórico | Requisitos |
 |---|---|---|
-| **O118** | CU-O65 | RF-NV-001 — Acceso a demo e ingesta de interacciones |
-| **O122** | CU-O31 | RF-NV-002 — Evaluación de reglas y notificación |
-| *(derivado)* | RN-NV-002 | RF-NV-003 — Re-evaluación tras asignación tardía |
-| *(consulta / auditoría)* | Nota clave fuente | RF-NV-004 — Consulta de historial por Gerente |
+| **CU-O23** | `module-map.md` O118 / fuente CU-O65 | RF-NV-001 — Acceso a demo e ingesta de interacciones |
+| **CU-O24** | parte de CU-O23 en `module-map.md` | RF-NV-001 (ingesta de interacciones) |
+| **CU-O25** | `module-map.md` O122 / fuente CU-O31 | RF-NV-002 — Evaluación de reglas y notificación |
+| *(derivado de CU-O25)* | RN-NV-002 | RF-NV-003 — Re-evaluación tras asignación tardía |
+| *(consulta / auditoría, sin CU propio)* | Nota clave fuente | RF-NV-004 — Consulta de historial por Gerente |
 
 ---
 
@@ -119,7 +126,7 @@ Este spec **actualiza** `demo_expiracion` (**O118**) y **lee** `idusuario` (**O1
 
 ## 5. Requisitos funcionales
 
-### RF-NV-001 — Acceder a la demo interactiva e ingresar interacciones (**O118**, actor: Prospecto)
+### RF-NV-001 — Acceder a la demo interactiva e ingresar interacciones (**CU-O23/CU-O24**; alias histórico O118; actor: Prospecto)
 
 **Comportamiento:**
 - Al iniciar sesión de demo el cliente envía `idprospecto` + **código/grant de demo** emitido en el registro del prospecto (`commercial-pipeline-prospects`). Rechazar si el prospecto no existe, no está activo, el grant es inválido, o no corresponde a ese `idprospecto`.
@@ -129,11 +136,11 @@ Este spec **actualiza** `demo_expiracion` (**O118**) y **lee** `idusuario` (**O1
 - INSERT continuo en `Fact_Interaccion_Demo` mientras la sesión esté activa: un evento por interacción relevante (`tipo_evento`, `seccion`, `metadata`, `timestamp_evento`).
 - No escribe en `Fact_Pipeline` ni `Fact_Asignacion`.
 
-### RF-NV-002 — Notificar automáticamente ante comportamiento clave en demo (**O122**, actor: Sistema)
+### RF-NV-002 — Notificar automáticamente ante comportamiento clave en demo (**CU-O25**; alias histórico O122; actor: Sistema)
 
 **Comportamiento:**
 1. Lectura de `Fact_Interaccion_Demo` **acotada a la sesión histórica bajo evaluación** (intervalo `[inicio_sesion, demo_expiracion]` de ese ciclo), evaluada contra el catálogo MVP (RN-NV-003).
-2. Cuando una regla se cumple y `Dim_Prospecto.idusuario` no es NULL: INSERT en `Fact_NotificacionVentas` con `id_prospecto`, `idinteraccion` (disparador), `idusuariogerentenotificado`, `regladisparada`, `canal` (según regla), `fechahoranotificacion = now`; luego despacho vía `core/notificaciones`.
+2. Cuando una regla se cumple y `Dim_Prospecto.idusuario` no es NULL: INSERT en `Fact_NotificacionVentas` con `id_prospecto`, `idinteraccion` (disparador), `idusuariogerentenotificado`, `regladisparada`, `canal` (según regla), `fechahoranotificacion = now`; luego despacho vía `core/notificaciones`. **El destinatario real del envío (correo/push) se resuelve por `idusuariogerentenotificado` contra `Dim_Usuarios` — nunca por el `gmail` del prospecto.** Si el gerente no existe o no tiene contacto para el canal, el despacho falla explícito; la fila en `Fact_NotificacionVentas` ya quedó registrada (auditoría) aunque el envío falle.
 3. **Deduplicación (RN-NV-001):** antes de insertar, verificar que no exista ya fila con mismo `id_prospecto` + `regladisparada` en el **mismo día calendario UTC**. Si existe, no insertar ni reenviar.
 4. **Sin destinatario (RN-NV-002):** si `idusuario` es NULL, **no** insertar fila; el evento permanece **elegible para re-evaluación** (RF-NV-003).
 
@@ -278,9 +285,9 @@ Entonces el sistema reemite un token de sesión **sin** cambiar `demo_expiracion
 
 | Tipo | Endpoint / mecanismo | Auth | CU / RF | Notas |
 |---|---|---|---|---|
-| `POST` | `/api/v1/ventas-crm/demo/sesiones` | Público (`idprospecto` + grant de demo) | O118 / RF-NV-001 | Primer canje o resume si demo activa; fija `demo_expiracion` solo si NULL; no prolonga si ya expiró |
-| `POST` | `/api/v1/ventas-crm/demo/interacciones` | Token de sesión de demo | O118 / RF-NV-001 | Rate limit 60/min por token |
-| — | Job interno (proceso `Sistema`) | N/A | O122 / RF-NV-002, RF-NV-003 | Cada ≤ 60 s |
+| `POST` | `/api/v1/ventas-crm/demo/sesiones` | Público (`idprospecto` + grant de demo) | CU-O23 / RF-NV-001 | Primer canje o resume si demo activa; fija `demo_expiracion` solo si NULL; no prolonga si ya expiró |
+| `POST` | `/api/v1/ventas-crm/demo/interacciones` | Token de sesión de demo | CU-O24 / RF-NV-001 | Rate limit 60/min por token |
+| — | Job interno (proceso `Sistema`) | N/A | CU-O25 / RF-NV-002, RF-NV-003 | Cada ≤ 60 s |
 | `GET` | `/api/v1/ventas-crm/notificaciones` | Bearer JWT (Gerente / Administrador) | RF-NV-004 | Cursor pagination; filtro RBAC |
 
 ## 14. Dependencias

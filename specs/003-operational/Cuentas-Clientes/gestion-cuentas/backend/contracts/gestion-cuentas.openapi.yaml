@@ -3,8 +3,9 @@ info:
   title: TSI Gestión de Cuenta de Cliente API
   version: 1.0.0
   description: >
-    Contrato contract-first para CU-O03 (perfil y preferencias), CU-O10 (transferencia
-    de propiedad) y CU-O11 (baja de cuenta). Sigue api-standards.md del proyecto.
+    Numeración de CU corregida 2026-08-08 al catálogo vigente (TSI-Catalogo-CU-RF-RNF.md).
+    Contrato contract-first para CU-O13 (perfil), CU-O14 (preferencias), CU-O15 (transferencia
+    de propiedad) y CU-O16 (baja de cuenta). Sigue api-standards.md del proyecto.
 servers:
   - url: /api/v1
 tags:

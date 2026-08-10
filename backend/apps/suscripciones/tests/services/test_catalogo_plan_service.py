@@ -50,11 +50,13 @@ class TestCatalogoPlanService:
                 {
                     "nombre": "X",
                     "precio": 1,
+                    "precio_excedente_llamada": 0.05,
                     "nivel": "Gold",
                     "limites": {
                         "unidades_max": 1,
                         "usuarios_max": 1,
                         "api_calls_mes": 1,
+                        "api_calls_minuto": 1,
                     },
                 }
             )

@@ -1,25 +1,27 @@
 # Phase 0 Research - Incorporación de Clientes
 
+**Numeración de CU corregida 2026-08-08** al catálogo vigente (ver `spec.md` Clarifications). Este documento narra decisiones en orden histórico; donde "O01" o "O12" aparecen ligados a "registro"/"plan"/"logo"/"configuración" son **capacidades retiradas sin CU vigente**, distintas del **CU-O12 vigente** (reenviar invitación).
+
 ## Decision 1: Contract-first con OpenAPI
 
 - Decision: Definir primero `contracts/incorporacion-clientes.openapi.yaml` con todos los endpoints bajo `/api/v1/cuentas-clientes/...`.
 - Rationale: Cumple `api-standards.md` y permite tipos TypeScript + tests de contrato antes de vistas DRF (django-expert).
 - Alternatives considered:
   - Implementar vistas primero (rechazado: desalineación frontend/backend).
-  - Un solo endpoint monolítico de onboarding (rechazado: no mapea CUs O01/O12/O02/O08).
+  - Un solo endpoint monolítico de onboarding (rechazado: no mapea registro directo / config. plan+logo / CU-O11 / CU-O12 por separado).
 
 ## Decision 2: Endpoints REST y semántica HTTP
 
 - Decision:
-  - `POST /cuentas-clientes` — CU-O01 registro (solo Administrador, `Idempotency-Key`).
-  - `PATCH /cuentas-clientes/{idcliente}/configuracion` — CU-O12 plan/logo + `estado_onboarding=Pendiente`.
+  - `POST /cuentas-clientes` — registro directo (legado, retirado; solo Administrador, `Idempotency-Key`).
+  - `PATCH /cuentas-clientes/{idcliente}/configuracion` — config. plan+logo (legado, retirado) + `estado_onboarding=Pendiente`.
   - `POST /cuentas-clientes/{idcliente}/logo/upload-url` — URL firmada Azure Blob (mismo patrón que gestion-cuentas).
-  - `GET /cuentas-clientes/{idcliente}/onboarding/progreso` — CU-O09 consulta de etapas.
-  - `POST /cuentas-clientes/{idcliente}/onboarding/etapas` — CU-O02 completar etapa canónica.
-  - `POST /cuentas-clientes/{idcliente}/invitacion/reenviar` — CU-O08 temp password + email.
+  - `GET /cuentas-clientes/{idcliente}/onboarding/progreso` — CU-O11 (RF-O11.2) consulta de etapas.
+  - `POST /cuentas-clientes/{idcliente}/onboarding/etapas` — CU-O11 completar etapa canónica.
+  - `POST /cuentas-clientes/{idcliente}/invitacion/reenviar` — CU-O12 temp password + email.
 - Rationale: Recursos anidados bajo cuenta; POST para comandos; PATCH para configuración parcial; envelope estándar.
 - Alternatives considered:
-  - `PUT` para configuración completa (rechazado: solo dos campos editables en O12).
+  - `PUT` para configuración completa (rechazado: solo dos campos editables en config. plan+logo legado).
   - Webhook para progreso (rechazado: fuera de api-standards REST del proyecto).
 
 ## Decision 3: Django Vista → Servicio → Repositorio + Kafka-only-write
@@ -46,20 +48,20 @@
 
 - Decision:
   - Todos los endpoints requieren Bearer JWT + validación `Fact_Session` activa.
-  - **O01, O12, logo upload-url (pre-onboarding)**: solo rol `Administrador`.
+  - **Registro directo, config. plan+logo (legado), logo upload-url (pre-onboarding)**: solo rol `Administrador`.
   - **Onboarding progreso/etapas, reenviar invitación**: `Administrador` o `Cliente` si `user_id == admin_local_id`.
-  - **O08 Cliente**: solo puede reenviar invitación para `admin_local_id` propio (único usuario de la cuenta en este módulo).
+  - **CU-O12 Cliente**: solo puede reenviar invitación para `admin_local_id` propio (único usuario de la cuenta en este módulo).
 - Rationale: api-authentication (JWT stateless + sesión); actores de spec §3.
 - Alternatives considered:
   - Onboarding sin auth (rechazado: riesgo de seguridad).
-  - Solo Administrador en todo el flujo (rechazado: CU-O02 actor Cliente).
+  - Solo Administrador en todo el flujo (rechazado: CU-O11 actor Cliente).
 
 ## Decision 6: Etapas canónicas y transiciones de `estado_onboarding`
 
 - Decision:
   - Catálogo fijo: `cambio_password` → `perfil_corporativo` → `preferencias`.
-  - `Pendiente` (post O12) → `En progreso` (primera Fact_Onboarding) → `Completado` (3 obligatorias con `completado=true`).
-  - `estado='Activo'` en O01 independiente de `estado_onboarding` (RN-ONB-008).
+  - `Pendiente` (post CU-O10 aprobar) → `En progreso` (primera Fact_Onboarding) → `Completado` (3 obligatorias con `completado=true`).
+  - `estado='Activo'` independiente de `estado_onboarding` (RN-ONB-008).
   - Etapa `preferencias` crea primera fila `Dim_Preferencias_Cliente` (RN-ONB-010).
   - Etapa `cambio_password`: validar `Dim_Credencial.estadocredencial='Activo'` o completar vía flujo auth existente antes de marcar etapa.
 - Rationale: Clarificaciones sesión 2026-07-09.
@@ -69,7 +71,7 @@
 ## Decision 7: Notificaciones SMTP y recordatorios
 
 - Decision:
-  - O01 y O08: `OnboardingNotificacionService` → `core/notificaciones` (mismo patrón gestion-cuentas). Fallo SMTP → log, no revierte operación.
+  - Autorregistro (CU-O09), aprobación/rechazo (CU-O10) y reenvío (CU-O12): `OnboardingNotificacionService` → `core/notificaciones` (mismo patrón gestion-cuentas). Fallo SMTP → log, no revierte operación.
   - RN-ONB-004: job programado Django (`management command` + cron/container) `send_onboarding_reminders` — correo semanal desde día 30; sin endpoint REST en MVP.
 - Rationale: RNF-ONB-004; capacidad transversal de notificaciones.
 - Alternatives considered:
@@ -93,19 +95,19 @@
   - NgRx global (rechazado: scope local del wizard).
   - Un guard monolítico (rechazado: baja testabilidad).
 
-## Decision 9: Registro O01 transaccional lógico
+## Decision 9: Registro directo transaccional lógico (legado, retirado)
 
-- Decision: *(Histórico Phase 3)* `RegistroCuentaService` creaba `Activo` inmediato. **Superada 2026-07-25:** O01 retirado (410); alta vía O14→O16.
+- Decision: *(Histórico Phase 3)* `RegistroCuentaService` creaba `Activo` inmediato. **Superada 2026-07-25:** registro directo retirado (410, sin CU vigente); alta vía CU-O09→CU-O10.
 
 ## Decision 10: Cierre gaps 2026-07-25
 
 - Decision:
-  - Camino único O14→O16 para todos los tipos; O01/O12 → HTTP 410.
-  - Soft-anular `Rechazado` → `Rechazado_Anulado`; NIT reutilizable en nuevo O14.
+  - Camino único CU-O09→CU-O10 para todos los tipos; registro directo / config. plan+logo (legado) → HTTP 410.
+  - Soft-anular `Rechazado` → `Rechazado_Anulado`; NIT reutilizable en nuevo CU-O09.
   - Email SMTP en aprobar/rechazar; login permitido en pendiente; gate por módulo.
-  - UI O08 en solicitudes Admin + wizard (configuracion sin ruta).
+  - UI CU-O12 (reenviar invitación) en solicitudes Admin + wizard (configuracion sin ruta).
 - Rationale: Decisiones producto Session 2026-07-25; elimina pantallas fantasma Admin.
 - Alternatives considered:
-  - Mantener O01 legado no-Proveedor (rechazado).
+  - Mantener registro directo legado no-Proveedor (rechazado).
   - Bloquear login hasta Activo (rechazado: gate por módulo).
   - Reintento NIT self-service tras Rechazado (rechazado: soft-anular Admin).

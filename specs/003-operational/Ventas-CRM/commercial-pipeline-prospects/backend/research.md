@@ -112,19 +112,13 @@
 
 ## Decision 10 — Portal público de planes (RF-CPP-000) — lectura `Dim_Plan`
 
+> **Corrección 2026-08-08:** el punto 4 original (mapa cerrado `nivel` → severidades) queda **obsoleto**. `severidades_desbloqueadas` es un campo independiente en `Dim_Plan`, configurable libremente por el Director de Estrategia (RN-SUSF-002 corregida) — este servicio solo lo lee y parsea, ya no lo deriva de `nivel`. Ver `_parse_severidades()` en `consulta_planes_publicos_service.py`.
+
 **Decision:**
 1. Endpoint `GET /api/v1/ventas-crm/planes` con `security: []` (AllowAny / sin JWT).
 2. Repositorio **solo lectura** Pinot sobre `Dim_Plan` filtrando `activo=true`. Preferir reutilizar un `PlanRepository` de Suscripciones-Facturación si existe; si no, `core/repositories/ventas_crm/plan_lectura_repository.py` **sin** `publish`/Kafka.
-3. Servicio `ConsultaPlanesPublicosService` proyecta: `idplan`, `nombre`, `precio`, `limites` (STRING canónico del esquema; el API puede parsear JSON si el contenido es JSON-object serializado, si no devolver string), `nivel`, y `severidades_desbloqueadas` derivadas.
-4. **Mapa cerrado `nivel` → severidades** (alineado a RN-SUSF-002 / spec Suscripciones; case-insensitive; normalizar acentos):
-
-| `nivel` (canónico) | `severidades_desbloqueadas` |
-|--------------------|-----------------------------|
-| `Básico` / `Basico` | `["Baja"]` |
-| `Profesional` | `["Baja", "Media"]` |
-| `Empresarial` | `["Baja", "Media", "Alta"]` |
-
-   Valores de `nivel` no reconocidos → `severidades_desbloqueadas=[]` y se **incluye** el plan (Functional Suitability: no ocultar precio/nombre); log/warning en servicio. Seeds de prueba deben usar los tres niveles canónicos (corregir fixture `premium` → uno de los tres).
+3. Servicio `ConsultaPlanesPublicosService` proyecta: `idplan`, `nombre`, `precio`, `limites` (STRING canónico del esquema; el API puede parsear JSON si el contenido es JSON-object serializado, si no devolver string), `nivel`, y `severidades_desbloqueadas` (parseada de `Dim_Plan.severidades_desbloqueadas`, campo independiente — ver corrección arriba).
+4. ~~Mapa cerrado `nivel` → severidades~~ — **obsoleto, ver corrección arriba.** `severidades_desbloqueadas` ausente o no-JSON → lista vacía y se **incluye** el plan (Functional Suitability: no ocultar precio/nombre); log/warning en servicio.
 5. Alias documental **CU-O123**: ID canónico a definir en `module-map.md`; no inventar O-number oficial aquí.
 6. El Visitante no selecciona plan en RF-CPP-001 (fuera de alcance del embudo); CTA UI hacia registro es navegación, no escritura de `idplan`.
 

@@ -1,23 +1,23 @@
 # Trazabilidad — Evidencia en Sitio y Disponibilidad de Unidad
 
 **Feature**: `specs/003-operational/Emergencias/evidencia-unidad/backend/`  
-**Fecha validación**: 2026-07-09 (US1–US4) · **Extensión CU-O46**: 2026-07-28 · **RF-EVI-010 Implicados**: 2026-07-29
+**Fecha validación**: 2026-07-09 (US1–US4) · **Extensión CU-O75/CU-O76**: 2026-07-28 · **RF-EVI-010 Implicados**: 2026-07-29
 
 | CU | Descripción | Tasks | Estado |
 |----|-------------|-------|--------|
-| CU-O27 | Adjuntar evidencias | T022–T068 | ✓ |
-| CU-O30 | Disponibilidad | (US1) | ✓ |
-| CU-O43 | Sync diferida | (US3) | ✓ |
-| CU-O46 | Enriquecer datos estructurados en sitio | T079–T125 + T128–T136 | ✓ |
+| CU-O74 | Adjuntar evidencias | T022–T068 | ✓ |
+| CU-O78 | Disponibilidad | (US1) | ✓ |
+| CU-O77 | Sync diferida | (US3) | ✓ |
+| CU-O75/CU-O76 | Enriquecer datos estructurados en sitio | T079–T125 + T128–T136 | ✓ |
 
 ## Matriz CU / RF / CA → Tasks
 
 | ID | Descripción | Tasks | Estado |
 |----|-------------|-------|--------|
-| CU-O27 | Adjuntar evidencias en sitio | T040–T057 | ✓ |
-| CU-O30 | Gestionar disponibilidad de unidad | T025–T039 | ✓ |
-| CU-O43 | Sincronización diferida offline | T059–T069 (+ T107 enriquecimiento) | ✓ |
-| CU-O46 | Enriquecer datos estructurados en sitio | T079–T136 | ✓ |
+| CU-O74 | Adjuntar evidencias en sitio | T040–T057 | ✓ |
+| CU-O78 | Gestionar disponibilidad de unidad | T025–T039 | ✓ |
+| CU-O77 | Sincronización diferida offline | T059–T069 (+ T107 enriquecimiento) | ✓ |
+| CU-O75/CU-O76 | Enriquecer datos estructurados en sitio | T079–T136 | ✓ |
 | RF-EVI-001 | Declarar estado disponibilidad | T031, T033, T034–T038 | ✓ |
 | RF-EVI-002 | Subir evidencia fotográfica | T046, T049, T050, T057 | ✓ |
 | RF-EVI-003 | Registrar nota de campo | T047, T049, T050, T057 | ✓ |
@@ -55,9 +55,9 @@
 | Escenario | Descripción | Validación | Resultado |
 |-----------|-------------|------------|-----------|
 | A–I | Evidencia / disponibilidad / sync | tests existentes | ✓ |
-| J | Clima/período CU-O46 | `test_enriquecimiento_clima_*` | ✓ |
-| K | Elementos físicos CU-O46 | `test_enriquecimiento_elementos_fisicos_*` | ✓ |
-| L | Conductores/vehículos CU-O46 | `test_enriquecimiento_conductores_*` | ✓ |
+| J | Clima/período CU-O75/CU-O76 | `test_enriquecimiento_clima_*` | ✓ |
+| K | Elementos físicos CU-O75/CU-O76 | `test_enriquecimiento_elementos_fisicos_*` | ✓ |
+| L | Conductores/vehículos CU-O75/CU-O76 | `test_enriquecimiento_conductores_*` | ✓ |
 | N | Implicados no conductores RF-EVI-010 | `test_enriquecimiento_implicados_*` / T128–T136 | ✓ |
 | M | PII conductor cifrado offline + checklist at-rest | T121, T123 / CA-EVI-013 | ✓ |
 
@@ -65,7 +65,7 @@
 
 | Capa | Umbral | Resultado |
 |------|--------|-----------|
-| Servicios enriquecimiento CU-O46 | ≥80% | **86%** (T119) |
+| Servicios enriquecimiento CU-O75/CU-O76 | ≥80% | **86%** (T119) |
 
 ## Frontend
 
@@ -80,4 +80,4 @@
 
 ## Extensión 2026-07-28
 
-- CU-O46 implementado (T079–T125): repos, servicios, vistas, catálogos, sync, frontend offline cifrado, gates CA-EVI-010…014.
+- CU-O75/CU-O76 implementado (T079–T125): repos, servicios, vistas, catálogos, sync, frontend offline cifrado, gates CA-EVI-010…014.

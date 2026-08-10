@@ -1,4 +1,4 @@
-"""RF-TIC-001 (CU-O91) — registrar ticket con clasificación automática y SLA."""
+"""RF-TIC-001 (CU-O83) — registrar ticket con clasificación automática y SLA."""
 
 from __future__ import annotations
 
@@ -60,9 +60,15 @@ class RegistrarTicketService:
         tipo: str,
         idaccidente: str | None = None,
         idservicio: int | None = None,
+        idfactura: str | None = None,
         idusuario: int | None = None,
         adjuntos: list[tuple[bytes, str]] | None = None,
     ) -> dict:
+        if idfactura is not None:
+            disputa_abierta = self.reclamo_repo.find_disputa_abierta_por_factura(str(idfactura))
+            if disputa_abierta is not None:
+                raise ValueError("La factura ya tiene una disputa abierta")
+
         clasificacion = self.clasificacion_service.clasificar(
             tipo=tipo, asunto=asunto, descripcion=descripcion, idaccidente=idaccidente
         )
@@ -76,6 +82,8 @@ class RegistrarTicketService:
         }
         if idservicio is not None:
             base_fields["idservicio"] = int(idservicio)
+        if idfactura is not None:
+            base_fields["idfactura"] = str(idfactura)
 
         if clasificacion is None:
             reclamo = self.reclamo_repo.create(

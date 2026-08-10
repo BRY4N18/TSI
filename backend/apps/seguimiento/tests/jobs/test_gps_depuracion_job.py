@@ -18,5 +18,5 @@ class TestGpsDepuracionJob:
         result = run_gps_depuracion_job()
 
         # Assert
-        assert "depurados" in result
+        assert "elegibles_para_muestreo" in result
         assert "retencion_dias" in result

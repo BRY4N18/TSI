@@ -1,4 +1,4 @@
-"""T104 — Reasignación O36 agotada notifica Administrador (CA-DES-007)."""
+"""T104 — Reasignación O63 agotada notifica Administrador (CA-DES-007)."""
 
 from unittest.mock import MagicMock
 

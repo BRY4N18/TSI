@@ -16,7 +16,8 @@
 | Técnico de Campo                | Realiza verificación en sitio, reporta evidencia fotográfica y confirma el estado de emergencias atendidas.                        |
 | Unidad de Emergencia            | Recibe el despacho del operador, confirma atención en sitio y reporta el estado de la emergencia (en tránsito, atendido, cerrado). |
 | Analista de Datos               | Genera reportes de siniestralidad, mapas de calor, modelos predictivos y dashboards de inteligencia de mercado.                    |
-| Desarrollador de APIs           | Configura, documenta y mantiene integraciones API con clientes externos (aseguradoras, Smart Cities, partners).                    |
+| Desarrollador de APIs           | Equipo técnico **de TSI**: registra partners, les asigna el plan de acceso y vigila consumo y errores (SRS L124). **No** es quien consume la API — eso es el Partner de integración. |
+| Partner de integración 🆕       | **Área técnica de un cliente integrador** (SRS L121). Obtiene y rota sus credenciales, solicita el paso a producción y consulta su propio consumo. Pertenece a un Cliente, pero es una persona distinta con permisos distintos: el Cliente titular gestiona plan, facturas y tickets; el partner solo gestiona credenciales. |
 | Soporte al Cliente              | Atiende solicitudes de clientes, resuelve incidencias técnicas, gestiona reclamos y da seguimiento a necesidades.                  |
 | Cliente (aseguradora/municipio) | Consulta reportes de siniestralidad, recibe alertas, accede a APIs, visualiza dashboards y gestiona su suscripción.                |
 | Gerente de Ventas               | Gestiona el pipeline comercial y el seguimiento de prospectos.                                                                     |
@@ -96,6 +97,7 @@
 | Operativo | Administrador | Ejecuta CU de alta/configuración en cuentas, usuarios, roles, sesiones y red operativa. No incluye catálogo de planes (Director de Estrategia). |
 | Operativo | Analista de Datos | Genera reportes e inteligencia que cruzan varios departamentos, no uno solo. |
 | Operativo | Desarrollador de APIs | Integraciones técnicas externas, no ligadas a un paquete de negocio específico. |
+| Operativo | Partner de integración 🆕 | Actúa **solo sobre su propio perfil** en Partners y API (`idrol` 15, `PartnerIntegracion`). No es transversal: se lista aquí para dejar clara su separación del rol Cliente y del Desarrollador de APIs. |
 | Operativo | Sistema (actor automatizado) | Ejecuta procesos automáticos de varios módulos (despacho, facturación, notificaciones). |
 | Operativo | Proveedor 🆕 | Pertenece al módulo Marketplace-Proveedores, fuera de los 6 paquetes actuales. |
 | Táctico | Gerente | Visión estratégica de toda la empresa, no de un departamento puntual. |

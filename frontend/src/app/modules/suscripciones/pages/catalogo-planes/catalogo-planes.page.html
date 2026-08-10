@@ -98,8 +98,10 @@
         <tr class="bg-bg-surface">
           <th [class]="thClass">Nombre</th>
           <th [class]="thClass">Nivel</th>
+          <th [class]="thClass">Periodicidad</th>
           <th [class]="thClass">Precio</th>
           <th [class]="thClass">Límites</th>
+          <th [class]="thClass">Severidades</th>
           @if (esDirector()) {
             <th [class]="thClass">Estado</th>
             <th [class]="thRightClass">Acciones</th>
@@ -113,11 +115,13 @@
             <td [class]="tdClass">
               <span [class]="infoBadge()">{{ p.nivel }}</span>
             </td>
+            <td [class]="tdClass">{{ p.periodicidad || 'Mensual' }}</td>
             <td [class]="tdClass + ' tabular-nums'">
               {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }}
-              <span class="text-text-secondary">/ mes</span>
+              <span class="text-text-secondary">/ {{ p.periodicidad === 'Anual' ? 'año' : 'mes' }}</span>
             </td>
             <td [class]="tdClass">{{ limitesTexto(p.limites) }}</td>
+            <td [class]="tdClass">{{ severidadesTexto(p.severidades_desbloqueadas) }}</td>
             @if (esDirector()) {
               <td [class]="tdClass">
                 <span [class]="p.activo !== false ? okBadge() : warnBadge()">
@@ -205,14 +209,24 @@
               <dd class="font-medium text-text-primary">{{ p.nivel }}</dd>
             </div>
             <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Periodicidad</dt>
+              <dd class="font-medium text-text-primary">{{ p.periodicidad || 'Mensual' }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
               <dt class="text-text-secondary">Precio</dt>
               <dd class="font-medium text-text-primary">
-                {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }} / mes
+                {{ p.precio | currency: 'USD' : 'symbol' : '1.2-2' }} / {{ p.periodicidad === 'Anual' ? 'año' : 'mes' }}
               </dd>
             </div>
             <div class="flex justify-between gap-2">
               <dt class="text-text-secondary">Límites</dt>
               <dd class="truncate font-medium text-text-primary">{{ limitesTexto(p.limites) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-text-secondary">Severidades</dt>
+              <dd class="truncate font-medium text-text-primary">
+                {{ severidadesTexto(p.severidades_desbloqueadas) }}
+              </dd>
             </div>
             @if (esDirector()) {
               <div class="flex justify-between gap-2">

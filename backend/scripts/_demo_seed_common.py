@@ -43,7 +43,11 @@ ROLES_DEMO = {
     2: ("Administrador", "Administrador general del sistema"),
     3: ("Soporte", "Atencion de tickets y reclamos (cola de soporte)"),
     4: ("Operador", "Operador de emergencias: accidentes, despacho y seguimiento"),
-    5: ("DesarrolladorAPIs", "Consumo de integraciones via API"),
+    # SRS L124: equipo tecnico de TSI que registra partners, asigna planes de
+    # acceso y vigila consumo y errores. NO es quien consume la API: eso es
+    # PartnerIntegracion (idrol 15). La descripcion anterior ("Consumo de
+    # integraciones via API") describia al partner y confundia ambos actores.
+    5: ("DesarrolladorAPIs", "Equipo tecnico de integraciones: registra partners, asigna planes y vigila consumo"),
     6: ("DirectorTecnologico", "Vision estrategica y reportes ejecutivos"),
     7: ("Unidad", "Unidad de emergencia en campo"),
     8: ("Despacho", "Servicio/operador de despacho"),
@@ -52,6 +56,14 @@ ROLES_DEMO = {
     12: ("GerenteVentas", "Gerente de ventas: pipeline comercial y prospectos"),
     13: ("Proveedor", "Proveedor de flota de unidades de emergencia"),
     14: ("DirectorEstrategia", "Director de Estrategia: catalogo Dim_Plan (RF-SUSF-001)"),
+    # SRS L121: "Area tecnica de un cliente integrador". Es el AUTOSERVICIO del
+    # partner (CU-O49): emitir sus credenciales, pedir el paso a produccion y ver
+    # su consumo. No se reutiliza `Cliente` (idrol 1) porque, aunque todo partner
+    # pertenece a un cliente, son personas distintas de la misma organizacion con
+    # permisos distintos: el Cliente titular gestiona plan, facturas y tickets; el
+    # area tecnica solo gestiona credenciales. Tampoco es `DesarrolladorAPIs`
+    # (idrol 5), que es el equipo de TSI que registra partners, no quien consume.
+    15: ("PartnerIntegracion", "Area tecnica de un cliente integrador: credenciales y consumo propio (CU-O49)"),
 }
 
 # idrol 11 fue un "Operador" duplicado del 4. Se conserva la constante para poder

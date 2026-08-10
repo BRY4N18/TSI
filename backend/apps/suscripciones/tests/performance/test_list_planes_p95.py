@@ -18,7 +18,7 @@ class TestListPlanesP95:
                     "idplan": i,
                     "nombre": f"Perf Plan {i}",
                     "nivel": "Básico",
-                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1}',
+                    "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 1, "api_calls_minuto": 1}',
                     "activo": True,
                     "precio": 10.0,
                     "fecha_actualizacion": "2026-01-01T00:00:00+00:00",

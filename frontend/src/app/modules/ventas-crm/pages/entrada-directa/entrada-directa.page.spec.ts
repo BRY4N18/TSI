@@ -47,9 +47,16 @@ describe('EntradaDirectaPage', () => {
       razon_social: 'R',
       tipo: 'Municipio',
       nit_identificacion: '999',
+      admin_nombres: 'Ana',
+      admin_apellidos: 'Admin',
+      admin_gmail: 'ana.admin@ex.com',
     });
     page.enviar();
-    expect(api.entradaDirecta).toHaveBeenCalled();
+    expect(api.entradaDirecta).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        admin_local: { nombres: 'Ana', apellidos: 'Admin', gmail: 'ana.admin@ex.com' },
+      }),
+    );
     fixture.detectChanges();
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('[data-testid="entrada-directa-ok"]'),

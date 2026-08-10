@@ -1,4 +1,4 @@
-"""Job depuración GPS histórico."""
+"""Job de reporte de retención GPS — no borra nada (decisión 2026-08-08)."""
 
 from apps.seguimiento.services.gps_depuracion_service import GpsDepuracionService
 

@@ -1,7 +1,7 @@
 """CA-DES-007 / CA-DES-011 — fan-out activo a Administradores sin candidatas.
 
 Fail-open: un fallo de resolución de destinatarios o SMTP nunca debe
-interrumpir escalamiento O34 ni reasignación O36.
+interrumpir escalamiento O65 ni reasignación O63.
 """
 
 from __future__ import annotations

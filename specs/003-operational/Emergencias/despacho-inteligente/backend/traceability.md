@@ -10,14 +10,14 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 | CA-DES-002 | Filtro condado + scoring | T029, T035 | `test_consulta_candidatas_service` |
 | CA-DES-003 | Notificación push/SMS | T031, T037 | `test_notificacion_despacho_service` |
 | CA-DES-004 | Confirmar → ASIGNADO + En Misión | T042, T046, T098 | `test_confirmar_despacho_contract` |
-| CA-DES-005 | Rechazo → activo=false + O36 | T043, T047 | `test_rechazar_despacho_contract` |
-| CA-DES-006 | Timeout job O35 | T050, T056, T057 | `test_timeout_despacho_service` |
-| CA-DES-007 | Agotamiento candidatas → nota + notify Admin + O33 | T052, T058, T053, T103–T107 | `test_timeout_reasignacion_integration`, `test_reasignacion_alerta_admin` |
+| CA-DES-005 | Rechazo → activo=false + O63 | T043, T047 | `test_rechazar_despacho_contract` |
+| CA-DES-006 | Timeout job O63 | T050, T056, T057 | `test_timeout_despacho_service` |
+| CA-DES-007 | Agotamiento candidatas → nota + notify Admin + O64 | T052, T058, T053, T103–T107 | `test_timeout_reasignacion_integration`, `test_reasignacion_alerta_admin` |
 | CA-DES-008 | Parámetros RF-DES-010 | T076-T079 | `test_parametros_despacho_contract` |
-| CA-DES-010 | Asignación manual O33 | T062, T069 | `test_asignar_manual_contract` |
-| CA-DES-011 | Escalamiento O34 + alerta Admin si sin unidades | T063, T070, T103, T105, T107 | `test_escalar_zona_contract`, `test_escalamiento_zona_alerta_admin` |
-| CA-DES-012 | Despacho múltiple O38 | T064, T067 | `test_coordinar_despacho_contract` |
-| CA-DES-013 | Fail entrega O23→O36 | T054 | `test_fallo_notificacion_integration` |
+| CA-DES-010 | Asignación manual O64 | T062, T069 | `test_asignar_manual_contract` |
+| CA-DES-011 | Escalamiento O65 + alerta Admin si sin unidades | T063, T070, T103, T105, T107 | `test_escalar_zona_contract`, `test_escalamiento_zona_alerta_admin` |
+| CA-DES-012 | Despacho múltiple O66 | T064, T067 | `test_coordinar_despacho_contract` |
+| CA-DES-013 | Fail entrega O60→O63 | T054 | `test_fallo_notificacion_integration` |
 | CA-DES-014 | Hook plan/severidad no-op (fail-open) | T109–T112 | `test_elegibilidad_plan_hook` |
 
 > **Nota Phase 10 (2026-07-24):** CA-DES-007/011 exigen fan-out email a rol `Administrador`
@@ -29,15 +29,15 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 
 | CU/RF | Implementación | Tests |
 |-------|----------------|-------|
-| CU-O22 | `asignacion_inteligente_service`, `accidente_reportado_consumer` | T030, T032, T033 |
-| CU-O23 | `notificacion_despacho_service` | T031 |
-| CU-O24 | `confirmar_despacho_service`, `mi_despacho_views`, `mi_despacho_service` (mapa+ruta+countdown en dashboard, T095b) | T042, T044, T095b |
-| CU-O33 | `asignacion_manual_service`, `asignacion_views` | T062, T065 |
-| CU-O34 | `escalamiento_zona_service` + `alerta_admin_service` | T063, T066, T103, T105 |
-| CU-O35 | `timeout_despacho_service`, `timeout_despacho_job` | T050, T053 |
-| CU-O36 | `reasignacion_despacho_service`, `despacho_timeout_consumer`, `alerta_admin_service` | T051, T052, T104, T106 |
-| CU-O38 | `coordinacion_multiple_service` | T064, T067 |
-| CU-O45 | `rechazar_despacho_service` | T043, T045 |
+| CU-O59 | `asignacion_inteligente_service`, `accidente_reportado_consumer` | T030, T032, T033 |
+| CU-O60 | `notificacion_despacho_service` | T031 |
+| CU-O61 | `confirmar_despacho_service`, `mi_despacho_views`, `mi_despacho_service` (mapa+ruta+countdown en dashboard, T095b) | T042, T044, T095b |
+| CU-O64 | `asignacion_manual_service`, `asignacion_views` | T062, T065 |
+| CU-O65 | `escalamiento_zona_service` + `alerta_admin_service` | T063, T066, T103, T105 |
+| CU-O63 | `timeout_despacho_service`, `timeout_despacho_job` | T050, T053 |
+| CU-O63 | `reasignacion_despacho_service`, `despacho_timeout_consumer`, `alerta_admin_service` | T051, T052, T104, T106 |
+| CU-O66 | `coordinacion_multiple_service` | T064, T067 |
+| CU-O62 | `rechazar_despacho_service` | T043, T045 |
 | RF-DES-010 | `parametros_despacho_service`, `parametros_views` | T077, T076 |
 | RF-DES-011 | `monitoreo_despacho_service`, `monitoreo_views` | T068, T060 |
 
@@ -45,13 +45,13 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-09).
 
 | Escenario | Estado | Evidencia |
 |-----------|--------|-----------|
-| A — O22 automático | ✅ | `test_accidente_reportado_consumer`, integración |
-| B — O24 confirmar | ✅ | API + servicio confirmar |
-| C — O45 rechazo + O36 | ✅ | API rechazar + reasignación |
-| D — O35 + O36 async | ✅ | `test_timeout_reasignacion_integration` |
-| E — Fallo O23 | ✅ | `test_fallo_notificacion_integration` |
-| F — O34 escalar | ✅ | `test_escalar_zona_contract` |
-| G — O38 coordinar | ✅ | `test_coordinar_despacho_contract` |
+| A — O59 automático | ✅ | `test_accidente_reportado_consumer`, integración |
+| B — O61 confirmar | ✅ | API + servicio confirmar |
+| C — O62 rechazo + O63 | ✅ | API rechazar + reasignación |
+| D — O63 + O63 async | ✅ | `test_timeout_reasignacion_integration` |
+| E — Fallo O60 | ✅ | `test_fallo_notificacion_integration` |
+| F — O65 escalar | ✅ | `test_escalar_zona_contract` |
+| G — O66 coordinar | ✅ | `test_coordinar_despacho_contract` |
 | H — RF-DES-010 parámetros | ✅ | `test_parametros_despacho_contract` |
 
 ## Frontend (US6)

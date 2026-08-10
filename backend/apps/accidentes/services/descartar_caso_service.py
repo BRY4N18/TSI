@@ -1,4 +1,4 @@
-"""CU-O32 descartar caso."""
+"""CU-O58 descartar caso."""
 
 from __future__ import annotations
 
@@ -26,8 +26,9 @@ class DescartarCasoService:
         current = self.estado_repo.get_current_estado(idaccidente)
         if current != ESTADO_BORRADOR:
             raise ConflictError("Solo se puede descartar en BORRADOR")
-        if not motivo or not motivo.strip():
-            raise ValueError("El motivo del descarte es obligatorio")
+        # RF-REG-007.4 / SRS 3.6.1: el motivo es opcional, no obligatorio
+        # (corrección 2026-08-08 — el código lo exigía, contradiciendo SRS,
+        # spec y contrato OpenAPI).
         self.accidente_repo.update(idaccidente, {"activo": False})
         self.estado_repo.append_estado(
             idaccidente=idaccidente,

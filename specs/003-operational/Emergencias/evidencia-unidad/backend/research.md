@@ -2,12 +2,12 @@
 
 ## Decision 1: Contract-first OpenAPI unificado
 
-- **Decision:** Definir primero `contracts/evidencia-unidad.openapi.yaml` con todos los endpoints CU-O27, CU-O30, CU-O43 y **CU-O46** bajo `/api/v1/`.
+- **Decision:** Definir primero `contracts/evidencia-unidad.openapi.yaml` con todos los endpoints CU-O74, CU-O78, CU-O77 y **CU-O75/CU-O76** bajo `/api/v1/`.
 - **Rationale:** Cumple constitution (API-First Compatibility) y alinea backend Django con frontend Angular antes de implementar; el usuario solicitó explícitamente contract-first.
 - **Alternatives considered:**
   - Implementar ViewSets y documentar después (rechazado: drift spec↔código).
   - Dos contratos separados evidencia/disponibilidad (rechazado: un solo spec de feature, un solo artefacto de validación).
-  - Contrato separado solo para CU-O46 (rechazado: mismo módulo `evidencia-unidad`).
+  - Contrato separado solo para CU-O75/CU-O76 (rechazado: mismo módulo `evidencia-unidad`).
 
 ## Decision 2: Backend en capas Vista → Servicio → Repositorio
 
@@ -37,11 +37,11 @@
 
 - **Decision:** Endpoints protegidos con `Authorization: Bearer`; permisos DRF:
   - **Técnico de campo**, **Unidad de emergencia**, **Administrador** → galería, captura evidencia y **lectura enriquecimiento**.
-  - **Técnico de campo**, **Unidad de emergencia** → escritura enriquecimiento CU-O46.
+  - **Técnico de campo**, **Unidad de emergencia** → escritura enriquecimiento CU-O75/CU-O76.
   - **Unidad de emergencia** → solo propia disponibilidad (`/mi-unidad-emergencia/*`).
   - **Administrador** + token servicio despacho → flota completa (`/unidades-emergencia/*`).
   - **Técnico de campo** → HTTP 403 en endpoints de disponibilidad.
-- **Rationale:** Clarificaciones Session 2026-07-09 + Session 2026-07-28 (CU-O46) + skill `api-authentication`; reutiliza JWT/interceptor de `autenticacion-y-rbac`.
+- **Rationale:** Clarificaciones Session 2026-07-09 + Session 2026-07-28 (CU-O75/CU-O76) + skill `api-authentication`; reutiliza JWT/interceptor de `autenticacion-y-rbac`.
 - **Alternatives considered:**
   - Autorización solo en frontend (rechazado: riesgo de seguridad).
   - API key sin JWT para móvil (rechazado: inconsistente con stack TSI).
@@ -74,7 +74,7 @@
 
 - **Decision:** Módulo `evidencia-unidad/` con:
   - `EvidenciaApiService`, `DisponibilidadUnidadApiService`, `EnriquecimientoApiService`, `EvidenciaOfflineStoreService` (IndexedDB + cifrado PII)
-  - Guards: `EvidenciaGalleryGuard` (también rutas CU-O46), `UnidadEmergenciaDisponibilidadGuard`, `AdministradorFlotaGuard`
+  - Guards: `EvidenciaGalleryGuard` (también rutas CU-O75/CU-O76), `UnidadEmergenciaDisponibilidadGuard`, `AdministradorFlotaGuard`
   - Tipos estrictos en `models/evidencia-unidad.types.ts` espejo de OpenAPI
 - **Rationale:** `angular-architect` + `typescript-expert`; componentes sin lógica de dominio; Decision 12.
 - **Alternatives considered:**
@@ -83,19 +83,19 @@
 
 ## Decision 10: Separación Dim_NotaAccidente escalamiento vs campo
 
-- **Decision:** Mismo topic `Dim_NotaAccidente_topic`; campo `tipo` distingue `escalamiento` (registro-accidente O40) de tipos de campo (RF-EVI-003). Repositorio compartido con filtro por `tipo`.
+- **Decision:** Mismo topic `Dim_NotaAccidente_topic`; campo `tipo` distingue `escalamiento` (registro-accidente O73) de tipos de campo (RF-EVI-003). Repositorio compartido con filtro por `tipo`.
 - **Rationale:** Tabla única en modelo dimensional; evita duplicar infraestructura Kafka.
 - **Alternatives considered:**
   - Tabla separada para notas de campo (rechazado: no existe en esquema).
 
-## Decision 11: PII de conductores — cifrado tránsito + reposo + offline (CU-O46 / Principle V)
+## Decision 11: PII de conductores — cifrado tránsito + reposo + offline (CU-O75/CU-O76 / Principle V)
 
 - **Decision:**
   1. API/sync solo sobre HTTPS/TLS.
   2. PII en Pinot (`Dim_Conductor`, vínculos) reposa bajo cifrado at-rest de infraestructura (volúmenes/backups del cluster); sin stores colaterales en claro.
   3. Borradores offline `LocalConductorAccidente` se cifran en IndexedDB (Web Crypto; clave de sesión); tras sync exitosa se borran (RN-EVI-020/021, RNF-EVI-009).
   4. RBAC estricto + audit de altas/consultas/soft-deletes (RF-EVI-009, T110).
-- **Rationale:** Constitution Principle V y tie-breaker dominio (identidad de involucrados): Security prioriza sobre Maintainability; nunca sobre Safety. CU-O46 introduce PII que el módulo evidencia previo (solo fotos/notas) no modelaba igual.
+- **Rationale:** Constitution Principle V y tie-breaker dominio (identidad de involucrados): Security prioriza sobre Maintainability; nunca sobre Safety. CU-O75/CU-O76 introduce PII que el módulo evidencia previo (solo fotos/notas) no modelaba igual.
 - **Alternatives considered:**
   - Solo TLS sin at-rest/offline crypto (rechazado: viola MUST de Principle V).
   - Prohibir captura offline de conductores (rechazado: reduce Functional Suitability en campo sin cobertura; crypto local es trade-off aceptable).
@@ -123,7 +123,7 @@
 - **Conflicto 1:** Performance Efficiency (RNF-EVI-003 ≤5s reflejo despacho) vs Maintainability (servicios separados evidencia/disponibilidad/blob).
   - **Prioridad:** Maintainability — servicios por caso de uso; lectura de estado optimizada con query Pinot “última fila por unidad” (índice `fechahora`).
   - **Safety:** cambio de disponibilidad impacta despacho; evento Kafka debe publicarse antes de responder 201; lectura posterior por `despacho-inteligente` usa mismo repositorio (consistencia eventual ≤5s alineada a RNF-EVI-003).
-- **Conflicto 2 (CU-O46):** Information Security (PII conductor at-rest/offline) vs Maintainability (crypto IndexedDB + ciclo de vida borradores).
+- **Conflicto 2 (CU-O75/CU-O76):** Information Security (PII conductor at-rest/offline) vs Maintainability (crypto IndexedDB + ciclo de vida borradores).
   - **Prioridad:** **Security** (excepción de dominio del tie-breaker — identidad de involucrados).
   - **Sacrificado:** simplicidad del offline store; se acepta complejidad Web Crypto y tests de no-persistencia en claro.
   - **Safety no afectada:** enriquecimiento no participa en asignación/despacho.

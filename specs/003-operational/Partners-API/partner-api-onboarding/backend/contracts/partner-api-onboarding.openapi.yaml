@@ -1,0 +1,653 @@
+openapi: 3.0.3
+info:
+  title: TSI Onboarding de Partners API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O48 (registrar partner y determinar su cupo),
+    CU-O49 (emitir credenciales de acceso) y CU-O50 (consultar el contrato de
+    integración vigente y su documentación).
+
+    Sigue api-standards.md y la spec partner-api-onboarding.
+
+    REGLA CRÍTICA — el campo `client_secret` aparece EXCLUSIVAMENTE en las
+    respuestas de creación de credencial (RN-PON-005 / RF-O49.2). Ningún GET lo
+    devuelve y no existe endpoint de recuperación. Si el partner lo pierde, la
+    vía es emitir una credencial nueva.
+servers:
+  - url: /api/v1
+tags:
+  - name: Partners
+    description: Registro y cupo del partner (CU-O48)
+  - name: Credenciales
+    description: Emisión de credenciales y promoción a producción (CU-O49)
+  - name: ContratoIntegracion
+    description: Documentación versionada del contrato (CU-O50)
+
+paths:
+  /partners:
+    post:
+      tags: [Partners]
+      summary: Registrar partner sobre un cliente existente (CU-O48 / RF-PON-001)
+      operationId: registrarPartner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistrarPartnerRequest' }
+      responses:
+        '201':
+          description: Partner registrado, sin plan ni límites todavía
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: El `idcliente` no existe en Dim_Cliente (RF-PON-001)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: El cliente ya tiene un partner (RN-PON-002). Incluye el `idpartner` existente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorPartnerDuplicado' }
+        '422':
+          description: El cliente no tiene suscripción vigente (RN-PON-011)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    get:
+      tags: [Partners]
+      summary: Listar partners (Administrador / Desarrollador de APIs, RF-PON-012)
+      operationId: listarPartners
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: estado
+          in: query
+          description: Filtra por estado derivado
+          schema:
+            type: string
+            enum: [Registrado, Plan asignado, Pruebas activo, Pendiente de aprobación, Producción activa, Suspendido]
+        - name: planapi
+          in: query
+          schema: { type: string }
+        - name: entorno
+          in: query
+          description: Partners con al menos una credencial activa en ese entorno
+          schema: { type: string, enum: [Sandbox, Producción] }
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Listado paginado por cursor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /partners/me:
+    get:
+      tags: [Partners]
+      summary: El perfil del partner del usuario autenticado (BE-DELTA-01)
+      description: >
+        Resuelve el partner a partir del cliente del propio usuario, así que por
+        construcción solo puede devolver el suyo. Añadido al especificar el frontend:
+        sin este endpoint el portal del partner es inalcanzable, porque el token de
+        sesión solo lleva `idusuario` y todos los demás endpoints del módulo exigen
+        `{idpartner}` en la ruta. La respuesta es idéntica a la de `/partners/{idpartner}`
+        y NUNCA incluye el secreto ni su hash.
+      operationId: miPartner
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Detalle del partner propio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerDetalleResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: >
+            El usuario no está asociado a un cliente (`sin_cliente`) o su cliente aún
+            no tiene perfil de partner (`sin_partner`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /partners/{idpartner}:
+    get:
+      tags: [Partners]
+      summary: Detalle del partner con credenciales y bitácora (RF-PON-012)
+      description: >
+        El Partner de integración solo puede consultar su propio perfil (403 en otro caso).
+        Las credenciales NUNCA incluyen el secreto.
+      operationId: detallePartner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+      responses:
+        '200':
+          description: Detalle del partner
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerDetalleResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /partners/{idpartner}/plan-acceso:
+    post:
+      tags: [Partners]
+      summary: Asignar el plan de acceso derivando el cupo del plan contratado (CU-O48 / RF-PON-003)
+      description: >
+        El cupo NO se elige: se deriva de `Dim_Plan.limites` de la suscripción vigente del
+        cliente y queda congelado en el partner (RN-PON-003). El cuerpo no admite límites.
+      operationId: asignarPlanAcceso
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Plan y cupo asignados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: El partner está suspendido (RN-PON-013)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: >
+            Sin suscripción vigente, o `Dim_Plan.limites` no declara `api_calls_mes`
+            y `api_calls_minuto` (RF-PON-003)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /partners/{idpartner}/credenciales:
+    post:
+      tags: [Credenciales]
+      summary: Emitir una credencial nombrada (CU-O49 / RF-PON-004, RF-PON-005)
+      description: >
+        Autoservicio del partner para `Sandbox`.
+
+        `Producción` exige que la promoción ya esté aprobada (RF-PON-007 → RF-PON-008):
+        si el estado derivado del partner todavía no es «Producción activa», se responde
+        403 `produccion_requiere_aprobacion`. **BE-DELTA-02** movió esa comprobación —de un
+        403 incondicional a una guarda condicionada al estado— para que la credencial
+        productiva la emita, y su secreto lo vea, quien debe custodiarlo: el propio partner.
+        Antes nacía al aprobar y su secreto quedaba en manos del Administrador, sin canal
+        seguro para entregarlo. RN-PON-004 no se relaja: la aprobación previa sigue siendo
+        obligatoria.
+
+        Esta es una de las dos únicas respuestas del contrato que contienen `client_secret`,
+        y se entrega UNA SOLA VEZ (RN-PON-005).
+      operationId: emitirCredencial
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmitirCredencialRequest' }
+      responses:
+        '201':
+          description: Credencial emitida. `client_secret` no vuelve a mostrarse nunca
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CredencialCreadaResponse' }
+        '400':
+          description: '`nombre_credencial` ausente o vacío'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: No es el propio partner, o intenta emitir en `Producción`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            Sin plan asignado (RF-PON-004), `nombre_credencial` duplicado entre las activas
+            del mismo entorno (RN-PON-014), o partner suspendido (RN-PON-013)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    get:
+      tags: [Credenciales]
+      summary: Listar las credenciales del partner (sin secreto)
+      operationId: listarCredenciales
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - name: entorno
+          in: query
+          schema: { type: string, enum: [Sandbox, Producción] }
+        - name: solo_activas
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Credenciales del partner. Nunca incluyen `client_secret`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CredencialListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /partners/{idpartner}/solicitud-produccion:
+    post:
+      tags: [Credenciales]
+      summary: Solicitar el paso a producción (CU-O49 / RF-PON-007)
+      description: >
+        La inicia el partner; NO emite credencial. Devuelve 202 porque la activación
+        efectiva requiere intervención humana (RF-PON-008).
+      operationId: solicitarPromocionProduccion
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SolicitudProduccionRequest' }
+      responses:
+        '202':
+          description: Solicitud registrada, pendiente de aprobación
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartnerResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            El partner no está en «Pruebas activo»: la ruta obligatoria pasa por el entorno
+            de pruebas, sin atajos (RN-PON-004)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /partners/{idpartner}/solicitud-produccion/resolucion:
+    post:
+      tags: [Credenciales]
+      summary: Aprobar o rechazar la promoción a producción (CU-O49 / RF-PON-008)
+      description: >
+        Exclusivo del Administrador. Al aprobar se emite la credencial de producción
+        (segunda y última respuesta con `client_secret`) y la de pruebas SIGUE ACTIVA
+        (RN-PON-008). Al rechazar, `motivo` es obligatorio y el partner vuelve a
+        «Pruebas activo», no a «Registrado», sin tope de reintentos (RN-PON-007).
+      operationId: resolverPromocionProduccion
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolucionProduccionRequest' }
+      responses:
+        '200':
+          description: Promoción resuelta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolucionProduccionResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Solo un Administrador puede resolver la promoción
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: El partner no está en «Pendiente de aprobación»
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Rechazo sin `motivo` no vacío (RN-PON-007)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /contrato-integracion:
+    get:
+      tags: [ContratoIntegracion]
+      summary: Consultar el contrato vigente y sus versiones (CU-O50 / RF-PON-011)
+      description: >
+        El versionado es POR SERVICIO: `Dim_Servicio` contiene varios (API Despacho,
+        API Registro de accidentes, Portal Cliente) y cada uno lleva su propio ciclo.
+        Sin `version` devuelve la vigente del servicio indicado.
+      operationId: consultarContratoIntegracion
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id_servicio
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: version
+          in: query
+          description: Si se omite, devuelve la versión vigente
+          schema: { type: string, example: v1 }
+      responses:
+        '200':
+          description: Versión solicitada más el listado de versiones del servicio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContratoIntegracionResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: El servicio o la versión no existen
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPartner:
+      name: idpartner
+      in: path
+      required: true
+      schema: { type: integer }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: UUID v4 — evita duplicar el efecto ante reintento (api-standards.md)
+      schema: { type: string, format: uuid }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+
+  schemas:
+    RegistrarPartnerRequest:
+      type: object
+      required: [idcliente, nombrepartner, contacto_tecnico_nombre, contacto_tecnico_gmail]
+      properties:
+        idcliente:
+          type: integer
+          description: FK a Dim_Cliente. El cliente debe existir y tener suscripción vigente
+        nombrepartner: { type: string, minLength: 1 }
+        contacto_tecnico_nombre: { type: string, minLength: 1 }
+        contacto_tecnico_gmail:
+          type: string
+          format: email
+          description: Destinatario de todas las notificaciones del ciclo de vida
+
+    EmitirCredencialRequest:
+      type: object
+      required: [nombre_credencial, entorno]
+      properties:
+        nombre_credencial:
+          type: string
+          minLength: 1
+          description: >
+            Identifica el sistema que la usará (RF-O49.1). Único entre las credenciales
+            ACTIVAS del mismo partner y entorno; un nombre liberado puede reutilizarse
+          example: plataforma-siniestros
+        entorno:
+          type: string
+          enum: [Sandbox]
+          description: Solo `Sandbox`. Producción se emite vía RF-PON-008
+
+    SolicitudProduccionRequest:
+      type: object
+      required: [nombre_credencial]
+      properties:
+        nombre_credencial:
+          type: string
+          minLength: 1
+          description: Nombre de la credencial de producción que se emitirá si se aprueba
+
+    ResolucionProduccionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [aprobar, rechazar] }
+        motivo:
+          type: string
+          description: >
+            OBLIGATORIO y no vacío si `decision=rechazar`; se notifica al contacto técnico.
+            Ignorado al aprobar
+
+    Partner:
+      type: object
+      properties:
+        idpartner: { type: integer }
+        idcliente: { type: integer }
+        nombrepartner: { type: string }
+        contacto_tecnico_nombre: { type: string }
+        contacto_tecnico_gmail: { type: string, format: email }
+        estado:
+          type: string
+          enum: [Registrado, Plan asignado, Pruebas activo, Pendiente de aprobación, Producción activa, Suspendido]
+          description: Derivado; no es una columna de Dim_Partner
+        planapi:
+          type: string
+          nullable: true
+          description: Cadena vacía si no tiene plan asignado (centinela, no NULL)
+        limitellamadasmes:
+          type: integer
+          description: '-1 si no tiene cupo asignado (centinela; 0 sería un cupo válido)'
+        limitellamadasminuto: { type: integer }
+        activo: { type: boolean }
+
+    Credencial:
+      type: object
+      description: Nunca incluye el secreto
+      properties:
+        idcredencial: { type: integer }
+        nombre_credencial: { type: string }
+        entorno: { type: string, enum: [Sandbox, Producción] }
+        client_id: { type: string }
+        activo: { type: boolean }
+        fecha_creacion: { type: integer, format: int64 }
+        fecha_expiracion:
+          type: integer
+          format: int64
+          description: >
+            Epoch ms. El valor 253402300799000 (9999-12-31) significa «no expira nunca»
+            y es el que llevan las credenciales de producción
+
+    EventoBitacora:
+      type: object
+      properties:
+        tipo_cambio:
+          type: string
+          enum:
+            - registro
+            - asignacion_plan
+            - activacion_sandbox
+            - expiracion_sandbox
+            - solicitud_promocion_produccion
+            - activacion_produccion
+            - rechazo_promocion_produccion
+        ejecutado_por: { type: string }
+        motivo: { type: string }
+        estado_anterior: { type: string }
+        estado_nuevo: { type: string }
+        fecha_cambio: { type: integer, format: int64 }
+        idcredencial:
+          type: integer
+          description: '-1 cuando el evento es sobre el partner en general (centinela)'
+
+    VersionContrato:
+      type: object
+      properties:
+        idversion: { type: integer }
+        id_servicio: { type: integer }
+        version: { type: string, example: v1 }
+        estado: { type: string, enum: [vigente, soportada, retirada] }
+        spec_url: { type: string }
+        fecha_publicacion: { type: integer, format: int64 }
+        fecha_retiro:
+          type: integer
+          format: int64
+          description: '0 = sin fecha de retiro planificada (centinela)'
+
+    PartnerResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Partner' }
+
+    PartnerListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Partner' }
+        meta:
+          type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                next_cursor: { type: string, nullable: true }
+                limit: { type: integer }
+
+    PartnerDetalleResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Partner'
+            - type: object
+              properties:
+                credenciales:
+                  type: array
+                  items: { $ref: '#/components/schemas/Credencial' }
+                historial:
+                  type: array
+                  items: { $ref: '#/components/schemas/EventoBitacora' }
+
+    CredencialCreadaResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Credencial'
+            - type: object
+              required: [client_secret]
+              properties:
+                client_secret:
+                  type: string
+                  description: >
+                    ÚNICA VEZ que este valor se transmite. No se persiste en claro (solo su
+                    hash bcrypt), no lo devuelve ningún GET y no existe endpoint de
+                    recuperación (RN-PON-005 / RF-O49.2)
+
+    CredencialListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Credencial' }
+
+    ResolucionProduccionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idpartner: { type: integer }
+            estado:
+              type: string
+              enum: [Producción activa, Pruebas activo]
+              description: '«Pruebas activo» tras un rechazo — nunca vuelve a «Registrado»'
+            motivo:
+              type: string
+              description: Presente solo en el rechazo
+            credencial:
+              allOf:
+                - $ref: '#/components/schemas/Credencial'
+                - type: object
+                  properties:
+                    client_secret:
+                      type: string
+                      description: Solo al aprobar, y solo esta vez
+
+    ContratoIntegracionResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: '#/components/schemas/VersionContrato'
+            - type: object
+              properties:
+                versiones:
+                  type: array
+                  description: Todas las versiones del servicio, con su estado y fecha de retiro
+                  items: { $ref: '#/components/schemas/VersionContrato' }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: conflict }
+        detail: { type: string }
+        code: { type: string, example: PARTNER_SIN_PLAN }
+
+    ErrorPartnerDuplicado:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            idpartner_existente:
+              type: integer
+              description: >
+                Para integrar desde varios sistemas, emita credenciales nombradas dentro de
+                este perfil (RF-PON-005) en vez de crear un segundo partner
+
+  responses:
+    BadRequest:
+      description: Campos obligatorios ausentes o con formato inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Rol insuficiente, o el partner intenta operar sobre un perfil ajeno
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso inexistente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

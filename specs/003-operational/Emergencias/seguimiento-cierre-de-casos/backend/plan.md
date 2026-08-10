@@ -11,20 +11,20 @@
 
 ## Summary
 
-Implementar el módulo de seguimiento GPS, cierre multi-despacho, historial y expedientes con enfoque **contract-first**: primero `contracts/seguimiento-cierre-de-casos.openapi.yaml` alineado a `api-standards.md`; luego backend Django/DRF en **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**, jobs O37/depuración GPS y SSE para mapa operador; finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O25–O29, O37, O39, O42, O44 y RF-SEG-001–011.
+Implementar el módulo de seguimiento GPS, cierre multi-despacho, historial y expedientes con enfoque **contract-first**: primero `contracts/seguimiento-cierre-de-casos.openapi.yaml` alineado a `api-standards.md`; luego backend Django/DRF en **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**, jobs O69/depuración GPS y SSE para mapa operador; finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O68–O82, O69, O71, O72, O81 y RF-SEG-001–011.
 
 ## Traceability
 
 - **Objetivo operacional:** trazabilidad completa despacho → cierre; SLA tiempos respuesta/transito/sitio.
-- **UC cubiertos:** CU-O25, O26, O28, O29, O37, O39, O42, O44.
-- **Dependencias:** `despacho-inteligente` (despacho Confirmado, O36), `registro-accidente`, `evidencia-unidad`, `incorporacion-clientes` (zonas condado), `autenticacion-y-rbac`.
+- **UC cubiertos:** CU-O68, O70, O80, O82, O69, O71, O72, O81.
+- **Dependencias:** `despacho-inteligente` (despacho Confirmado, O63), `registro-accidente`, `evidencia-unidad`, `incorporacion-clientes` (zonas condado), `autenticacion-y-rbac`.
 - **Consumidores downstream:** reportes/aseguradoras vía expedientes cliente.
 
 ## Technical Context
 
 **Language/Version**: Python 3.11 (backend), TypeScript 5.x / Angular 17+ (frontend)
 
-**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery o APScheduler (jobs O37 + depuración), RxJS, EventSource (SSE), WeasyPrint/reportlab (PDF)
+**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery o APScheduler (jobs O69 + depuración), RxJS, EventSource (SSE), WeasyPrint/reportlab (PDF)
 
 **Storage**: Apache Pinot (lectura vía repositorios), Kafka (único canal escritura dominio)
 
@@ -46,12 +46,12 @@ Implementar el módulo de seguimiento GPS, cierre multi-despacho, historial y ex
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O25–O44 + CA-SEG-001–014 trazables al contrato y data-model |
-| Reliability | PASS | Jobs O37/depuración; historial append-only; idempotencia escrituras |
+| Functional Suitability | PASS | CU-O68–O81 + CA-SEG-001–014 trazables al contrato y data-model |
+| Reliability | PASS | Jobs O69/depuración; historial append-only; idempotencia escrituras |
 | Performance Efficiency | PASS | RNF-SEG-001 SSE push; ingestión GPS asíncrona Kafka |
 | Interaction Capability | PASS | Mapa SSE RF-SEG-007; expediente PDF cliente |
 | Security | PASS | JWT + RBAC; cliente sin activos/mapa (RN-SEG-005) |
-| Compatibility | PASS | Contract-first; evento `DespachoAbortado` → despacho O36 |
+| Compatibility | PASS | Contract-first; evento `DespachoAbortado` → despacho O63 |
 | Maintainability | PASS | App `seguimiento/` dedicada; servicios por CU |
 | Flexibility | PASS | Umbrales GPS/geofence configurables |
 | Safety | PASS | Geofencing histéresis 30s; alerta GPS sin desasignar unidad |
@@ -83,18 +83,18 @@ backend/
 │   └── seguimiento/
 │       ├── views/
 │       │   ├── mapa_views.py              # RF-SEG-007 + SSE
-│       │   ├── mi_seguimiento_views.py    # O25, O26, O39 (unidad)
-│       │   ├── cierre_views.py            # O28, O42, O44
-│       │   ├── historial_views.py         # O29 operador
-│       │   ├── cliente_expediente_views.py # O29 cliente + PDF
+│       │   ├── mi_seguimiento_views.py    # O68, O70, O71 (unidad)
+│       │   ├── cierre_views.py            # O80, O72, O81
+│       │   ├── historial_views.py         # O82 operador
+│       │   ├── cliente_expediente_views.py # O82 cliente + PDF
 │       │   └── urls.py
 │       ├── services/
-│       │   ├── registrar_posicion_gps_service.py    # O25 + geofencing O26
-│       │   ├── registrar_llegada_service.py           # O26 manual
-│       │   ├── cerrar_caso_service.py                 # O28
-│       │   ├── cancelar_caso_service.py               # O42
-│       │   ├── forzar_retiro_service.py               # O44
-│       │   ├── abortar_mision_service.py              # O39
+│       │   ├── registrar_posicion_gps_service.py    # O68 + geofencing O70
+│       │   ├── registrar_llegada_service.py           # O70 manual
+│       │   ├── cerrar_caso_service.py                 # O80
+│       │   ├── cancelar_caso_service.py               # O72
+│       │   ├── forzar_retiro_service.py               # O81
+│       │   ├── abortar_mision_service.py              # O71
 │       │   ├── mapa_seguimiento_service.py            # RF-SEG-007
 │       │   ├── seguimiento_sse_service.py             # pub/sub SSE
 │       │   ├── historial_emergencias_service.py       # RF-SEG-005
@@ -102,7 +102,7 @@ backend/
 │       │   ├── expediente_pdf_service.py
 │       │   └── eta_calculo_service.py                 # Haversine lineal
 │       ├── jobs/
-│       │   ├── gps_senal_perdida_job.py               # O37
+│       │   ├── gps_senal_perdida_job.py               # O69
 │       │   └── gps_depuracion_job.py                  # RNF-SEG-004
 │       ├── permissions.py
 │       └── tests/
@@ -143,7 +143,7 @@ frontend/
 
 ## Phase 0: Research (completado)
 
-Ver `research.md` — resueltos: contract-first, app seguimiento, Kafka-only-write, SSE, geofencing en pipeline GPS, O39 vía `DespachoAbortado_topic`, auditoría O28, O42 mínimo, filtro condado cliente, jobs O37/depuración, Angular guards.
+Ver `research.md` — resueltos: contract-first, app seguimiento, Kafka-only-write, SSE, geofencing en pipeline GPS, O71 vía `DespachoAbortado_topic`, auditoría O80, O72 mínimo, filtro condado cliente, jobs O69/depuración, Angular guards.
 
 ## Phase 1: Design & Contracts (completado)
 
@@ -161,9 +161,9 @@ Artefacto: `contracts/seguimiento-cierre-de-casos.openapi.yaml`
 
 | CU/RF | Mecanismo |
 |-------|-----------|
-| O26 geofencing | `RegistrarPosicionGpsService` al ingestar GPS |
-| O37 | Job `gps_senal_perdida_job` cada 30s |
-| O39 → O36 | Kafka `DespachoAbortado_topic` → consumer despacho |
+| O70 geofencing | `RegistrarPosicionGpsService` al ingestar GPS |
+| O69 | Job `gps_senal_perdida_job` cada 30s |
+| O71 → O63 | Kafka `DespachoAbortado_topic` → consumer despacho |
 | RNF-SEG-004 | Job `gps_depuracion_job` diario |
 
 ### Backend — mapeo Vista → Servicio → Repositorio
@@ -183,10 +183,10 @@ Artefacto: `contracts/seguimiento-cierre-de-casos.openapi.yaml`
 | `ExpedienteOperadorView` | `ExpedienteService` | join completo Pinot |
 | `ExpedienteClienteView` | `ExpedienteService` + filtro condado | `PreferenciasClienteRepository`, `GeografiaRepository` |
 | `ExpedientePdfView` | `ExpedientePdfService` | `ExpedienteService` |
-| `GpsSenalPerdidaJob` | servicio O37 | `HistorialUbicacionRepository`, `NotaAccidenteRepository` |
+| `GpsSenalPerdidaJob` | servicio O69 | `HistorialUbicacionRepository`, `NotaAccidenteRepository` |
 | `GpsDepuracionJob` | servicio depuración | `HistorialUbicacionRepository` |
 
-**Flujo escritura GPS (O25):**
+**Flujo escritura GPS (O68):**
 
 ```text
 POST /mi-seguimiento/posicion

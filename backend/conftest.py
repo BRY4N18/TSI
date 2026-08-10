@@ -260,6 +260,8 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Fact_NotificacionDespacho": [],
     "Fact_BajaUnidad": [],
     "Fact_HistorialDespachoUnidad": [],
+    "Fact_HistorialSeveridadAccidente": [],
+    "Fact_CierreAccidente": [],
     "Dim_HistorialUbicacionUnidadEmergencia": [],
     "Dim_ParametrosSeguimiento": [],
     "Dim_ParametrosDespacho": [],
@@ -446,7 +448,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "idplan": 1,
             "nombre": "Básico",
             "nivel": "Básico",
-            "limites": '{"unidades_max": 5, "usuarios_max": 3, "api_calls_mes": 1000}',
+            "limites": '{"unidades_max": 5, "usuarios_max": 3, "api_calls_mes": 1000, "api_calls_minuto": 30}',
+"precio_excedente_llamada": 0.06,
+            "periodicidad": "Mensual",
+            "severidades_desbloqueadas": '["Baja"]',
+            "carga_lote_habilitada": False,
             "activo": True,
             "precio": 49.0,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -455,7 +461,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "idplan": 2,
             "nombre": "Profesional",
             "nivel": "Profesional",
-            "limites": '{"unidades_max": 25, "usuarios_max": 10, "api_calls_mes": 10000}',
+            "limites": '{"unidades_max": 25, "usuarios_max": 10, "api_calls_mes": 10000, "api_calls_minuto": 120}',
+"precio_excedente_llamada": 0.02,
+            "periodicidad": "Mensual",
+            "severidades_desbloqueadas": '["Baja", "Media"]',
+            "carga_lote_habilitada": True,
             "activo": True,
             "precio": 149.0,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -464,7 +474,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "idplan": 3,
             "nombre": "Empresarial",
             "nivel": "Empresarial",
-            "limites": '{"unidades_max": 100, "usuarios_max": 50, "api_calls_mes": 100000}',
+            "limites": '{"unidades_max": 100, "usuarios_max": 50, "api_calls_mes": 100000, "api_calls_minuto": 600}',
+"precio_excedente_llamada": 0.005,
+            "periodicidad": "Anual",
+            "severidades_desbloqueadas": '["Baja", "Media", "Alta"]',
+            "carga_lote_habilitada": True,
             "activo": True,
             "precio": 399.0,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -473,7 +487,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "idplan": 4,
             "nombre": "Legacy Off",
             "nivel": "Básico",
-            "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 10}',
+            "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 10, "api_calls_minuto": 5}',
+"precio_excedente_llamada": 0.5,
+            "periodicidad": "Mensual",
+            "severidades_desbloqueadas": '["Baja"]',
+            "carga_lote_habilitada": False,
             "activo": False,
             "precio": 9.0,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -490,6 +508,10 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "motivocancelacion": None,
             "fechacancelacion": None,
             "precio": 49.0,
+            "periodicidad": "Mensual",
+            "nivel": "Básico",
+            "severidades_desbloqueadas": '["Baja"]',
+            "carga_lote_habilitada": True,
             "fecha_inicio": 1704067200000,
             "fecha_fin": 1735689600000,
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
@@ -581,6 +603,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
         },
     ],
     "Fact_Reclamo": [],
+    # --- Partners y API (CU-O48 a CU-O55) ---
+    "Dim_Partner": [],
+    "Dim_CredencialAPI": [],
+    "Fact_HistorialAccesoPartner": [],
+    "Dim_VersionContratoAPI": [],
     "Fact_Historial_Ticket": [],
     "Fact_ArchivosAdjuntosReclamos": [],
 }
@@ -622,6 +649,19 @@ _INITIAL_PINOT_STORE.update({
     "Fact_Interaccion_Demo": [],
     "Fact_NotificacionVentas": [],
 })
+
+def _upsert_por_pk(rows: list, payload: dict, pk: str) -> None:
+    """Upsert FULL por clave primaria, como hace Pinot con `upsertConfig`.
+
+    Reemplaza la fila completa: publicar un payload parcial borra el resto de
+    campos, igual que en Pinot real.
+    """
+    idx = next((i for i, r in enumerate(rows) if r.get(pk) == payload.get(pk)), None)
+    if idx is not None:
+        rows[idx] = payload
+    else:
+        rows.append(payload)
+
 
 PINOT_STORE: dict[str, list[dict]] = {}
 
@@ -672,6 +712,65 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "MAX(IDNOTIFICACION)" in sql_upper:
         rows = PINOT_STORE["Fact_NotificacionVentas"]
         return [{"max_id": max((r["idnotificacion"] for r in rows), default=0)}]
+    # --- Partners y API (CU-O48 a CU-O55) ---
+    if "MAX(IDPARTNER)" in sql_upper:
+        rows = PINOT_STORE["Dim_Partner"]
+        return [{"max_id": max((r["idpartner"] for r in rows), default=0)}]
+    if "MAX(IDCREDENCIAL)" in sql_upper:
+        rows = PINOT_STORE["Dim_CredencialAPI"]
+        return [{"max_id": max((r["idcredencial"] for r in rows), default=0)}]
+    if "MAX(IDHISTORIAL)" in sql_upper:
+        rows = PINOT_STORE["Fact_HistorialAccesoPartner"]
+        return [{"max_id": max((r["idhistorial"] for r in rows), default=0)}]
+    if "MAX(IDVERSION)" in sql_upper:
+        rows = PINOT_STORE["Dim_VersionContratoAPI"]
+        return [{"max_id": max((r["idversion"] for r in rows), default=0)}]
+
+    if "FROM DIM_PARTNER" in sql_upper:
+        rows = list(PINOT_STORE["Dim_Partner"])
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] == params.get("idpartner")]
+        if "IDCLIENTE = %(IDCLIENTE)S" in sql_upper:
+            rows = [r for r in rows if r["idcliente"] == params.get("idcliente")]
+        if "IDPARTNER < %(CURSOR)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] < params.get("cursor")]
+        rows.sort(key=lambda r: r["idpartner"], reverse="DESC" in sql_upper)
+        return rows[: params.get("limit", len(rows))]
+
+    if "FROM DIM_CREDENCIALAPI" in sql_upper:
+        rows = list(PINOT_STORE["Dim_CredencialAPI"])
+        if "IDCREDENCIAL = %(ID)S" in sql_upper:
+            rows = [r for r in rows if r["idcredencial"] == params.get("id")]
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] == params.get("idpartner")]
+        if "ENTORNO = %(ENTORNO)S" in sql_upper:
+            rows = [r for r in rows if r.get("entorno") == params.get("entorno")]
+        if "ACTIVO = TRUE" in sql_upper:
+            rows = [r for r in rows if r.get("activo")]
+        if "FECHA_EXPIRACION < %(AHORA)S" in sql_upper:
+            rows = [r for r in rows if r.get("fecha_expiracion", 0) < params.get("ahora", 0)]
+        rows.sort(key=lambda r: r["idcredencial"], reverse="DESC" in sql_upper)
+        return rows[: params.get("limit", len(rows))]
+
+    if "FROM FACT_HISTORIALACCESOPARTNER" in sql_upper:
+        rows = list(PINOT_STORE["Fact_HistorialAccesoPartner"])
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] == params.get("idpartner")]
+        rows.sort(
+            key=lambda r: (r.get("fecha_cambio", 0), r.get("idhistorial", 0)),
+            reverse="DESC" in sql_upper,
+        )
+        return rows[: params.get("limit", len(rows))]
+
+    if "FROM DIM_VERSIONCONTRATOAPI" in sql_upper:
+        rows = list(PINOT_STORE["Dim_VersionContratoAPI"])
+        if "ID_SERVICIO = %(ID_SERVICIO)S" in sql_upper:
+            rows = [r for r in rows if r["id_servicio"] == params.get("id_servicio")]
+        if "ACTIVO = TRUE" in sql_upper:
+            rows = [r for r in rows if r.get("activo")]
+        rows.sort(key=lambda r: r.get("fecha_publicacion", 0), reverse="DESC" in sql_upper)
+        return rows[: params.get("limit", len(rows))]
+
     # --- Dim_Plan (public catalog read — RF-CPP-000 / billing) ---
     if "FROM DIM_PLAN" in sql_upper:
         if "MAX(IDPLAN)" in sql_upper:
@@ -716,6 +815,16 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         rows = list(PINOT_STORE["Fact_Factura"])
         if "ID_FACTURA =" in sql_upper:
             rows = [r for r in rows if r.get("id_factura") == params.get("id")]
+        if "ID_CLIENTE =" in sql_upper:
+            rows = [r for r in rows if r.get("id_cliente") == params.get("idcliente")]
+        if "ID_SUSCRIPCION =" in sql_upper:
+            rows = [r for r in rows if r.get("id_suscripcion") == params.get("id_suscripcion")]
+        if "PERIODO =" in sql_upper:
+            rows = [r for r in rows if r.get("periodo") == params.get("periodo")]
+        if "ORDER BY FECHA_EMISION DESC" in sql_upper:
+            rows = sorted(rows, key=lambda r: r.get("fecha_emision") or 0, reverse=True)
+        if "LIMIT" in sql_upper and params.get("limit") is not None:
+            rows = rows[: int(params["limit"])]
         return rows
     if "FROM FACT_SOLICITUD_CAMBIO_PLAN" in sql_upper:
         rows = list(PINOT_STORE["Fact_Solicitud_Cambio_Plan"])
@@ -850,6 +959,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         ids = [
             r["idhistorialdespachounidad"]
             for r in PINOT_STORE["Fact_HistorialDespachoUnidad"]
+        ]
+        return [{"max_id": max(ids) if ids else 0}]
+    if "MAX(IDHISTORIALSEVERIDADACCIDENTE)" in sql_upper:
+        ids = [
+            r["idhistorialseveridadaccidente"]
+            for r in PINOT_STORE["Fact_HistorialSeveridadAccidente"]
         ]
         return [{"max_id": max(ids) if ids else 0}]
     if "MAX(IDUNIDADEMERGENCIA)" in sql_upper:
@@ -1620,6 +1735,18 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             if r["iddespacho"] == did
         ]
 
+    if "FROM FACT_HISTORIALSEVERIDADACCIDENTE" in sql_upper:
+        aid = params.get("idaccidente")
+        return [
+            r for r in PINOT_STORE["Fact_HistorialSeveridadAccidente"]
+            if r["idaccidente"] == aid
+        ]
+
+    if "FROM FACT_CIERREACCIDENTE" in sql_upper:
+        aid = params.get("idaccidente")
+        rows = [r for r in PINOT_STORE["Fact_CierreAccidente"] if r["idaccidente"] == aid]
+        return rows[:1] if "LIMIT 1" in sql_upper else rows
+
     if "FROM DIM_HISTORIALUBICACIONUNIDADEMERGENCIA" in sql_upper:
         uid = params.get("idunidademergencia")
         rows = [
@@ -1965,6 +2092,12 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             rows = [r for r in rows if r.get("id_suscripcion") == params.get("id")]
         if "IDCLIENTE =" in sql_upper:
             rows = [r for r in rows if r.get("idcliente") == params.get("idcliente")]
+        if "ACTIVO = TRUE" in sql_upper:
+            rows = [r for r in rows if r.get("activo") is True]
+        if "ORDER BY FECHA_INICIO DESC" in sql_upper:
+            rows = sorted(rows, key=lambda r: r.get("fecha_inicio") or 0, reverse=True)
+        if "LIMIT 1" in sql_upper:
+            rows = rows[:1]
         return rows
 
     return []
@@ -2295,6 +2428,24 @@ def mock_kafka():
         ):
             PINOT_STORE["Fact_HistorialDespachoUnidad"].append(payload)
         elif (
+            topic.endswith("Fact_HistorialSeveridadAccidente_topic")
+            or topic == "Fact_HistorialSeveridadAccidente_topic"
+        ):
+            PINOT_STORE["Fact_HistorialSeveridadAccidente"].append(payload)
+        elif (
+            topic.endswith("Fact_CierreAccidente_topic")
+            or topic == "Fact_CierreAccidente_topic"
+        ):
+            rows = PINOT_STORE["Fact_CierreAccidente"]
+            existing_idx = next(
+                (i for i, p in enumerate(rows) if p.get("idaccidente") == payload.get("idaccidente")),
+                None,
+            )
+            if existing_idx is not None:
+                rows[existing_idx] = payload
+            else:
+                rows.append(payload)
+        elif (
             topic.endswith("Dim_ParametrosDespacho_topic")
             or topic == "Dim_ParametrosDespacho_topic"
         ):
@@ -2338,6 +2489,16 @@ def mock_kafka():
                 rows[existing_idx] = payload
             else:
                 rows.append(payload)
+        # --- Partners y API (CU-O48 a CU-O55) ---
+        elif topic.endswith("Dim_Partner_topic"):
+            _upsert_por_pk(PINOT_STORE["Dim_Partner"], payload, "idpartner")
+        elif topic.endswith("Dim_CredencialAPI_topic"):
+            _upsert_por_pk(PINOT_STORE["Dim_CredencialAPI"], payload, "idcredencial")
+        elif topic.endswith("Dim_VersionContratoAPI_topic"):
+            _upsert_por_pk(PINOT_STORE["Dim_VersionContratoAPI"], payload, "idversion")
+        elif topic.endswith("Fact_HistorialAccesoPartner_topic"):
+            # Bitacora inmutable: solo INSERT, nunca upsert (RN-PON-010).
+            PINOT_STORE["Fact_HistorialAccesoPartner"].append(payload)
         elif topic.endswith("Fact_Reclamo_topic") or topic == "Fact_Reclamo_topic":
             rows = PINOT_STORE["Fact_Reclamo"]
             existing_idx = next(
@@ -2637,6 +2798,48 @@ def despacho_service_auth_headers(mock_pinot, mock_kafka):
 def cliente_auth_headers(mock_pinot, mock_kafka):
     """JWT for Cliente admin local (user 3) with active session."""
     token = create_access_token(user_id=3, roles=["Cliente"], session_id=3)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+# --- Partners y API (CU-O48 a CU-O55) ---
+
+@pytest.fixture
+def devapis_auth_headers(mock_pinot, mock_kafka):
+    """JWT del Desarrollador de APIs: registra partners y asigna planes."""
+    PINOT_STORE["Fact_Session"].append(
+        {"idsession": 50, "idusuario": 50, "estadosession": "Inicio sesion"}
+    )
+    token = create_access_token(user_id=50, roles=["DesarrolladorAPIs"], session_id=50)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def partner_auth_headers(mock_pinot, mock_kafka):
+    """JWT del Partner de integracion (idrol 15) — autoservicio sobre lo suyo.
+
+    El usuario 51 se vincula al cliente 1 via Dim_Usuario_Cliente para que
+    `verificar_propiedad` lo resuelva (el JWT no lleva idcliente).
+    """
+    PINOT_STORE["Fact_Session"].append(
+        {"idsession": 51, "idusuario": 51, "estadosession": "Inicio sesion"}
+    )
+    PINOT_STORE.setdefault("Dim_Usuario_Cliente", []).append(
+        {"idusuario": 51, "idcliente": 1}
+    )
+    token = create_access_token(user_id=51, roles=["PartnerIntegracion"], session_id=51)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def partner_ajeno_auth_headers(mock_pinot, mock_kafka):
+    """Partner vinculado a OTRO cliente — para probar el control de propiedad."""
+    PINOT_STORE["Fact_Session"].append(
+        {"idsession": 52, "idusuario": 52, "estadosession": "Inicio sesion"}
+    )
+    PINOT_STORE.setdefault("Dim_Usuario_Cliente", []).append(
+        {"idusuario": 52, "idcliente": 999}
+    )
+    token = create_access_token(user_id=52, roles=["PartnerIntegracion"], session_id=52)
     return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 

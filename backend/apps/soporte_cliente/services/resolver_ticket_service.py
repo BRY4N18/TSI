@@ -1,4 +1,4 @@
-"""RF-TIC-002 paso 5 (CU-O92) — resolución del ticket con recálculo de SLA."""
+"""RF-TIC-002 paso 5 (CU-O86) — resolución del ticket con recálculo de SLA."""
 
 from __future__ import annotations
 

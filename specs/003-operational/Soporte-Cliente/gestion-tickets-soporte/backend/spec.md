@@ -13,24 +13,24 @@ Canalizar y resolver incidencias reportadas por los clientes dentro de los tiemp
 
 ### Session 2026-07-21
 
-- Q: Al reabrir un ticket cerrado (RF-TIC-005, CU-O97), ¿se asigna un `idslaconfig` nuevo o se conserva el original? → A: Renovar — se busca la configuración vigente actual en `Dim_SLAConfig` y se actualiza `idslaconfig`/`sla_primera_respuesta`/`sla_resolucion`.
-- Q: ¿Cada cuánto debe ejecutarse el job de monitoreo de SLA (RNF-TIC-001, CU-O96)? → A: Cada 1 minuto.
+- Q: Al reabrir un ticket cerrado (RF-TIC-005, CU-O88), ¿se asigna un `idslaconfig` nuevo o se conserva el original? → A: Renovar — se busca la configuración vigente actual en `Dim_SLAConfig` y se actualiza `idslaconfig`/`sla_primera_respuesta`/`sla_resolucion`.
+- Q: ¿Cada cuánto debe ejecutarse el job de monitoreo de SLA (RNF-TIC-001, CU-O89)? → A: Cada 1 minuto.
 - Q: RN-TIC-005 asigna el ticket escalado a "supervisor/gerente de turno" pero no hay tabla ni mecanismo de turnos definido — ¿cómo se resuelve? → A: Rol fijo — se asigna a un usuario con rol "Supervisor de Soporte" configurado como responsable por defecto, sin lógica de horario/turno rotativo.
-- Q: El job de CU-O96 vigila `sla_primera_respuesta` y `sla_resolucion` — ¿deben monitorearse de forma independiente? → A: Sí, de forma independiente — alerta/escala si se incumple cualquiera de los dos plazos por separado.
+- Q: El job de CU-O89 vigila `sla_primera_respuesta` y `sla_resolucion` — ¿deben monitorearse de forma independiente? → A: Sí, de forma independiente — alerta/escala si se incumple cualquiera de los dos plazos por separado.
 
 ### Session 2026-07-26 (remediation `/speckit-analyze`)
 
 - Q: ¿Nombre canónico de la superficie del agente? → A: **Cola de soporte** (nav, spec, plan, UI). Deprecar sinónimos "Cola de agente" / "Tickets de Soporte" en documentación nueva.
 - Q: ¿Layout de la cola? → A: **Master-detail** en una sola página (`cola-agente`): lista izquierda + panel de detalle/acciones a la derecha. La ruta `detalle-ticket` permanece para deep-link y rol Cliente.
-- Q: ¿El agente crea tickets desde la cola? → A: No en v1 de RF-TIC-008. El alta sigue CU-O91 (Cliente / flujo de registro). No hay CTA "+ Nuevo ticket" en la cola del agente.
+- Q: ¿El agente crea tickets desde la cola? → A: No en v1 de RF-TIC-008. El alta sigue CU-O83 (Cliente / flujo de registro). No hay CTA "+ Nuevo ticket" en la cola del agente.
 - Q: ¿Botón "Procesar reembolso" en la cola? → A: **No** — permanece fuera de alcance (§13). No se muestra en UI.
 - Q: ¿Filtros de cola? → A: Sí — prioridad y estado vía query params ya definidos en OpenAPI (`prioridad`, `idestadosoporte`).
 - Q: ¿Qué significa "SLA próximos a vencer" en RF-TIC-007? → A: Tickets con `sla_status='en riesgo'` (umbral 80% de RF-TIC-004 / CA-TIC-010). "Vencidos" = `sla_status='incumplido'`.
 
 ### Session 2026-07-29 (remediation `/speckit-analyze`)
 
-- Q: ¿Los IDs del borrador de chat (O68/O27/O28/O69/O70) son canónicos? → A: **No.** Canónicos del repo: **CU-O95 / O91 / O92 / O96 / O97** (ver §2 mapa). O27/O28 del borrador colisionan con Emergencias.
-- Q: ¿`idservicio` (FK `Dim_Servicio`) entra en v1? → A: **Sí, opcional** en registro CU-O91 — contrato + persistencia; no bloquea clasificación/SLA.
+- Q: ¿Los IDs del borrador de chat (O68/O27/O28/O69/O70) son canónicos? → A: **No.** Canónicos del repo: **CU-O97 / O83 / O84-O87 / O89 / O88** (ver §2 mapa). O27/O28 del borrador colisionan con Emergencias.
+- Q: ¿`idservicio` (FK `Dim_Servicio`) entra en v1? → A: **Sí, opcional** en registro CU-O83 — contrato + persistencia; no bloquea clasificación/SLA.
 - Q: ¿RF-TIC-007 tiene CA propio? → A: **CA-TIC-016** — dashboard expone las métricas listadas en RF-TIC-007.
 
 ## 2. Contexto
@@ -41,21 +41,21 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 
 | CU | Descripción | Actor |
 |----|-------------|-------|
-| CU-O91 | Registrar ticket de soporte con clasificación automática y asignación de SLA | Cliente / Soporte al cliente |
-| CU-O92 | Atender, escalar y resolver ticket con confirmación de cierre del cliente | Soporte al cliente |
-| CU-O95 | Configurar niveles de SLA por tipo de cliente/plan (temporal versioning) | Administrador |
-| CU-O96 | Notificar incumplimiento de SLA y escalar automáticamente (job de fondo) | Sistema |
-| CU-O97 | Reabrir ticket cerrado por inconformidad del cliente | Cliente |
+| CU-O83 | Registrar ticket de soporte con clasificación automática y asignación de SLA | Cliente / Soporte al cliente |
+| CU-O84-O87 | Atender, escalar y resolver ticket con confirmación de cierre del cliente | Soporte al cliente |
+| CU-O97 | Configurar niveles de SLA por tipo de cliente/plan (temporal versioning) | Administrador |
+| CU-O89 | Notificar incumplimiento de SLA y escalar automáticamente (job de fondo) | Sistema |
+| CU-O88 | Reabrir ticket cerrado por inconformidad del cliente | Cliente |
 
 **Mapa borrador (chat) → CU canónicos (repo)** — no usar IDs del borrador en implementación ni en conversación operativa:
 
 | Borrador | Canónico | Fase |
 |----------|----------|------|
-| CU-O68 | **CU-O95** | Configurar SLA (`Dim_SLAConfig`, vigencia temporal) |
-| CU-O27 | **CU-O91** | Registrar ticket (O27 en Emergencias es otro CU) |
-| CU-O28 | **CU-O92** | Atender / escalar / resolver / cierre |
-| CU-O69 | **CU-O96** | Job vigilancia SLA |
-| CU-O70 | **CU-O97** | Reabrir ticket |
+| CU-O68 | **CU-O97** | Configurar SLA (`Dim_SLAConfig`, vigencia temporal) |
+| CU-O27 | **CU-O83** | Registrar ticket (O27 en Emergencias es otro CU) |
+| CU-O28 | **CU-O84-O87** | Atender / escalar / resolver / cierre |
+| CU-O69 | **CU-O89** | Job vigilancia SLA |
+| CU-O70 | **CU-O88** | Reabrir ticket |
 
 **Tablas de base de datos utilizadas** (verificadas contra `tablas.json`/`esquemas.json`): `Fact_Reclamo`, `Dim_Estado_Soporte`, `Dim_SLAConfig`, `Fact_Historial_Ticket`, `Fact_ArchivosAdjuntosReclamos`, `Dim_Servicio` (catálogo; FK opcional `Fact_Reclamo.idservicio`).
 
@@ -68,33 +68,33 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 | **Desarrollador de APIs / Director Tecnológico** | Nivel de escalado | Recibe tickets escalados que requieren intervención técnica o decisión ejecutiva. |
 | **Administrador** | Configura SLA | Define reglas de SLA por plan/tipo/prioridad con vigencia temporal. |
 | **Sistema** | Monitoreo automático | Job de fondo que vigila SLA y ejecuta escalado automático y cierre automático. |
-| **Supervisor de Soporte** | Receptor de escalado automático | Rol fijo (sin lógica de turno rotativo) al que se asigna `id_agente_asignado` cuando el job de CU-O96 escala un ticket por SLA incumplido (RN-TIC-005, clarificación Session 2026-07-21). |
+| **Supervisor de Soporte** | Receptor de escalado automático | Rol fijo (sin lógica de turno rotativo) al que se asigna `id_agente_asignado` cuando el job de CU-O89 escala un ticket por SLA incumplido (RN-TIC-005, clarificación Session 2026-07-21). |
 
 ## 4. Requisitos funcionales
 
-### RF-TIC-001: Registro de ticket con clasificación automática y SLA (CU-O91)
+### RF-TIC-001: Registro de ticket con clasificación automática y SLA (CU-O83)
 
-1. El actor completa el formulario: `idcliente`, `asunto`, `descripcion`, `tipo`, `idaccidente` (opcional — referencia a un caso de emergencia activo, ver nota de implementación), `idservicio` (opcional — FK a `Dim_Servicio` cuando la incidencia afecta un servicio/API concreto), adjuntos (opcional).
+1. El actor completa el formulario: `idcliente`, `asunto`, `descripcion`, `tipo`, `idaccidente` (opcional — referencia a un caso de emergencia activo, ver nota de implementación), `idservicio` (opcional — FK a `Dim_Servicio` cuando la incidencia afecta un servicio/API concreto), `idfactura` (STRING, opcional — RF-O83.2, vincula una única factura en disputa; STRING porque `Fact_Factura.id_factura` es un UUID, corregido 2026-08-08; el sistema rechaza el registro con `422` si esa factura ya tiene otro ticket con disputa abierta, es decir `Fact_Reclamo.estado != 'Cerrado'`), adjuntos (opcional).
 2. El sistema ejecuta clasificación automática para determinar `tipo_incidencia` y `prioridad`:
    - Tickets vinculados a una emergencia activa → `prioridad='crítico'`.
    - Clasificación por reglas predefinidas según `tipo`, plan del cliente y contexto.
 
 **Nota de implementación (resuelta durante `/speckit-analyze`, sin sesión de clarify formal):** el spec original no definía cómo el sistema determina que un ticket está "vinculado a una emergencia activa". Se adopta el mecanismo más simple y verificable: el formulario acepta un `idaccidente` opcional; si se envía y referencia un `Fact_Accidente` con estado distinto de Cerrado/Descartado (`Fact_AccidenteTipoEstadoAccidente`), se clasifica como `prioridad='crítico'`. Si no se envía `idaccidente`, la clasificación cae al resto de reglas por palabra clave (`research.md` Decision 4). Esta es una decisión técnica documentada, no una decisión de negocio — si en producción existe otro mecanismo (p. ej. vínculo automático por `idcliente` sin que el cliente indique el accidente), debe revisarse antes de implementar RF-TIC-001.
-3. `Fact_Reclamo` — INSERT con estado inicial (`idestadosoporte`, y su reflejo denormalizado en `estado`) y, si se envió, `idservicio`.
+3. `Fact_Reclamo` — INSERT con estado inicial (`idestadosoporte`, y su reflejo denormalizado en `estado`) y, si se enviaron, `idservicio` / `idfactura`.
 4. **Asignación de SLA:** `SELECT` en `Dim_SLAConfig` la fila vigente que coincida con `tipo_incidencia`, `prioridad` e `idplan` del cliente.
    - Si se encuentra coincidencia → `Fact_Reclamo` — UPDATE: `idslaconfig`, `sla_primera_respuesta`, `sla_resolucion`, `sla_status='en curso'`.
    - Si no se puede clasificar automáticamente → estado `Pendiente_de_clasificacion`, `idslaconfig=NULL`, el SLA timer **no** arranca. Cuando un agente clasifique manualmente, recién se ejecuta el bloque de asignación de SLA.
 5. `Fact_ArchivosAdjuntosReclamos` — INSERT por cada archivo adjunto.
 6. `Fact_Historial_Ticket` — INSERT con `tipo_accion='creacion'`.
 
-### RF-TIC-002: Ciclo de vida completo del ticket (CU-O92)
+### RF-TIC-002: Ciclo de vida completo del ticket (CU-O84-O87)
 
 **Toma del ticket:**
 1. Agente se asigna el ticket. `Fact_Reclamo` — UPDATE: `id_agente_asignado`, `idestadosoporte=En_progreso`.
 2. `Fact_Historial_Ticket` — INSERT: `tipo_accion='asignacion_agente'`.
 
 **Interacciones:**
-3. Por cada mensaje (interno o al cliente): `Fact_Historial_Ticket` — INSERT: `tipo_accion='comentario'`, con `es_nota_interna`.
+3. Por cada mensaje (interno o al cliente): `Fact_Historial_Ticket` — INSERT: `tipo_accion='comentario'`, con `es_nota_interna`. Un agente puede comentar en cualquier ticket; un Cliente solo puede comentar en tickets donde `Fact_Reclamo.idcliente` coincide con el suyo (se rechaza con `403` en caso contrario).
 
 **Escalado manual:**
 4. Si requiere nivel superior (Desarrollador de APIs, Director Tecnológico): `Fact_Reclamo` — UPDATE: `idestadosoporte=Escalado`, `id_agente_asignado=nuevo_actor`. `Fact_Historial_Ticket` — INSERT: `tipo_accion='escalado_manual'`.
@@ -103,12 +103,12 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 5. Agente resuelve el ticket. `Fact_Reclamo` — UPDATE: `idestadosoporte=Resuelto`, `tiempo_solucion=diferencia`, `sla_status` recalculado (`'cumplido'` si dentro del plazo, `'incumplido'` si ya excedido).
 6. `Fact_Historial_Ticket` — INSERT: `tipo_accion='resolucion'`.
 
-**Confirmación de cierre:**
+**Confirmación de cierre (CU-O87, RF-O87.1):**
 7. Ticket en Resuelto no pasa a Cerrado automáticamente. Se notifica al cliente.
-   - Cliente confirma: `Fact_Reclamo` — UPDATE: `idestadosoporte=Cerrado`, `cierreconfirmadocliente=true`, `fechahoraconfirmacioncierre=now`. `Fact_Historial_Ticket` — INSERT: `tipo_accion='cierre_confirmado'`.
+   - Cliente confirma: `Fact_Reclamo` — UPDATE: `idestadosoporte=Cerrado`, `cierreconfirmadocliente=true`, `fechahoraconfirmacioncierre=now`. `Fact_Historial_Ticket` — INSERT: `tipo_accion='cierre_confirmado'`. Solo el Cliente dueño del ticket (`Fact_Reclamo.idcliente`) puede confirmar — un agente no puede confirmar en su nombre; se valida en `ConfirmarCierreService.confirmar()` y se rechaza con `403` si no coincide.
    - Sin respuesta en 5 días: `Fact_Reclamo` — UPDATE: `idestadosoporte=Cerrado`, `cierreconfirmadocliente=false`. `Fact_Historial_Ticket` — INSERT: `tipo_accion='cierre_automatico_por_vencimiento'`.
 
-### RF-TIC-003: Configuración de SLA con vigencia temporal (CU-O95)
+### RF-TIC-003: Configuración de SLA con vigencia temporal (CU-O97)
 
 1. El Administrador accede a la configuración de SLA y define o modifica una regla para un plan específico.
 2. **Alta de nueva regla:** `Dim_SLAConfig` — INSERT con `fechavigenciadesde=now`, `fechavigenciahasta=NULL`, `activo=true`.
@@ -117,25 +117,25 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
    - `Dim_SLAConfig` — INSERT de fila nueva con los tiempos actualizados, `fechavigenciadesde=now`, `fechavigenciahasta=NULL`, `activo=true`.
 4. No afecta tickets existentes. Los tickets ya creados conservan su `idslaconfig` original.
 
-### RF-TIC-004: Monitoreo y escalado automático de SLA (CU-O96)
+### RF-TIC-004: Monitoreo y escalado automático de SLA (CU-O89)
 
 Job programado que se ejecuta cada 1 minuto (RNF-TIC-001):
 1. Lee todos los `Fact_Reclamo` con `idestadosoporte` distinto de Cerrado.
 2. Compara de forma **independiente** `fechahora` + `sla_primera_respuesta` y `fechahora` + `sla_resolucion` contra la hora actual (clarificación Session 2026-07-21): un ticket sin primera respuesta a tiempo alerta/escala aunque su plazo de resolución aún tenga margen, y viceversa.
 3. **Umbral 80%:** si el tiempo transcurrido supera el 80% de cualquiera de los dos plazos permitidos (`sla_primera_respuesta` o `sla_resolucion`) y el ticket no está Resuelto: `Fact_Reclamo` — UPDATE: `sla_status='en riesgo'`. `Fact_Historial_Ticket` — INSERT: `tipo_accion='alerta_sla_riesgo'`.
 4. **Límite excedido:** si se superó cualquiera de los dos plazos sin estar Resuelto/Cerrado: `Fact_Reclamo` — UPDATE: `sla_status='incumplido'`, `idestadosoporte=Escalado`, `id_agente_asignado`=usuario con rol "Supervisor de Soporte" configurado como responsable por defecto. `Fact_Historial_Ticket` — INSERT: `tipo_accion='escalado_automatico_sla'`.
-5. SLA marcado como `'cumplido'` cuando el ticket se resuelve dentro de ambos plazos (se setea durante `CU-O92`).
+5. SLA marcado como `'cumplido'` cuando el ticket se resuelve dentro de ambos plazos (se setea durante `CU-O84-O87`).
 
-### RF-TIC-005: Reapertura de ticket cerrado (CU-O97)
+### RF-TIC-005: Reapertura de ticket cerrado (CU-O88)
 
-1. Validación: `Fact_Reclamo` debe tener `idestadosoporte=Cerrado`.
+1. Validación: `Fact_Reclamo` debe tener `idestadosoporte=Cerrado` **y** pertenecer al Cliente que solicita la reapertura (`Fact_Reclamo.idcliente`); se rechaza con `403` si no coincide — se valida en `ReabrirTicketService.reabrir()`.
 2. `Fact_Reclamo` — UPDATE: `idestadosoporte=Reabierto`. El resto de campos se conservan.
 3. `Fact_Historial_Ticket` — INSERT: `tipo_accion='reapertura'`, `estado_anterior='Cerrado'`, `estado_nuevo='Reabierto'`.
 4. Si el cliente adjunta nueva evidencia: `Fact_ArchivosAdjuntosReclamos` — INSERT.
 5. **Renovación de SLA:** el sistema busca la fila vigente en `Dim_SLAConfig` que coincida con `tipo_incidencia`, `prioridad` e `idplan` del cliente (mismo criterio que RF-TIC-001 paso 4) y actualiza `Fact_Reclamo.idslaconfig`, `sla_primera_respuesta`, `sla_resolucion`, `sla_status='en curso'` (clarificación Session 2026-07-21).
-6. El ticket reabierto vuelve al flujo de `CU-O92` para ser atendido nuevamente.
+6. El ticket reabierto vuelve al flujo de `CU-O84-O87` para ser atendido nuevamente.
 
-### RF-TIC-006: Confirmación de cierre por cliente (CU-O92)
+### RF-TIC-006: Confirmación de cierre por cliente (CU-O87)
 
 **Alias de lectura** de los pasos de confirmación/cierre automático ya definidos en **RF-TIC-002** (pasos 7): ticket en Resuelto espera confirmación del cliente. Si confirma → Cerrado con `cierreconfirmadocliente=true`. Si no responde en 5 días → Cerrado automático con `cierreconfirmadocliente=false`. No introduce comportamiento adicional; se conserva el ID por trazabilidad de CA-TIC-006/007.
 
@@ -145,28 +145,28 @@ Métricas: tickets por estado/prioridad; SLA **próximos a vencer** (= `sla_stat
 
 **Criterio de aceptación:** CA-TIC-016.
 
-### RF-TIC-008: Cola de soporte — layout master-detail (Interaction Capability / CU-O92)
+### RF-TIC-008: Cola de soporte — layout master-detail (Interaction Capability / CU-O84-O87)
 
 Superficie canónica del agente (**Cola de soporte**) para atender tickets bajo presión operativa (Ley de Hick / Gestalt / carga cognitiva — `.specify/docs/design/design-system.md`).
 
 1. **Composición:** una sola vista con dos paneles:
    - **Lista (izquierda):** cada ítem muestra `id_reclamo`, asunto, badges de prioridad y estado, y tipo/categoría cuando esté disponible. El ítem seleccionado se distingue visualmente (borde/acento del design system).
-   - **Detalle (derecha):** asunto + id, controles de asignación/estado alineados a transiciones CU-O92 (tomar, escalar, resolver según rol y estado), historial de mensajes/acciones, composer de respuesta (con opción de nota interna solo para roles de soporte).
+   - **Detalle (derecha):** asunto + id, controles de asignación/estado alineados a transiciones CU-O84-O87 (tomar, escalar, resolver según rol y estado), historial de mensajes/acciones, composer de respuesta (con opción de nota interna solo para roles de soporte).
 2. **Filtros:** controles de prioridad y estado que invocan `GET /soporte/tickets` con `prioridad` y/o `idestadosoporte` (contrato OpenAPI existente).
 3. **Empty state:** si no hay tickets tras filtros (o sin filtros), mostrar título de página + mensaje "No hay tickets pendientes." sin acciones de reembolso ni de alta de ticket. No dejar la pantalla en blanco total sin contexto de título.
-4. **Fuera de esta superficie:** no mostrar CTA de reembolso ni de pasarela de pago. No CTA "+ Nuevo ticket" (alta = CU-O91 fuera de esta página).
-5. **Deep-link:** `detalle-ticket` sigue disponible para Cliente y URLs directas; la cola del agente no obliga a navegar fuera para las acciones diarias de CU-O92.
+4. **Fuera de esta superficie:** no mostrar CTA de reembolso ni de pasarela de pago. No CTA "+ Nuevo ticket" (alta = CU-O83 fuera de esta página).
+5. **Deep-link:** `detalle-ticket` sigue disponible para Cliente y URLs directas; la cola del agente no obliga a navegar fuera para las acciones diarias de CU-O84-O87.
 
 ## 5. Requisitos no funcionales
 
 ### RNF-TIC-001: Frecuencia del job de monitoreo de SLA
-El job de `CU-O96` debe ejecutarse cada 1 minuto para detectar el umbral del 80% con margen de reacción útil (clarificación Session 2026-07-21).
+El job de `CU-O89` debe ejecutarse cada 1 minuto para detectar el umbral del 80% con margen de reacción útil (clarificación Session 2026-07-21).
 
 ### RNF-TIC-002: Inmutabilidad del historial
 `Fact_Historial_Ticket` es INSERT-only — ningún registro se actualiza ni elimina una vez escrito.
 
 ### RNF-TIC-003: Tiempo de respuesta del registro de ticket
-El registro de un ticket (`CU-O91`), incluyendo clasificación automática y asignación de SLA, debe completarse en menos de 3 segundos.
+El registro de un ticket (`CU-O83`), incluyendo clasificación automática y asignación de SLA, debe completarse en menos de 3 segundos.
 
 ### RNF-TIC-004: Operabilidad de la Cola de soporte (Interaction Capability)
 En viewport ≥1024px, lista + detalle deben ser visibles simultáneamente sin scroll horizontal de la composición. Acciones primarias del ticket seleccionado (responder / tomar o resolver según estado) deben estar al alcance del panel de detalle (Ley de Fitts). Badges de prioridad, estado y `sla_status` usan tokens semánticos del design system (no hex ad hoc). Notas internas nunca se renderizan para rol Cliente (RN-TIC-002; verificación también en API).
@@ -194,15 +194,18 @@ La modificación de una regla de SLA nunca afecta tickets ya creados. Cada ticke
 ### RN-TIC-007
 `Fact_Reclamo.estado` es un campo `STRING` denormalizado que refleja el nombre del estado apuntado por `idestadosoporte` — existe para lectura rápida sin join contra `Dim_Estado_Soporte`. Toda escritura de estado debe actualizar ambos campos de forma consistente.
 
+### RN-TIC-008 (RF-O83.2)
+Una factura admite una sola disputa (ticket) abierta a la vez. Se considera "abierta" cualquier ticket con esa `idfactura` cuyo `estado` sea distinto de `Cerrado` (incluye `Reabierto`). Aplicado a nivel de aplicación en `RegistrarTicketService.registrar()`, no como constraint de esquema (Pinot no soporta `UNIQUE` declarativo).
+
 ## 7. Entradas
 
-### Registro de ticket (CU-O91)
+### Registro de ticket (CU-O83)
 `idcliente`, `asunto`, `descripcion`, `tipo`, `idaccidente` (opcional, ver nota de implementación en RF-TIC-001), `idservicio` (opcional, FK `Dim_Servicio`), `adjuntos[]` (opcional).
 
-### Transiciones de ticket (CU-O92, CU-O97)
+### Transiciones de ticket (CU-O84-O87, CU-O88)
 `accion` (tomar/comentario/escalar/resolver/confirmar/reabrir), `mensaje` (opcional), `es_nota_interna` (opcional), `id_rol_escalar` (requerido si `accion=escalar`).
 
-### Configuración de SLA (CU-O95)
+### Configuración de SLA (CU-O97)
 `idplan`, `tipoincidencia`, `prioridad`, `tiemporespuestamax`, `tiemporesolucionmax`.
 
 ## 8. Salidas
@@ -238,7 +241,7 @@ ABIERTO ──► EN PROGRESO ──► RESUELTO ──► CERRADO
    │             └─► ESCALADO               └─► REABIERTO ──► vuelve a EN PROGRESO
    │                (manual o automático)
    │
-   └── CU-O96 vigila SLA en paralelo sobre todo estado ≠ Cerrado
+   └── CU-O89 vigila SLA en paralelo sobre todo estado ≠ Cerrado
        Puede forzar ESCALADO si se incumple el SLA
 ```
 
@@ -248,58 +251,58 @@ ABIERTO ──► EN PROGRESO ──► RESUELTO ──► CERRADO
 |-------|-------|-----|
 | Pendiente_de_clasificacion | Abierto | Agente clasifica manualmente |
 | Abierto | En_progreso | Agente toma el ticket |
-| En_progreso | Escalado | Escalado manual (agente) o automático (CU-O96) |
+| En_progreso | Escalado | Escalado manual (agente) o automático (CU-O89) |
 | En_progreso | Resuelto | Agente resuelve |
 | Escalado | En_progreso | Nivel superior devuelve |
 | Escalado | Resuelto | Nivel superior resuelve |
 | Resuelto | Cerrado | Cliente confirma (5 días) o auto-cierre |
-| Cerrado | Reabierto | Cliente reabre (CU-O97) |
+| Cerrado | Reabierto | Cliente reabre (CU-O88) |
 | Reabierto | En_progreso | Agente retoma |
 
 ## 10. Escenarios
 
-### Escenario 1: Registro con clasificación automática exitosa (CU-O91)
+### Escenario 1: Registro con clasificación automática exitosa (CU-O83)
 Dado que un Cliente reporta un problema técnico vinculado a un caso de emergencia activo
 Cuando envía el ticket
 Entonces el sistema debe clasificar `prioridad='crítico'` automáticamente
 Y debe asignar `idslaconfig`, `sla_primera_respuesta`, `sla_resolucion` según el plan del cliente
 Y debe insertar `Fact_Historial_Ticket` con `tipo_accion='creacion'`.
 
-### Escenario 2: Ticket no clasificable (CU-O91)
+### Escenario 2: Ticket no clasificable (CU-O83)
 Dado que un ticket no coincide con ninguna regla de clasificación automática
 Cuando se registra
 Entonces el sistema debe dejarlo en estado `Pendiente_de_clasificacion`
 Y `idslaconfig` debe quedar `NULL`
 Y el timer de SLA no debe arrancar.
 
-### Escenario 3: Ciclo completo de atención y cierre confirmado (CU-O92)
+### Escenario 3: Ciclo completo de atención y cierre confirmado (CU-O84-O87)
 Dado que un agente de Soporte toma un ticket Abierto
 Cuando lo resuelve dentro del plazo de SLA
 Y el cliente confirma el cierre
 Entonces el sistema debe registrar `sla_status='cumplido'`
 Y `idestadosoporte=Cerrado` con `cierreconfirmadocliente=true`.
 
-### Escenario 4: Cierre automático por falta de respuesta (CU-O92)
+### Escenario 4: Cierre automático por falta de respuesta (CU-O84-O87)
 Dado que un ticket está en estado Resuelto
 Y el cliente no responde en 5 días
 Cuando el sistema evalúa el vencimiento
 Entonces debe cerrar el ticket con `cierreconfirmadocliente=false`
 Y debe insertar `Fact_Historial_Ticket` con `tipo_accion='cierre_automatico_por_vencimiento'`.
 
-### Escenario 5: Modificación de regla de SLA sin afectar tickets existentes (CU-O95)
+### Escenario 5: Modificación de regla de SLA sin afectar tickets existentes (CU-O97)
 Dado que existe una regla vigente de SLA para el plan "Premium"
 Cuando el Administrador la modifica
 Entonces el sistema debe cerrar la vigencia de la fila anterior (`activo=false`)
 Y debe insertar una fila nueva con los tiempos actualizados
 Y los tickets ya creados deben conservar su `idslaconfig` original sin cambios.
 
-### Escenario 6: Escalado automático por incumplimiento de SLA (CU-O96)
+### Escenario 6: Escalado automático por incumplimiento de SLA (CU-O89)
 Dado que un ticket "En progreso" supera el 100% de su `sla_resolucion` sin resolverse
 Cuando el job de monitoreo ejecuta su ciclo
 Entonces debe marcar `sla_status='incumplido'`
 Y debe escalar automáticamente a `idestadosoporte=Escalado` con el usuario configurado como Supervisor de Soporte (rol fijo, sin lógica de turno rotativo — ver RN-TIC-005).
 
-### Escenario 7: Reapertura de ticket cerrado (CU-O97)
+### Escenario 7: Reapertura de ticket cerrado (CU-O88)
 Dado que un ticket está en estado Cerrado
 Y el cliente indica que la solución no fue efectiva
 Cuando ejecuta la reapertura
@@ -310,21 +313,21 @@ Y debe conservar todo el historial previo en `Fact_Historial_Ticket`.
 
 | CA | Descripción | CU |
 |----|-------------|----|
-| CA-TIC-001 | Cliente/Soporte registra ticket con clasificación automática y SLA asignado cuando es clasificable. | O91 |
-| CA-TIC-002 | Ticket no clasificable queda en Pendiente_de_clasificacion sin SLA. | O91 |
-| CA-TIC-003 | Agente toma ticket, registra notas internas, responde al cliente. | O92 |
-| CA-TIC-004 | Agente escala manualmente a Desarrollador de APIs o Director Tecnológico. | O92 |
-| CA-TIC-005 | Ticket resuelto notifica al cliente y espera confirmación. | O92 |
-| CA-TIC-006 | Cliente confirma cierre → Cerrado con cierreconfirmadocliente=true. | O92 |
-| CA-TIC-007 | Sin respuesta en 5 días → auto-cierre con cierreconfirmadocliente=false. | O92 |
-| CA-TIC-008 | Admin configura regla SLA nueva → INSERT en Dim_SLAConfig. | O95 |
-| CA-TIC-009 | Admin modifica regla SLA → cierre vigencia anterior + INSERT nueva fila. | O95 |
-| CA-TIC-010 | Job monitorea tickets activos y marca sla_status='en riesgo' al 80%. | O96 |
-| CA-TIC-011 | Job escala automáticamente al exceder SLA → idestadosoporte=Escalado. | O96 |
-| CA-TIC-012 | Cliente reabre ticket cerrado → idestadosoporte=Reabierto con historial conservado. | O97 |
-| CA-TIC-013 | Reapertura permite adjuntar nueva evidencia. | O97 |
-| CA-TIC-014 | Cola de soporte muestra layout master-detail: lista con badges + panel detalle/historial/composer; filtros prioridad/estado consumen query OpenAPI. | O92 / RF-TIC-008 |
-| CA-TIC-015 | Empty state de cola: título + "No hay tickets pendientes."; sin CTA de reembolso ni alta de ticket; sin botones de pasarela de pago. | O92 / RF-TIC-008 |
+| CA-TIC-001 | Cliente/Soporte registra ticket con clasificación automática y SLA asignado cuando es clasificable. | O83 |
+| CA-TIC-002 | Ticket no clasificable queda en Pendiente_de_clasificacion sin SLA. | O83 |
+| CA-TIC-003 | Agente toma ticket, registra notas internas, responde al cliente. | O84-O87 |
+| CA-TIC-004 | Agente escala manualmente a Desarrollador de APIs o Director Tecnológico. | O84-O87 |
+| CA-TIC-005 | Ticket resuelto notifica al cliente y espera confirmación. | O84-O87 |
+| CA-TIC-006 | Cliente confirma cierre → Cerrado con cierreconfirmadocliente=true. | O84-O87 |
+| CA-TIC-007 | Sin respuesta en 5 días → auto-cierre con cierreconfirmadocliente=false. | O84-O87 |
+| CA-TIC-008 | Admin configura regla SLA nueva → INSERT en Dim_SLAConfig. | O97 |
+| CA-TIC-009 | Admin modifica regla SLA → cierre vigencia anterior + INSERT nueva fila. | O97 |
+| CA-TIC-010 | Job monitorea tickets activos y marca sla_status='en riesgo' al 80%. | O89 |
+| CA-TIC-011 | Job escala automáticamente al exceder SLA → idestadosoporte=Escalado. | O89 |
+| CA-TIC-012 | Cliente reabre ticket cerrado → idestadosoporte=Reabierto con historial conservado. | O88 |
+| CA-TIC-013 | Reapertura permite adjuntar nueva evidencia. | O88 |
+| CA-TIC-014 | Cola de soporte muestra layout master-detail: lista con badges + panel detalle/historial/composer; filtros prioridad/estado consumen query OpenAPI. | O84-O87 / RF-TIC-008 |
+| CA-TIC-015 | Empty state de cola: título + "No hay tickets pendientes."; sin CTA de reembolso ni alta de ticket; sin botones de pasarela de pago. | O84-O87 / RF-TIC-008 |
 | CA-TIC-016 | Dashboard (`GET /soporte/dashboard`) expone las métricas de RF-TIC-007 (por estado/prioridad, SLA en riesgo/vencidos, tiempos promedio, distribución tipo/cliente, tasa de reapertura). | RF-TIC-007 |
 
 ## 12. Dependencias
@@ -341,4 +344,4 @@ Y debe conservar todo el historial previo en `Fact_Historial_Ticket`.
 - Integración con sistemas externos de helpdesk (Zendesk, Freshdesk, Jira).
 - Automatización de respuestas con IA o sugerencia de soluciones basadas en tickets similares.
 - Integración con pasarela de pago para reembolsos — **incluye cualquier CTA/botón "Procesar reembolso" (o equivalente) en la Cola de soporte u otras pantallas de este módulo**.
-- Alta de ticket desde la Cola de soporte del agente (CTA "+ Nuevo ticket"); el registro permanece en CU-O91 / flujo Cliente.
+- Alta de ticket desde la Cola de soporte del agente (CTA "+ Nuevo ticket"); el registro permanece en CU-O83 / flujo Cliente.

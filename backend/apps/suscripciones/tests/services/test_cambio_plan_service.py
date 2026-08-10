@@ -33,6 +33,15 @@ class TestCambioPlanService:
         assert approved["estado"] == "Aprobada"
         assert PINOT_STORE["Fact_Suscripcion"][0]["idplan"] == 1
 
+    def test_upgrade_sincroniza_periodicidad_del_plan_nuevo(self, mock_pinot, mock_kafka):
+        # Arrange — Profesional(2, Mensual) → Empresarial(3, Anual)
+        PINOT_STORE["Fact_Suscripcion"][0]["idplan"] = 2
+        PINOT_STORE["Fact_Suscripcion"][0]["periodicidad"] = "Mensual"
+        # Act
+        CambioPlanService().solicitar(idcliente=1, idplansolicitado=3, motivo="upgrade")
+        # Assert: la periodicidad del plan nuevo rige desde ya (RN-SUSF-006: sin prorrateo del ciclo en curso).
+        assert PINOT_STORE["Fact_Suscripcion"][0]["periodicidad"] == "Anual"
+
     def test_conflict_pendiente(self, mock_pinot, mock_kafka):
         PINOT_STORE["Fact_Suscripcion"][0]["idplan"] = 3
         CambioPlanService().solicitar(idcliente=1, idplansolicitado=2)

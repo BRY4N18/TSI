@@ -19,7 +19,7 @@
     que el filtro/orden se aplicara — un accidente con más de 10 fotos podía
     perder evidencia real de la galería sin error visible.
 
-### 2) `Dim_NotaAccidente` (notas de campo CU-O27)
+### 2) `Dim_NotaAccidente` (notas de campo CU-O74)
 
 - **PK:** `idnotaaccidentes` (INT)
 - **FKs:** `idaccidente`, `idusuario`
@@ -27,7 +27,7 @@
 - **Tipos de campo (`tipo`):** Observación general, Declaración de testigo, Daños materiales, Condiciones del sitio
 - **Reglas:**
   - INSERT-only en backend (RN-EVI-005).
-  - Comparte tabla con notas `tipo=escalamiento` de `registro-accidente` (O40); filtrar por `tipo` en consultas.
+  - Comparte tabla con notas `tipo=escalamiento` de `registro-accidente` (O73); filtrar por `tipo` en consultas.
   - Mismo topic Kafka `Dim_NotaAccidente_topic`.
 
 ### 3) `Fact_HistorialEstadoUnidad`
@@ -52,20 +52,20 @@
 - Usado para validar `idunidademergencia` de sesión y filtros de flota
 - `activo=true` requerido para despacho (consumido por `despacho-inteligente`)
 
-### 6) `Dim_ElementoClimaticosAccidente` (CU-O46 — clima/período en sitio)
+### 6) `Dim_ElementoClimaticosAccidente` (CU-O75 — clima/período en sitio)
 
 - **PK:** `idelementoclimaticoaccidente` (INT)
 - **FKs:** `idaccidente` → `Fact_Accidente`, `idperiododia` → `Dim_PeriodosDias`, `idestadoclima` → `Dim_EstadosClimas`, `idusuario` → `Dim_Usuarios`
 - **Campos:** `activo` (BOOLEAN), `fecha_actualizacion`
-- **Reglas:** Como máximo una fila `activo=true` por `idaccidente` (RN-EVI-017). Upsert vía Kafka. **Dueño exclusivo de escritura:** Técnico/Unidad en este módulo (CU-O46). Sin precarga desde `registro-accidente`.
+- **Reglas:** Como máximo una fila `activo=true` por `idaccidente` (RN-EVI-017). Upsert vía Kafka. **Dueño exclusivo de escritura:** Técnico/Unidad en este módulo (CU-O75). Sin precarga desde `registro-accidente`.
 - **Topic:** `Dim_ElementoClimaticosAccidente_topic`.
 
-### 7) `Dim_ElementoFisicoAccidente` (CU-O46 — elementos físicos)
+### 7) `Dim_ElementoFisicoAccidente` (CU-O75 — elementos físicos)
 
 - **PK:** `idelementosfisicosaccidente` (INT)
 - **FKs:** `idaccidente`, `idelementofisico` → `Dim_Elementos_Fisicos`, `idusuario`
 - **Campos:** `activo`, `fecha_actualizacion`
-- **Reglas:** N elementos por accidente; soft-delete con `activo=false`. Escritura solo CU-O46.
+- **Reglas:** N elementos por accidente; soft-delete con `activo=false`. Escritura solo CU-O75.
 - **Topic:** `Dim_ElementoFisicoAccidente_topic`.
 
 ### 8) Catálogos de lectura (enriquecimiento)
@@ -77,7 +77,7 @@
 | `Dim_Elementos_Fisicos` | Selector `idelementofisico` |
 | `Dim_Estado_Conductor` | 4 checkboxes (flags BOOLEAN); `idestadoconductor` por match exacto (seed 16 combinaciones) |
 
-### 9) `Dim_Conductor` / `Dim_Vehiculo` / `Fact_Conductor_Accidente` (CU-O46)
+### 9) `Dim_Conductor` / `Dim_Vehiculo` / `Fact_Conductor_Accidente` (CU-O76)
 
 #### `Dim_Conductor`
 - **PK:** `idconductor`
@@ -97,7 +97,7 @@
 - **Campos:** `activo`, `fecha_actualizacion`
 - **Reglas:** Hasta `numvehiculos` del caso (RN-EVI-022); soft-delete `activo=false`. Topic propuesto: `Fact_Conductor_Accidente_topic`.
 
-### 10) `Dim_Implicado` (CU-O46 — involucrados no conductores)
+### 10) `Dim_Implicado` (CU-O76 — involucrados no conductores)
 
 Alineado a ontología dimensional / `database/esquemas.json` (autoridad confirmada 2026-07-29).
 
@@ -120,10 +120,10 @@ Alineado a ontología dimensional / `database/esquemas.json` (autoridad confirma
 |---------------|--------------|--------|
 | `LocalEvidenciaFoto` | `local_id`, `idaccidente`, `blob_local`, `sincronizado=false`, `fechahora` | Solo dispositivo capturador (RN-EVI-013) |
 | `LocalNotaAccidente` | `local_id`, `idaccidente`, `nota`, `tipo`, `sincronizado=false`, `fechahora` | Idem |
-| `LocalElementoClimatico` | `local_id`, `idaccidente`, `idperiododia`, `idestadoclima`, `sincronizado=false` | CU-O46 offline |
-| `LocalElementoFisico` | `local_id`, `idaccidente`, `idelementofisico`, `sincronizado=false` | CU-O46 offline |
-| `LocalConductorAccidente` | `local_id`, `idaccidente`, **payload_cifrado** (PII), `sincronizado=false`, `fechahora` | CU-O46 offline; **RN-EVI-020/021** — nunca PII en claro; borrar tras sync |
-| `LocalImplicado` | `local_id`, `idaccidente`, `tipoimplicado`, `estadoimplicado`, `genero?`, `edad?`, `sincronizado=false`, `fechahora` | CU-O46 offline; **sin PII** (ontología) |
+| `LocalElementoClimatico` | `local_id`, `idaccidente`, `idperiododia`, `idestadoclima`, `sincronizado=false` | CU-O75 offline |
+| `LocalElementoFisico` | `local_id`, `idaccidente`, `idelementofisico`, `sincronizado=false` | CU-O75 offline |
+| `LocalConductorAccidente` | `local_id`, `idaccidente`, **payload_cifrado** (PII), `sincronizado=false`, `fechahora` | CU-O76 offline; **RN-EVI-020/021** — nunca PII en claro; borrar tras sync |
+| `LocalImplicado` | `local_id`, `idaccidente`, `tipoimplicado`, `estadoimplicado`, `genero?`, `edad?`, `sincronizado=false`, `fechahora` | CU-O76 offline; **sin PII** (ontología) |
 
 ## Transiciones de disponibilidad
 
@@ -155,15 +155,15 @@ Transiciones automáticas por otros módulos (fuera de implementación directa d
 |-------|---------------------------|
 | `Dim_EvidenciaFoto_topic` | Subida foto en línea; ítem exitoso en sync diferida |
 | `Dim_NotaAccidente_topic` | Nota campo en línea; ítem exitoso en sync diferida |
-| `Dim_ElementoClimaticosAccidente_topic` | Upsert clima/período en sitio (CU-O46); sync diferida |
-| `Dim_ElementoFisicoAccidente_topic` | Alta/soft-delete elemento físico (CU-O46); sync diferida |
+| `Dim_ElementoClimaticosAccidente_topic` | Upsert clima/período en sitio (CU-O75); sync diferida |
+| `Dim_ElementoFisicoAccidente_topic` | Alta/soft-delete elemento físico (CU-O75); sync diferida |
 | `Dim_Conductor_topic` | Alta conductor nuevo en sitio |
 | `Dim_Vehiculo_topic` | Alta vehículo nuevo en sitio |
 | `Fact_Conductor_Accidente_topic` | Vínculo conductor-vehículo-accidente; soft-delete |
-| `Dim_Implicado_topic` | Alta / soft-delete implicado no conductor (CU-O46 RF-EVI-010); sync diferida |
-| `Fact_HistorialEstadoUnidad_topic` | Declaración disponibilidad CU-O30 (`/mi-unidad-emergencia` o `/unidades-emergencia/{id}`) |
+| `Dim_Implicado_topic` | Alta / soft-delete implicado no conductor (CU-O76 RF-EVI-010); sync diferida |
+| `Fact_HistorialEstadoUnidad_topic` | Declaración disponibilidad CU-O78 (`/mi-unidad-emergencia` o `/unidades-emergencia/{id}`) |
 
-**Nota:** Escrituras de disponibilidad por `despacho-inteligente` y `seguimiento-cierre-de-casos` usan el mismo topic; este módulo no los duplica. **Este módulo es el único dueño de escritura** de puentes clima/físico, conductores e implicados en runtime (CU-O46); `registro-accidente` no precarga esos datos.
+**Nota:** Escrituras de disponibilidad por `despacho-inteligente` y `seguimiento-cierre-de-casos` usan el mismo topic; este módulo no los duplica. **Este módulo es el único dueño de escritura** de puentes clima/físico, conductores e implicados en runtime (CU-O75/CU-O76); `registro-accidente` no precarga esos datos.
 
 Lecturas: queries Pinot vía repositorios en `core/repositories/evidencia/` y `core/repositories/despacho/`.
 
@@ -193,9 +193,9 @@ Compresión automática en cliente/servidor antes de subir (RNF-EVI-002).
 |---------|------------------|----------------------|---------------|-------------------|
 | Galería evidencia | ✓ | ✓ | ✓ | ✗ |
 | Captura evidencia | ✓ | ✓ | ✗ | ✗ |
-| Enriquecimiento clima/físico (CU-O46) | ✓ | ✓ | lectura | ✗ |
-| Conductores/vehículos (CU-O46) | ✓ | ✓ | lectura | ✗ |
-| Implicados no conductores (CU-O46) | ✓ | ✓ | lectura | ✗ |
+| Enriquecimiento clima/físico (CU-O75) | ✓ | ✓ | lectura | ✗ |
+| Conductores/vehículos (CU-O76) | ✓ | ✓ | lectura | ✗ |
+| Implicados no conductores (CU-O76) | ✓ | ✓ | lectura | ✗ |
 | Propia disponibilidad | ✗ | ✓ | ✗ | ✗ |
 | Flota disponibilidad | ✗ | ✗ | ✓ | ✓ |
 

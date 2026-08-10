@@ -15,7 +15,7 @@
 | Estado | Unidad asignada o «Buscando unidad…» |
 | Historial | Intentos: Pendiente / Confirmado / Rechazado (+motivo) / Timeout |
 | Mapa | Pin accidente + unidades candidatas/asignadas |
-| Acciones | Asignar manualmente; Coordinar unidad adicional (O38) |
+| Acciones | Asignar manualmente; Coordinar unidad adicional (O66) |
 
 ## Mi despacho (Unidad)
 

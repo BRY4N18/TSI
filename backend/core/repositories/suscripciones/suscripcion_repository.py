@@ -34,6 +34,17 @@ class SuscripcionRepository:
     def add_calendar_month(dt: datetime) -> datetime:
         return dt + relativedelta(months=1)
 
+    @staticmethod
+    def add_cycle(dt: datetime, periodicidad: str | None) -> datetime:
+        """Avanza un ciclo de facturación según Dim_Plan.periodicidad (SRS §3.3.1: 'nombre, nivel, precio, periodicidad y límites').
+
+        Mensual -> +1 mes calendario (default si el plan no trae periodicidad, por compatibilidad con datos históricos).
+        Anual -> +1 año calendario.
+        """
+        if periodicidad == "Anual":
+            return dt + relativedelta(years=1)
+        return dt + relativedelta(months=1)
+
     def find_by_id(self, id_suscripcion: int) -> dict[str, Any] | None:
         rows = self.pinot.query(
             "SELECT * FROM Fact_Suscripcion WHERE id_suscripcion = %(id)s",
@@ -77,12 +88,20 @@ class SuscripcionRepository:
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         now = datetime.now(TZ)
-        fecha_fin = self.add_calendar_month(now)
+        periodicidad = data.get("periodicidad") or "Mensual"
+        fecha_fin = self.add_cycle(now, periodicidad)
         record = {
             "id_suscripcion": self._next_id(),
             "idcliente": data["idcliente"],
             "idplan": data["idplan"],
             "precio": float(data["precio"]),
+            "periodicidad": periodicidad,
+            # Congelados al alta/cambio de plan (mismo patrón que precio, RN-SUSF-006):
+            # un cambio posterior del plan en Dim_Plan no debe alterar retroactivamente
+            # qué severidades atiende una suscripción ya contratada (R-04 del SRS).
+            "nivel": data.get("nivel"),
+            "severidades_desbloqueadas": data.get("severidades_desbloqueadas", "[]"),
+            "carga_lote_habilitada": bool(data.get("carga_lote_habilitada", False)),
             "estado": "Activa",
             "activo": True,
             "renovacionautomatica": bool(data.get("renovacionautomatica", True)),

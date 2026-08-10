@@ -1,4 +1,4 @@
-"""CU-O45 — rechazar despacho."""
+"""CU-O62 — rechazar despacho."""
 
 from __future__ import annotations
 

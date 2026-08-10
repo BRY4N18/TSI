@@ -48,7 +48,7 @@ Fila/card del último caso con acento de marca; severidad/estado solo en badge.
 - **FR-UI-004**: Editar: Guardar cambios arriba; feedback éxito/error.
 - **FR-UI-005**: Detalles: enlaces galería/siniestro en consulta + `mode=view` en destino.
 - **FR-UI-006**: Editar: CTAs completar/captura según rol (dueño evidencia = `evidencia-unidad`).
-- **FR-UI-007**: CTA Nuevo registro arriba → flujo CU-O21 existente.
+- **FR-UI-007**: CTA Nuevo registro arriba → flujo CU-O56 existente.
 - **FR-UI-008**: Selección de fila/card último caso (acento de marca).
 - **FR-UI-009**: Banner borrador + Descartar borrador con confirmación de usuario (RNF-REG-006 UI).
 - **FR-UI-010**: Guards/roles según backend; sin ampliar datos editables más allá de RF-REG-005 backend.

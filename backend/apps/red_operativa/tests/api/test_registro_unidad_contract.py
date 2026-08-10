@@ -32,16 +32,27 @@ class TestRegistroUnidadContract:
         assert "password" not in body["data"]
         assert "temp_password" not in str(body)
 
-    def test_post_unidad_when_sin_gmail_returns_400(self, api_client, proveedor_auth_headers):
-        payload = self._valid_payload()
+    def test_post_unidad_when_sin_gmail_returns_201_sin_usuario(
+        self, api_client, proveedor_auth_headers
+    ):
+        # Arrange — SRS 3.5.1 / RF-O39.5-6: gmail es opcional en el alta individual.
+        payload = self._valid_payload(placa="API-SIN-GMAIL")
         del payload["gmail"]
+
+        # Act
         response = api_client.post(
             "/api/v1/red-operativa/unidades",
             payload,
             format="json",
             **proveedor_auth_headers,
         )
-        assert response.status_code == 400
+
+        # Assert
+        assert response.status_code == 201
+        body = response.json()["data"]
+        assert body["usuario_creado"] is False
+        assert body["invitacion_enviada"] is False
+        assert body.get("idusuario") is None
 
     def test_post_unidad_when_placa_duplicada_returns_409(
         self, api_client, proveedor_auth_headers, mock_unidad_emergencia

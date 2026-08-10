@@ -22,12 +22,12 @@ Enriquecer cada caso de accidente con evidencia objetiva (fotografías, notas de
 ### Session 2026-07-28
 
 - Q: ¿Quién captura el enriquecimiento estructurado del accidente (clima/período, elementos físicos, conductores/vehículos, implicados) que el registro inicial deja fuera de alcance? → A: **Técnico de campo** (actor principal) en este spec (`evidencia-unidad`), durante atención en sitio. La **Unidad de emergencia** puede colaborar en los mismos endpoints. No existe un spec `field-operations` separado.
-- Q: ¿Los datos estructurados de enriquecimiento soportan captura offline como las fotos? → A: **Sí, mismo patrón** — borradores locales con `sincronizado=false` hasta sync (CU-O43 ampliado).
+- Q: ¿Los datos estructurados de enriquecimiento soportan captura offline como las fotos? → A: **Sí, mismo patrón** — borradores locales con `sincronizado=false` hasta sync (CU-O77 ampliado).
 
 ### Session 2026-07-29
 
-- Q: ¿El Operador de emergencias puede precargar clima/elemento físico en el registro inicial (RF-REG-002)? → A: **No.** Tras alineación al flujo canónico (`flujoscorreguidos/flujo-emergencias-canonico.md`), clima/período, elementos físicos, conductores, **implicados no conductores**, fotos y notas son **exclusivos del Técnico de campo** (Unidad puede colaborar) en este spec (CU-O46 / CU-O27). CU-O21 solo datos a distancia.
-- Q: ¿`Dim_Implicado` forma parte de CU-O46? → A: **Sí** — personas involucradas no conductoras, vinculadas solo por `idaccidente` (no por `iddespacho`).
+- Q: ¿El Operador de emergencias puede precargar clima/elemento físico en el registro inicial (RF-REG-002)? → A: **No.** Tras alineación al flujo canónico (`flujoscorreguidos/flujo-emergencias-canonico.md`), clima/período, elementos físicos, conductores, **implicados no conductores**, fotos y notas son **exclusivos del Técnico de campo** (Unidad puede colaborar) en este spec (CU-O75/CU-O76 / CU-O74). CU-O56 solo datos a distancia.
+- Q: ¿`Dim_Implicado` forma parte de CU-O76? → A: **Sí** — personas involucradas no conductoras, vinculadas solo por `idaccidente` (no por `iddespacho`).
 - Q: ¿Qué campos tiene `Dim_Implicado`? → A: **Solo la ontología dimensional** (diagrama / `database/esquemas.json`): `idimplicado`, `idaccidente`, `tipoimplicado`, `genero`, `estadoimplicado`, `activo`, `edad` (+ `fecha_actualizacion` de auditoría infra). **No** cédula/nombres/apellidos ni `lesionado`/`observacion`/`rolobservado` — la identidad PII de conductores vive en `Dim_Conductor` (RF-EVI-009).
 
 ## 2. Contexto
@@ -35,10 +35,11 @@ Enriquecer cada caso de accidente con evidencia objetiva (fotografías, notas de
 El Técnico de campo documenta cada accidente con evidencia objetiva **y datos estructurados del siniestro** que enriquecen el expediente y sirven como respaldo para aseguradoras, auditorías y analítica de siniestralidad. La captura ocurre frecuentemente en zonas sin cobertura móvil, por lo que el sistema debe soportar captura offline y sincronización diferida al recuperar conexión. Simultáneamente, la Unidad de emergencia gestiona su disponibilidad para que el orquestador sepa en tiempo real qué unidades están disponibles.
 
 **Casos de uso incluidos:**
-- **CU-O27 — Adjuntar evidencias**: El Técnico de campo o Unidad de emergencia captura y sube evidencia fotográfica y notas de campo asociadas a un accidente. Soporta captura offline (marca `sincronizado=false`). La evidencia se vincula solo por `idaccidente`, sin FK directa a `Fact_Despacho`, permitiendo que múltiples unidades adjunten evidencia al mismo caso de forma independiente.
-- **CU-O46 — Enriquecer datos estructurados del accidente en sitio**: El Técnico de campo (o Unidad de emergencia) registra o actualiza en el caso activo: (1) período del día y condiciones climáticas vía `Dim_ElementoClimaticosAccidente` (FKs a `Dim_PeriodosDias`, `Dim_EstadosClimas`); (2) elementos físicos cercanos vía `Dim_ElementoFisicoAccidente` (FK a `Dim_Elementos_Fisicos`); (3) conductores y vehículos involucrados vía `Fact_Conductor_Accidente` enlazando `Dim_Conductor`, `Dim_Estado_Conductor` y `Dim_Vehiculo`; (4) **personas involucradas no conductoras** vía `Dim_Implicado`. Absorbe el alcance que `registro-accidente` defería a un spec `field-operations` inexistente. **Dueño exclusivo** de escritura de estos datos (sin precarga desde CU-O21).
-- **CU-O30 — Gestionar disponibilidad**: La Unidad de emergencia declara su estado de disponibilidad (Activa, Ocupada, Fuera de servicio). El cuarto estado, **En Misión**, no es declarable manualmente — lo asigna el sistema automáticamente al confirmar un despacho (`despacho-inteligente`, CU-O24) y se abandona automáticamente al cerrar/abortar el caso (`seguimiento-cierre-de-casos`). Cada cambio se registra como una nueva fila en `Fact_HistorialEstadoUnidad`. El estado actual se deriva consultando la fila con `fechahora` más reciente para esa unidad.
-- **CU-O43 — Sincronizar evidencia en diferido**: Un proceso automatizado persiste en backend los registros capturados offline, con `sincronizado=true` en `Dim_EvidenciaFoto`, `Dim_NotaAccidente` y en los ítems de enriquecimiento estructurado pendientes (puentes clima/físico, vínculos conductor-accidente e **implicados**). La `fechahora` original de captura se conserva inalterada.
+- **CU-O74 — Adjuntar evidencias**: El Técnico de campo o Unidad de emergencia captura y sube evidencia fotográfica y notas de campo asociadas a un accidente. Soporta captura offline (marca `sincronizado=false`). La evidencia se vincula solo por `idaccidente`, sin FK directa a `Fact_Despacho`, permitiendo que múltiples unidades adjunten evidencia al mismo caso de forma independiente.
+- **CU-O75 — Registrar el clima y los elementos del entorno**: El Técnico de campo (o Unidad de emergencia) registra en el caso activo: (1) período del día y condiciones climáticas vía `Dim_ElementoClimaticosAccidente` (FKs a `Dim_PeriodosDias`, `Dim_EstadosClimas`); (2) elementos físicos cercanos vía `Dim_ElementoFisicoAccidente` (FK a `Dim_Elementos_Fisicos`). **Dueño exclusivo** de escritura de estos datos (sin precarga desde CU-O56).
+- **CU-O76 — Registrar conductores, vehículos e implicados**: El Técnico de campo (o Unidad de emergencia) registra en el caso activo: (3) conductores y vehículos involucrados vía `Fact_Conductor_Accidente` enlazando `Dim_Conductor`, `Dim_Estado_Conductor` y `Dim_Vehiculo`; (4) **personas involucradas no conductoras** vía `Dim_Implicado`. Absorbe el alcance que `registro-accidente` defería a un spec `field-operations` inexistente. **Dueño exclusivo** de escritura de estos datos (sin precarga desde CU-O56).
+- **CU-O78 — Gestionar disponibilidad**: La Unidad de emergencia declara su estado de disponibilidad (Activa, Ocupada, Fuera de servicio). El cuarto estado, **En Misión**, no es declarable manualmente — lo asigna el sistema automáticamente al confirmar un despacho (`despacho-inteligente`, CU-O61) y se abandona automáticamente al cerrar/abortar el caso (`seguimiento-cierre-de-casos`). Cada cambio se registra como una nueva fila en `Fact_HistorialEstadoUnidad`. El estado actual se deriva consultando la fila con `fechahora` más reciente para esa unidad.
+- **CU-O77 — Sincronizar evidencia en diferido**: Un proceso automatizado persiste en backend los registros capturados offline, con `sincronizado=true` en `Dim_EvidenciaFoto`, `Dim_NotaAccidente` y en los ítems de enriquecimiento estructurado pendientes (puentes clima/físico, vínculos conductor-accidente e **implicados**). La `fechahora` original de captura se conserva inalterada.
 
 **Tablas de base de datos utilizadas** (verificadas contra `tablas.json`/`esquemas.json`, ver `data-model.md`):
 - `Dim_EvidenciaFoto`: evidencia fotográfica. Campos: `idevidenciafoto`, `idaccidente`, `idusuario`, `urlevidenciafoto`, `sincronizado` (Boolean), `fechahora`.
@@ -59,7 +60,7 @@ El Técnico de campo documenta cada accidente con evidencia objetiva **y datos e
 
 | Actor | Rol | Interacción principal |
 |---|---|---|
-| **Unidad de emergencia** | Operador de campo y gestor de disponibilidad | Cambia su estado de disponibilidad. Consulta su propio estado e historial. Captura evidencia/notas y puede colaborar en enriquecimiento estructurado (CU-O46). Consulta galería y datos enriquecidos del caso. |
+| **Unidad de emergencia** | Operador de campo y gestor de disponibilidad | Cambia su estado de disponibilidad. Consulta su propio estado e historial. Captura evidencia/notas y puede colaborar en enriquecimiento estructurado (CU-O75/CU-O76). Consulta galería y datos enriquecidos del caso. |
 | **Técnico de campo** | Documentador y enriquecedor en sitio | Captura evidencia fotográfica, notas de campo y **datos estructurados** (clima/período, elementos físicos, conductores/vehículos, **implicados no conductores**). Consulta galería y expediente enriquecido del caso. |
 | **Administrador** | Auditor y gestor del sistema | Consulta estado e historial de todas las unidades. Consulta galería y datos enriquecidos de cualquier caso (solo lectura). |
 | **Sistema (despacho)** | Orquestador de despacho | Consulta estado de todas las unidades para el algoritmo de despacho (`despacho-inteligente`). |
@@ -67,7 +68,7 @@ El Técnico de campo documenta cada accidente con evidencia objetiva **y datos e
 
 ## 4. Requisitos funcionales
 
-### RF-EVI-001: Gestión de disponibilidad de unidad (CU-O30)
+### RF-EVI-001: Gestión de disponibilidad de unidad (CU-O78)
 
 La Unidad de emergencia debe poder cambiar manualmente su estado de disponibilidad entre 3 de los 4 estados posibles, en cualquier momento:
 
@@ -75,17 +76,17 @@ La Unidad de emergencia debe poder cambiar manualmente su estado de disponibilid
 |---|---|---|
 | **Activa** | Disponible para recibir despachos. | Sí |
 | **Ocupada** | No disponible por otra razón operativa (trámites, reabastecimiento, en base) — no ligada a un despacho activo. | Sí |
-| **En Misión** | Atendiendo un caso despachado; no recibe nuevos despachos. | No — solo el sistema la asigna al confirmar un despacho (CU-O24) y la retira al cerrar/abortar el caso. |
+| **En Misión** | Atendiendo un caso despachado; no recibe nuevos despachos. | No — solo el sistema la asigna al confirmar un despacho (CU-O61) y la retira al cerrar/abortar el caso. |
 | **Fuera de servicio** | No operativa (mantenimiento, fin de turno, avería). | Sí |
 
 Un POST de declaración manual con `estadonuevo = En Misión` debe ser rechazado con HTTP 422.
 
 Cada cambio debe:
-1. Insertar un nuevo registro en `Fact_HistorialEstadoUnidad` con `idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `idusuario`, `fechahora`. **`idusuario`** identifica a la unidad autenticada que autodeclara (este CU). *(Nota 2026-07-24: la declaración por Operador sin login — antiguo CU-O59 en `alta-unidades` — fue **eliminada**; este CU-O30 es la única vía de declaración de disponibilidad.)*
+1. Insertar un nuevo registro en `Fact_HistorialEstadoUnidad` con `idunidademergencia`, `idestadounidademergencia`, `estadoanterior`, `estadonuevo`, `idusuario`, `fechahora`. **`idusuario`** identifica a la unidad autenticada que autodeclara (este CU). *(Nota 2026-07-24: la declaración por Operador sin login — antiguo CU-O59 en `alta-unidades` — fue **eliminada**; este CU-O78 es la única vía de declaración de disponibilidad.)*
 2. El estado actual no es un campo directo en `Dim_UnidadEmergencia`; se obtiene siempre consultando la fila con `fechahora` más reciente en `Fact_HistorialEstadoUnidad` para esa unidad.
 3. El historial de cambios debe ser consultable.
 
-### RF-EVI-002: Registro de evidencia fotográfica (CU-O27)
+### RF-EVI-002: Registro de evidencia fotográfica (CU-O74)
 
 El Técnico de campo o Unidad debe poder capturar y subir evidencia fotográfica desde la app móvil:
 1. Tomar o seleccionar fotos desde el dispositivo.
@@ -96,7 +97,7 @@ El Técnico de campo o Unidad debe poder capturar y subir evidencia fotográfica
 4. Soporte para múltiples unidades adjuntando evidencia al mismo caso (solo vinculación por `idaccidente`, no por `Fact_Despacho`).
 5. El archivo binario se almacena en Azure Blob Storage (ver `infrastructure.md` sección 3); `Dim_EvidenciaFoto.urlevidenciafoto` guarda solo la URL resultante.
 
-### RF-EVI-003: Registro de observaciones y notas de campo (CU-O27)
+### RF-EVI-003: Registro de observaciones y notas de campo (CU-O74)
 
 Registrar notas textuales asociadas al accidente:
 1. Texto libre.
@@ -104,7 +105,7 @@ Registrar notas textuales asociadas al accidente:
 3. Se almacenan en `Dim_NotaAccidente` con `sincronizado` (misma lógica que evidencia fotográfica).
 4. Solo vinculación por `idaccidente`.
 
-### RF-EVI-004: Consulta de unidades por estado (CU-O30)
+### RF-EVI-004: Consulta de unidades por estado (CU-O78)
 
 Consultar unidades con su estado actual (control de acceso por rol):
 1. **Unidad de emergencia:** consulta solo su propio estado actual e historial (vinculado a su `idunidademergencia` de sesión). HTTP 403 si intenta consultar otra unidad.
@@ -114,7 +115,7 @@ Consultar unidades con su estado actual (control de acceso por rol):
 5. El estado actual se obtiene de la última fila en `Fact_HistorialEstadoUnidad`.
 6. Si no existe historial para la unidad, el estado actual se considera **Fuera de servicio** (excluida del despacho hasta el primer cambio explícito).
 
-### RF-EVI-005: Visualización de evidencias por caso (CU-O27)
+### RF-EVI-005: Visualización de evidencias por caso (CU-O74)
 
 Ver todas las fotos y notas asociadas a un `idaccidente` (solo roles autorizados: **Técnico de campo**, **Unidad de emergencia**, **Administrador**):
 1. Filtrar notas por tipo.
@@ -123,7 +124,7 @@ Ver todas las fotos y notas asociadas a un `idaccidente` (solo roles autorizados
 4. Denegar acceso (HTTP 403) a usuarios autenticados sin uno de los roles anteriores.
 5. La consulta al backend retorna solo evidencia ya sincronizada (`sincronizado=true`). El dispositivo capturador combina en su galería local las evidencias pendientes (`sincronizado=false`, solo visibles en ese dispositivo) con las ya sincronizadas del servidor.
 
-### RF-EVI-006: Sincronización diferida de evidencia (CU-O43)
+### RF-EVI-006: Sincronización diferida de evidencia (CU-O77)
 
 El sistema debe proveer un mecanismo para sincronizar evidencia **y enriquecimiento estructurado** capturados sin conexión:
 1. Persistir en `Dim_EvidenciaFoto`, `Dim_NotaAccidente`, `Dim_ElementoClimaticosAccidente`, `Dim_ElementoFisicoAccidente`, `Dim_Conductor`/`Dim_Vehiculo` (si alta nueva) y `Fact_Conductor_Accidente` los registros pendientes del almacenamiento local, con `sincronizado=true` tras completar escrituras Kafka (y Blob para fotos). No existen registros con `sincronizado=false` en el backend.
@@ -132,7 +133,7 @@ El sistema debe proveer un mecanismo para sincronizar evidencia **y enriquecimie
 4. Debe poder ejecutarse sin intervención del usuario al detectar conectividad.
 5. En caso de fallo parcial (ej. timeout al subir a Azure Blob Storage), los registros exitosos se persisten en backend con `sincronizado=true`; los fallidos permanecen en almacenamiento local (`sincronizado=false`) y se reintentan automáticamente en cada ciclo de sync subsiguiente hasta completar con éxito.
 
-### RF-EVI-007: Registrar período del día y condiciones climáticas en sitio (CU-O46)
+### RF-EVI-007: Registrar período del día y condiciones climáticas en sitio (CU-O75)
 
 El Técnico de campo o Unidad de emergencia debe poder asociar al `idaccidente` activo:
 
@@ -142,7 +143,7 @@ El Técnico de campo o Unidad de emergencia debe poder asociar al `idaccidente` 
 4. El sistema debe exponer lectura de catálogos `Dim_PeriodosDias` y `Dim_EstadosClimas` para poblar selectores en la UI de campo.
 5. Mismas restricciones de caso activo que RN-EVI-006 (no Cerrado/Descartado).
 
-### RF-EVI-008: Registrar elementos físicos cercanos en sitio (CU-O46)
+### RF-EVI-008: Registrar elementos físicos cercanos en sitio (CU-O75)
 
 El Técnico de campo o Unidad debe poder:
 
@@ -151,7 +152,7 @@ El Técnico de campo o Unidad debe poder:
 3. Soft-desactivar un vínculo erróneo (`activo=false`) sin DELETE físico (append/upsert Kafka).
 4. Exponer catálogo `Dim_Elementos_Fisicos` en solo lectura para la UI.
 
-### RF-EVI-009: Registrar conductores y vehículos involucrados (CU-O46)
+### RF-EVI-009: Registrar conductores y vehículos involucrados (CU-O76)
 
 El Técnico de campo o Unidad debe poder documentar las personas y vehículos del siniestro:
 
@@ -176,7 +177,7 @@ El Técnico de campo o Unidad debe poder documentar las personas y vehículos de
    - **Accountability:** audit log de altas, consultas de listado por caso y soft-deletes (`registrar_conductor_accidente`, `consultar_conductores_accidente`, `desactivar_conductor_accidente`).
    - **Integridad:** escritura solo vía Kafka (sin UPDATE destructivo); soft-delete `activo=false`; reutilización por `identificacion` (RN-EVI-019) evita duplicados de identidad.
 
-### RF-EVI-010: Registrar implicados no conductores (CU-O46)
+### RF-EVI-010: Registrar implicados no conductores (CU-O76)
 
 El Técnico de campo o Unidad debe poder documentar personas involucradas que **no** son conductores (peatones, pasajeros, testigos relevantes, etc.), usando **únicamente** los campos de la ontología `Dim_Implicado`:
 
@@ -189,12 +190,12 @@ El Técnico de campo o Unidad debe poder documentar personas involucradas que **
 4. Roles de escritura: **Técnico de campo** y **Unidad de emergencia**. Lectura: además **Administrador**. Otros roles: HTTP 403.
 5. Caso activo (RN-EVI-006).
 6. **Fuera de esta entidad:** identificación, nombres, apellidos u otra PII de identidad — no forman parte de `Dim_Implicado` (si se requieren para un conductor, usar RF-EVI-009 / `Dim_Conductor`).
-7. Sync diferida (CU-O43): borradores `LocalImplicado` (sin cifrado PII) con `sincronizado=false` hasta persistencia en backend.
+7. Sync diferida (CU-O77): borradores `LocalImplicado` (sin cifrado PII) con `sincronizado=false` hasta persistencia en backend.
 
 
 ## 5. Requisitos no funcionales
 
-- **RNF-EVI-001:** App móvil offline: capturar fotos, notas **y enriquecimiento estructurado CU-O46** (clima/período, elementos físicos, conductores/vehículos, **implicados**) sin conexión; sincronización automática al reconectar.
+- **RNF-EVI-001:** App móvil offline: capturar fotos, notas **y enriquecimiento estructurado CU-O75/CU-O76** (clima/período, elementos físicos, conductores/vehículos, **implicados**) sin conexión; sincronización automática al reconectar.
 - **RNF-EVI-002:** Cada foto ≤ 10 MB, compresión automática antes de subir.
 - **RNF-EVI-003:** Cambio de estado de unidad reflejado en ≤ 5 segundos para el algoritmo de despacho.
 - **RNF-EVI-004:** Sincronización offline debe completarse en ≤ 30 segundos tras reconectar (para batch de evidencias **y enriquecimiento** pendientes). Los registros fallidos en un ciclo no bloquean la persistencia de los exitosos; se reintentan en ciclos posteriores.
@@ -272,7 +273,7 @@ El Técnico de campo o Unidad debe poder documentar personas involucradas que **
 ```
 Activa ←→ Ocupada            (manual, ambas direcciones)
 Activa ←→ Fuera de servicio  (manual, ambas direcciones)
-Activa → En Misión           (automático, al confirmar despacho — CU-O24)
+Activa → En Misión           (automático, al confirmar despacho — CU-O61)
 En Misión → Activa           (automático, al cerrar caso o retirarse)
 En Misión → Fuera de servicio  (automático, excepción: avería durante atención)
 Fuera de servicio → Activa   (manual, al volver a estar operativa)
@@ -343,7 +344,7 @@ Cuando se consulta el historial de esa unidad
 Entonces el sistema debe retornar los 5 registros ordenados por `fechahora` descendente
 Y el primer registro debe corresponder al estado actual.
 
-### Escenario 7: Enriquecimiento climático y elementos físicos (CU-O46)
+### Escenario 7: Enriquecimiento climático y elementos físicos (CU-O75)
 Dado que el Técnico de campo está en un caso activo en `EN_ATENCIÓN`
 Cuando selecciona `idperiododia`, `idestadoclima` y dos `idelementofisico` del catálogo
 Y envía el enriquecimiento
@@ -351,7 +352,7 @@ Entonces el sistema debe upsert `Dim_ElementoClimaticosAccidente` para ese `idac
 Y debe insertar/activar dos filas en `Dim_ElementoFisicoAccidente`
 Y la consulta de enriquecimiento del caso debe reflejar esos valores.
 
-### Escenario 8: Registro de conductor y vehículo (CU-O46)
+### Escenario 8: Registro de conductor y vehículo (CU-O76)
 Dado un caso activo
 Cuando el Técnico registra un conductor nuevo (identificación no existente), su estado (`idestadoconductor`) y un vehículo
 Entonces el sistema debe crear `Dim_Conductor`, `Dim_Vehiculo` y `Fact_Conductor_Accidente` vinculados al `idaccidente`
@@ -385,7 +386,7 @@ El Técnico captura 2 fotos sin conexión. Los registros se crean en almacenamie
 ### CA-EVI-005: Registro de notas de campo
 El Técnico registra una nota tipo "Declaración de testigo" para un `idaccidente`. El sistema crea un registro en `Dim_NotaAccidente` con los datos ingresados y `sincronizado=true` (si hay conexión).
 
-### CA-EVI-006: Sincronización diferida (CU-O43)
+### CA-EVI-006: Sincronización diferida (CU-O77)
 Se ejecuta el comando `sync_diferido`. Los registros pendientes del almacenamiento local (fotos, notas y enriquecimiento estructurado) se persisten en backend con `sincronizado=true`. La `fechahora` de cada registro no se modifica. Los fallidos permanecen locales y se reintentan en ciclos posteriores.
 
 ### CA-EVI-007: Galería de evidencias por caso
@@ -397,13 +398,13 @@ Dos unidades diferentes (ej. grúa y ambulancia) adjuntan evidencia al mismo `id
 ### CA-EVI-009: Historial de cambios de unidad
 Se consulta el historial de estado de una unidad. El sistema retorna todas las filas de `Fact_HistorialEstadoUnidad` para esa unidad ordenadas por `fechahora` descendente. La Unidad de emergencia solo puede consultar su propio historial; el Administrador y el servicio de despacho pueden consultar cualquier unidad; otros roles reciben HTTP 403.
 
-### CA-EVI-010: Clima y período en sitio (CU-O46)
+### CA-EVI-010: Clima y período en sitio (CU-O75)
 El Técnico asocia `idperiododia` e `idestadoclima` a un caso activo. Existe exactamente una fila activa en `Dim_ElementoClimaticosAccidente` para ese `idaccidente` (RN-EVI-017).
 
-### CA-EVI-011: Elementos físicos en sitio (CU-O46)
+### CA-EVI-011: Elementos físicos en sitio (CU-O75)
 El Técnico vincula ≥1 `idelementofisico` válido. Las filas activas aparecen en la consulta de enriquecimiento del caso.
 
-### CA-EVI-012: Conductores y vehículos (CU-O46)
+### CA-EVI-012: Conductores y vehículos (CU-O76)
 El Técnico registra conductor + estado + vehículo y el vínculo `Fact_Conductor_Accidente`. La consulta del caso lista el vínculo. Reintento con misma `identificacion` reutiliza `idconductor`. Rol sin permiso recibe HTTP 403.
 
 ### CA-EVI-013: PII conductor en reposo/offline (Principle V)
@@ -411,21 +412,21 @@ Un borrador offline de conductor se guarda cifrado en el dispositivo (no legible
 
 ### CA-EVI-014: UX enriquecimiento bajo presión (Principle IV)
 La página de enriquecimiento muestra como máximo 4 acciones primarias visibles, controles táctiles ≥44×44 px, validación inline y confirmación antes de soft-delete; estados vacío/carga/error presentes.
-### CA-EVI-015: Implicados no conductores (CU-O46 / ontología)
+### CA-EVI-015: Implicados no conductores (CU-O76 / ontología)
 El Técnico registra un implicado con `tipoimplicado` y `estadoimplicado` (y opcionalmente `genero`/`edad`) vinculados solo a `idaccidente`. La consulta de enriquecimiento lista el registro activo. Soft-delete pone `activo=false`. El formulario **no** solicita cédula ni nombres. Rol sin permiso recibe HTTP 403.
 
 ## 12. Dependencias
 
 - **`autenticacion-y-rbac`:** Autenticación JWT y roles definidos (Técnico de campo, Unidad de Emergencia, Administrador).
-- **`registro-accidente`:** Evidencia y enriquecimiento se vinculan a `idaccidente` en `Fact_Accidente`. CU-O21 **no** precarga clima/físico/conductores/implicados; este módulo es el dueño del enriquecimiento en sitio (CU-O46).
+- **`registro-accidente`:** Evidencia y enriquecimiento se vinculan a `idaccidente` en `Fact_Accidente`. CU-O56 **no** precarga clima/físico/conductores/implicados; este módulo es el dueño del enriquecimiento en sitio (CU-O75/CU-O76).
 - **`despacho-inteligente`:** Consume el estado actual de disponibilidad de todas las unidades para el algoritmo de despacho (acceso de servicio con permisos de consulta de flota completa).
-- **`seguimiento-cierre-de-casos`:** Al cerrar un caso, las unidades asociadas deben regresar a estado Activa. Durante atención, las unidades/técnicos pueden adjuntar evidencia y enriquecer datos. El expediente de cliente (CU-O29) debe poder incluir el enriquecimiento estructurado (lectura).
+- **`seguimiento-cierre-de-casos`:** Al cerrar un caso, las unidades asociadas deben regresar a estado Activa. Durante atención, las unidades/técnicos pueden adjuntar evidencia y enriquecer datos. El expediente de cliente (CU-O82) debe poder incluir el enriquecimiento estructurado (lectura).
 
 ## 13. Fuera de alcance
 
 - Registro de unidades externas (**CU-O54**) → spec `alta-unidades`.
-- Geolocalización GPS continua (**CU-O25**) → spec `seguimiento-cierre-de-casos`.
-- Confirmación/rechazo de despachos (**CU-O24, CU-O45**) → spec `despacho-inteligente`.
+- Geolocalización GPS continua (**CU-O68**) → spec `seguimiento-cierre-de-casos`.
+- Confirmación/rechazo de despachos (**CU-O61, CU-O62**) → spec `despacho-inteligente`.
 - Análisis de imágenes por IA.
 - Almacenamiento de video (solo fotografía fija en esta versión).
 - Sincronización bidireccional de notas (solo subida, no edición remota).

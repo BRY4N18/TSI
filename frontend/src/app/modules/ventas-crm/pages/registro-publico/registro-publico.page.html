@@ -74,6 +74,15 @@
           <p class="m-0 text-sm font-medium text-alert-success">
             Registro enviado. Pronto un ejecutivo te contactará.
           </p>
+          @if (demoGrant() && demoIdprospecto()) {
+            <a
+              [routerLink]="['/ventas-crm/demo']"
+              [queryParams]="demoQueryParams()"
+              class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-accent-hover"
+            >
+              Probar la demo interactiva ahora
+            </a>
+          }
           <a
             routerLink="/ventas-crm/planes"
             class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary bg-transparent px-4 text-sm font-semibold text-accent-primary no-underline transition-colors hover:bg-accent-primary/10"

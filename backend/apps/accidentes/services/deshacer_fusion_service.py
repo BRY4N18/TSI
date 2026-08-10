@@ -1,4 +1,4 @@
-"""CU-O41 deshacer fusión (reversión rápida / snackbar)."""
+"""CU-O57 deshacer fusión (reversión rápida / snackbar)."""
 
 from __future__ import annotations
 

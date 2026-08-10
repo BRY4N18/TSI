@@ -72,7 +72,8 @@ class PlanRepository:
 
         where = " AND ".join(clauses)
         sql = (
-            "SELECT idplan, nombre, precio, limites, nivel, activo, fecha_actualizacion "
+            "SELECT idplan, nombre, precio, limites, nivel, periodicidad, "
+            "severidades_desbloqueadas, carga_lote_habilitada, activo, fecha_actualizacion "
             f"FROM Dim_Plan WHERE {where} ORDER BY idplan ASC LIMIT %(limit)s"
         )
         rows = list(self.pinot.query(sql, params) or [])
@@ -88,12 +89,18 @@ class PlanRepository:
         limites = data.get("limites", {})
         if isinstance(limites, dict):
             limites = json.dumps(limites, ensure_ascii=False)
+        severidades = data.get("severidades_desbloqueadas", [])
+        if isinstance(severidades, list):
+            severidades = json.dumps(severidades, ensure_ascii=False)
         record = {
             "idplan": self._next_id(),
             "nombre": data["nombre"],
             "precio": float(data["precio"]),
             "limites": limites,
             "nivel": data["nivel"],
+            "periodicidad": data.get("periodicidad") or "Mensual",
+            "severidades_desbloqueadas": severidades,
+            "carga_lote_habilitada": bool(data.get("carga_lote_habilitada", False)),
             "activo": True,
             "fecha_actualizacion": self._now_ms(),
         }
@@ -107,5 +114,9 @@ class PlanRepository:
         payload = {**current, **changes, "fecha_actualizacion": self._now_ms()}
         if isinstance(payload.get("limites"), dict):
             payload["limites"] = json.dumps(payload["limites"], ensure_ascii=False)
+        if isinstance(payload.get("severidades_desbloqueadas"), list):
+            payload["severidades_desbloqueadas"] = json.dumps(
+                payload["severidades_desbloqueadas"], ensure_ascii=False
+            )
         self.kafka.publish(self.TOPIC, payload)
         return payload

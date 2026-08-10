@@ -1,4 +1,4 @@
-"""DRF views for CU-O46 enriquecimiento estructurado."""
+"""DRF views for CU-O75/CU-O76 enriquecimiento estructurado."""
 
 from __future__ import annotations
 

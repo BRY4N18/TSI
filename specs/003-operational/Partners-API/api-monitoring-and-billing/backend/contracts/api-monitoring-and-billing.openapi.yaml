@@ -1,0 +1,391 @@
+openapi: 3.0.3
+info:
+  title: TSI Monitoreo y Facturación de API
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O51 (consumir datos), CU-O52 (registrar y
+    consultar consumo), CU-O53 (límites y alertas) y CU-O54 (tarificar).
+
+    DOS SUPERFICIES CON AUTENTICACIÓN DISTINTA — no mezclarlas:
+
+    1. API de datos (`/datos/*`), tag `Datos`: la consume el sistema del partner.
+       Se autentica por CREDENCIAL DE API (`credencialAuth`), no por sesión humana.
+       Es la única superficie de TSI que entrega datos de siniestralidad a terceros.
+
+    2. API de gestión (métricas, logs, reportes), tags `Metricas`/`Consola`/`Reportes`:
+       la consumen personas desde el portal. Se autentica por JWT (`bearerAuth`).
+
+    REGLA CONTABLE CRÍTICA — una petición rechazada con 429 NO se atendió, así que
+    NO es consumo facturable: se registra en el log para que el partner lo vea, pero
+    no suma en la facturación. Superar el CUPO MENSUAL, en cambio, nunca bloquea
+    (RN-11 del SRS): se atiende y se factura como excedente.
+servers:
+  - url: /api/v1
+tags:
+  - name: Datos
+    description: API que el partner consume desde sus sistemas (CU-O51) — auth por credencial
+  - name: Metricas
+    description: Consumo propio del partner (CU-O52) — auth JWT
+  - name: Consola
+    description: Registros en tiempo real del Desarrollador de APIs (CU-O52) — auth JWT
+  - name: Reportes
+    description: Reporte mensual de consumo (CU-O52) — auth JWT
+
+paths:
+  # ─────────────────────────────────────────────────────────────
+  # SUPERFICIE 1 — API de datos (credencial de API)
+  # ─────────────────────────────────────────────────────────────
+  /datos/accidentes:
+    get:
+      tags: [Datos]
+      summary: Consultar expedientes de siniestralidad (CU-O51)
+      description: >
+        Entrega expedientes de casos CERRADOS, acotados por dos filtros que el
+        partner no puede ampliar:
+
+        - Nivel de acceso: solo severidades habilitadas en el plan (RF-APM-002).
+          Un conjunto no habilitado devuelve 403, NO una lista vacía.
+        - Zonas contratadas: `Dim_Preferencias_Cliente.zonas_geograficas` (RF-APM-003).
+          Un cliente sin zonas configuradas recibe CONJUNTO VACÍO — fail-closed.
+
+        Cada petición atendida se registra como consumo (RF-APM-004).
+      operationId: consultarAccidentes
+      security: [{ credencialAuth: [] }]
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: severidad
+          in: query
+          description: Debe estar habilitada en el plan; si no, 403
+          schema: { type: string, enum: [Baja, Media, Alta] }
+        - name: idcondado
+          in: query
+          description: Debe estar entre las zonas contratadas; si no, se ignora
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Expedientes filtrados por nivel de acceso y zonas contratadas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccidenteListResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/CredencialInvalida' }
+        '403': { $ref: '#/components/responses/AccesoDenegado' }
+        '429': { $ref: '#/components/responses/DemasiadasPeticiones' }
+
+  # ─────────────────────────────────────────────────────────────
+  # SUPERFICIE 2 — API de gestión (JWT)
+  # ─────────────────────────────────────────────────────────────
+  /partners/{idpartner}/metricas:
+    get:
+      tags: [Metricas]
+      summary: Métricas de consumo del propio partner (CU-O52 / RF-APM-007)
+      description: >
+        Solo el propio partner (403 en otro caso). Un partner SUSPENDIDO sí puede
+        consultar su historial: es lectura y le sirve para entender la suspensión.
+
+        Siempre sobre `entorno='Producción'`: el consumo de pruebas nunca se mezcla
+        (RN-APM-001).
+      operationId: consultarMetricasPartner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - name: periodo
+          in: query
+          description: 'YYYY-MM; por defecto el vigente'
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+      responses:
+        '200':
+          description: Métricas del período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MetricasResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Intento de consultar las métricas de otro partner (RN-APM-017)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /logs-api:
+    get:
+      tags: [Consola]
+      summary: Consola de registros en tiempo real (CU-O52 / RF-APM-008)
+      description: >
+        Exclusiva del Desarrollador de APIs. Incluye las peticiones rechazadas
+        (401/403/429) y los errores 4xx/5xx del partner, que son su material de
+        autodiagnóstico (RN-APM-009).
+
+        «Tiempo real» está limitado por la ingesta de Pinot (5–15 s): la respuesta
+        incluye `datos_hasta` para no prometer latencia cero.
+      operationId: consultarLogsAPI
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: idpartner
+          in: query
+          schema: { type: integer }
+        - name: idcredencialapi
+          in: query
+          schema: { type: integer }
+        - name: endpoint
+          in: query
+          schema: { type: string }
+        - name: codigohttp
+          in: query
+          schema: { type: integer }
+        - name: desde
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: hasta
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Detalle de llamadas, más reciente primero
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LogListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reportes-consumo:
+    get:
+      tags: [Reportes]
+      summary: Reporte mensual de consumo (CU-O52 / RF-APM-009)
+      description: >
+        Un mes sin consumo devuelve CEROS, no un error: es el caso límite normal
+        de una agregación sobre conjunto vacío.
+
+        El Cliente solo puede consultar el suyo; el Administrador, cualquiera.
+      operationId: consultarReporteConsumo
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: periodo
+          in: query
+          required: true
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+        - name: idpartner
+          in: query
+          description: El Cliente solo puede consultar el suyo
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Reporte del período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReporteConsumoResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Sesión humana. Para la API de gestión.
+    credencialAuth:
+      type: http
+      scheme: basic
+      description: >
+        Credencial de API del partner (`client_id` como usuario, `client_secret`
+        como contraseña), verificada contra el hash bcrypt de `Dim_CredencialAPI`.
+        Solo para la API de datos. No hay sesión ni refresco.
+
+  parameters:
+    IdPartner:
+      name: idpartner
+      in: path
+      required: true
+      schema: { type: integer }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+
+  schemas:
+    AccidenteExpediente:
+      type: object
+      description: Expediente de caso cerrado. Solo lectura; este módulo nunca escribe accidentes.
+      properties:
+        idaccidente: { type: string }
+        fechahoraaccidente: { type: integer, format: int64 }
+        severidad: { type: string, enum: [Baja, Media, Alta] }
+        idcondado: { type: integer }
+        ciudad: { type: string }
+        descripcion: { type: string }
+        numvehiculos: { type: integer }
+        numheridos: { type: integer }
+        numfallecidos: { type: integer }
+
+    AccidenteListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/AccidenteExpediente' }
+        meta:
+          type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                next_cursor: { type: string, nullable: true }
+                limit: { type: integer }
+            zonas_aplicadas:
+              type: array
+              description: >
+                Condados contratados que se aplicaron como filtro. Un array vacío
+                explica por qué el resultado vino vacío (RN-APM-008).
+              items: { type: integer }
+
+    MetricasResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idpartner: { type: integer }
+            periodo: { type: string, example: '2026-08' }
+            entorno:
+              type: string
+              enum: [Producción]
+              description: Siempre producción; el consumo de pruebas nunca se mezcla
+            llamadas: { type: integer }
+            errores: { type: integer }
+            latencia_promedio_ms: { type: number, format: double }
+            limite_mes:
+              type: integer
+              description: '-1 si el partner no tiene cupo asignado (centinela)'
+            porcentaje_consumido: { type: number, format: double }
+            excedente_estimado:
+              type: integer
+              description: >
+                Llamadas por encima del cupo hasta ahora. Informativo: superar el
+                cupo NO interrumpe el servicio (RN-APM-002), se factura al cierre
+            datos_hasta:
+              type: integer
+              format: int64
+              description: Último instante consultable; la ingesta tarda 5–15 s
+
+    LogLlamada:
+      type: object
+      properties:
+        idlogllamadaapi: { type: integer }
+        idpartner: { type: integer }
+        idcredencialapi: { type: integer }
+        endpoint: { type: string }
+        metodohttp: { type: string }
+        codigohttp:
+          type: integer
+          description: >
+            Incluye 4xx/5xx del partner (autodiagnóstico) y 429 de throttle.
+            Un 429 aparece aquí pero no cuenta como consumo facturable
+        latenciams: { type: number, format: double }
+        fechallamada: { type: integer, format: int64 }
+
+    LogListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/LogLlamada' }
+        meta:
+          type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                next_cursor: { type: string, nullable: true }
+                limit: { type: integer }
+            datos_hasta: { type: integer, format: int64 }
+
+    ReporteConsumoResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            periodo: { type: string }
+            idpartner: { type: integer }
+            entorno: { type: string, enum: [Producción] }
+            llamadas:
+              type: integer
+              description: Cero si no hubo consumo — caso límite normal, no un error
+            errores: { type: integer }
+            latencia_promedio_ms: { type: number, format: double }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+  responses:
+    BadRequest:
+      description: Parámetros ausentes o con formato inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Rol insuficiente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso inexistente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    CredencialInvalida:
+      description: >
+        Credencial inexistente, revocada (`activo=false`) o vencida
+        (`fecha_expiracion < ahora`). No se entrega dato alguno y NO se contabiliza
+        consumo facturable (RF-APM-001).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    AccesoDenegado:
+      description: >
+        Partner suspendido (`Dim_Partner.activo=false`), o conjunto de datos fuera
+        de su nivel de acceso (RF-APM-002). Un conjunto no habilitado devuelve 403,
+        nunca una lista vacía que el partner pudiera confundir con «no hay datos».
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    DemasiadasPeticiones:
+      description: >
+        Se superó `Dim_Partner.limitellamadasminuto`. Es PROTECCIÓN DE PLATAFORMA,
+        no aplicación de la cuota comercial: el cupo mensual sigue sin bloquear
+        (RN-11). La petición no se atendió, así que no es consumo facturable,
+        pero sí se registra en el log (§ 15 D2).
+      headers:
+        Retry-After:
+          schema: { type: integer }
+          description: Segundos hasta poder reintentar
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

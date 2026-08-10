@@ -10,7 +10,6 @@ from apps.accidentes.views.accion_views import (
     DescartarCasoView,
     DeshacerDescarteView,
     DeshacerFusionView,
-    EscalarSeveridadView,
     FusionarReportesView,
 )
 from apps.accidentes.views.evidencia_views import (
@@ -73,7 +72,6 @@ urlpatterns = [
         "accidentes/<str:idaccidente>/deshacer-fusion",
         DeshacerFusionView.as_view(),
     ),
-    path("accidentes/<str:idaccidente>/escalar-severidad", EscalarSeveridadView.as_view()),
     path("accidentes/<str:idaccidente>/evidencias", EvidenciaListView.as_view()),
     path("accidentes/<str:idaccidente>/evidencias/fotos", SubirEvidenciaFotoView.as_view()),
     path("accidentes/<str:idaccidente>/evidencias/notas", RegistrarNotaCampoView.as_view()),

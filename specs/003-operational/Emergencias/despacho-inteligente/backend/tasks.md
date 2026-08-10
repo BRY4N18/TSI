@@ -25,10 +25,10 @@
 
 | Story | Prioridad | CU/RF | Escenarios spec |
 |-------|-----------|-------|-----------------|
-| US1 | P1 🎯 MVP | CU-O22, O23 | Escenario 1 |
-| US2 | P1 | CU-O24, O45 | Escenarios 2, 9 |
-| US3 | P1 | CU-O35, O36 | Escenarios 3, 4, 10 |
-| US4 | P2 | CU-O33, O34, O38, RF-DES-011 | Escenarios 6, 7, 8 |
+| US1 | P1 🎯 MVP | CU-O59, O60 | Escenario 1 |
+| US2 | P1 | CU-O61, O62 | Escenarios 2, 9 |
+| US3 | P1 | CU-O63, O63 | Escenarios 3, 4, 10 |
+| US4 | P2 | CU-O64, O65, O66, RF-DES-011 | Escenarios 6, 7, 8 |
 | US5 | P2 | RF-DES-010 | Escenario 5 |
 | US6 | P2 | Frontend Angular | quickstart §3 |
 
@@ -81,7 +81,7 @@
 
 ## Phase 3: User Story 1 — Asignación automática y notificación (Priority: P1) 🎯 MVP
 
-**Goal**: CU-O22 + O23 — consumer `AccidenteReportado` ejecuta algoritmo (condado, Haversine, scoring), persiste despacho y notifica push/SMS.
+**Goal**: CU-O59 + O60 — consumer `AccidenteReportado` ejecuta algoritmo (condado, Haversine, scoring), persiste despacho y notifica push/SMS.
 
 **Independent Test**: Accidente REPORTADO dispara consumer; se crean filas Kafka en `Fact_Despacho`, `Fact_NotificacionDespacho`, `Fact_HistorialDespachoUnidad`; caso → `BUSCANDO_UNIDAD`; notificación entregada en <5s (CA-DES-001).
 
@@ -94,14 +94,14 @@
 - [X] T030 [P] [US1] Crear test de servicio (marker: service, AAA) para `asignacion_inteligente_service.py` en `backend/apps/despacho/tests/services/test_asignacion_inteligente_service.py`
 - [X] T031 [P] [US1] Crear test de servicio (marker: service, AAA) para `notificacion_despacho_service.py` en `backend/apps/despacho/tests/services/test_notificacion_despacho_service.py`
 - [X] T032 [P] [US1] Crear test de consumer (marker: service, AAA) para `accidente_reportado_consumer.py` en `backend/apps/despacho/tests/consumers/test_accidente_reportado_consumer.py`
-- [X] T033 [US1] Crear test integración camino crítico (marker: critical_path, AAA) O22 en `backend/apps/despacho/tests/integration/test_asignacion_automatica_integration.py`
+- [X] T033 [US1] Crear test integración camino crítico (marker: critical_path, AAA) O59 en `backend/apps/despacho/tests/integration/test_asignacion_automatica_integration.py`
 
 ### Implementation for User Story 1
 
 - [X] T034 [US1] Implementar `concordancia_tipo_service.py` (severidad, keywords moderada RF-DES-010) en `backend/apps/despacho/services/concordancia_tipo_service.py`
 - [X] T035 [US1] Implementar `consulta_candidatas_service.py` (filtro condado, exclusión rechazos RN-DES-006) en `backend/apps/despacho/services/consulta_candidatas_service.py`
 - [X] T036 [US1] Implementar `asignacion_inteligente_service.py` (Haversine, scoring, persistencia Kafka) en `backend/apps/despacho/services/asignacion_inteligente_service.py`
-- [X] T037 [US1] Implementar `notificacion_despacho_service.py` (push/SMS, reintento, fail-fast O36 RN-DES-011) en `backend/apps/despacho/services/notificacion_despacho_service.py`
+- [X] T037 [US1] Implementar `notificacion_despacho_service.py` (push/SMS, reintento, fail-fast O63 RN-DES-011) en `backend/apps/despacho/services/notificacion_despacho_service.py`
 - [X] T038 [US1] Implementar `accidente_reportado_consumer.py` en `backend/apps/despacho/consumers/accidente_reportado_consumer.py`
 
 **Checkpoint**: US1 operativa — asignación automática end-to-end desde REPORTADO.
@@ -113,7 +113,7 @@
 
 ## Phase 4: User Story 2 — Confirmar y rechazar despacho (Priority: P1)
 
-**Goal**: CU-O24 + O45 — unidad confirma o rechaza vía `/mi-despacho/*`; rechazo dispara O36 síncrono.
+**Goal**: CU-O61 + O62 — unidad confirma o rechaza vía `/mi-despacho/*`; rechazo dispara O63 síncrono.
 
 **Independent Test**: Unidad `GET /mi-despacho/pendientes` → `POST .../confirmar` → caso ASIGNADO, unidad En Misión; rechazo con motivo → `activo=false` + re-asignación.
 
@@ -130,8 +130,8 @@
 
 ### Implementation for User Story 2
 
-- [X] T046 [US2] Implementar `confirmar_despacho_service.py` (O24, transición ASIGNADO, En Misión) en `backend/apps/despacho/services/confirmar_despacho_service.py`
-- [X] T047 [US2] Implementar `rechazar_despacho_service.py` (O45, activo=false, dispara O36 síncrono) en `backend/apps/despacho/services/rechazar_despacho_service.py`
+- [X] T046 [US2] Implementar `confirmar_despacho_service.py` (O61, transición ASIGNADO, En Misión) en `backend/apps/despacho/services/confirmar_despacho_service.py`
+- [X] T047 [US2] Implementar `rechazar_despacho_service.py` (O62, activo=false, dispara O63 síncrono) en `backend/apps/despacho/services/rechazar_despacho_service.py`
 - [X] T048 [US2] Implementar vistas mi-despacho en `backend/apps/despacho/views/mi_despacho_views.py` y registrar en `backend/apps/despacho/views/urls.py`
 
 **Checkpoint**: US2 operativa — ciclo unidad confirma/rechaza completo.
@@ -143,9 +143,9 @@
 
 ## Phase 5: User Story 3 — Timeout y re-asignación (Priority: P1)
 
-**Goal**: CU-O35 + O36 — job timeout publica `DespachoTimeout_topic`; consumer O36 re-asigna; agotamiento candidatas → alerta crítica.
+**Goal**: CU-O63 + O63 — job timeout publica `DespachoTimeout_topic`; consumer O63 re-asigna; agotamiento candidatas → alerta crítica.
 
-**Independent Test**: Despacho Pendiente >90s → job O35 marca Timeout + evento → consumer crea nuevo intento; escenario sin candidatas genera alerta (Escenario 4).
+**Independent Test**: Despacho Pendiente >90s → job O63 marca Timeout + evento → consumer crea nuevo intento; escenario sin candidatas genera alerta (Escenario 4).
 
 **Measurable Criteria**: CA-DES-006, CA-DES-007, CA-DES-013; Escenarios 3, 4, 10.
 
@@ -154,13 +154,13 @@
 - [X] T050 [P] [US3] Crear test de servicio (marker: service, AAA) para `timeout_despacho_service.py` en `backend/apps/despacho/tests/services/test_timeout_despacho_service.py`
 - [X] T051 [P] [US3] Crear test de servicio (marker: service, AAA) para `reasignacion_despacho_service.py` en `backend/apps/despacho/tests/services/test_reasignacion_despacho_service.py`
 - [X] T052 [P] [US3] Crear test de consumer (marker: service, AAA) para `despacho_timeout_consumer.py` en `backend/apps/despacho/tests/consumers/test_despacho_timeout_consumer.py`
-- [X] T053 [US3] Crear test integración (marker: critical_path, AAA) timeout→O36 en `backend/apps/despacho/tests/integration/test_timeout_reasignacion_integration.py`
-- [X] T054 [P] [US3] Crear test integración (marker: critical_path, AAA) fallo entrega O23→O36 en `backend/apps/despacho/tests/integration/test_fallo_notificacion_integration.py`
+- [X] T053 [US3] Crear test integración (marker: critical_path, AAA) timeout→O63 en `backend/apps/despacho/tests/integration/test_timeout_reasignacion_integration.py`
+- [X] T054 [P] [US3] Crear test integración (marker: critical_path, AAA) fallo entrega O60→O63 en `backend/apps/despacho/tests/integration/test_fallo_notificacion_integration.py`
 
 ### Implementation for User Story 3
 
-- [X] T055 [US3] Implementar `reasignacion_despacho_service.py` (O36, exclusión rechazos, alerta crítica) en `backend/apps/despacho/services/reasignacion_despacho_service.py`
-- [X] T056 [US3] Implementar `timeout_despacho_service.py` (O35, activo=false, publica evento) en `backend/apps/despacho/services/timeout_despacho_service.py`
+- [X] T055 [US3] Implementar `reasignacion_despacho_service.py` (O63, exclusión rechazos, alerta crítica) en `backend/apps/despacho/services/reasignacion_despacho_service.py`
+- [X] T056 [US3] Implementar `timeout_despacho_service.py` (O63, activo=false, publica evento) en `backend/apps/despacho/services/timeout_despacho_service.py`
 - [X] T057 [US3] Implementar job `timeout_despacho_job.py` en `backend/apps/despacho/jobs/timeout_despacho_job.py`
 - [X] T058 [US3] Implementar `despacho_timeout_consumer.py` en `backend/apps/despacho/consumers/despacho_timeout_consumer.py`
 
@@ -173,7 +173,7 @@
 
 ## Phase 6: User Story 4 — Acciones operador y monitoreo (Priority: P2)
 
-**Goal**: CU-O33, O34, O38 + RF-DES-011 — asignación manual, escalamiento condado vecino, despacho múltiple, monitoreo REST + SSE.
+**Goal**: CU-O64, O65, O66 + RF-DES-011 — asignación manual, escalamiento condado vecino, despacho múltiple, monitoreo REST + SSE.
 
 **Independent Test**: Operador consulta estado despacho, lista candidatas, asigna manualmente, escala zona, coordina segunda unidad; SSE emite eventos en tiempo real.
 
@@ -193,9 +193,9 @@
 
 ### Implementation for User Story 4
 
-- [X] T069 [US4] Implementar `asignacion_manual_service.py` (O33, origen Manual) en `backend/apps/despacho/services/asignacion_manual_service.py`
-- [X] T070 [US4] Implementar `escalamiento_zona_service.py` (O34, condados vecinos, Dim_NotaAccidente) en `backend/apps/despacho/services/escalamiento_zona_service.py`
-- [X] T071 [US4] Implementar `coordinacion_multiple_service.py` (O38, validación N-N) en `backend/apps/despacho/services/coordinacion_multiple_service.py`
+- [X] T069 [US4] Implementar `asignacion_manual_service.py` (O64, origen Manual) en `backend/apps/despacho/services/asignacion_manual_service.py`
+- [X] T070 [US4] Implementar `escalamiento_zona_service.py` (O65, condados vecinos, Dim_NotaAccidente) en `backend/apps/despacho/services/escalamiento_zona_service.py`
+- [X] T071 [US4] Implementar `coordinacion_multiple_service.py` (O66, validación N-N) en `backend/apps/despacho/services/coordinacion_multiple_service.py`
 - [X] T072 [US4] Implementar `monitoreo_despacho_service.py` (historial intentos, SSE pub/sub) en `backend/apps/despacho/services/monitoreo_despacho_service.py`
 - [X] T073 [US4] Implementar vistas asignación en `backend/apps/despacho/views/asignacion_views.py`
 - [X] T074 [US4] Implementar vistas monitoreo + SSE en `backend/apps/despacho/views/monitoreo_views.py` y completar `backend/apps/despacho/views/urls.py`
@@ -260,7 +260,7 @@
 - [X] T093 [Histórico-UI] [US6] Implementar página monitoreo en `frontend/src/app/modules/despacho/pages/monitoreo-despacho/monitoreo-despacho.page.ts`
 - [X] T094 [Histórico-UI] [US6] Implementar página asignación manual en `frontend/src/app/modules/despacho/pages/asignacion-manual/asignacion-manual.page.ts`
 - [X] T095 [Histórico-UI] [US6] Implementar página mi-despacho unidad en `frontend/src/app/modules/despacho/pages/mi-despacho/mi-despacho.page.ts`
-- [X] T095b [Histórico-UI] [US6] Rediseño dashboard mi-despacho (single-incident): header con severidad/código/countdown de respuesta, mapa de solo-lectura con ruta real (`shared/ui/map/read-only-route-map.component.ts`, `shared/services/ruta.service.ts` — movido desde `seguimiento/` por ser transversal), sidebar "Estado de unidad" (`idunidademergencia`/`unidademergencia` agregados a `PendienteDespacho`/`DetalleDespachoUnidadData`), cola compacta para pendientes adicionales, botones Confirmar/Rechazar con estado de carga completo (gerundio+spinner, revert a 15s) per `design-system.md §5`. Completa CU-O24 (`spec.md:312`, mapa+ruta ya especificado, no implementado hasta ahora). Personal asignado/equipamiento crítico quedan fuera de alcance — no existen en el modelo de datos (`Dim_UnidadEmergencia`); requerirían un `/speckit-specify` previo antes de implementarse.
+- [X] T095b [Histórico-UI] [US6] Rediseño dashboard mi-despacho (single-incident): header con severidad/código/countdown de respuesta, mapa de solo-lectura con ruta real (`shared/ui/map/read-only-route-map.component.ts`, `shared/services/ruta.service.ts` — movido desde `seguimiento/` por ser transversal), sidebar "Estado de unidad" (`idunidademergencia`/`unidademergencia` agregados a `PendienteDespacho`/`DetalleDespachoUnidadData`), cola compacta para pendientes adicionales, botones Confirmar/Rechazar con estado de carga completo (gerundio+spinner, revert a 15s) per `design-system.md §5`. Completa CU-O61 (`spec.md:312`, mapa+ruta ya especificado, no implementado hasta ahora). Personal asignado/equipamiento crítico quedan fuera de alcance — no existen en el modelo de datos (`Dim_UnidadEmergencia`); requerirían un `/speckit-specify` previo antes de implementarse.
 - [X] T096 [Histórico-UI] [US6] Implementar página parámetros algoritmo en `frontend/src/app/modules/despacho/pages/parametros-algoritmo/parametros-algoritmo.page.ts`
 - [X] T097 [Histórico-UI] [US6] Registrar entradas sidebar por rol en `frontend/src/app/core/sidebar/despacho-menu.config.ts`
 
@@ -298,9 +298,9 @@
 
 ```text
 Phase 2 (Foundational)
-    └── US1 (O22/O23 automático) ──┬── US2 (O24/O45)
-                                    ├── US3 (O35/O36)
-                                    └── US4 (O33/O34/O38/monitoreo)
+    └── US1 (O59/O60 automático) ──┬── US2 (O61/O62)
+                                    ├── US3 (O63/O63)
+                                    └── US4 (O64/O65/O66/monitoreo)
               US5 (RF-DES-010) ─────┘ (paralelo tras Phase 2)
     US2 + US4 + US5 ── US6 (frontend)
     US1–US6 ── Phase 9 (cadena crítica)
@@ -353,7 +353,7 @@ T014+T015 ubicacion_unidad_repository
 ### MVP First (User Story 1 Only)
 
 1. Completar Phase 1 + Phase 2
-2. Completar Phase 3 (CU-O22 + O23)
+2. Completar Phase 3 (CU-O59 + O60)
 3. **VALIDAR**: Escenario A quickstart — accidente REPORTADO → despacho automático en <5s
 4. Demo: primer intento notificado a unidad óptima del condado
 
@@ -370,7 +370,7 @@ T014+T015 ubicacion_unidad_repository
 
 ### Suggested MVP Scope
 
-**US1 (CU-O22 + O23)** — asignación automática es el corazón del camino crítico; sin US1 no hay despacho que confirmar.
+**US1 (CU-O59 + O60)** — asignación automática es el corazón del camino crítico; sin US1 no hay despacho que confirmar.
 
 ---
 
@@ -379,7 +379,7 @@ T014+T015 ubicacion_unidad_repository
 - Patrón AAA obligatorio; usar fixtures `mock_pinot`, `mock_kafka`, `auth_headers` de `backend/conftest.py`
 - Ningún repositorio escribe directo a Pinot — solo publicación Kafka
 - Reutilizar `historial_estado_unidad_repository.py` y `unidad_emergencia_repository.py` existentes (evidencia-unidad)
-- `ReasignacionDespachoService` compartido por O45 síncrono, O23 fail-fast y consumer O36
+- `ReasignacionDespachoService` compartido por O62 síncrono, O60 fail-fast y consumer O63
 - Markers: `repository` para repos, `service` para servicios/consumers, `api` para contract tests, `critical_path` para integración despacho
 - Commit sugerido tras cada par implementación+test o al cerrar cada checkpoint
 
@@ -393,8 +393,8 @@ T014+T015 ubicacion_unidad_repository
 
 | Story | Prioridad | CU/RF | Goal |
 |-------|-----------|-------|------|
-| US7 | P1 | O34/O36 | Notificación activa a Administrador sin candidatas |
-| US8 | P2 | O22/O36 | Hook no-op elegibilidad/prioridad por plan (fail-open) |
+| US7 | P1 | O65/O63 | Notificación activa a Administrador sin candidatas |
+| US8 | P2 | O59/O63 | Hook no-op elegibilidad/prioridad por plan (fail-open) |
 
 ### US7 — Alerta Administrador
 
@@ -409,7 +409,7 @@ T014+T015 ubicacion_unidad_repository
 
 - [X] T109 [P] [US8] Test unit: hook no filtra candidatas hoy (fail-open) en `backend/apps/despacho/tests/unit/test_elegibilidad_plan_hook.py`
 - [X] T110 [US8] Introducir método/extensión documentada `filtrar_por_plan_severidad` (no-op) en `consulta_candidatas_service.py`
-- [X] T111 [US8] Invocar hook desde ranking O22/O36 sin cambiar scores actuales; comentario TODO Suscripciones-Facturación
+- [X] T111 [US8] Invocar hook desde ranking O59/O63 sin cambiar scores actuales; comentario TODO Suscripciones-Facturación
 - [X] T112 [US8] Documentar CA-DES-014 en `traceability.md` + nota en `research.md` si aplica
 
 **Checkpoint delta**: Sin unidades → Admin notificado; hook listo sin depender de `Dim_Plan`.

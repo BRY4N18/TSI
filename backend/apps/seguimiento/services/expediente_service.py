@@ -1,4 +1,4 @@
-"""Expediente completo — operador y cliente (RF-SEG-006 / CU-O29)."""
+"""Expediente completo — operador y cliente (RF-SEG-006 / CU-O82)."""
 
 from __future__ import annotations
 

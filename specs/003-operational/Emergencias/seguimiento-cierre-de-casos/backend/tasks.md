@@ -25,13 +25,13 @@
 
 | Story | Prioridad | CU/RF | Escenarios spec |
 |-------|-----------|-------|-----------------|
-| US1 | P1 🎯 MVP | CU-O25, O26 | Escenarios 1, 2, 3 |
+| US1 | P1 🎯 MVP | CU-O68, O70 | Escenarios 1, 2, 3 |
 | US2 | P1 | RF-SEG-007, RNF-SEG-001 | Escenarios 1, 6 |
-| US3 | P1 | CU-O28, RF-SEG-004 | Escenario 4 |
-| US4 | P2 | CU-O39 | Escenario 8 |
-| US5 | P2 | CU-O42, O44 | Escenarios 9, 10 |
-| US6 | P2 | CU-O29, RF-SEG-005/006 | Escenario 5 |
-| US7 | P2 | CU-O37, RNF-SEG-004/005 | Escenario 7 |
+| US3 | P1 | CU-O80, RF-SEG-004 | Escenario 4 |
+| US4 | P2 | CU-O71 | Escenario 8 |
+| US5 | P2 | CU-O72, O81 | Escenarios 9, 10 |
+| US6 | P2 | CU-O82, RF-SEG-005/006 | Escenario 5 |
+| US7 | P2 | CU-O69, RNF-SEG-004/005 | Escenario 7 |
 | US8 | P2 | Frontend Angular | quickstart §3 |
 
 ---
@@ -80,7 +80,7 @@
 
 ## Phase 3: User Story 1 — Rastreo GPS y llegada al sitio (Priority: P1) 🎯 MVP
 
-**Goal**: CU-O25 + O26 — unidad envía GPS cada 10s; llegada manual o geofencing; caso → EN_ATENCION.
+**Goal**: CU-O68 + O70 — unidad envía GPS cada 10s; llegada manual o geofencing; caso → EN_ATENCION.
 
 **Independent Test**: Despacho Confirmado → `POST /mi-seguimiento/posicion` persiste Kafka + snapshot; `POST .../llegada` o geofencing registra En_sitio y `fechahorallegada`.
 
@@ -96,8 +96,8 @@
 
 ### Implementation for User Story 1
 
-- [X] T030 [US1] Implementar `registrar_llegada_service.py` (O26 manual, historial En_sitio, fechahorallegada) en `backend/apps/seguimiento/services/registrar_llegada_service.py`
-- [X] T031 [US1] Implementar `registrar_posicion_gps_service.py` (O25 Kafka GPS + snapshot + geofencing O26 + ETA) en `backend/apps/seguimiento/services/registrar_posicion_gps_service.py`
+- [X] T030 [US1] Implementar `registrar_llegada_service.py` (O70 manual, historial En_sitio, fechahorallegada) en `backend/apps/seguimiento/services/registrar_llegada_service.py`
+- [X] T031 [US1] Implementar `registrar_posicion_gps_service.py` (O68 Kafka GPS + snapshot + geofencing O70 + ETA) en `backend/apps/seguimiento/services/registrar_posicion_gps_service.py`
 - [X] T032 [US1] Implementar vistas mi-seguimiento GPS/llegada en `backend/apps/seguimiento/views/mi_seguimiento_views.py` y registrar en `backend/apps/seguimiento/views/urls.py`
 
 **Checkpoint**: US1 operativa — rastreo GPS y llegada al sitio end-to-end.
@@ -140,7 +140,7 @@
 
 ## Phase 5: User Story 3 — Cierre multi-despacho (Priority: P1)
 
-**Goal**: CU-O28 + RF-SEG-004 — validar todos Retirado, auto-retiro con idusuario ejecutor, horafin/duracionminutos, liberar unidades.
+**Goal**: CU-O80 + RF-SEG-004 — validar todos Retirado, auto-retiro con idusuario ejecutor, horafin/duracionminutos, liberar unidades.
 
 **Independent Test**: Caso 2 despachos; uno Retirado → `POST .../cerrar` auto-retira pendiente, CERRADO, tiempos SLA inmutables.
 
@@ -154,7 +154,7 @@
 
 ### Implementation for User Story 3
 
-- [X] T047 [US3] Implementar `cerrar_caso_service.py` (O28, auto-retiro, RF-SEG-004, tiempos SLA) en `backend/apps/seguimiento/services/cerrar_caso_service.py`
+- [X] T047 [US3] Implementar `cerrar_caso_service.py` (O80, auto-retiro, RF-SEG-004, tiempos SLA) en `backend/apps/seguimiento/services/cerrar_caso_service.py`
 - [X] T048 [US3] Implementar vista cierre en `backend/apps/seguimiento/views/cierre_views.py` y registrar en `backend/apps/seguimiento/views/urls.py`
 
 **Checkpoint**: US3 operativa — cierre de caso con validación N-N.
@@ -166,7 +166,7 @@
 
 ## Phase 6: User Story 4 — Abortar misión en tránsito (Priority: P2)
 
-**Goal**: CU-O39 — Abortado, unidad Activa, evento `DespachoAbortado_topic` → O36 en despacho.
+**Goal**: CU-O71 — Abortado, unidad Activa, evento `DespachoAbortado_topic` → O63 en despacho.
 
 **Independent Test**: Unidad `POST .../abortar` → historial Abortado, Kafka evento, consumer despacho re-asigna.
 
@@ -177,15 +177,15 @@
 - [X] T050 [P] [US4] Crear test de contrato API (marker: api, AAA) para `POST /api/v1/mi-seguimiento/despachos/{iddespacho}/abortar` en `backend/apps/seguimiento/tests/api/test_abortar_mision_contract.py`
 - [X] T051 [P] [US4] Crear test de servicio (marker: service, AAA) para `abortar_mision_service.py` en `backend/apps/seguimiento/tests/services/test_abortar_mision_service.py`
 - [X] T052 [P] [US4] Crear test de consumer (marker: service, AAA) para `despacho_abortado_consumer.py` en `backend/apps/despacho/tests/consumers/test_despacho_abortado_consumer.py`
-- [X] T053 [US4] Crear test integración (marker: critical_path, AAA) aborto→O36 en `backend/apps/seguimiento/tests/integration/test_abortar_mision_integration.py`
+- [X] T053 [US4] Crear test integración (marker: critical_path, AAA) aborto→O63 en `backend/apps/seguimiento/tests/integration/test_abortar_mision_integration.py`
 
 ### Implementation for User Story 4
 
-- [X] T054 [US4] Implementar `abortar_mision_service.py` (O39, publica `DespachoAbortado_topic`) en `backend/apps/seguimiento/services/abortar_mision_service.py`
+- [X] T054 [US4] Implementar `abortar_mision_service.py` (O71, publica `DespachoAbortado_topic`) en `backend/apps/seguimiento/services/abortar_mision_service.py`
 - [X] T055 [US4] Extender vista abortar en `backend/apps/seguimiento/views/mi_seguimiento_views.py`
 - [X] T056 [US4] Implementar `despacho_abortado_consumer.py` (invoca `ReasignacionDespachoService`) en `backend/apps/despacho/consumers/despacho_abortado_consumer.py`
 
-**Checkpoint**: US4 operativa — aborto dispara re-asignación O36.
+**Checkpoint**: US4 operativa — aborto dispara re-asignación O63.
 
 **US4 Gate**:
 - [X] T057 [US4] Validar CA-SEG-012 en `specs/003-operational/Emergencias/seguimiento-cierre-de-casos/backend/traceability.md`
@@ -194,9 +194,9 @@
 
 ## Phase 7: User Story 5 — Cancelación y forzar retiro (Priority: P2)
 
-**Goal**: CU-O42 + O44 — cancelar falsa alarma (solo motivo); forzar retiro unitario con idusuario operador.
+**Goal**: CU-O72 + O81 — cancelar falsa alarma (solo motivo); forzar retiro unitario con idusuario operador.
 
-**Independent Test**: O42 sin RF-SEG-004 ni evidencia; O44 parcial deja EN_ATENCION o cierra si todos Retirado.
+**Independent Test**: O72 sin RF-SEG-004 ni evidencia; O81 parcial deja EN_ATENCION o cierra si todos Retirado.
 
 **Measurable Criteria**: CA-SEG-013, CA-SEG-014; Escenarios 9, 10; RN-SEG-010.
 
@@ -209,8 +209,8 @@
 
 ### Implementation for User Story 5
 
-- [X] T062 [US5] Implementar `cancelar_caso_service.py` (O42, motivo Dim_NotaAccidente, sin RF-SEG-004) en `backend/apps/seguimiento/services/cancelar_caso_service.py`
-- [X] T063 [US5] Implementar `forzar_retiro_service.py` (O44, reevalúa O28) en `backend/apps/seguimiento/services/forzar_retiro_service.py`
+- [X] T062 [US5] Implementar `cancelar_caso_service.py` (O72, motivo Dim_NotaAccidente, sin RF-SEG-004) en `backend/apps/seguimiento/services/cancelar_caso_service.py`
+- [X] T063 [US5] Implementar `forzar_retiro_service.py` (O81, reevalúa O80) en `backend/apps/seguimiento/services/forzar_retiro_service.py`
 - [X] T064 [US5] Completar vistas cancelar/forzar en `backend/apps/seguimiento/views/cierre_views.py`
 
 **Checkpoint**: US5 operativa — cancelación y cierre forzado desde central.
@@ -222,7 +222,7 @@
 
 ## Phase 8: User Story 6 — Historial y expedientes (Priority: P2)
 
-**Goal**: CU-O29 + RF-SEG-005/006 — historial operador; expedientes cliente por condado + PDF.
+**Goal**: CU-O82 + RF-SEG-005/006 — historial operador; expedientes cliente por condado + PDF.
 
 **Independent Test**: Operador lista con filtros; cliente solo CERRADOS en `Dim_Condado`; HTTP 403 cliente en mapa.
 
@@ -255,7 +255,7 @@
 
 ## Phase 9: User Story 7 — Jobs GPS señal perdida y depuración (Priority: P2)
 
-**Goal**: CU-O37 + RNF-SEG-004 — alerta GPS sin modificar despacho; depuración 90d conservando 3 puntos por despacho.
+**Goal**: CU-O69 + RNF-SEG-004 — alerta GPS sin modificar despacho; depuración 90d conservando 3 puntos por despacho.
 
 **Independent Test**: Sin GPS >60s → `Dim_NotaAccidente` alerta; job depuración conserva origen/llegada/cierre.
 
@@ -270,7 +270,7 @@
 
 ### Implementation for User Story 7
 
-- [X] T083 [US7] Implementar `gps_senal_perdida_service.py` (O37, umbral configurable) en `backend/apps/seguimiento/services/gps_senal_perdida_service.py`
+- [X] T083 [US7] Implementar `gps_senal_perdida_service.py` (O69, umbral configurable) en `backend/apps/seguimiento/services/gps_senal_perdida_service.py`
 - [X] T084 [US7] Implementar `gps_depuracion_service.py` (3 puntos por iddespacho) en `backend/apps/seguimiento/services/gps_depuracion_service.py`
 - [X] T085 [US7] Implementar job `gps_senal_perdida_job.py` en `backend/apps/seguimiento/jobs/gps_senal_perdida_job.py`
 - [X] T086 [US7] Implementar job `gps_depuracion_job.py` en `backend/apps/seguimiento/jobs/gps_depuracion_job.py`
@@ -347,7 +347,7 @@
 ```text
 Foundational → US1 (GPS/llegada) → US2 (mapa/SSE)
                               ↘ US3 (cierre) → US6 (expedientes)
-                              ↘ US4 (abortar) → despacho O36
+                              ↘ US4 (abortar) → despacho O63
                               ↘ US7 (jobs GPS)
 US3 → US5 (cancelar/forzar)
 US1–US6 → US8 (frontend por feature)
@@ -412,7 +412,7 @@ pytest backend/apps/seguimiento/tests/services/test_registrar_llegada_service.py
 - Orden dentro de cada historia: **tests primero** (fallan) → servicio/repositorio → vista → integración
 - Cada servicio/repositorio/job tiene par test con marker y AAA explícito
 - Reutilizar repos `core/repositories/despacho/` — no duplicar `Fact_Despacho` / historial despacho
-- Consumer `despacho_abortado_consumer.py` vive en `apps/despacho/` (dueño O36)
+- Consumer `despacho_abortado_consumer.py` vive en `apps/despacho/` (dueño O63)
 - Sin escritura directa Pinot — solo Kafka
 - Commit tras cada task o grupo lógico; validar checkpoint antes de siguiente historia
 

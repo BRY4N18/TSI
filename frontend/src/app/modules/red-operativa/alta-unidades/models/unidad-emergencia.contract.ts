@@ -52,7 +52,7 @@ export interface UnidadesListPage {
   pagination: PaginationMeta;
 }
 
-/** OpenAPI 1.2.0 — idcliente deprecated/ignored (JWT Proveedor); gmail required. */
+/** OpenAPI 1.2.0 — idcliente deprecated/ignored (JWT Proveedor); gmail opcional (corrección 2026-08-08). */
 export interface UnidadCreateRequest {
   idcondado: number;
   tipopropiedad: TipoPropiedad;
@@ -62,8 +62,8 @@ export interface UnidadCreateRequest {
   unidademergencia: string;
   tipounidademergencia: TipoUnidadEmergencia;
   activo?: boolean;
-  /** Requerido: crea login Unidad + liga idusuario (CU-O30). */
-  gmail: string;
+  /** Opcional: si se envía, crea login Unidad + liga idusuario (CU-O30). Sin él, la unidad queda sin acceso hasta que se le asigne login después. */
+  gmail?: string;
   /** @deprecated Ignorado — se resuelve del JWT */
   idcliente?: number;
 }

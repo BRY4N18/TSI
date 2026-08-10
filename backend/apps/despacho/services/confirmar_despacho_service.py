@@ -1,4 +1,4 @@
-"""CU-O24 — confirmar despacho."""
+"""CU-O61 — confirmar despacho."""
 
 from __future__ import annotations
 
@@ -74,6 +74,14 @@ class ConfirmarDespachoService:
             iddespacho=despacho["iddespacho"],
             estadonuevo=ESTADO_CONFIRMADO,
             estadoanterior=ESTADO_PENDIENTE,
+        )
+        # RN-SEG-003: el estado de disponibilidad se sobreescribe a En_Mision al
+        # confirmar; sin guardar el estado previo aquí, se pierde para siempre y
+        # el retiro/aborto no puede restaurar "Fuera de servicio" (solo puede ver
+        # "En_Mision", que es el propio estado que este confirmar acaba de fijar).
+        estado_previo, _ = self.historial_unidad.get_current_estado(idunidademergencia)
+        self.despachos.publish_update(
+            despacho["iddespacho"], {"estado_unidad_previo": estado_previo}
         )
         self.historial_unidad.append_estado(
             idunidademergencia=idunidademergencia,

@@ -14,8 +14,8 @@ Dar visibilidad y trazabilidad completa al ciclo de vida del caso de emergencia 
 ### Session 2026-07-09
 
 - Q: ¿Cómo se determina si un caso cerrado pertenece a las zonas geográficas de interés del Cliente (RF-SEG-006)? → A: Por condado (`Dim_Condado`): el cliente selecciona condados en onboarding (`Dim_Preferencias_Cliente.zonas_geograficas`); un caso es visible si `Fact_Accidente.idcalle` → `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` coincide con uno de esos condados.
-- Q: ¿Quién se registra como `idusuario` en los retiros auto-generados al ejecutar O28 con despachos pendientes (RF-SEG-003 paso 2)? → A: El usuario que ejecutó el cierre (operador de central o usuario de la unidad móvil), en cada `Fact_HistorialDespachoUnidad` (Retirado) auto-generado.
-- Q: ¿Qué datos son obligatorios al cancelar un caso O42 vs. cierre normal O28 (RF-SEG-004 / RF-SEG-010)? → A: Solo motivo obligatorio en `Dim_NotaAccidente` más `horafin`/`duracionminutos`; sin campos de RF-SEG-004 (resultado, calificación, conteos finales).
+- Q: ¿Quién se registra como `idusuario` en los retiros auto-generados al ejecutar O80 con despachos pendientes (RF-SEG-003 paso 2)? → A: El usuario que ejecutó el cierre (operador de central o usuario de la unidad móvil), en cada `Fact_HistorialDespachoUnidad` (Retirado) auto-generado.
+- Q: ¿Qué datos son obligatorios al cancelar un caso O72 vs. cierre normal O80 (RF-SEG-004 / RF-SEG-010)? → A: Solo motivo obligatorio en `Dim_NotaAccidente` más `horafin`/`duracionminutos`; sin campos de RF-SEG-004 (resultado, calificación, conteos finales).
 - Q: ¿Qué coordenadas GPS se conservan tras la depuración a 90 días (RNF-SEG-004)? → A: Por evento de despacho (`iddespacho`): primer GPS tras `fechahoradespacho` (origen), GPS más cercano a `fechahorallegada` (llegada), último GPS antes de `fechahoraretiro` (cierre).
 - Q: ¿Qué mecanismo entrega las actualizaciones del mapa en tiempo real al Operador (RF-SEG-007)? → A: SSE (`text/event-stream`) mediante endpoint dedicado de seguimiento que emite eventos GPS, ETA y cambios de estado, alineado con `despacho-inteligente`.
 
@@ -28,14 +28,14 @@ El modelo de datos sigue una relacion **N-N entre Caso y Unidad**: un accidente 
 **Regla clave de cierre:** el Caso solo pasa a estado **CERRADO** cuando TODOS los `Fact_Despacho` asociados a ese `idaccidente` tienen `fechahoraretiro` no nulo (ultimo estado en `Fact_HistorialDespachoUnidad` = Retirado). No existe cierre parcial.
 
 **Casos de uso incluidos:**
-- CU-O25: Rastrear en tiempo real la posicion GPS de la unidad en camino hacia el accidente, almacenando ubicaciones repetidas en `Dim_HistorialUbicacionUnidadEmergencia` y actualizando el snapshot en `Dim_UnidadEmergencia`. Actor: Operador de emergencias / Sistema.
-- CU-O26: Registrar llegada de la unidad al sitio del accidente mediante `Fact_HistorialDespachoUnidad` (estado En_sitio) y actualizar `Fact_Despacho.fechahorallegada`. Actor: Unidad de emergencia.
-- CU-O28: Cerrar caso de emergencia validando que todos los despachos esten Retirado, registrar `Fact_Accidente.horafin`/`duracionminutos` y liberar unidades. Actor: Operador de emergencias / Unidad de emergencia.
-- CU-O29: Consultar historial de emergencias y expedientes de casos atendidos (join extenso con `Fact_HistorialDespachoUnidad`, `Dim_EstadoDespacho`, `Fact_NotificacionDespacho`, `Dim_HistorialUbicacionUnidadEmergencia`). Actor: Operador de emergencias / Cliente.
-- CU-O37: Detectar perdida de señal GPS mediante job que compara `MAX(fechahora)` en `Dim_HistorialUbicacionUnidadEmergencia` contra la hora actual e inserta alerta en `Dim_NotaAccidente`. Actor: Sistema / Operador de emergencias.
-- CU-O39: Abortar mision en transito registrando `Fact_HistorialDespachoUnidad` (Abortado), retornando la unidad a Activa y disparando re-asignacion O36. Actor: Unidad de emergencia.
-- CU-O42: Cancelar caso con unidad despachada (falsa alarma): registrar `fechahoraretiro`, todos los despachos Retirado, caso CERRADO, sin evidencia fotografica. Actor: Operador de emergencias / Unidad de emergencia.
-- CU-O44: Forzar cierre desde central: operador establece `fechahoraretiro` para un despacho especifico, inserta `Fact_HistorialDespachoUnidad` (Retirado, forzado por operador) y reevalua condicion de O28. Actor: Operador de emergencias.
+- CU-O68: Rastrear en tiempo real la posicion GPS de la unidad en camino hacia el accidente, almacenando ubicaciones repetidas en `Dim_HistorialUbicacionUnidadEmergencia` y actualizando el snapshot en `Dim_UnidadEmergencia`. Actor: Operador de emergencias / Sistema.
+- CU-O70: Registrar llegada de la unidad al sitio del accidente mediante `Fact_HistorialDespachoUnidad` (estado En_sitio) y actualizar `Fact_Despacho.fechahorallegada`. Actor: Unidad de emergencia.
+- CU-O80: Cerrar caso de emergencia validando que todos los despachos esten Retirado, registrar `Fact_Accidente.horafin`/`duracionminutos` y liberar unidades. Actor: Operador de emergencias (exclusivo, corrección 2026-08-08). También se dispara automáticamente al completarse todos los retiros vía CU-O81.
+- CU-O82: Consultar historial de emergencias y expedientes de casos atendidos (join extenso con `Fact_HistorialDespachoUnidad`, `Dim_EstadoDespacho`, `Fact_NotificacionDespacho`, `Dim_HistorialUbicacionUnidadEmergencia`). Actor: Operador de emergencias / Cliente.
+- CU-O69: Detectar perdida de señal GPS mediante job que compara `MAX(fechahora)` en `Dim_HistorialUbicacionUnidadEmergencia` contra la hora actual e inserta alerta en `Dim_NotaAccidente`. Actor: Sistema / Operador de emergencias.
+- CU-O71: Abortar mision en transito registrando `Fact_HistorialDespachoUnidad` (Abortado), retornando la unidad a Activa y disparando re-asignacion O63. Actor: Unidad de emergencia.
+- CU-O72: Cancelar caso con unidad despachada (falsa alarma): registrar `fechahoraretiro`, todos los despachos Retirado, caso CERRADO, sin evidencia fotografica. Actor: Operador de emergencias / Unidad de emergencia.
+- CU-O81: Forzar cierre desde central: operador establece `fechahoraretiro` para un despacho especifico, inserta `Fact_HistorialDespachoUnidad` (Retirado, forzado por operador) y reevalua condicion de O80. Actor: Operador de emergencias.
 
 **Tablas de base de datos utilizadas:**
 - `Fact_Accidente` (`idaccidente`, `horafin`, `duracionminutos`): datos del caso.
@@ -55,14 +55,14 @@ El modelo de datos sigue una relacion **N-N entre Caso y Unidad**: un accidente 
 
 | Actor | Rol en este modulo | Interaccion principal |
 |---|---|---|
-| **Operador de emergencias** | Supervisor del caso | Rastrea en tiempo real la posicion y ETA de la unidad en camino. Puede cerrar el caso registrando tiempos finales. Consulta el historial de emergencias. Fuerza cierre de despachos desde central (O44). Cancela casos con unidad despachada (O42). |
-| **Unidad de emergencia** | Ejecutor en campo | Reporta su posicion GPS continua mientras esta en camino. Registra la llegada al sitio (O26). Aborta mision en transito (O39). Puede cerrar el caso desde la app movil. |
+| **Operador de emergencias** | Supervisor del caso | Rastrea en tiempo real la posicion y ETA de la unidad en camino. Puede cerrar el caso registrando tiempos finales. Consulta el historial de emergencias. Fuerza cierre de despachos desde central (O81). Cancela casos con unidad despachada (O72). |
+| **Unidad de emergencia** | Ejecutor en campo | Reporta su posicion GPS continua mientras esta en camino. Registra la llegada al sitio (O70). Aborta mision en transito (O71). **No** cierra casos (corrección 2026-08-08) — el cierre es exclusivo del Operador. |
 | **Cliente** | Consultor de historial | Consulta expedientes de casos cerrados cuyo condado (`Dim_Condado`) esta en sus zonas de interes configuradas en onboarding. No puede ver casos activos en tiempo real. |
-| **Sistema** | Rastreador, calculador y monitor | Recibe posiciones GPS de la unidad en camino, recalcula ETA continuamente, almacena en `Dim_HistorialUbicacionUnidadEmergencia` y actualiza snapshot en `Dim_UnidadEmergencia`. Detecta automaticamente la llegada al sitio por geofencing. Ejecuta job de deteccion de perdida de señal GPS (O37). Dispara re-asignacion O36 al abortar mision (O39). |
+| **Sistema** | Rastreador, calculador y monitor | Recibe posiciones GPS de la unidad en camino, recalcula ETA continuamente, almacena en `Dim_HistorialUbicacionUnidadEmergencia` y actualiza snapshot en `Dim_UnidadEmergencia`. Detecta automaticamente la llegada al sitio por geofencing. Ejecuta job de deteccion de perdida de señal GPS (O69). Dispara re-asignacion O63 al abortar mision (O71). |
 
 ## 4. Requisitos funcionales
 
-### RF-SEG-001: Rastreo GPS en tiempo real de la unidad en camino (CU-O25)
+### RF-SEG-001: Rastreo GPS en tiempo real de la unidad en camino (CU-O68)
 
 El Sistema debe recibir y procesar la posicion GPS de la unidad de emergencia mientras esta en camino hacia el sitio del accidente:
 
@@ -72,7 +72,7 @@ El Sistema debe recibir y procesar la posicion GPS de la unidad de emergencia mi
 4. El sistema recalcula el ETA (tiempo estimado de llegada) basado en la distancia lineal remanente y actualiza la estimacion en el mapa.
 5. El Operador debe poder ver: posicion actual de la unidad en un mapa, trazado de la ruta recorrida, ETA actualizado, distancia remanente al sitio del accidente.
 
-### RF-SEG-002: Registro de llegada al sitio (CU-O26)
+### RF-SEG-002: Registro de llegada al sitio (CU-O70)
 
 La Unidad de emergencia debe poder registrar su llegada al sitio del accidente de dos formas:
 
@@ -81,9 +81,9 @@ La Unidad de emergencia debe poder registrar su llegada al sitio del accidente d
 
 Ambos metodos coexisten: la geovalla sirve como respaldo automatico; la confirmacion manual permite a la unidad validar que efectivamente llego al sitio correcto. Al registrarse la llegada, el estado del caso cambia a EN_ATENCION en `Fact_AccidenteTipoEstadoAccidente`.
 
-### RF-SEG-003: Validacion y cierre del caso de emergencia (CU-O28)
+### RF-SEG-003: Validacion y cierre del caso de emergencia (CU-O80)
 
-El Operador de emergencias o la Unidad de emergencia debe poder cerrar el caso cuando la atencion ha finalizado:
+El Operador de emergencias debe poder cerrar el caso cuando la atencion ha finalizado (corrección 2026-08-08: exclusivo del Operador, la Unidad no cierra casos):
 
 1. **Validacion previa:** el sistema verifica que TODOS los `Fact_Despacho` asociados al `idaccidente` tengan `fechahoraretiro` no nulo (equivalente a que su ultimo estado en `Fact_HistorialDespachoUnidad` sea Retirado).
 2. Si faltan despachos por retirar: para cada despacho pendiente, el sistema establece `Fact_Despacho.fechahoraretiro=now` e inserta `Fact_HistorialDespachoUnidad` con `idestadodespacho` = **Retirado** y `idusuario` = quien ejecutó el cierre (operador de central o usuario de la unidad móvil).
@@ -96,9 +96,9 @@ El Operador de emergencias o la Unidad de emergencia debe poder cerrar el caso c
 6. Cada unidad involucrada se libera: `Fact_HistorialEstadoUnidad` con estado **Activa**.
 7. El sistema registra el cierre en los logs del sistema.
 
-### RF-SEG-004: Registro de calificacion y resultados del cierre (CU-O28)
+### RF-SEG-004: Registro de calificacion y resultados del cierre (CU-O80)
 
-Al cerrar el caso mediante O28 (no aplica a cancelacion O42), el Operador o la Unidad debe poder registrar:
+Al cerrar el caso mediante O80 (no aplica a cancelacion O72), el Operador o la Unidad debe poder registrar:
 
 - Resultado de la atencion (string, requerido): resumen de lo ocurrido en el sitio.
 - Numero final de vehiculos involucrados (`numvehiculos` actualizado en `Fact_Accidente`).
@@ -138,7 +138,7 @@ El Operador de emergencias debe disponer de un mapa en tiempo real que muestre:
 
 El frontend del Operador consume actualizaciones via **SSE** (`text/event-stream`) desde un endpoint dedicado de seguimiento. El stream emite eventos de posicion GPS, ETA recalculado y cambios de estado de casos/unidades, sin polling REST. Patron alineado con RF-DES-011 de `despacho-inteligente`.
 
-### RF-SEG-008: Deteccion de perdida de señal GPS (CU-O37)
+### RF-SEG-008: Deteccion de perdida de señal GPS (CU-O69)
 
 El Sistema debe ejecutar un job periodico que monitoree la recepcion de senal GPS de las unidades en camino:
 
@@ -148,17 +148,17 @@ El Sistema debe ejecutar un job periodico que monitoree la recepcion de senal GP
 4. No se modifica `Fact_Despacho` — la unidad sigue asignada, solo se pierde visibilidad de su posicion.
 5. Si la senal se recupera antes de que se complete el cierre del caso, se reanuda el rastreo normal.
 
-### RF-SEG-009: Abortar mision en transito (CU-O39)
+### RF-SEG-009: Abortar mision en transito (CU-O71)
 
 La Unidad de emergencia debe poder abortar una mision mientras esta en camino hacia el sitio:
 
 1. La unidad selecciona "Abortar mision" en la app movil.
 2. El sistema inserta una fila en `Fact_HistorialDespachoUnidad` con `idestadodespacho` = **Abortado**.
 3. El sistema inserta una fila en `Fact_HistorialEstadoUnidad` para que la unidad retorne a estado **Activa** (queda disponible).
-4. El sistema dispara automaticamente el flujo de re-asignacion CU-O36 (nuevo `Fact_Despacho` para el mismo `idaccidente` con nueva unidad).
+4. El sistema dispara automaticamente el flujo de re-asignacion CU-O63 (nuevo `Fact_Despacho` para el mismo `idaccidente` con nueva unidad).
 5. El despacho abortado permanece en la tabla como historial de intentos.
 
-### RF-SEG-010: Cancelar caso con unidad despachada (CU-O42)
+### RF-SEG-010: Cancelar caso con unidad despachada (CU-O72)
 
 El Operador de emergencias o la Unidad debe poder cancelar un caso cuando ya hay una unidad despachada (falsa alarma, abandono):
 
@@ -172,15 +172,15 @@ El Operador de emergencias o la Unidad debe poder cancelar un caso cuando ya hay
 8. **No se solicitan ni registran** los campos de RF-SEG-004 (resultado, calificacion, conteos finales).
 9. **No se crea ninguna fila en `Dim_EvidenciaFoto`** para este caso — a diferencia del cierre normal.
 
-### RF-SEG-011: Forzar cierre desde central (CU-O44)
+### RF-SEG-011: Forzar cierre desde central (CU-O81)
 
 El Operador de emergencias debe poder forzar el cierre de un despacho especifico cuando el tecnico en campo olvido cerrarlo:
 
 1. El Operador selecciona un despacho especifico y ejecuta "Forzar retiro".
 2. El sistema actualiza `Fact_Despacho.fechahoraretiro=now` para ese despacho.
 3. El sistema inserta `Fact_HistorialDespachoUnidad` con `idestadodespacho` = **Retirado**, registrando al operador como responsable (`idusuario` = operador de central).
-4. El sistema reevalua la condicion de CU-O28:
-   - Si con este cierre se completan todos los despachos del caso: el caso pasa a **CERRADO** (mismo flujo que O28).
+4. El sistema reevalua la condicion de CU-O80:
+   - Si con este cierre se completan todos los despachos del caso: el caso pasa a **CERRADO** (mismo flujo que O80).
    - Si quedan otras unidades activas: el caso permanece en **EN_ATENCION**.
 
 ## 5. Requisitos no funcionales
@@ -213,13 +213,13 @@ Una vez insertado un registro en `Fact_HistorialDespachoUnidad`, no puede ser mo
 El registro de llegada al sitio puede ser manual (la unidad presiona el boton) o automatico (geofencing). Si ocurre la deteccion automatica primero, el sistema notifica a la unidad para que confirme. Si la unidad confirma manualmente antes de que se active la geovalla, la deteccion automatica se ignora.
 
 ### RN-SEG-002
-El cierre del caso puede ser ejecutado tanto por el Operador de emergencias desde el centro de control como por la Unidad de emergencia desde la app movil. Ambos tienen igual autoridad para cerrar.
+**Corrección 2026-08-08:** el cierre del caso (CU-O80) es exclusivo del **Operador de emergencias** desde el centro de control. La Unidad de emergencia **no** cierra casos — la redacción anterior de esta regla ("ambos tienen igual autoridad") no reflejaba el comportamiento deseado; el código (`IsOperadorSeguimiento`) ya era y sigue siendo Operador-only. Adicionalmente, cuando el retiro de un despacho (forzado desde central, CU-O81) deja completos todos los despachos del caso, el cierre se dispara **automáticamente** — el Operador no necesita una acción explícita adicional (ver `ForzarRetiroService.forzar()`, que reevalúa `todos_retirados_o_abortados()` tras cada retiro y cierra si corresponde).
 
 ### RN-SEG-003
-Al cerrar un caso (O28, O42), cada unidad involucrada se libera (estado Activa en `Fact_HistorialEstadoUnidad`). Si la unidad estaba "Fuera de servicio" antes del despacho, vuelve a "Fuera de servicio" en lugar de "Activa".
+Al cerrar un caso (O80, O72), cada unidad involucrada se libera (estado Activa en `Fact_HistorialEstadoUnidad`). Si la unidad estaba "Fuera de servicio" antes del despacho, vuelve a "Fuera de servicio" en lugar de "Activa".
 
 ### RN-SEG-004
-Los campos `numvehiculos`, `numvictimas`, `numheridos` y `numfallecidos` en `Fact_Accidente` se actualizan con los valores definitivos al cierre normal O28. Los valores registrados durante la atencion son preliminares. En cancelacion O42 no se actualizan estos campos.
+Los campos `numvehiculos`, `numvictimas`, `numheridos` y `numfallecidos` en `Fact_Accidente` se actualizan con los valores definitivos al cierre normal O80. Los valores registrados durante la atencion son preliminares. En cancelacion O72 no se actualizan estos campos.
 
 ### RN-SEG-005
 El Cliente solo puede consultar expedientes de casos cerrados. No tiene acceso al mapa de seguimiento en tiempo real ni a casos activos. El Cliente solo ve casos cuyo `Dim_Condado` del accidente esta incluido en `Dim_Preferencias_Cliente.zonas_geograficas`.
@@ -234,31 +234,31 @@ Los tiempos registrados al cierre (`duracionminutos`, tiempos de respuesta, tran
 El Caso solo pasa a estado CERRADO cuando TODOS los `Fact_Despacho` asociados a ese `idaccidente` tienen `fechahoraretiro` no nulo. No existe cierre parcial. El estado del Caso es una funcion del conjunto de estados de sus Despachos (relacion N-N), no de un solo despacho aislado.
 
 ### RN-SEG-009
-Al abortar mision (O39), la unidad retorna a Activa inmediatamente y se dispara la re-asignacion O36. El despacho abortado permanece como historial de intentos en `Fact_HistorialDespachoUnidad`.
+Al abortar mision (O71), la unidad retorna a Activa inmediatamente y se dispara la re-asignacion O63. El despacho abortado permanece como historial de intentos en `Fact_HistorialDespachoUnidad`.
 
 ### RN-SEG-010
-En la cancelacion de caso con unidad despachada (O42), solo se requiere motivo en `Dim_NotaAccidente` mas `horafin`/`duracionminutos`. No se solicitan campos de RF-SEG-004 ni se crean registros en `Dim_EvidenciaFoto`.
+En la cancelacion de caso con unidad despachada (O72), solo se requiere motivo en `Dim_NotaAccidente` mas `horafin`/`duracionminutos`. No se solicitan campos de RF-SEG-004 ni se crean registros en `Dim_EvidenciaFoto`.
 
 ### RN-SEG-011
-El forzado de cierre desde central (O44) registra al operador como responsable del retiro en `Fact_HistorialDespachoUnidad`. Si quedan otros despachos activos, el caso permanece en EN_ATENCION hasta que todos se retiren.
+El forzado de cierre desde central (O81) registra al operador como responsable del retiro en `Fact_HistorialDespachoUnidad`. Si quedan otros despachos activos, el caso permanece en EN_ATENCION hasta que todos se retiren.
 
 ### RN-SEG-012
-En el cierre de caso O28, los retiros auto-generados de despachos pendientes registran `idusuario` = quien ejecutó el cierre (operador o unidad). En O44, el retiro forzado de un despacho específico registra `idusuario` = operador de central que ejecutó el forzado. Ambos flujos son distinguibles en auditoría por el contexto de la acción (cierre global vs. forzado unitario).
+En el cierre de caso O80, los retiros auto-generados de despachos pendientes registran `idusuario` = quien ejecutó el cierre (operador o unidad). En O81, el retiro forzado de un despacho específico registra `idusuario` = operador de central que ejecutó el forzado. Ambos flujos son distinguibles en auditoría por el contexto de la acción (cierre global vs. forzado unitario).
 
 ### RN-SEG-013
 Tras 90 dias del cierre del caso, el job de depuracion GPS elimina registros intermedios de `Dim_HistorialUbicacionUnidadEmergencia` y conserva exactamente tres puntos por `iddespacho` segun RNF-SEG-004 (origen, llegada, cierre vinculados a tiempos de `Fact_Despacho`).
 
 ## 7. Entradas
 
-### Para rastreo (CU-O25)
+### Para rastreo (CU-O68)
 - Coordenadas GPS de la unidad (latitud, longitud) enviadas cada 10 segundos.
 - `idunidademergencia` y `idaccidente` asociado.
 
-### Para registro de llegada (CU-O26)
+### Para registro de llegada (CU-O70)
 - Confirmacion manual de la unidad o deteccion automatica por geofencing.
 - `idunidademergencia`, `iddespacho`.
 
-### Para cierre de caso (CU-O28)
+### Para cierre de caso (CU-O80)
 - `idaccidente` a cerrar.
 - `idusuario` de quien ejecuta el cierre (operador o unidad).
 - Resultado de la atencion (string, requerido).
@@ -266,23 +266,23 @@ Tras 90 dias del cierre del caso, el job de depuracion GPS elimina registros int
 - Calificacion de la atencion (INT, 1-5, opcional).
 - Observaciones finales (string, opcional).
 
-### Para consulta de historial (CU-O29)
+### Para consulta de historial (CU-O82)
 - Filtros: fecha desde/hasta, estado, severidad, ubicacion geografica, unidad.
 - Para Cliente: automaticamente filtrado por condados en `Dim_Preferencias_Cliente.zonas_geograficas` (match via `idcalle` → `Dim_Condado`).
 
-### Para deteccion de perdida de señal (CU-O37)
+### Para deteccion de perdida de señal (CU-O69)
 - `idunidademergencia` (evaluada por el job).
 - Umbral de tiempo sin actualizacion GPS (configurable).
 
-### Para abortar mision (CU-O39)
+### Para abortar mision (CU-O71)
 - `iddespacho` a abortar.
 - Motivo del aborto (string, opcional).
 
-### Para cancelar caso con unidad despachada (CU-O42)
+### Para cancelar caso con unidad despachada (CU-O72)
 - `idaccidente` a cancelar.
 - Motivo de cancelacion (string, requerido) — unico campo de entrada del usuario; no aplica RF-SEG-004.
 
-### Para forzar cierre desde central (CU-O44)
+### Para forzar cierre desde central (CU-O81)
 - `iddespacho` a forzar retiro.
 - `idusuario` del operador que forza.
 
@@ -315,18 +315,18 @@ Gestionados en este spec mediante `Dim_EstadoDespacho`:
 
 | Estado | Significado | Transicion desde |
 |---|---|---|
-| **Confirmado** | Unidad acepto el despacho y esta en camino (heredado de despacho-inteligente). | Pendiente (O24) |
-| **En_sitio** | Unidad llego al sitio del accidente. | Confirmado (O26) |
-| **Retirado** | Unidad se retiro del sitio. | En_sitio (O28, O42, O44) |
-| **Abortado** | Mision abortada en transito. | Confirmado (O39) |
+| **Confirmado** | Unidad acepto el despacho y esta en camino (heredado de despacho-inteligente). | Pendiente (O61) |
+| **En_sitio** | Unidad llego al sitio del accidente. | Confirmado (O70) |
+| **Retirado** | Unidad se retiro del sitio. | En_sitio (O80, O72, O81) |
+| **Abortado** | Mision abortada en transito. | Confirmado (O71) |
 
 ### Transiciones en este spec
 ```
-                CU-O26 (llegada)
-Confirmado ──────────────────► En_sitio ──────────► Retirado (O28/O42/O44)
+                CU-O70 (llegada)
+Confirmado ──────────────────► En_sitio ──────────► Retirado (O80/O72/O81)
      │                                                  │
      │                                                  │
-     └── Abortado (O39) ──► (dispara re-asignacion O36) │
+     └── Abortado (O71) ──► (dispara re-asignacion O63) │
                                                          │
                     Cuando TODOS los despachos            │
                     del caso son Retirado ────────────────┘
@@ -395,7 +395,7 @@ Entonces debe ver los 4 accidentes como marcadores de colores segun severidad
 Y debe ver las 4 unidades en camino con sus rutas y ETAs actualizados via SSE
 Y debe poder hacer clic en cualquier marcador para ver el detalle del caso.
 
-### Escenario 7: Deteccion de perdida de señal GPS (CU-O37)
+### Escenario 7: Deteccion de perdida de señal GPS (CU-O69)
 
 Dado que la "Ambulancia 05" esta en camino y su GPS dejo de enviar datos
 Y el job de monitoreo detecta que `MAX(fechahora)` en `Dim_HistorialUbicacionUnidadEmergencia` supera el umbral de 60 segundos
@@ -404,16 +404,16 @@ Entonces el sistema debe insertar una alerta en `Dim_NotaAccidente` con `tipo`="
 Y debe notificar al Operador sobre la perdida de señal
 Y la unidad sigue asignada al caso (no se modifica `Fact_Despacho`).
 
-### Escenario 8: Abortar mision en transito (CU-O39)
+### Escenario 8: Abortar mision en transito (CU-O71)
 
 Dado que la "Ambulancia 05" esta en camino hacia el accidente
 Cuando el conductor selecciona "Abortar mision" en la app movil
 Entonces el sistema debe insertar `Fact_HistorialDespachoUnidad` con estado **Abortado**
 Y debe insertar `Fact_HistorialEstadoUnidad` con estado **Activa** para la unidad
-Y debe disparar la re-asignacion O36 para encontrar una nueva unidad
+Y debe disparar la re-asignacion O63 para encontrar una nueva unidad
 Y el Operador debe ser notificado del aborto y la re-asignacion.
 
-### Escenario 9: Cancelar caso con unidad despachada (CU-O42)
+### Escenario 9: Cancelar caso con unidad despachada (CU-O72)
 
 Dado que se reporto un accidente como falso alarmo y ya hay una unidad despachada
 Cuando el Operador ejecuta la cancelacion del caso con motivo "Falsa alarma"
@@ -425,13 +425,13 @@ Y debe cambiar el estado del caso a **CERRADO** en `Fact_AccidenteTipoEstadoAcci
 Y **no debe** solicitar ni registrar campos de RF-SEG-004 (resultado, calificacion, conteos)
 Y **no debe** crear ningun registro en `Dim_EvidenciaFoto`.
 
-### Escenario 10: Forzar cierre desde central (CU-O44)
+### Escenario 10: Forzar cierre desde central (CU-O81)
 
 Dado que un tecnico en campo olvido registrar el retiro de su unidad
 Cuando el Operador selecciona el despacho y ejecuta "Forzar retiro"
 Entonces el sistema debe actualizar `Fact_Despacho.fechahoraretiro=now` para ese despacho
 Y debe insertar `Fact_HistorialDespachoUnidad` con estado **Retirado** y `idusuario` = operador
-Y debe reevaluar la condicion de cierre O28
+Y debe reevaluar la condicion de cierre O80
 Y si todos los despachos estan ahora retirados, debe cerrar el caso a **CERRADO**
 Y si quedan mas unidades activas, el caso permanece en **EN_ATENCION**.
 
@@ -467,22 +467,22 @@ El Cliente puede consultar expedientes de casos cerrados en sus zonas de interes
 ### CA-SEG-010
 El Cliente no puede ver casos activos ni el mapa de seguimiento en tiempo real.
 
-### CA-SEG-011 (CU-O37)
+### CA-SEG-011 (CU-O69)
 El job de monitoreo detecta perdida de señal GPS cuando `MAX(fechahora)` supera el umbral configurado e inserta alerta en `Dim_NotaAccidente`.
 
-### CA-SEG-012 (CU-O39)
-Al abortar mision, se inserta estado Abortado en `Fact_HistorialDespachoUnidad`, la unidad retorna a Activa y se dispara O36.
+### CA-SEG-012 (CU-O71)
+Al abortar mision, se inserta estado Abortado en `Fact_HistorialDespachoUnidad`, la unidad retorna a Activa y se dispara O63.
 
-### CA-SEG-013 (CU-O42)
+### CA-SEG-013 (CU-O72)
 Al cancelar caso con unidad despachada, todos los despachos se marcan Retirado, el caso pasa a CERRADO con `horafin`/`duracionminutos`, solo motivo en `Dim_NotaAccidente`, sin campos RF-SEG-004 ni registros en `Dim_EvidenciaFoto`.
 
-### CA-SEG-014 (CU-O44)
-Al forzar cierre desde central, el despacho se marca Retirado con `idusuario` del operador y se reevalua O28.
+### CA-SEG-014 (CU-O81)
+Al forzar cierre desde central, el despacho se marca Retirado con `idusuario` del operador y se reevalua O80.
 
 ## 12. Dependencias
 
-- **despacho-inteligente:** requiere un despacho confirmado (`Fact_Despacho` con `fechahoradespacho` y estado Confirmado) para iniciar el rastreo. Al abortar mision, dispara re-asignacion O36. Reutiliza patron SSE (RF-DES-011) para monitoreo en tiempo real del mapa de seguimiento (RF-SEG-007).
-- **evidencia-unidad:** al cerrar el caso (O28, O42), las unidades se liberan usando `Fact_HistorialEstadoUnidad`. Las evidencias fotograficas y notas de campo se consultan en `Dim_EvidenciaFoto` y `Dim_NotaAccidente`.
+- **despacho-inteligente:** requiere un despacho confirmado (`Fact_Despacho` con `fechahoradespacho` y estado Confirmado) para iniciar el rastreo. Al abortar mision, dispara re-asignacion O63. Reutiliza patron SSE (RF-DES-011) para monitoreo en tiempo real del mapa de seguimiento (RF-SEG-007).
+- **evidencia-unidad:** al cerrar el caso (O80, O72), las unidades se liberan usando `Fact_HistorialEstadoUnidad`. Las evidencias fotograficas y notas de campo se consultan en `Dim_EvidenciaFoto` y `Dim_NotaAccidente`.
 - **registro-accidente:** los datos del accidente (`Fact_Accidente`) y los cambios de estado (`Fact_AccidenteTipoEstadoAccidente`) se almacenan en las tablas de este spec.
 - **autenticacion-y-rbac:** requiere autenticacion JWT y roles "Operador de emergencias", "Unidad de emergencia" y "Cliente".
 - **incorporacion-clientes:** `Dim_Preferencias_Cliente.zonas_geograficas` define los condados de interes del Cliente para filtrar expedientes (RF-SEG-006).
@@ -492,6 +492,6 @@ Al forzar cierre desde central, el despacho se marca Retirado con `idusuario` de
 - Asignacion y despacho de unidades: eso esta en despacho-inteligente.
 - Captura de evidencia fotografica y notas de campo: eso esta en evidencia-unidad.
 - Calculo de rutas optimas con trafico en tiempo real (Google Maps, Waze): este spec usa distancia lineal. La integracion con servicios de navegacion no esta incluida.
-- Re-asignacion automatica tras aborto (O39): la re-asignacion O36 se dispara pero su implementacion esta en despacho-inteligente.
-- Fusion de reportes duplicados (CU-O41): spec registro-accidente.
-- Coordinacion de despacho multiple (CU-O38): spec despacho-inteligente.
+- Re-asignacion automatica tras aborto (O71): la re-asignacion O63 se dispara pero su implementacion esta en despacho-inteligente.
+- Fusion de reportes duplicados (CU-O57): spec registro-accidente.
+- Coordinacion de despacho multiple (CU-O66): spec despacho-inteligente.

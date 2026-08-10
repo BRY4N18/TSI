@@ -34,12 +34,22 @@ class TestRegistroUnidadService:
         assert "password" not in result
         assert "temp_password" not in result
 
-    def test_registrar_when_sin_gmail_raises_key_error(self, mock_pinot, mock_kafka):
+    def test_registrar_when_sin_gmail_crea_unidad_sin_usuario(self, mock_pinot, mock_kafka):
+        # Arrange — SRS 3.5.1 / RF-O39.5-6: gmail es opcional en el alta
+        # individual; la unidad queda en el catálogo sin acceso propio.
         service = RegistroUnidadService()
-        data = self._valid_data()
+        data = self._valid_data(placa="SVC-SIN-GMAIL")
         data.pop("gmail")
-        with pytest.raises(KeyError, match="gmail"):
-            service.registrar(data, **PROVEEDOR)
+
+        # Act
+        result = service.registrar(data, **PROVEEDOR)
+
+        # Assert
+        assert result["placa"] == "SVC-SIN-GMAIL"
+        assert result["activo"] is True
+        assert result.get("idusuario") is None
+        assert result["usuario_creado"] is False
+        assert result["invitacion_enviada"] is False
 
     def test_registrar_when_placa_duplicada_raises_value_error(
         self, mock_pinot, mock_kafka, mock_unidad_emergencia

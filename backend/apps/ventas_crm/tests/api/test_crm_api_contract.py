@@ -78,6 +78,7 @@ def test_entrada_directa_admin_only(
         "razon_social": "Y",
         "tipo": "Municipio",
         "nit_identificacion": "1760099",
+        "admin_local": {"nombres": "Ana", "apellidos": "Admin", "gmail": "entrada.directa.admin@ex.com"},
     }
     denied = client.post(
         "/api/v1/ventas-crm/clientes/entrada-directa",

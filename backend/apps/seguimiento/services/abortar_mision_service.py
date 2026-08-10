@@ -1,4 +1,4 @@
-"""CU-O39 — abortar misión en tránsito."""
+"""CU-O71 — abortar misión en tránsito."""
 
 from __future__ import annotations
 
@@ -59,10 +59,12 @@ class AbortarMisionService:
             idusuario=idusuario,
         )
         self.despachos.publish_update(iddespacho, {"activo": False})
-        estado_unidad_actual, _ = self.historial_unidad.get_current_estado(idunidademergencia)
+        # RN-SEG-003: mismo criterio que el retiro normal — restaurar el estado
+        # previo al despacho (capturado en ConfirmarDespachoService), no el
+        # estado actual (siempre En_Mision desde la confirmación).
         estado_unidad_destino = (
             ESTADO_FUERA_SERVICIO
-            if estado_unidad_actual == ESTADO_FUERA_SERVICIO
+            if despacho.get("estado_unidad_previo") == ESTADO_FUERA_SERVICIO
             else ESTADO_ACTIVA
         )
         self.historial_unidad.append_estado(

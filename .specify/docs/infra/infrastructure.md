@@ -1,7 +1,7 @@
 ﻿# Infraestructura — TSI (Tráfico Seguro Integral)
 
 **Ubicación de este archivo:** `docs/arquitectura/infraestructura.md`
-**Última actualización:** 2026-08-01 (v3 — stack `tactico` ClickHouse+Airflow activo; clarificación Kafka+Pinot = canal único de *dominio*)
+**Última actualización:** 2026-08-06 (v4 — DAGs `tactico` migrados a staging Parquet, imagen custom de Airflow, carpetas `dags/`+`ETL/` en la raíz del repo)
 
 > Contexto de referencia sobre qué infraestructura y stack tecnológico existen y cómo se conectan. No es un manual de operación.
 
@@ -46,6 +46,8 @@ Servicios adicionales, definidos en `docker/docker-compose.tactico.yml`, que se 
 | `tactico-airflow-scheduler` | *sin publicar* | Planificador de DAGs |
 
 Orden de arranque: `tactico-airflow-postgres` → `tactico-airflow-init` (migraciones + usuario admin, corre una vez) → `tactico-airflow-webserver` / `tactico-airflow-scheduler`. `tactico-clickhouse` no depende de los anteriores. Spec y diseño: `specs/002-tactico/infraestructura/` (`spec.md`, plan, contrato, quickstart, tasks).
+
+Los servicios `tactico-airflow-*` corren sobre una **imagen custom** (`docker/tactico/airflow/Dockerfile`, `FROM apache/airflow:2.9.3` + `pandas`/`pyarrow`/`pytest`), no la imagen oficial stock — necesaria para el patrón de staging en Parquet (ver `contracts/docker-compose-contract.md`). La carpeta de DAGs (bind mount) es `dags/` en la **raíz del repositorio** (ya no `docker/tactico/airflow-dags/`), y hay un segundo bind mount `ETL/` (también raíz del repo) para el staging Parquet intermedio entre Pinot y ClickHouse — no versionado en git, solo la carpeta.
 
 Pinot no es un solo servicio: son 3 procesos independientes (controller/broker/server), cada uno con su propio contenedor.
 
@@ -112,6 +114,8 @@ docker compose -f accidentes.yml up -d django    # recrea con la imagen nueva
 **Decisión:** ClickHouse + Airflow se incorporan como capa **separada** para analítica pesada/BI (informes tácticos compuestos del departamento de Gestión de Emergencias, ver `informestacticos/auditoria-esquemas-informes-v2.md`), **sin reemplazar a Pinot**. Patrón: Pinot sigue sirviendo lo operativo en tiempo real (despacho, casos activos, todo lo sensible a latencia); Airflow orquesta el ETL desde Kafka/Pinot hacia ClickHouse para lo que no necesita tiempo real. No es redundancia si el límite se mantiene claro: **Pinot = serving en tiempo real, ClickHouse = analítica batch/histórica.**
 
 **Estado:** implementado como infraestructura base (`docker/docker-compose.tactico.yml`) — ver §2.1. Spec y diseño: `specs/002-tactico/infraestructura/`. Esta fase entrega solo el stack verificado (arranque, persistencia, conectividad de red); los DAGs de negocio y las tablas de ClickHouse por informe compuesto son objeto de la spec siguiente de informes tácticos compuestos de Emergencias, todavía no creada.
+
+**Actualización (2026-08-06):** todo DAG bajo `dags/` sigue el patrón vinculante extract/transform/load-parquet (Pinot → `ETL/<fecha>/<hora>/extract_data.parquet` → `transform_data.parquet` → `loading.parquet` → ClickHouse), no la consulta-directa-e-insert-directo original de esta sección. Detalle completo del contrato de rutas y de la imagen custom de Airflow: `specs/002-tactico/infraestructura/contracts/docker-compose-contract.md`.
 
 **Por qué ahora sí:** a diferencia de cuando se escribió esta sección originalmente (sin CU que respaldara las tablas especulativas `Fact_Reporte`/`Fact_Inteligencia`/`Fact_Satisfaccion`), la necesidad quedó trazada en `informestacticos/auditoria-esquemas-informes-v2.md` contra informes tácticos concretos del departamento de Gestión de Emergencias (ej. detección de pérdida de señal GPS, ratio demanda/capacidad por condado) — ya no es especulativo.
 

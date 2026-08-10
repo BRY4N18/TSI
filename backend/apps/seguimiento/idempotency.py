@@ -1,4 +1,4 @@
-"""Idempotency-Key support for mi-seguimiento write endpoints (CU-O25/O26/O39).
+"""Idempotency-Key support for mi-seguimiento write endpoints (CU-O68/O70/O71).
 
 Scope: only the 3 mi-seguimiento endpoints (see H1 in analysis). Uses Django's
 default local-memory cache — no new infra — so a retried request (mobile GPS

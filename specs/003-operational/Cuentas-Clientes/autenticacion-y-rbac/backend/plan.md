@@ -19,7 +19,7 @@ Implementar autenticacion y control de acceso RBAC con enfoque contract-first: p
 ## Traceability
 
 - **Objetivo Operacional (OP)**: OP-TSI-SEG-01 (acceso seguro y trazable por rol).
-- **UC cubiertos**: CU-O04, CU-O05, CU-O06, CU-O07, CU-O13, CU-O15.
+- **UC cubiertos**: CU-O06, CU-O01, CU-O03, CU-O05, CU-O07, CU-O08.
 - **Mapeo de cumplimiento**:
   - Contract-first REST versionado (`/api/v1`) para compatibilidad.
   - Servicios y repositorios para enforcement de reglas de seguridad y auditabilidad.
@@ -39,7 +39,7 @@ Implementar autenticacion y control de acceso RBAC con enfoque contract-first: p
 
 **Project Type**: Aplicacion web (backend + frontend)
 
-**Performance Goals**: CU-O05 con p95 <= 500 ms y disponibilidad mensual >= 99.5%
+**Performance Goals**: CU-O01 con p95 <= 500 ms y disponibilidad mensual >= 99.5%
 
 **Constraints**: API versionada `/api/v1/`, formato de error/ok estandar, validacion JWT + estado de sesion en cada request, sin escritura directa a Pinot
 
@@ -49,7 +49,7 @@ Implementar autenticacion y control de acceso RBAC con enfoque contract-first: p
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Functional Suitability: PASS - cubre CU-O04/O05/O06/O07/O13/O15 y criterios de aceptacion.
+- Functional Suitability: PASS - cubre CU-O01/O06/O03/O05/O07/O08 y criterios de aceptacion.
 - Reliability: PASS - estado de sesion centralizado en `Fact_Session` con cierre/revocacion.
 - Performance Efficiency: PASS - objetivo p95/availability explicitado.
 - Interaction Capability: PASS - frontend con guards y rutas por rol minimiza errores de operacion.

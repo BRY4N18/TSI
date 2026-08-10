@@ -1,4 +1,4 @@
-"""Dim_SLAConfig repository — versionado temporal (CU-O95, RN-TIC-006)."""
+"""Dim_SLAConfig repository — versionado temporal (CU-O97, RN-TIC-006)."""
 
 from __future__ import annotations
 

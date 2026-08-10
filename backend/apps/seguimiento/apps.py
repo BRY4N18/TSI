@@ -7,5 +7,5 @@ class SeguimientoConfig(AppConfig):
     verbose_name = "Seguimiento y Cierre de Casos"
 
     def ready(self) -> None:
-        # Jobs O37 / depuración GPS se registran vía scheduler externo (Celery/APScheduler).
+        # Jobs O69 / depuración GPS se registran vía scheduler externo (Celery/APScheduler).
         pass

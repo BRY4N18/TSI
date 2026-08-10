@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
-import { Plan, PlanLimites } from '../../services/models/suscripciones.types';
+import { Plan, PlanLimites, SeveridadPlan } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { billingBadge } from '../../billing-ui';
 
@@ -89,6 +89,19 @@ export class PlanDetallePage implements OnInit {
       `${limites.unidades_max} unidades`,
       `${limites.usuarios_max} usuarios`,
       `${limites.api_calls_mes} API/mes`,
+      `${limites.api_calls_minuto} API/min`,
     ].join(' · ');
+  }
+
+  severidadesTexto(severidades?: SeveridadPlan[] | string): string {
+    if (!severidades) return 'Sin configurar';
+    if (typeof severidades === 'string') {
+      try {
+        return this.severidadesTexto(JSON.parse(severidades) as SeveridadPlan[]);
+      } catch {
+        return 'Sin configurar';
+      }
+    }
+    return severidades.length ? severidades.join(' · ') : 'Sin configurar';
   }
 }

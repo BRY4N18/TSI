@@ -1,4 +1,4 @@
-"""Servicios de catálogo para registro / escalar (CU-O21, CU-O40)."""
+"""Servicios de catálogo para registro / escalar (CU-O56, CU-O73)."""
 
 from __future__ import annotations
 

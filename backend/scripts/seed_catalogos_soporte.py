@@ -1,4 +1,4 @@
-"""Seed Dim_Servicio + rol SupervisorSoporte (ops CU-O91 / CU-O96).
+"""Seed Dim_Servicio + rol SupervisorSoporte (ops CU-O83 / CU-O89).
 
 Run inside Django container:
   python /app/scripts/seed_catalogos_soporte.py

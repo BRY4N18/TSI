@@ -1,4 +1,4 @@
-"""Comando de gestión para el job O37 (RF-SEG-008): detección de señal GPS perdida.
+"""Comando de gestión para el job O69 (RF-SEG-008): detección de señal GPS perdida.
 
 Uso:
   python manage.py run_gps_senal_perdida_job              # loop continuo cada 30s
@@ -20,7 +20,7 @@ DEFAULT_INTERVAL_SECONDS = 30
 
 
 class Command(BaseCommand):
-    help = "Ejecuta el job O37 de detección de señal GPS perdida (una vez o en loop continuo)"
+    help = "Ejecuta el job O69 de detección de señal GPS perdida (una vez o en loop continuo)"
 
     def add_arguments(self, parser):
         parser.add_argument("--once", action="store_true")
@@ -32,13 +32,13 @@ class Command(BaseCommand):
 
         if once:
             resultado = run_gps_senal_perdida_job()
-            self.stdout.write(self.style.SUCCESS(f"Job O37 ejecutado: {resultado['alertas_generadas']} alerta(s)"))
+            self.stdout.write(self.style.SUCCESS(f"Job O69 ejecutado: {resultado['alertas_generadas']} alerta(s)"))
             return
 
-        self.stdout.write(self.style.SUCCESS(f"Job O37 iniciado en loop continuo (cada {interval}s)"))
+        self.stdout.write(self.style.SUCCESS(f"Job O69 iniciado en loop continuo (cada {interval}s)"))
         while True:
             try:
                 run_gps_senal_perdida_job()
             except Exception:
-                logger.exception("Error ejecutando job O37 de señal GPS perdida")
+                logger.exception("Error ejecutando job O69 de señal GPS perdida")
             time.sleep(interval)

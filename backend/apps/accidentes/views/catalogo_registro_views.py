@@ -30,7 +30,7 @@ class ReferenciaEstacionListView(APIView):
 
 
 class UnidadesEmergenciaCatalogoView(APIView):
-    """Catálogo de unidades activas para selección (p. ej. CU-O40 unidad adicional)."""
+    """Catálogo de unidades activas para selección (p. ej. CU-O73 unidad adicional)."""
 
     permission_classes = [IsAuthenticated401, IsTecnicoCampoOrUnidadOrAdmin]
 

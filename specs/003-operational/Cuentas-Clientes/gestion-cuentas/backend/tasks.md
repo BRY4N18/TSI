@@ -6,7 +6,7 @@
 
 **Tests**: Incluidos por requerimiento explícito (`testing-expert` + `testing.md`). Cada tarea de servicio/repositorio tiene test asociado con markers `unit`/`repository`/`service`/`api` y patrón AAA (Arrange-Act-Assert).
 
-**Organization**: Tareas agrupadas por historia de usuario (CU-O03, CU-O10, CU-O11) para implementación y validación independiente.
+**Organization**: Tareas agrupadas por historia de usuario (CU-O13/CU-O14, CU-O15, CU-O16) para implementación y validación independiente. Numeración corregida 2026-08-08 al catálogo vigente; el CU-O03 histórico (perfil+preferencias combinado) se dividió en CU-O13/CU-O14.
 
 
 > **Capas:** este archivo es autoridad de **dominio/API**.
@@ -59,7 +59,7 @@
 
 ## Phase 3: User Story 1 - Perfil y preferencias de cuenta (Priority: P1) 🎯 MVP
 
-**Goal**: Entregar CU-O03 — ver/editar perfil corporativo, preferencias operativas y flujo de logo vía Azure Blob.
+**Goal**: Entregar CU-O13/CU-O14 — ver/editar perfil corporativo, preferencias operativas y flujo de logo vía Azure Blob.
 
 **Independent Test**: Cliente autenticado actualiza `razon_social` y `telefono_sms`; cambios persisten vía Kafka y quedan en logs; campos readonly no mutables.
 
@@ -99,7 +99,7 @@
 
 ## Phase 4: User Story 2 - Transferencia de propiedad (Priority: P1)
 
-**Goal**: Entregar CU-O10 — transferencia inmediata de `admin_local_id` con notificación SMTP a involucrados.
+**Goal**: Entregar CU-O15 — transferencia inmediata de `admin_local_id` con notificación SMTP a involucrados.
 
 **Independent Test**: Admin local transfiere a usuario activo de la misma cuenta; nuevo admin adquiere privilegios; anterior pierde admin local; emails enviados (o log si SMTP falla).
 
@@ -131,7 +131,7 @@
 
 ## Phase 5: User Story 3 - Baja de cuenta (Priority: P1)
 
-**Goal**: Entregar CU-O11 — baja lógica, expulsión masiva de sesiones, motivo solo en logs, notificación al admin local.
+**Goal**: Entregar CU-O16 — baja lógica, expulsión masiva de sesiones, motivo solo en logs, notificación al admin local.
 
 **Independent Test**: Administrador da de baja cuenta; `estado='Dado de baja'`; sesiones expulsadas; usuarios no operan; datos históricos intactos.
 
@@ -185,7 +185,7 @@
 
 ### User Story Dependencies
 
-- **US1 (P1)**: depende solo de Foundational; define MVP (CU-O03).
+- **US1 (P1)**: depende solo de Foundational; define MVP (CU-O13/CU-O14).
 - **US2 (P1)**: depende de Foundational + US1 (necesita cuenta/perfil operativo y `cliente_repository`).
 - **US3 (P1)**: depende de Foundational; puede paralelizarse con US2 tras US1, pero requiere `cuenta_notificacion_service` (US2) para email de baja.
 
@@ -275,9 +275,9 @@ Task: "T041 [US2] admin-local.guard.spec.ts (marker unit, AAA)"
 | Métrica | Valor |
 |---------|-------|
 | **Total tareas** | 66 |
-| **US1 (CU-O03)** | 20 tareas (T017–T036) |
-| **US2 (CU-O10)** | 12 tareas (T037–T048) |
-| **US3 (CU-O11)** | 13 tareas (T049–T061) |
+| **US1 (CU-O13/CU-O14)** | 20 tareas (T017–T036) |
+| **US2 (CU-O15)** | 12 tareas (T037–T048) |
+| **US3 (CU-O16)** | 13 tareas (T049–T061) |
 | **Setup + Foundational** | 16 tareas (T001–T016) |
 | **Polish** | 5 tareas (T062–T066) |
 | **Tests emparejados repo/servicio** | 14 pares backend + 5 frontend unit |

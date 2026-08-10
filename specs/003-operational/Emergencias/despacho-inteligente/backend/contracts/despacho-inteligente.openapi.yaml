@@ -3,10 +3,10 @@ info:
   title: TSI Despacho Inteligente API
   version: 1.0.0
   description: >
-    Contrato contract-first para CU-O24 (confirmar), CU-O33 (asignar manual),
-    CU-O34 (escalar zona), CU-O38 (coordinar múltiple), CU-O45 (rechazar),
+    Contrato contract-first para CU-O61 (confirmar), CU-O64 (asignar manual),
+    CU-O65 (escalar zona), CU-O66 (coordinar múltiple), CU-O62 (rechazar),
     RF-DES-010 (parámetros) y RF-DES-011 (monitoreo + SSE).
-    Flujos O22/O23/O35/O36 son orquestación interna (Kafka/jobs) — ver plan.md.
+    Flujos O59/O60/O63/O63 son orquestación interna (Kafka/jobs) — ver plan.md.
     Sigue api-standards.md y spec despacho-inteligente (clarificaciones 2026-07-09).
 servers:
   - url: /api/v1
@@ -68,7 +68,7 @@ paths:
   /accidentes/{idaccidente}/despacho/unidades-candidatas:
     get:
       tags: [DespachoAsignacion]
-      summary: Listar unidades candidatas para asignación manual (O33)
+      summary: Listar unidades candidatas para asignación manual (O64)
       operationId: listarUnidadesCandidatas
       security:
         - bearerAuth: []
@@ -76,7 +76,7 @@ paths:
         - $ref: '#/components/parameters/IdAccidente'
         - name: incluir_vecinos
           in: query
-          description: Si true, incluye condados vecinos (post-O34)
+          description: Si true, incluye condados vecinos (post-O65)
           schema:
             type: boolean
             default: false
@@ -108,7 +108,7 @@ paths:
   /accidentes/{idaccidente}/despacho/asignar-manual:
     post:
       tags: [DespachoAsignacion]
-      summary: Asignar unidad manualmente (CU-O33)
+      summary: Asignar unidad manualmente (CU-O64)
       operationId: asignarUnidadManual
       security:
         - bearerAuth: []
@@ -148,7 +148,7 @@ paths:
   /accidentes/{idaccidente}/despacho/escalar-zona:
     post:
       tags: [DespachoAsignacion]
-      summary: Escalar búsqueda a condados vecinos (CU-O34)
+      summary: Escalar búsqueda a condados vecinos (CU-O65)
       operationId: escalarZonaVecina
       security:
         - bearerAuth: []
@@ -178,7 +178,7 @@ paths:
   /accidentes/{idaccidente}/despacho/coordinar:
     post:
       tags: [DespachoAsignacion]
-      summary: Coordinar despacho múltiple — nueva unidad al mismo caso (CU-O38)
+      summary: Coordinar despacho múltiple — nueva unidad al mismo caso (CU-O66)
       operationId: coordinarDespachoMultiple
       security:
         - bearerAuth: []
@@ -258,7 +258,7 @@ paths:
   /mi-despacho/{idnotificaciondespacho}/confirmar:
     post:
       tags: [MiDespacho]
-      summary: Confirmar despacho (CU-O24)
+      summary: Confirmar despacho (CU-O61)
       operationId: confirmarDespacho
       security:
         - bearerAuth: []
@@ -288,7 +288,7 @@ paths:
   /mi-despacho/{idnotificaciondespacho}/rechazar:
     post:
       tags: [MiDespacho]
-      summary: Rechazar despacho con motivo (CU-O45)
+      summary: Rechazar despacho con motivo (CU-O62)
       operationId: rechazarDespacho
       security:
         - bearerAuth: []
@@ -303,7 +303,7 @@ paths:
               $ref: '#/components/schemas/RechazarDespachoRequest'
       responses:
         '200':
-          description: Despacho rechazado; re-asignación O36 disparada
+          description: Despacho rechazado; re-asignación O63 disparada
           content:
             application/json:
               schema:

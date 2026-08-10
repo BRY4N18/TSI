@@ -77,3 +77,52 @@ class TestRegistrarTicketContract:
         )
         assert response.status_code == 201
         assert response.json()["data"]["idservicio"] == 3
+
+    def test_registrar_when_idfactura_persists(self, api_client, cliente_auth_headers):
+        # RF-O83.2 — vincular una factura en disputa (opcional)
+        response = api_client.post(
+            "/api/v1/soporte/tickets",
+            {
+                "idcliente": 1,
+                "asunto": "Cobro duplicado",
+                "descripcion": "la factura fue cobrada dos veces",
+                "tipo": "administrativo",
+                "idfactura": "3f2b8c14-5d6e-4a7b-9c0d-1e2f3a4b5c6d",
+            },
+            format="json",
+            **cliente_auth_headers,
+        )
+        assert response.status_code == 201
+        assert response.json()["data"]["idfactura"] == "3f2b8c14-5d6e-4a7b-9c0d-1e2f3a4b5c6d"
+
+    def test_registrar_when_idfactura_ya_tiene_disputa_abierta_returns_422(
+        self, api_client, cliente_auth_headers
+    ):
+        # RF-O83.2 — una factura admite una sola disputa (ticket) abierta a la vez
+        primero = api_client.post(
+            "/api/v1/soporte/tickets",
+            {
+                "idcliente": 1,
+                "asunto": "Cobro duplicado",
+                "descripcion": "la factura fue cobrada dos veces",
+                "tipo": "administrativo",
+                "idfactura": "3f2b8c14-5d6e-4a7b-9c0d-1e2f3a4b5c6d",
+            },
+            format="json",
+            **cliente_auth_headers,
+        )
+        assert primero.status_code == 201
+
+        segundo = api_client.post(
+            "/api/v1/soporte/tickets",
+            {
+                "idcliente": 1,
+                "asunto": "Otra disputa sobre la misma factura",
+                "descripcion": "sigo sin estar de acuerdo con el cobro",
+                "tipo": "administrativo",
+                "idfactura": "3f2b8c14-5d6e-4a7b-9c0d-1e2f3a4b5c6d",
+            },
+            format="json",
+            **cliente_auth_headers,
+        )
+        assert segundo.status_code == 422

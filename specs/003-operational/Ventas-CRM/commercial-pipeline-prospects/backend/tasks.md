@@ -32,7 +32,7 @@
 | US5 | P1 | O121 | Conversión desde Negociación crea cliente; NIT dup → 409; Idempotency-Key | ✅ |
 | US6 | P2 | RF-CPP-007 | Admin entrada directa `idprospecto=null`; Gerente → 403 | ✅ |
 | US7 | P2 | Frontend embudo | Módulo Angular lazy: registro, listado, pipeline, conversión, entrada directa | ✅ |
-| **US8** | **P1** | **RF-CPP-000** | **GET `/planes` sin JWT: solo `activo=true`, severidades derivadas; cero Kafka write** | ✅ |
+| **US8** | **P1** | **RF-CPP-000** | **GET `/planes` sin JWT: solo `activo=true`, severidades independientes (campo propio); cero Kafka write** | ✅ |
 
 > **Delta 2026-07-26:** T001–T069 completan el embudo previo. T070+ implementan el portal público de planes (antes fuera de alcance; ahora en plan/research Decision 10).
 
@@ -259,7 +259,7 @@
 
 **Goal**: Visitante sin JWT consulta el catálogo activo de `Dim_Plan` (nombre, precio, límites, severidades desbloqueadas). Precondición informativa del embudo; **cero escrituras** (sin `Dim_Plan_topic`). Alias documental CU-O123 (ID canónico a definir).
 
-**Independent Test**: `GET /api/v1/ventas-crm/planes` → `200` solo `activo=true`; mapa nivel→severidades (Decision 10); plan inactivo oculto; lista vacía válida; mock Kafka sin publishes a `Dim_Plan_topic`. UI pública con loading/vacío/error + CTA a registro.
+**Independent Test**: `GET /api/v1/ventas-crm/planes` → `200` solo `activo=true`; `severidades_desbloqueadas` leído/parseado como campo independiente (research.md Decision 10, corrección 2026-08-08); plan inactivo oculto; lista vacía válida; mock Kafka sin publishes a `Dim_Plan_topic`. UI pública con loading/vacío/error + CTA a registro.
 
 ### Foundational delta (bloquea US8)
 
@@ -275,7 +275,7 @@
 ### Implementation for User Story 8
 
 - [X] T075 [US8] Implementar `PlanLecturaRepository` (Pinot read-only) en `backend/core/repositories/ventas_crm/plan_lectura_repository.py` — **sin** KafkaWriter/publish (research Decision 10)
-- [X] T076 [US8] Implementar `ConsultaPlanesPublicosService` en `backend/apps/ventas_crm/services/consulta_planes_publicos_service.py` (proyección + mapa severidades)
+- [X] T076 [US8] Implementar `ConsultaPlanesPublicosService` en `backend/apps/ventas_crm/services/consulta_planes_publicos_service.py` (proyección + parseo de `severidades_desbloqueadas` independiente)
 - [X] T077 [US8] Implementar `PlanListView` (`AllowAny`) en `backend/apps/ventas_crm/views/plan_views.py` y registrar `GET ventas-crm/planes` en `backend/apps/ventas_crm/urls.py`
 - [X] T078 [US8] Asegurar T072–T074 verdes tras implementación
 - [X] T079 [Histórico-UI] [P] [US8] Implementar `PlanesApiService` en `frontend/src/app/modules/ventas-crm/services/planes-api.service.ts`
@@ -386,7 +386,7 @@ pytest backend/apps/ventas_crm/tests/api/test_planes_publicos_contract.py -m api
 - `Ganado` solo vía conversión (US5); pipeline (US4) debe rechazarlo.
 - Roles JWT: `GerenteVentas`, `GerenteCuentasPublicas`, `Administrador` (research Decision 5); seed obligatorio en T003.
 - `Dim_Cliente`: un solo writer — `cuentas_clientes/cliente_repository.py` (T014/T015); no `cliente_escritura_repository` en ventas_crm.
-- Mapa severidades: Básico→[Baja]; Profesional→[Baja,Media]; Empresarial→[Baja,Media,Alta]; desconocido→[] (plan igual se lista).
+- Severidades: `severidades_desbloqueadas` es campo independiente y configurable en `Dim_Plan` (ya no derivado de `nivel` — corrección 2026-08-08, ver research.md Decision 10); ausente/no configurado → [] (plan igual se lista).
 - Siguiente comando: `/speckit-implement` (o `/speckit-analyze` si se desea gate previo del delta).
 
 ---

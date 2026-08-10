@@ -16,58 +16,78 @@
 
 - **Campos mutados:** `latitud`, `longitud`, `fecha_actualizacion`
 - **Topic:** `Dim_UnidadEmergencia_topic` *(añadir a `KAFKA_TOPICS`)*.
-- **Regla:** Actualizado en cada ingestión GPS O25.
+- **Regla:** Actualizado en cada ingestión GPS O68.
 
 ### 3) `Fact_Despacho` (tiempos de seguimiento)
 
-- **Campos mutados en este módulo:** `fechahorallegada`, `fechahoraretiro`, `fecha_actualizacion`
+- **Campos mutados en este módulo:** `fechahorallegada`, `fechahoraretiro`, `fecha_actualizacion`, `estado_unidad_previo` (STRING — corrección 2026-08-08), `retiro_forzado` (BOOLEAN — corrección 2026-08-08)
 - **Topic:** `Fact_Despacho_topic` (existente).
 - **Reglas:** N-N caso ↔ unidad; cierre caso cuando todos tienen `fechahoraretiro` (RN-SEG-008).
+- **`estado_unidad_previo`:** capturado por `ConfirmarDespachoService` justo antes de sobrescribir la disponibilidad a `En_Mision`, para que RN-SEG-003 pueda restaurar "Fuera de servicio" al retirar/abortar — antes se perdía porque el retiro consultaba el estado *actual* (siempre `En_Mision`), no el previo al despacho.
+- **`retiro_forzado`:** distingue un retiro forzado desde central (CU-O81) de un retiro normal en `Fact_HistorialDespachoUnidad`, ya que esa tabla no tenía ningún campo para diferenciarlos pese a que la spec lo daba por hecho (RF-O81.3).
 
 ### 4) `Fact_HistorialDespachoUnidad`
 
 - **Campos:** `iddespacho`, `idestadodespacho`, `idusuario` (operador/unidad ejecutor), `fechahora`
-- **Transiciones este módulo:** Confirmado → En_sitio (O26), En_sitio → Retirado (O28/O42/O44), Confirmado → Abortado (O39)
+- **Transiciones este módulo:** Confirmado → En_sitio (O70), En_sitio → Retirado (O80/O72/O81), Confirmado → Abortado (O71)
 - **Topic:** `Fact_HistorialDespachoUnidad_topic` (existente).
 - **Regla:** Append-only (RNF-SEG-006).
 
 ### 5) `Fact_Accidente`
 
-- **Campos mutados:** `horafin`, `duracionminutos`, `numvehiculos`, `numvictimas`, `numheridos`, `numfallecidos` (solo O28)
+- **Campos mutados:** `horafin`, `duracionminutos`, `numvehiculos`, `numvictimas`, `numheridos`, `numfallecidos` (solo O80)
 - **Topic:** `Fact_Accidente_topic` (existente).
+- `resultado_atencion`/`calificacion`/`observaciones_finales` **no** viven aquí — ver tabla `Fact_CierreAccidente` (§ Campos de cierre, abajo).
 
 ### 6) `Fact_AccidenteTipoEstadoAccidente`
 
-- **Transiciones:** ASIGNADO → EN_ATENCION (primera llegada O26), * → CERRADO (todos despachos Retirado)
+- **Transiciones:** ASIGNADO → EN_ATENCION (primera llegada O70), * → CERRADO (todos despachos Retirado)
 - **Topic:** `Fact_AccidenteTipoEstadoAccidente_topic` (existente).
 
 ### 7) `Fact_HistorialEstadoUnidad`
 
-- **Uso:** Liberar unidad a Activa (O28/O42) o restaurar Fuera de servicio (RN-SEG-003); Abortado O39 → Activa.
+- **Uso:** Liberar unidad a Activa (O80/O72) o restaurar Fuera de servicio (RN-SEG-003); Abortado O71 → Activa.
 - **Topic:** `Fact_HistorialEstadoUnidad_topic` (existente).
 
 ### 8) `Dim_NotaAccidente`
 
-- **Uso:** Motivo O42; alerta GPS O37 (`tipo=alerta`, `idusuario=Sistema`).
+- **Uso:** Motivo O72; alerta GPS O69 (`tipo=alerta`, `idusuario=Sistema`).
 - **Topic:** `Dim_NotaAccidente_topic` (existente).
 
 ## Entidades de lectura
 
 | Entidad | Uso en módulo |
 |---------|---------------|
-| `Fact_NotificacionDespacho` | Expediente O29 |
+| `Fact_NotificacionDespacho` | Expediente O82 |
 | `Dim_EstadoDespacho` | Historial despacho |
-| `Dim_EvidenciaFoto` | Expediente (excluido O42) |
+| `Dim_EvidenciaFoto` | Expediente (excluido O72) |
 | `Dim_Preferencias_Cliente` | Filtro condado cliente |
 | `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` | Filtro expedientes + mapa |
 | `Dim_TipoEstadoAccidente` | Estados caso |
 | `Dim_Severidad` | Marcadores mapa por color |
 
-## Campos de cierre O28 (RF-SEG-004)
+## Campos de cierre O80 (RF-SEG-004)
 
-Persistidos en `Fact_Accidente` y/o tabla auxiliar `Fact_CierreAccidente` si se normaliza en implementación:
+**Corrección 2026-08-08:** persistidos en tabla auxiliar `Fact_CierreAccidente` (1:1 con `Fact_Accidente` por `idaccidente`), no en `Fact_Accidente` — esas columnas nunca existieron en su esquema Pinot real, así que se perdían en silencio en cada cierre hasta esta corrección.
 
-| Campo | Tipo | O28 | O42 |
+### 9) `Fact_HistorialSeveridadAccidente` (escalada de severidad, CU-O73)
+
+**Movido 2026-08-08:** `EscalarSeveridadService` vivía en `registro-accidente`; el SRS §3.6.4 lo narra en este módulo ("ya en el lugar, la Unidad puede escalar la severidad..."). Ver `registro-accidente/backend/data-model.md` para el detalle de dónde vivía antes.
+
+- **PK:** `idhistorialseveridadaccidente` (INT)
+- **FK:** `idaccidente` → `Fact_Accidente`
+- **Campos:** `idseveridadanterior`, `idseveridadnueva`, `idusuario`, `motivo`, `fechahora`, `fecha_actualizacion`
+- **Topic:** `Fact_HistorialSeveridadAccidente_topic` (tabla y config ya existían en `tablas.json`/`esquemas.json`, sin productor hasta esta corrección).
+- **Reglas:** RF-O73.2 — conserva la severidad inicial junto a la escalada; `Fact_Accidente.idseveridad` solo guarda el valor vigente. Append-only; una fila por cada escalada real (se omite si `idseveridad` no cambia).
+
+### 10) `Fact_CierreAccidente`
+
+- **PK:** `idaccidente` (STRING, FK 1:1 a `Fact_Accidente`)
+- **Campos:** `resultado_atencion` (STRING), `calificacion` (INT), `observaciones_finales` (STRING), `fecha_actualizacion`
+- **Topic:** `Fact_CierreAccidente_topic`.
+- **Reglas:** Upsert `FULL` por `idaccidente`; escrita únicamente por `CerrarCasoService` (O80). No se escribe en cancelación (O72).
+
+| Campo | Tipo | O80 | O72 |
 |-------|------|-----|-----|
 | `resultado_atencion` | string | requerido | N/A |
 | `calificacion` | int 1-5 | opcional | N/A |
@@ -79,16 +99,16 @@ Persistidos en `Fact_Accidente` y/o tabla auxiliar `Fact_CierreAccidente` si se 
 ### Caso
 
 ```text
-ASIGNADO → EN_ATENCION     (primera llegada O26)
-EN_ATENCION → CERRADO      (todos despachos Retirado — O28/O42/O44)
+ASIGNADO → EN_ATENCION     (primera llegada O70)
+EN_ATENCION → CERRADO      (todos despachos Retirado — O80/O72/O81)
 ```
 
 ### Despacho (en este módulo)
 
 ```text
-Confirmado → En_sitio      (O26 manual o geofencing)
-Confirmado → Abortado      (O39) → evento DespachoAbortado → O36
-En_sitio → Retirado        (O28, O42, O44)
+Confirmado → En_sitio      (O70 manual o geofencing)
+Confirmado → Abortado      (O71) → evento DespachoAbortado → O63
+En_sitio → Retirado        (O80, O72, O81)
 ```
 
 ## Eventos Kafka
@@ -97,25 +117,25 @@ En_sitio → Retirado        (O28, O42, O44)
 
 | Topic | Productor | Disparador |
 |-------|-----------|------------|
-| `Dim_HistorialUbicacionUnidadEmergencia_topic` | `HistorialUbicacionRepository` | O25 GPS |
-| `Dim_UnidadEmergencia_topic` | `UnidadEmergenciaSnapshotRepository` | O25 GPS |
-| `Fact_Despacho_topic` | `DespachoRepository` | O26/O28/O42/O44 tiempos |
-| `Fact_HistorialDespachoUnidad_topic` | `HistorialDespachoRepository` | O26/O28/O39/O42/O44 |
-| `Fact_HistorialEstadoUnidad_topic` | `HistorialEstadoUnidadRepository` | O28/O39/O42 liberación |
-| `Fact_Accidente_topic` | `AccidenteRepository` | O28/O42 cierre |
+| `Dim_HistorialUbicacionUnidadEmergencia_topic` | `HistorialUbicacionRepository` | O68 GPS |
+| `Dim_UnidadEmergencia_topic` | `UnidadEmergenciaSnapshotRepository` | O68 GPS |
+| `Fact_Despacho_topic` | `DespachoRepository` | O70/O80/O72/O81 tiempos |
+| `Fact_HistorialDespachoUnidad_topic` | `HistorialDespachoRepository` | O70/O80/O71/O72/O81 |
+| `Fact_HistorialEstadoUnidad_topic` | `HistorialEstadoUnidadRepository` | O80/O71/O72 liberación |
+| `Fact_Accidente_topic` | `AccidenteRepository` | O80/O72 cierre |
 | `Fact_AccidenteTipoEstadoAccidente_topic` | `EstadoAccidenteRepository` | EN_ATENCION, CERRADO |
-| `Dim_NotaAccidente_topic` | `NotaAccidenteRepository` | O37, O42 |
+| `Dim_NotaAccidente_topic` | `NotaAccidenteRepository` | O69, O72 |
 
 ### Topics de dominio (orquestación)
 
 | Topic | Productor | Consumidor |
 |-------|-----------|------------|
-| `DespachoAbortado_topic` | `AbortarMisionService` (seguimiento) | `ReasignacionDespachoConsumer` (despacho O36) |
+| `DespachoAbortado_topic` | `AbortarMisionService` (seguimiento) | `ReasignacionDespachoConsumer` (despacho O63) |
 
 ## Consultas Pinot críticas
 
 - Mapa activo: accidentes estado ∉ {CERRADO} + unidades con último estado + posición snapshot/GPS.
-- Unidades en camino sin GPS reciente: `MAX(fechahora)` historial vs now — job O37.
+- Unidades en camino sin GPS reciente: `MAX(fechahora)` historial vs now — job O69.
 - Historial operador: `Fact_Accidente` + filtros fecha/estado/severidad/unidad.
 - Expediente cliente: join completo + filtro condado vía `GeografiaRepository`.
 - Depuración GPS: casos CERRADO con `horafin` < now - 90d.
@@ -145,7 +165,7 @@ Ver `.specify/docs/changelog.md` D2.
 | Tabla | Columnas | Clave primaria | Quién la consume |
 |---|---|---|---|
 | `Dim_Usuario_Cliente` | `idusuariocliente`, `idusuario`, `idcliente`, `activo`, `fecha_actualizacion` | `idusuariocliente` | `cliente_expediente_views._condados_cliente` (RF-SEG-006, RN-SEG-005) y `soporte_cliente/services/cliente_lookup_service` |
-| `Dim_CondadoVecino` | `idcondadovecinorel`, `idcondado`, `idcondadovecino`, `activo`, `fecha_actualizacion` | `idcondadovecinorel` | `despacho/repositories/geografia_repository.list_condados_vecinos` (CU-O34, escalamiento de zona) |
+| `Dim_CondadoVecino` | `idcondadovecinorel`, `idcondado`, `idcondadovecino`, `activo`, `fecha_actualizacion` | `idcondadovecinorel` | `despacho/repositories/geografia_repository.list_condados_vecinos` (CU-O65, escalamiento de zona) |
 
 `Dim_CondadoVecino` almacena la adyacencia en **ambos sentidos** (si A limita con B, existe
 también la fila B→A), para que la consulta por `idcondado` funcione desde cualquiera de los

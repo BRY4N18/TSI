@@ -25,6 +25,10 @@ from core.repositories.red_operativa.region_operativa_repository import (
 )
 
 
+def _roles(request: Request) -> list[str]:
+    return list(getattr(request.user, "roles", []) or [])
+
+
 class RegionListView(APIView):
     """GET /red-operativa/regiones."""
 
@@ -64,10 +68,14 @@ class RegionValidacionView(APIView):
             return cached
         try:
             data = ValidacionRegionService().ejecutar(
-                dict(request.data), idusuario=request.user.idusuario
+                dict(request.data),
+                idusuario=request.user.idusuario,
+                roles=_roles(request),
             )
         except LookupError:
             return error_response("not_found", "Región no encontrada", "404", status_code=404)
+        except PermissionError as exc:
+            return error_response("forbidden", str(exc), "403", status_code=403)
         except (KeyError, ValueError) as exc:
             return error_response("bad_request", str(exc), "400", status_code=400)
         response = success_response(data)

@@ -56,6 +56,11 @@ class AltaSuscripcionService:
                 "idcliente": idcliente,
                 "idplan": idplan,
                 "precio": plan["precio"],
+                "periodicidad": plan.get("periodicidad") or "Mensual",
+                # Congelados al alta (mismo patrón que precio, ver suscripcion_repository.create).
+                "nivel": plan.get("nivel"),
+                "severidades_desbloqueadas": plan.get("severidades_desbloqueadas", "[]"),
+                "carga_lote_habilitada": bool(plan.get("carga_lote_habilitada", False)),
                 "renovacionautomatica": renovacionautomatica,
             }
         )

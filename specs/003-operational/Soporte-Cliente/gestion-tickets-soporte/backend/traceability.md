@@ -27,11 +27,11 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-21).
 
 | CU/RF | Implementación | Tests |
 |-------|----------------|-------|
-| CU-O91 | `clasificacion_automatica_service`, `asignacion_sla_service`, `registrar_ticket_service`, `TicketsView.post`, `ClasificarTicketManualView` | T022-T024 |
-| CU-O92 | `tomar_ticket_service`, `comentar_ticket_service`, `escalar_ticket_service`, `resolver_ticket_service`, `confirmar_cierre_service` | T036-T040 |
-| CU-O95 | `configurar_sla_service`, `SLAConfigView`, `SLAConfigDetalleView` | T055 |
-| CU-O96 | `monitoreo_sla_service`, `monitoreo_sla_job` + `management/commands/run_monitoreo_sla_job.py` | T048-T049 |
-| CU-O97 | `reabrir_ticket_service`, `ReabrirTicketView` | T060 |
+| CU-O83 | `clasificacion_automatica_service`, `asignacion_sla_service`, `registrar_ticket_service`, `TicketsView.post`, `ClasificarTicketManualView` | T022-T024 |
+| CU-O84-O87 | `tomar_ticket_service`, `comentar_ticket_service`, `escalar_ticket_service`, `resolver_ticket_service`, `confirmar_cierre_service` | T036-T040 |
+| CU-O97 | `configurar_sla_service`, `SLAConfigView`, `SLAConfigDetalleView` | T055 |
+| CU-O89 | `monitoreo_sla_service`, `monitoreo_sla_job` + `management/commands/run_monitoreo_sla_job.py` | T048-T049 |
+| CU-O88 | `reabrir_ticket_service`, `ReabrirTicketView` | T060 |
 | RF-TIC-007 | `dashboard_soporte_service`, `DashboardSoporteView` | T065 |
 | RF-TIC-008 / RNF-TIC-004 | `cola-agente.page.ts` master-detail (US8) | T088-T094 |
 
@@ -69,4 +69,4 @@ Matriz CU/RF/CA → tasks y validación quickstart (2026-07-21).
 
 - `AsignacionSLAService` requirió un repositorio de solo lectura nuevo, `core/repositories/soporte/suscripcion_repository.py` (lee `Fact_Suscripcion`), no listado explícitamente en tasks.md pero necesario para research.md Decision 5.
 - `ResolverTicketService` y `TomarTicketService` incorporan validación de estado previo (RF-TIC-002 transiciones) no detallada originalmente en las tasks — se añadió para respetar la tabla de transiciones válidas de `spec.md` §9.
-- El job CU-O96 corre vía `management/commands/run_monitoreo_sla_job.py` (loop `--interval`/`--once`), no vía consumer Kafka registrado en `apps.py` — mismo patrón que `despacho-inteligente`'s `run_timeout_despacho_job`.
+- El job CU-O89 corre vía `management/commands/run_monitoreo_sla_job.py` (loop `--interval`/`--once`), no vía consumer Kafka registrado en `apps.py` — mismo patrón que `despacho-inteligente`'s `run_timeout_despacho_job`.

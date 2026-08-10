@@ -1,4 +1,4 @@
-"""Comando de gestión para el job O35 (RF-DES-005): escaneo periódico de timeouts de despacho.
+"""Comando de gestión para el job O63 (RF-DES-005): escaneo periódico de timeouts de despacho.
 
 Uso:
   python manage.py run_timeout_despacho_job              # loop continuo cada 30s
@@ -21,7 +21,7 @@ DEFAULT_INTERVAL_SECONDS = 30
 
 
 class Command(BaseCommand):
-    help = "Ejecuta el job O35 de escaneo de despachos en timeout (una vez o en loop continuo)"
+    help = "Ejecuta el job O63 de escaneo de despachos en timeout (una vez o en loop continuo)"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -42,13 +42,13 @@ class Command(BaseCommand):
 
         if once:
             eventos = run_timeout_despacho_job()
-            self.stdout.write(self.style.SUCCESS(f"Job O35 ejecutado: {len(eventos)} evento(s) timeout"))
+            self.stdout.write(self.style.SUCCESS(f"Job O63 ejecutado: {len(eventos)} evento(s) timeout"))
             return
 
-        self.stdout.write(self.style.SUCCESS(f"Job O35 iniciado en loop continuo (cada {interval}s)"))
+        self.stdout.write(self.style.SUCCESS(f"Job O63 iniciado en loop continuo (cada {interval}s)"))
         while True:
             try:
                 run_timeout_despacho_job()
             except Exception:
-                logger.exception("Error ejecutando job O35 de timeout de despacho")
+                logger.exception("Error ejecutando job O63 de timeout de despacho")
             time.sleep(interval)

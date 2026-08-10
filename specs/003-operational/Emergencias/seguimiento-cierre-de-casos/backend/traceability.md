@@ -6,7 +6,7 @@
 | CA-SEG-002 | Mapa operador + SSE tiempo real | T034–T043 | ✓ Validado |
 | CA-SEG-002b | Proxy ruta por calles OSRM (fail-open) | T042b | ✓ Validado — regularizado 2026-07-16, ver `contracts/seguimiento-cierre-de-casos.openapi.yaml` `/seguimiento/ruta` |
 | CA-SEG-003 | Llegada manual En_sitio + EN_ATENCION | T026, T028, T030, T032 | ✓ Validado |
-| CA-SEG-004 | Geofencing automático O26 | T029, T031 | ✓ Validado |
+| CA-SEG-004 | Geofencing automático O70 | T029, T031 | ✓ Validado |
 | CA-SEG-005 | Cierre valida todos Retirado | T044–T049 | ✓ Validado |
 | CA-SEG-006 | Auto-retiro con idusuario ejecutor | T047 | ✓ Validado |
 | CA-SEG-007 | horafin/duracionminutos inmutables SLA | T047 | ✓ Validado |
@@ -20,14 +20,14 @@
 
 | CU/RF | Descripción | User Story |
 |-------|-------------|------------|
-| CU-O25 | Registrar posición GPS | US1 |
-| CU-O26 | Llegada al sitio | US1 |
-| CU-O28 | Cierre multi-despacho | US3 |
-| CU-O29 | Historial emergencias | US6 |
-| CU-O37 | Job señal GPS perdida | US7 |
-| CU-O39 | Abortar misión | US4 |
-| CU-O42 | Cancelar caso | US5 |
-| CU-O44 | Forzar retiro | US5 |
+| CU-O68 | Registrar posición GPS | US1 |
+| CU-O70 | Llegada al sitio | US1 |
+| CU-O80 | Cierre multi-despacho | US3 |
+| CU-O82 | Historial emergencias | US6 |
+| CU-O69 | Job señal GPS perdida | US7 |
+| CU-O71 | Abortar misión | US4 |
+| CU-O72 | Cancelar caso | US5 |
+| CU-O81 | Forzar retiro | US5 |
 | RF-SEG-004 | Evidencia cierre | US3 |
 | RF-SEG-005 | Historial operador | US6 |
 | RF-SEG-006 | Expediente cliente | US6 |

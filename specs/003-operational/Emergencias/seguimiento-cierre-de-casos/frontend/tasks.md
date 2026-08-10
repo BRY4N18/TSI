@@ -25,7 +25,7 @@
 ## Phase 4: Historial y expedientes (FR-UI-009–015)
 
 - [X] T-FE-008 Páginas historial + detalle expediente (backend T100)
-- [X] T-FE-009 Formularios cierre O28 vs cancelar O42 en UI
+- [X] T-FE-009 Formularios cierre O80 vs cancelar O72 en UI
 - [X] T-FE-010 Export PDF Cliente
 
 ## Phase 5: Rutas (FR-UI-016)

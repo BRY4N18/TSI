@@ -11,12 +11,12 @@
 
 ## Summary
 
-Implementar el módulo de despacho inteligente con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/despacho-inteligente.openapi.yaml`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka** y orquestación **event-driven** (O22 consumer, O35 job, O36 worker); finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O22–O24, O33–O36, O38, O45 y RF-DES-001–011.
+Implementar el módulo de despacho inteligente con enfoque **contract-first**: primero el contrato OpenAPI REST (`contracts/despacho-inteligente.openapi.yaml`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka** y orquestación **event-driven** (O59 consumer, O63 job, O63 worker); finalmente frontend Angular 17+ con servicios tipados y guards. Cubre CU-O59–O61, O64–O63, O66, O62 y RF-DES-001–011.
 
 ## Traceability
 
 - **Objetivo operacional:** minimizar tiempo de respuesta ante accidentes (BSC).
-- **UC cubiertos:** CU-O22, O23, O24, O33, O34, O35, O36, O38, O45.
+- **UC cubiertos:** CU-O59, O60, O61, O64, O65, O63, O63, O66, O62.
 - **Dependencias:** `autenticacion-y-rbac`, `registro-accidente` (estado REPORTADO), `evidencia-unidad` (disponibilidad unidad).
 - **Consumidores downstream:** `seguimiento-cierre-de-casos` (despacho confirmado).
 
@@ -24,7 +24,7 @@ Implementar el módulo de despacho inteligente con enfoque **contract-first**: p
 
 **Language/Version**: Python 3.11 (backend), TypeScript 5.x / Angular 17+ (frontend)
 
-**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery o APScheduler (job O35), RxJS, EventSource (SSE)
+**Primary Dependencies**: Django 5 + DRF, JWT RS256, Kafka producer/consumer, Celery o APScheduler (job O63), RxJS, EventSource (SSE)
 
 **Storage**: Apache Pinot (lectura vía repositorios), Kafka (único canal escritura dominio)
 
@@ -34,7 +34,7 @@ Implementar el módulo de despacho inteligente con enfoque **contract-first**: p
 
 **Project Type**: Web application (backend + frontend)
 
-**Performance Goals**: O22 <5s (CA-DES-001); confirmación P95 <2min (RNF-DES-001); push <5s, SMS <30s (RNF-DES-004)
+**Performance Goals**: O59 <5s (CA-DES-001); confirmación P95 <2min (RNF-DES-001); push <5s, SMS <30s (RNF-DES-004)
 
 **Constraints**: API `/api/v1/`, envelope estándar, idempotencia escrituras, Vista→Servicio→Repositorio, Kafka-only-write, SSE para monitoreo
 
@@ -46,8 +46,8 @@ Implementar el módulo de despacho inteligente con enfoque **contract-first**: p
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O22–O45 + CA-DES-001–013 trazables al contrato y data-model |
-| Reliability | PASS | Event-driven O35/O36, fail-fast O23, idempotencia, historial append-only |
+| Functional Suitability | PASS | CU-O59–O62 + CA-DES-001–013 trazables al contrato y data-model |
+| Reliability | PASS | Event-driven O63/O63, fail-fast O60, idempotencia, historial append-only |
 | Performance Efficiency | PASS | RNF-DES-001/003/004; filtro condado reduce candidatas; métricas en quickstart |
 | Interaction Capability | PASS | Monitoreo SSE RF-DES-011; UI operador + notificación unidad |
 | Security | PASS | JWT + RBAC por rol; unidad solo `/mi-despacho` propio |
@@ -82,31 +82,31 @@ backend/
 ├── apps/
 │   └── despacho/
 │       ├── views/
-│       │   ├── asignacion_views.py       # O33, O34, O38
+│       │   ├── asignacion_views.py       # O64, O65, O66
 │       │   ├── monitoreo_views.py        # RF-DES-011 + SSE stream
-│       │   ├── mi_despacho_views.py      # O24, O45
+│       │   ├── mi_despacho_views.py      # O61, O62
 │       │   ├── parametros_views.py       # RF-DES-010
-│       │   ├── disponibilidad_views.py   # (existente CU-O30)
+│       │   ├── disponibilidad_views.py   # (existente CU-O78)
 │       │   └── urls.py
 │       ├── services/
-│       │   ├── asignacion_inteligente_service.py   # O22 algoritmo
-│       │   ├── asignacion_manual_service.py        # O33
-│       │   ├── escalamiento_zona_service.py        # O34
-│       │   ├── coordinacion_multiple_service.py    # O38
-│       │   ├── notificacion_despacho_service.py    # O23
-│       │   ├── confirmar_despacho_service.py       # O24
-│       │   ├── rechazar_despacho_service.py        # O45
-│       │   ├── reasignacion_despacho_service.py    # O36
-│       │   ├── timeout_despacho_service.py         # O35
+│       │   ├── asignacion_inteligente_service.py   # O59 algoritmo
+│       │   ├── asignacion_manual_service.py        # O64
+│       │   ├── escalamiento_zona_service.py        # O65
+│       │   ├── coordinacion_multiple_service.py    # O66
+│       │   ├── notificacion_despacho_service.py    # O60
+│       │   ├── confirmar_despacho_service.py       # O61
+│       │   ├── rechazar_despacho_service.py        # O62
+│       │   ├── reasignacion_despacho_service.py    # O63
+│       │   ├── timeout_despacho_service.py         # O63
 │       │   ├── monitoreo_despacho_service.py       # RF-DES-011
 │       │   ├── parametros_despacho_service.py      # RF-DES-010
 │       │   ├── concordancia_tipo_service.py
 │       │   └── consulta_candidatas_service.py
 │       ├── consumers/
-│       │   ├── accidente_reportado_consumer.py     # dispara O22
-│       │   └── despacho_timeout_consumer.py        # dispara O36 async
+│       │   ├── accidente_reportado_consumer.py     # dispara O59
+│       │   └── despacho_timeout_consumer.py        # dispara O63 async
 │       ├── jobs/
-│       │   └── timeout_despacho_job.py             # O35
+│       │   └── timeout_despacho_job.py             # O63
 │       ├── permissions.py                          # + OperadorDespacho, etc.
 │       └── tests/
 │           ├── api/                                # Contract tests OpenAPI
@@ -153,7 +153,7 @@ frontend/
 
 ## Phase 0: Research (completado)
 
-Ver `research.md` — resueltos: contract-first, capas Django, Kafka-only-write, eventos O35/O36, JWT/RBAC, algoritmo condado+Haversine, fail-fast notificaciones, SSE, Angular guards, keywords severidad moderada.
+Ver `research.md` — resueltos: contract-first, capas Django, Kafka-only-write, eventos O63/O63, JWT/RBAC, algoritmo condado+Haversine, fail-fast notificaciones, SSE, Angular guards, keywords severidad moderada.
 
 ## Phase 1: Design & Contracts (completado)
 
@@ -171,11 +171,11 @@ Artefacto: `contracts/despacho-inteligente.openapi.yaml`
 
 | CU | Mecanismo |
 |----|-----------|
-| O22 | Consumer `AccidenteReportado` |
-| O23 | `NotificacionDespachoService` (post-asignación) |
-| O35 | Job programado 30s |
-| O36 (timeout) | Consumer `DespachoTimeout_topic` |
-| O36 (rechazo/fallo O23) | Llamada síncrona a `ReasignacionDespachoService` |
+| O59 | Consumer `AccidenteReportado` |
+| O60 | `NotificacionDespachoService` (post-asignación) |
+| O63 | Job programado 30s |
+| O63 (timeout) | Consumer `DespachoTimeout_topic` |
+| O63 (rechazo/fallo O60) | Llamada síncrona a `ReasignacionDespachoService` |
 
 ### Backend — mapeo Vista → Servicio → Repositorio
 
@@ -191,11 +191,11 @@ Artefacto: `contracts/despacho-inteligente.openapi.yaml`
 | `ConfirmarDespachoView` | `ConfirmarDespachoService` | repos despacho + estado unidad/caso |
 | `RechazarDespachoView` | `RechazarDespachoService` + `ReasignacionDespachoService` | repos despacho |
 | `ParametrosDespachoView` | `ParametrosDespachoService` | `ParametrosDespachoRepository` |
-| `AccidenteReportadoConsumer` | `AsignacionInteligenteService` + `NotificacionDespachoService` | todos repos O22 |
+| `AccidenteReportadoConsumer` | `AsignacionInteligenteService` + `NotificacionDespachoService` | todos repos O59 |
 | `TimeoutDespachoJob` | `TimeoutDespachoService` | `DespachoRepository`, Kafka `DespachoTimeout_topic` |
-| `DespachoTimeoutConsumer` | `ReasignacionDespachoService` | repos O36 |
+| `DespachoTimeoutConsumer` | `ReasignacionDespachoService` | repos O63 |
 
-**Flujo escritura Kafka (ejemplo asignación automática O22):**
+**Flujo escritura Kafka (ejemplo asignación automática O59):**
 
 ```text
 AccidenteReportado event

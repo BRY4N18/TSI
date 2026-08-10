@@ -24,7 +24,7 @@ description: "Task list for feature implementation"
 ## Path Conventions
 
 Dos runtimes distintos, sin código compartido entre ellos (plan.md, Structure Decision):
-- `docker/tactico/airflow-dags/` — DAGs + su `lib/` propia, corre en `tactico-airflow-scheduler`
+- `dags/` en la raíz del repo — DAGs + su `lib/` propia, corre en `tactico-airflow-scheduler`. **Reemplaza a `docker/tactico/airflow-dags/`, mencionada en las tareas de más abajo — ver Addendum al final de este archivo para el mapeo de rutas vigente.**
 - `backend/core/clickhouse/`, `backend/core/repositories/informes_tacticos/`, `backend/apps/informes_tacticos/` — endpoints Django, corre en el contenedor de Django
 
 ---
@@ -222,3 +222,28 @@ Task: "Test de API en backend/apps/informes_tacticos/tests/api/test_compuestos_v
 - La idempotencia (FR-003, SC-003) se decide en implementación entre `DELETE`+`INSERT` del período o `ReplacingMergeTree` con `FINAL` en lectura — documentar la decisión tomada en el docstring del DAG correspondiente
 - Ningún DAG escribe en Pinot ni ningún endpoint Django escribe en ClickHouse (FR-002, FR-004) — verificar esto explícitamente en los tests de repositorio (solo se llama a `query_clickhouse`/`ClickHouseClient.query`, nunca a un método de escritura, desde el lado Django)
 - Confirmar cada checkpoint antes de pasar a la siguiente fase
+
+---
+
+## Addendum (2026-08-06): migración a `dags/` (raíz) + extract/transform/load-parquet
+
+Las tareas T001-T036 de arriba (todas `[X]`, completadas) mencionan rutas bajo `docker/tactico/airflow-dags/` — esa carpeta **ya no existe**, fue reemplazada por `dags/` en la raíz del repo (ver `../../infraestructura/spec.md`, Addendum 2026-08-06). Mapeo de rutas vigente:
+
+| Ruta mencionada en T001-T036 | Ruta vigente |
+|---|---|
+| `docker/tactico/airflow-dags/lib/pinot_http_client.py` | `dags/lib/pinot_http_client.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/lib/clickhouse_http_client.py` | `dags/lib/clickhouse_http_client.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/lib/ddl.py` | `dags/lib/ddl.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/lib/perdida_senal_logic.py` | `dags/lib/perdida_senal_logic.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/lib/indice_calidad_logic.py` | `dags/lib/indice_calidad_logic.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/lib/rendimiento_proveedor_logic.py` | `dags/lib/rendimiento_proveedor_logic.py` (sin cambios de contenido) |
+| `docker/tactico/airflow-dags/perdida_senal_dag.py` | `dags/etl/perdida_senal_dag.py` (solo wiring del DAG) + `dags/lib/perdida_senal_tasks.py` (extract/transform/load, nuevo) |
+| `docker/tactico/airflow-dags/indice_calidad_dag.py` | `dags/etl/indice_calidad_dag.py` (solo wiring del DAG) + `dags/lib/indice_calidad_tasks.py` (extract/transform/load, nuevo) |
+| `docker/tactico/airflow-dags/rendimiento_proveedor_dag.py` | `dags/etl/rendimiento_proveedor_dag.py` (solo wiring del DAG) + `dags/lib/rendimiento_proveedor_tasks.py` (extract/transform/load, nuevo) |
+| `docker/tactico/airflow-dags/tests/*` | `dags/tests/*` (sin cambios de contenido — mismos 19 tests, ahora 26 con los nuevos de `parquet_io`/`dag_integrity`) |
+
+Cada DAG pasó de 1 tarea a 3 (`extract >> transform >> load`), con staging en Parquet en `ETL/<fecha>/<hora>/`. Las funciones de negocio (`detectar_huecos`, `combinar_indice`, `agregar_por_proveedor`) no cambiaron — ver `data-model.md`, Addendum 2026-08-06, para el detalle completo.
+
+Nuevas tareas (no numeradas contra T001-T036, ver `../../infraestructura/tasks.md` T025-T034 para el detalle completo de esta migración):
+- [X] Extraer `extract`/`transform`/`load` de cada DAG a `dags/lib/*_tasks.py` (necesario para que `dags/etl/dag_backfill.py` los reutilice sin re-importar un archivo de DAG)
+- [X] Verificar con `airflow dags test <dag_id> <fecha>` que los 3 DAGs de negocio siguen produciendo las mismas filas en ClickHouse que antes de la migración

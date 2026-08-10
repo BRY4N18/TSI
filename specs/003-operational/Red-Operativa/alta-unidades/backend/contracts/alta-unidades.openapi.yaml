@@ -136,7 +136,9 @@ paths:
       description: >
         Archivo CSV (columnas de alta individual más `gmail` por fila). Valida unidades y
         credenciales; si cualquier fila falla, insertadas=0 (ninguna unidad ni usuario activo).
-        Max 500 filas. Requiere rol seed `Unidad`.
+        Max 500 filas. Requiere rol seed `Unidad`. Requiere además que el plan contratado del
+        Proveedor habilite esta capacidad (`Fact_Suscripcion.carga_lote_habilitada`, corrección
+        2026-08-08) — si no, 403 antes de leer el archivo.
       security:
         - bearerAuth: []
       parameters:
@@ -234,6 +236,11 @@ paths:
     post:
       tags: [Unidades]
       summary: Dar de baja una unidad (CU-O58)
+      description: >
+        Autoservicio del Proveedor dueño, salvo con despacho activo: ahí la baja
+        forzada (`forzar=true`) es exclusiva del Administrador (RF-O42.4,
+        corrección 2026-08-08) — el Proveedor recibe 403 aunque envíe
+        `forzar=true`; se le sugiere esperar el cierre del caso.
       operationId: bajaUnidad
       security:
         - bearerAuth: []
@@ -482,7 +489,6 @@ components:
         - placa
         - unidademergencia
         - tipounidademergencia
-        - gmail
       properties:
         idcliente:
           type: integer
@@ -510,8 +516,10 @@ components:
           type: string
           format: email
           description: >
-            Requerido en O54. Crea login rol Unidad, credencial temporal,
-            liga idusuario e invita por correo (habilita CU-O30).
+            Opcional en O54 (corrección 2026-08-08, SRS 3.5.1). Si se envía,
+            crea login rol Unidad, credencial temporal, liga idusuario e invita
+            por correo (habilita CU-O30). Si se omite, la unidad queda en el
+            catálogo sin acceso propio hasta que se le asigne login después.
         activo:
           type: boolean
           default: true
@@ -614,7 +622,10 @@ components:
         forzar:
           type: boolean
           default: false
-          description: Requerido en 'true' si la unidad tiene un despacho activo en curso
+          description: >
+            Requerido en 'true' si la unidad tiene un despacho activo en curso —
+            y solo entonces surte efecto si además el rol del solicitante es
+            Administrador; enviado por un Proveedor devuelve 403 igual (RF-O42.4).
 
     BajaUnidadResponse:
       type: object

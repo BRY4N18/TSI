@@ -42,10 +42,12 @@ class TestAccidenteReportadoConsumer:
         # Assert
         assert result is None
 
-    def test_handle_when_no_candidatas_returns_asignado_false(
-        self, mock_pinot, mock_kafka, accidente_activo
+    def test_handle_when_no_candidatas_escala_a_vecinos_y_deja_constancia(
+        self, mock_pinot, mock_kafka, accidente_activo, pinot_store
     ):
-        # Arrange — sin unidad Activa
+        # Arrange — SRS 3.6.2: sin candidatas locales, el sistema no falla en
+        # silencio; escala a vecinos (ReasignacionDespachoService) y, si
+        # tampoco hay ahí, deja nota + alerta admin.
         consumer = AccidenteReportadoConsumer()
 
         # Act
@@ -56,3 +58,9 @@ class TestAccidenteReportadoConsumer:
         # Assert
         assert result is not None
         assert result["asignado"] is False
+        notas = [
+            n
+            for n in pinot_store["Dim_NotaAccidente"]
+            if n.get("idaccidente") == accidente_activo
+        ]
+        assert any("Sin unidades disponibles" in n.get("nota", "") for n in notas)

@@ -39,4 +39,15 @@ No requiere modelo de datos persistente — es una verificación operativa puntu
 
 - Ningún `Dim_*`/`Fact_*` de Pinot se modifica ni se lee con datos reales todavía.
 - Ninguna tabla de ClickHouse con modelo de informe compuesto (ej. "misiones abortadas / pérdida de señal") se crea aquí — la única tabla que existe en esta fase es una tabla de prueba desechable para validar SC-003, documentada en `quickstart.md`.
-- Ningún DAG de Airflow con lógica de negocio — la carpeta `tactico-airflow-dags` queda vacía al final de esta feature.
+
+## Addendum (2026-08-06): artefacto de staging Parquet
+
+No es un `Dim_*`/`Fact_*` ni una tabla — es un archivo de staging intermedio entre Pinot y ClickHouse, regenerable en cada corrida (no versionado, no es el almacén de registro).
+
+| Campo | Descripción |
+|---|---|
+| `ruta` | `ETL/<fecha:YYYY-MM-DD>/<hora:HH-MM>/<stage>_data.parquet`, raíz del repo (bind mount a `/opt/airflow/ETL`, variable `ETL_ROOT`). `<stage>` es `extract`, `transform` o `loading`. |
+| `ciclo_de_vida` | Escrito por la tarea `extract`/`transform`/`load` correspondiente de un DAG; leído por la siguiente tarea del mismo DAG; eventualmente borrado por `dags/operations/dag_limpieza_staging.py` pasado el umbral de retención (`Variable` `etl_retention_days`, default 7 días). |
+| `riesgo aceptado` | La ruta no incluye `dag_id` — dos DAGs que corran en el mismo `ts` se pisan los archivos entre sí (decisión explícita del responsable del proyecto, ver `contracts/docker-compose-contract.md`). |
+
+La carpeta de DAGs de esta fase (antes `docker/tactico/airflow-dags/`, ahora `dags/` en la raíz) ya no está vacía: contiene los DAGs de negocio migrados por `Emergencias/informes-tacticos-compuestos/backend/` más los DAGs de referencia/operación propios de esta capa de infraestructura (`dag_etl_principal`, `dag_backfill`, `dag_validacion_calidad`, `dag_limpieza_staging`, `dag_mantenimiento_bd`, `dag_system_health`).

@@ -20,4 +20,6 @@ Todo el alcance y el diseño de esta feature viven aquí. El compose real está 
 
 - `docker/docker-compose.tactico.yml`
 - `docker/.env.tactico.example`
-- `docker/tactico/airflow-dags/`
+- `docker/tactico/airflow/` (Dockerfile custom + requirements.txt: pandas/pyarrow/pytest)
+- `dags/` (raíz del repo) — DAGs, reemplaza a `docker/tactico/airflow-dags/`
+- `ETL/` (raíz del repo) — staging Parquet, no versionado

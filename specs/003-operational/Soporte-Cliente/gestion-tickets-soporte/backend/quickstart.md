@@ -1,6 +1,6 @@
 # Quickstart — Validación Gestión de Tickets de Soporte
 
-Guía de validación end-to-end contract-first para CU-O91, O92, O95, O96, O97 y RF-TIC-001–007.
+Guía de validación end-to-end contract-first para CU-O83, O84-O87, O97, O89, O88 y RF-TIC-001–007.
 
 ## Prerrequisitos
 
@@ -33,19 +33,19 @@ Tip seed: `SOPORTE_SUPERVISOR_USER_ID=15 python scripts/seed_catalogos_soporte.p
 
 | Método | Ruta | CU/RF |
 |--------|------|-------|
-| `GET` | `/api/v1/soporte/servicios` | CU-O91 catálogo |
+| `GET` | `/api/v1/soporte/servicios` | CU-O83 catálogo |
 | `GET` | `/api/v1/soporte/tickets` | RF-TIC-007 (dashboard/listado) |
-| `POST` | `/api/v1/soporte/tickets` | CU-O91 |
-| `GET` | `/api/v1/soporte/tickets/{id_reclamo}` | O92 (detalle + historial) |
+| `POST` | `/api/v1/soporte/tickets` | CU-O83 |
+| `GET` | `/api/v1/soporte/tickets/{id_reclamo}` | O84-O87 (detalle + historial) |
 | `POST` | `/api/v1/soporte/tickets/{id}/clasificar` | RF-TIC-001 paso 4 (clasificación manual, RN-TIC-003) |
-| `POST` | `/api/v1/soporte/tickets/{id}/tomar` | CU-O92 |
-| `POST` | `/api/v1/soporte/tickets/{id}/comentarios` | CU-O92 |
-| `POST` | `/api/v1/soporte/tickets/{id}/escalar` | CU-O92 (escalado manual) |
-| `POST` | `/api/v1/soporte/tickets/{id}/resolver` | CU-O92 |
+| `POST` | `/api/v1/soporte/tickets/{id}/tomar` | CU-O84-O87 |
+| `POST` | `/api/v1/soporte/tickets/{id}/comentarios` | CU-O84-O87 |
+| `POST` | `/api/v1/soporte/tickets/{id}/escalar` | CU-O84-O87 (escalado manual) |
+| `POST` | `/api/v1/soporte/tickets/{id}/resolver` | CU-O84-O87 |
 | `POST` | `/api/v1/soporte/tickets/{id}/confirmar-cierre` | RF-TIC-006 |
-| `POST` | `/api/v1/soporte/tickets/{id}/reabrir` | CU-O97 |
-| `GET/POST` | `/api/v1/soporte/sla-config` | CU-O95 |
-| `PATCH` | `/api/v1/soporte/sla-config/{id}` | CU-O95 |
+| `POST` | `/api/v1/soporte/tickets/{id}/reabrir` | CU-O88 |
+| `GET/POST` | `/api/v1/soporte/sla-config` | CU-O97 |
+| `PATCH` | `/api/v1/soporte/sla-config/{id}` | CU-O97 |
 | `GET` | `/api/v1/soporte/dashboard` | RF-TIC-007 |
 
 Convenciones (`api-standards.md`):
@@ -54,11 +54,11 @@ Convenciones (`api-standards.md`):
 - Envelope error: `{ error, detail, code }`
 - `Idempotency-Key` en escrituras (registro, tomar, reabrir)
 
-**Flujo interno (sin REST):** CU-O96 — job de monitoreo SLA cada 1 minuto, ver `plan.md`/`research.md` Decision 7.
+**Flujo interno (sin REST):** CU-O89 — job de monitoreo SLA cada 1 minuto, ver `plan.md`/`research.md` Decision 7.
 
 ## 2) Validar flujo backend (Vista → Servicio → Repositorio + Kafka)
 
-### Escenario A — Registro con clasificación automática exitosa (CU-O91, Escenario 1 del spec)
+### Escenario A — Registro con clasificación automática exitosa (CU-O83, Escenario 1 del spec)
 
 1. Cliente con caso de emergencia activo reporta un ticket técnico.
 2. **Esperado:** `prioridad='crítico'` automático; `idslaconfig`/`sla_primera_respuesta`/`sla_resolucion` asignados según `idplan` (vía `Fact_Suscripcion`, Decision 5); `Fact_Historial_Ticket` con `tipo_accion='creacion'`.
@@ -111,7 +111,7 @@ Convenciones (`api-standards.md`):
 | Artefacto | Responsabilidad |
 |-----------|-----------------|
 | `TicketApiService` | Registro, transiciones, detalle, dashboard |
-| `SlaConfigApiService` | CU-O95 |
+| `SlaConfigApiService` | CU-O97 |
 | `ClienteSoporteGuard` | Rutas de cliente (mis tickets, reabrir) |
 | `AgenteSoporteGuard` | Rutas de agente (tomar, comentar, escalar, resolver) |
 | `AdministradorSlaGuard` | Configuración de SLA |
@@ -131,7 +131,7 @@ Escenarios UI mínimos:
 - Contract tests por endpoint (`tests/api/test_*_contract.py`) contra OpenAPI.
 - Unit tests `ClasificacionAutomaticaService` (reglas por keyword, caso crítico por emergencia activa).
 - Unit tests `AsignacionSLAService` (resolución de `idplan` vía `Fact_Suscripcion`, no `Dim_Cliente.plan_suscripcion`).
-- Job test O96 (umbral 80%, independencia de `sla_primera_respuesta`/`sla_resolucion`, ejecución cada 1 min).
+- Job test O89 (umbral 80%, independencia de `sla_primera_respuesta`/`sla_resolucion`, ejecución cada 1 min).
 - Test de reapertura verificando renovación de SLA (Decision 8) y conservación de historial previo.
 
 **Frontend:**

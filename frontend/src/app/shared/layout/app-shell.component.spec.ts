@@ -76,4 +76,53 @@ describe('AppShellComponent', () => {
     // Assert
     expect(component.navGroups()).toEqual([]);
   });
+
+  // --- Partners y API: consola y portal NO se fusionan (FR-UI-033) ---
+  // Son departamentos distintos, así que cada rol ve su sidebar íntegro y
+  // ninguno descubre la existencia del otro.
+
+  it('navGroups_when_role_partner_integracion_solo_ve_su_portal', () => {
+    // Arrange / Act
+    const component = createComponent({
+      idusuario: 51,
+      gmail: 'partner@aseguradora.com',
+      roles: ['PartnerIntegracion'],
+    });
+
+    // Assert
+    const grupos = component.navGroups();
+    expect(grupos.map((g) => g.name)).toEqual(['Partners y API']);
+    const etiquetas = grupos[0].links.map((l) => l.label);
+    expect(etiquetas).toContain('Mi integración');
+    expect(etiquetas).toContain('Contrato de integración');
+  });
+
+  it('navGroups_when_role_partner_integracion_no_ve_la_consola', () => {
+    // Arrange / Act
+    const component = createComponent({
+      idusuario: 51,
+      gmail: 'partner@aseguradora.com',
+      roles: ['PartnerIntegracion'],
+    });
+
+    // Assert — no debe descubrir siquiera que la consola existe
+    const etiquetas = component.navGroups().flatMap((g) => g.links.map((l) => l.label));
+    expect(etiquetas).not.toContain('Partners');
+    expect(etiquetas).not.toContain('Solicitudes pendientes');
+  });
+
+  it('navGroups_when_role_desarrollador_apis_ve_la_consola_pero_no_el_portal', () => {
+    // Arrange / Act
+    const component = createComponent({
+      idusuario: 60,
+      gmail: 'devapis@tsi.com',
+      roles: ['DesarrolladorAPIs'],
+    });
+
+    // Assert
+    const etiquetas = component.navGroups().flatMap((g) => g.links.map((l) => l.label));
+    expect(etiquetas).toContain('Partners');
+    expect(etiquetas).toContain('Solicitudes pendientes');
+    expect(etiquetas).not.toContain('Mi integración');
+  });
 });

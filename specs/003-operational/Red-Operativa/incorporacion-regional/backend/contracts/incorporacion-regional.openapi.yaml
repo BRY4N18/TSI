@@ -80,6 +80,10 @@ paths:
         estadoregion='En_Validación' antes de insertar la validación (alta
         de región nueva). Válido también como reingreso desde En_Alerta o
         Despublicada (reactivación, ver Clarifications del spec).
+        resultado='Aprobada' es exclusivo del rol DirectorTecnologico —
+        un Administrador que lo intenta recibe 403 (corrección 2026-08-08);
+        el Administrador puede ejecutar el protocolo y registrar
+        resultado='Rechazada'.
       operationId: ejecutarValidacionRegion
       security:
         - bearerAuth: []

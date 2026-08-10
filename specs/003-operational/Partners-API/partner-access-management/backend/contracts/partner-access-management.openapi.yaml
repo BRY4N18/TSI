@@ -1,0 +1,394 @@
+openapi: 3.0.3
+info:
+  title: TSI Gestión de Acceso de Partners
+  version: 1.0.0
+  description: >
+    Contrato contract-first para CU-O55: revocar credenciales comprometidas,
+    avisar de mora, suspender y reactivar el acceso del partner.
+
+    TODOS los endpoints usan JWT (`bearerAuth`). Ninguno lo consume una máquina:
+    la revocación la hace una persona del área técnica del partner reaccionando a
+    un incidente, y la suspensión/reactivación un Administrador. La API de datos
+    autenticada por credencial pertenece a `api-monitoring-and-billing`.
+
+    Deliberadamente NO se permite revocar usando la propia credencial de API: una
+    credencial comprometida podría entonces usarse para revocar las demás del
+    partner, dándole al atacante la herramienta de sabotaje.
+
+    DOS ASIMETRÍAS DE DISEÑO, ambas intencionadas:
+    1. Revocar es autoservicio inmediato sin aprobación; suspender/reactivar es
+       exclusivo del Administrador.
+    2. La suspensión puede ser automática; la reactivación NUNCA lo es (RN-PAC-009).
+servers:
+  - url: /api/v1
+tags:
+  - name: Credenciales
+    description: Revocación de autoservicio ante incidente de seguridad
+  - name: Acceso
+    description: Suspensión y reactivación del partner (Administrador)
+  - name: Estado
+    description: Consulta del estado de acceso
+
+paths:
+  /credenciales/{idcredencial}/revocar:
+    post:
+      tags: [Credenciales]
+      summary: Revocar una credencial comprometida y recibir su reemplazo (RF-PAC-001, RF-PAC-002)
+      description: >
+        Autoservicio del partner, sin aprobación de nadie: es reactivo ante un
+        incidente de seguridad, donde esperar autorización sería el peor
+        comportamiento posible.
+
+        Entrega el reemplazo EN EL MISMO ACTO, del mismo entorno y con el mismo
+        nombre, con su secreto expuesto UNA SOLA VEZ. Las demás credenciales del
+        partner siguen operando sin interrupción.
+
+        La credencial revocada deja de servir de inmediato, sin esperar a la
+        ingesta de Pinot (research.md Decision 2).
+      operationId: revocarCredencial
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: idcredencial
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RevocarRequest' }
+      responses:
+        '200':
+          description: Credencial revocada y reemplazo emitido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RevocacionResponse' }
+        '400':
+          description: '`motivo` ausente o vacío'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: >
+            La credencial pertenece a otro partner (RN-PAC-002). Validación
+            obligatoria antes de tocar nada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            La credencial ya está inactiva (RN-PAC-003). No se devuelve 200
+            idempotente a propósito: una segunda entrada de revocación ensuciaría
+            la bitácora, que es el respaldo de RF-O55.4.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /partners/{idpartner}/suspender:
+    post:
+      tags: [Acceso]
+      summary: Suspender el acceso del partner (RF-PAC-005)
+      description: >
+        Exclusivo del Administrador, para causas distintas a la mora (la mora la
+        ejecuta el sistema automáticamente).
+
+        Desactiva TODAS las credenciales del partner, de pruebas y de producción,
+        sin excepción (RN-PAC-010), y registra una entrada de bitácora por cada
+        una — es lo que permitirá restituir solo esas al reactivar.
+      operationId: suspenderPartner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SuspenderRequest' }
+      responses:
+        '200':
+          description: Partner suspendido con su cascada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuspensionResponse' }
+        '400':
+          description: '`motivo` ausente o vacío — es obligatorio al suspender'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Solo un Administrador puede suspender
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: El partner ya está suspendido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /partners/{idpartner}/reactivar:
+    post:
+      tags: [Acceso]
+      summary: Reactivar el acceso del partner (RF-PAC-005, RF-PAC-006)
+      description: >
+        Exclusivo del Administrador. EL SISTEMA NUNCA REACTIVA SOLO (RN-PAC-009):
+        ni siquiera cuando la mora que causó la suspensión ya se regularizó.
+
+        Restituye ÚNICAMENTE las credenciales que estaban activas antes de la
+        suspensión. Una credencial que el partner había revocado por seguridad
+        PERMANECE INACTIVA — resucitarla sería un fallo de seguridad grave.
+
+        La respuesta desglosa restituidas y no restituidas para que esa diferencia
+        sea visible y no parezca un error.
+      operationId: reactivarPartner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReactivarRequest' }
+      responses:
+        '200':
+          description: Partner reactivado con restitución selectiva
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReactivacionResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Solo un Administrador puede reactivar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            El partner no está suspendido. Operación redundante: no debe generar
+            una entrada de reactivación sin una suspensión real que la respalde.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /partners/{idpartner}/estado-acceso:
+    get:
+      tags: [Estado]
+      summary: Consultar el estado de acceso (RF-PAC-009)
+      description: >
+        El partner solo puede consultar el suyo (403 en otro caso), pero SÍ puede
+        hacerlo estando suspendido (RN-PAC-016): es lectura, y es donde entiende
+        por qué se le cortó el acceso y qué debe pagar.
+
+        El Administrador puede consultar cualquiera.
+      operationId: consultarEstadoAcceso
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdPartner'
+      responses:
+        '200':
+          description: Estado de acceso, credenciales e historial
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EstadoAccesoResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPartner:
+      name: idpartner
+      in: path
+      required: true
+      schema: { type: integer }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >
+        UUID v4. Protege del reintento de red en la PRIMERA revocación; no
+        convierte en 200 la revocación de una credencial ya inactiva.
+      schema: { type: string, format: uuid }
+
+  schemas:
+    RevocarRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          description: Queda en la bitácora (RF-O55.4)
+          example: credencial expuesta en repositorio público
+
+    SuspenderRequest:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          description: Obligatorio. Ej. vencimiento de contrato
+
+    ReactivarRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          description: Opcional — el SRS solo exige motivo al suspender
+
+    Credencial:
+      type: object
+      description: Nunca incluye el secreto
+      properties:
+        idcredencial: { type: integer }
+        nombre_credencial: { type: string }
+        entorno: { type: string, enum: [Sandbox, Producción] }
+        activo: { type: boolean }
+        fecha_creacion: { type: integer, format: int64 }
+
+    EventoBitacora:
+      type: object
+      properties:
+        tipo_cambio:
+          type: string
+          enum:
+            - revocacion_credencial
+            - desactivacion_por_cascada
+            - aviso_previo_suspension
+            - suspension_automatica
+            - suspension_manual
+            - reactivacion
+          description: >
+            `desactivacion_por_cascada` NO es lo mismo que `revocacion_credencial`:
+            el primero se revierte al reactivar, el segundo nunca.
+        ejecutado_por: { type: string, enum: [Partner, Administrador, Sistema] }
+        motivo: { type: string }
+        estado_anterior: { type: string }
+        estado_nuevo: { type: string }
+        fecha_cambio: { type: integer, format: int64 }
+        idcredencial:
+          type: integer
+          description: '-1 cuando el evento es sobre el partner en general (centinela)'
+
+    RevocacionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            revocada: { $ref: '#/components/schemas/Credencial' }
+            reemplazo:
+              allOf:
+                - $ref: '#/components/schemas/Credencial'
+                - type: object
+                  required: [client_secret]
+                  properties:
+                    client_secret:
+                      type: string
+                      description: >
+                        ÚNICA VEZ que este valor se transmite. Mismo entorno y
+                        mismo nombre que la revocada (RF-O55.1).
+            credenciales_intactas:
+              type: integer
+              description: >
+                Cuántas credenciales del partner siguen operando sin cambio
+                (RF-O55.2). Hace visible que revocar una no afecta a las demás.
+
+    SuspensionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idpartner: { type: integer }
+            activo: { type: boolean, example: false }
+            fecha_suspension: { type: string }
+            motivo_suspension: { type: string }
+            credenciales_desactivadas:
+              type: integer
+              description: Todas las que estaban activas, de ambos entornos, sin excepción
+
+    ReactivacionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idpartner: { type: integer }
+            activo: { type: boolean, example: true }
+            credenciales_restituidas:
+              type: integer
+              description: Las que estaban activas justo antes de la suspensión
+            credenciales_no_restituidas:
+              type: integer
+              description: >
+                Las que ya estaban inactivas al suspender — revocadas por el
+                partner o expiradas. NO se resucitan (RN-PAC-011). Se expone para
+                que la diferencia sea visible y no parezca un fallo.
+
+    EstadoAccesoResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            idpartner: { type: integer }
+            activo: { type: boolean }
+            fecha_suspension:
+              type: string
+              description: Cadena vacía si no está suspendido (centinela, no null)
+            motivo_suspension: { type: string }
+            en_mora:
+              type: boolean
+              description: >
+                Derivado de las facturas de excedente impagadas. No es una columna:
+                el estado operativo vive solo en `activo` (RN-PAC-012)
+            dias_mora: { type: integer }
+            avisos_enviados:
+              type: array
+              description: Avisos ya emitidos en el ciclo de mora vigente
+              items: { type: string, example: T-10 }
+            credenciales:
+              type: array
+              items: { $ref: '#/components/schemas/Credencial' }
+            historial:
+              type: array
+              items: { $ref: '#/components/schemas/EventoBitacora' }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Rol insuficiente, o intento de operar sobre un perfil ajeno
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso inexistente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

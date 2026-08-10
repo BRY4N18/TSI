@@ -1,4 +1,4 @@
-"""DRF views for /mi-seguimiento/* (CU-O25, O26, O39)."""
+"""DRF views for /mi-seguimiento/* (CU-O68, O70, O71)."""
 
 from __future__ import annotations
 
@@ -7,10 +7,12 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accidentes.services.confirmar_reporte_service import ConflictError
 from apps.despacho.consumers.despacho_abortado_consumer import handle_despacho_abortado
 from apps.seguimiento.idempotency import get_cached_response, store_response
 from apps.seguimiento.permissions import IsUnidadSeguimiento
 from apps.seguimiento.services.abortar_mision_service import AbortarMisionService
+from apps.seguimiento.services.escalar_severidad_service import EscalarSeveridadService
 from apps.seguimiento.services.obtener_mi_seguimiento_actual_service import (
     ObtenerMiSeguimientoActualService,
 )
@@ -130,3 +132,25 @@ class AbortarMisionView(APIView):
         response = success_response(result)
         store_response(request, "abortar_mision", response)
         return response
+
+
+class EscalarSeveridadView(APIView):
+    permission_classes = [IsAuthenticated401, IsUnidadSeguimiento]
+    parser_classes = [JSONParser]
+
+    def post(self, request: Request, idaccidente: str) -> Response:
+        try:
+            data = EscalarSeveridadService().escalar(
+                idaccidente=idaccidente,
+                data=request.data,
+                idusuario=request.user.idusuario,
+            )
+        except ConflictError as exc:
+            return error_response("conflict", str(exc), "409", status_code=409)
+        except LookupError:
+            return error_response("not_found", "Accidente no encontrado", "404", status_code=404)
+        except ValueError as exc:
+            return error_response("unprocessable_entity", str(exc), "422", status_code=422)
+        except KeyError as exc:
+            return error_response("bad_request", f"Campo requerido: {exc}", "400", status_code=400)
+        return success_response(data)

@@ -22,7 +22,7 @@ tags:
 paths:
   /suscripciones:
     post:
-      summary: Alta / contratación inicial (CU-O111)
+      summary: Alta / contratación inicial (CU-O28)
       operationId: altaSuscripcion
       tags: [Suscripcion]
       security: [{ bearerAuth: [] }]
@@ -72,7 +72,7 @@ paths:
 
   /suscripciones/mia/cancelar:
     post:
-      summary: Cancelar suscripción (CU-O110)
+      summary: Cancelar suscripción (CU-O37)
       operationId: cancelarSuscripcion
       tags: [Suscripcion]
       security: [{ bearerAuth: [] }]
@@ -133,7 +133,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MetodoPagoListEnvelope"
     post:
-      summary: Alta o reemplazo del método principal (CU-O101)
+      summary: Alta o reemplazo del método principal (CU-O29)
       operationId: registrarMetodoPago
       tags: [MetodoPago]
       security: [{ bearerAuth: [] }]
@@ -183,7 +183,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SolicitudListEnvelope"
     post:
-      summary: Solicitar cambio de plan (CU-O104)
+      summary: Solicitar cambio de plan (CU-O33)
       operationId: solicitarCambioPlan
       tags: [CambioPlan]
       security: [{ bearerAuth: [] }]
@@ -300,7 +300,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/PlanListEnvelope"
     post:
-      summary: Crear plan (CU-O106, Director de Estrategia / rol JWT DirectorEstrategia)
+      summary: Crear plan (CU-O26, Director de Estrategia / rol JWT DirectorEstrategia)
       operationId: crearPlan
       tags: [Planes]
       security: [{ bearerAuth: [] }]
@@ -345,7 +345,7 @@ paths:
 
   /suscripciones/facturas:
     get:
-      summary: Historial de facturas (CU-O108)
+      summary: Historial de facturas (CU-O38)
       operationId: listarFacturas
       tags: [Facturas]
       security: [{ bearerAuth: [] }]
@@ -453,6 +453,20 @@ components:
         idcliente: { type: integer }
         idplan: { type: integer }
         precio: { type: number }
+        periodicidad:
+          type: string
+          enum: [Mensual, Anual]
+        nivel:
+          type: string
+          enum: [Básico, Profesional, Empresarial]
+          description: Congelado desde `Dim_Plan.nivel` al alta/cambio de plan (RN-SUSF-006)
+        severidades_desbloqueadas:
+          type: array
+          items: { type: string, enum: [Baja, Media, Alta] }
+          description: Congelado desde `Dim_Plan.severidades_desbloqueadas` al alta/cambio de plan (RN-SUSF-006)
+        carga_lote_habilitada:
+          type: boolean
+          description: Congelado desde `Dim_Plan.carga_lote_habilitada` al alta/cambio de plan (RN-SUSF-030); leído por Red Operativa para gatear CU-O40
         estado:
           type: string
           enum: [Activa, Suspendida, Cancelada]
@@ -470,7 +484,6 @@ components:
           properties:
             acceso_permitido: { type: boolean, description: RN-SUSF-017 }
             plan_nombre: { type: string }
-            nivel: { type: string, enum: [Básico, Profesional, Empresarial] }
 
     SuscripcionEnvelope:
       type: object
@@ -570,7 +583,7 @@ components:
 
     PlanRequest:
       type: object
-      required: [nombre, precio, limites, nivel]
+      required: [nombre, precio, limites, nivel, periodicidad, severidades_desbloqueadas]
       properties:
         nombre: { type: string }
         precio: { type: number, minimum: 0 }
@@ -578,6 +591,18 @@ components:
         nivel:
           type: string
           enum: [Básico, Profesional, Empresarial]
+        periodicidad:
+          type: string
+          enum: [Mensual, Anual]
+        severidades_desbloqueadas:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [Baja, Media, Alta] }
+          description: Independiente de `nivel`, configurable libremente por el Director de Estrategia (RN-SUSF-002)
+        carga_lote_habilitada:
+          type: boolean
+          default: false
+          description: Habilita CU-O40 (carga en lote de unidades, Red Operativa) para proveedores en este plan (RN-SUSF-030)
 
     PlanPatchRequest:
       type: object
@@ -588,6 +613,14 @@ components:
         nivel:
           type: string
           enum: [Básico, Profesional, Empresarial]
+        periodicidad:
+          type: string
+          enum: [Mensual, Anual]
+        severidades_desbloqueadas:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [Baja, Media, Alta] }
+        carga_lote_habilitada: { type: boolean }
         activo: { type: boolean }
 
     Plan:
@@ -600,6 +633,13 @@ components:
         nivel:
           type: string
           enum: [Básico, Profesional, Empresarial]
+        periodicidad:
+          type: string
+          enum: [Mensual, Anual]
+        severidades_desbloqueadas:
+          type: array
+          items: { type: string, enum: [Baja, Media, Alta] }
+        carga_lote_habilitada: { type: boolean }
         activo: { type: boolean }
 
     PlanEnvelope:

@@ -1,4 +1,4 @@
-"""RF-TIC-002 paso 3 (CU-O92) — comentarios y notas internas.
+"""RF-TIC-002 paso 3 (CU-O84) — comentarios y notas internas.
 
 RN-TIC-002: las notas internas nunca deben exponerse al Cliente. El filtro se
 aplica aquí en la capa de servicio, no solo en el frontend (Principio V).

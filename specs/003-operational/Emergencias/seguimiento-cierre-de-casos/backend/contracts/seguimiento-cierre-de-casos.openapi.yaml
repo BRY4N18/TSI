@@ -3,10 +3,10 @@ info:
   title: TSI Seguimiento y Cierre de Casos API
   version: 1.0.0
   description: >
-    Contrato contract-first para CU-O25 (GPS), CU-O26 (llegada), CU-O28 (cierre),
-    CU-O29 (historial/expedientes), CU-O39 (abortar), CU-O42 (cancelar), CU-O44 (forzar retiro)
+    Contrato contract-first para CU-O68 (GPS), CU-O70 (llegada), CU-O80 (cierre),
+    CU-O82 (historial/expedientes), CU-O71 (abortar), CU-O72 (cancelar), CU-O81 (forzar retiro)
     y RF-SEG-005–007 (historial, expediente cliente, mapa + SSE).
-    Flujos O37 (job señal GPS), geofencing O26 y depuración GPS son internos — ver plan.md.
+    Flujos O69 (job señal GPS), geofencing O70 y depuración GPS son internos — ver plan.md.
     Clarificaciones Session 2026-07-09 integradas. Sigue api-standards.md.
 servers:
   - url: /api/v1
@@ -126,7 +126,7 @@ paths:
   /mi-seguimiento/actual:
     get:
       tags: [MiSeguimiento]
-      summary: Despacho activo en curso de la unidad autenticada (CU-O25/O26/O39)
+      summary: Despacho activo en curso de la unidad autenticada (CU-O68/O70/O71)
       description: >
         Resuelve el despacho Confirmado o En_sitio de la unidad, si existe, para que el
         frontend no dependa de recibir iddespacho/idaccidente por navegación (funciona
@@ -149,7 +149,7 @@ paths:
   /mi-seguimiento/posicion:
     post:
       tags: [MiSeguimiento]
-      summary: Registrar posición GPS de la unidad en camino (CU-O25)
+      summary: Registrar posición GPS de la unidad en camino (CU-O68)
       operationId: registrarPosicionGps
       security:
         - bearerAuth: []
@@ -184,7 +184,7 @@ paths:
   /mi-seguimiento/despachos/{iddespacho}/llegada:
     post:
       tags: [MiSeguimiento]
-      summary: Registrar llegada manual al sitio (CU-O26)
+      summary: Registrar llegada manual al sitio (CU-O70)
       operationId: registrarLlegadaManual
       security:
         - bearerAuth: []
@@ -214,7 +214,7 @@ paths:
   /mi-seguimiento/despachos/{iddespacho}/abortar:
     post:
       tags: [MiSeguimiento]
-      summary: Abortar misión en tránsito (CU-O39)
+      summary: Abortar misión en tránsito (CU-O71)
       operationId: abortarMision
       security:
         - bearerAuth: []
@@ -228,7 +228,7 @@ paths:
               $ref: '#/components/schemas/AbortarMisionRequest'
       responses:
         '200':
-          description: Misión abortada; unidad Activa; evento O36 disparado
+          description: Misión abortada; unidad Activa; evento O63 disparado
           content:
             application/json:
               schema:
@@ -245,7 +245,7 @@ paths:
   /accidentes/{idaccidente}/cerrar:
     post:
       tags: [CierreCaso]
-      summary: Cerrar caso de emergencia (CU-O28)
+      summary: Cerrar caso de emergencia (CU-O80)
       operationId: cerrarCaso
       security:
         - bearerAuth: []
@@ -283,7 +283,7 @@ paths:
   /accidentes/{idaccidente}/cancelar:
     post:
       tags: [CierreCaso]
-      summary: Cancelar caso con unidad despachada — falsa alarma (CU-O42)
+      summary: Cancelar caso con unidad despachada — falsa alarma (CU-O72)
       operationId: cancelarCaso
       security:
         - bearerAuth: []
@@ -317,7 +317,7 @@ paths:
   /despachos/{iddespacho}/forzar-retiro:
     post:
       tags: [CierreCaso]
-      summary: Forzar retiro de despacho desde central (CU-O44)
+      summary: Forzar retiro de despacho desde central (CU-O81)
       operationId: forzarRetiroDespacho
       security:
         - bearerAuth: []
@@ -326,7 +326,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
-          description: Despacho marcado Retirado; reevalúa cierre O28
+          description: Despacho marcado Retirado; reevalúa cierre O80
           content:
             application/json:
               schema:
@@ -343,7 +343,7 @@ paths:
   /emergencias/historial:
     get:
       tags: [HistorialEmergencias]
-      summary: Historial de emergencias — operador (CU-O29, RF-SEG-005)
+      summary: Historial de emergencias — operador (CU-O82, RF-SEG-005)
       operationId: listarHistorialEmergencias
       security:
         - bearerAuth: []
@@ -414,7 +414,7 @@ paths:
   /cliente/expedientes:
     get:
       tags: [ClienteExpedientes]
-      summary: Expedientes de casos cerrados en condados del cliente (CU-O29, RF-SEG-006)
+      summary: Expedientes de casos cerrados en condados del cliente (CU-O82, RF-SEG-006)
       operationId: listarExpedientesCliente
       security:
         - bearerAuth: []
@@ -959,7 +959,7 @@ components:
           type: array
           items:
             type: integer
-          description: iddespacho auto-retirados en O28
+          description: iddespacho auto-retirados en O80
 
     CierreCasoResponse:
       type: object

@@ -2,10 +2,10 @@
 
 ## Decision 1: Contract-first OpenAPI bajo `/api/v1/despacho` y sub-recursos de accidente
 
-- **Decision:** Definir primero `contracts/despacho-inteligente.openapi.yaml` con endpoints HTTP para CU-O24/O33/O34/O38/O45, RF-DES-010 y RF-DES-011; flujos O22/O23/O35/O36 documentados como consumidores Kafka/jobs (sin endpoint público).
+- **Decision:** Definir primero `contracts/despacho-inteligente.openapi.yaml` con endpoints HTTP para CU-O61/O64/O65/O66/O62, RF-DES-010 y RF-DES-011; flujos O59/O60/O63/O63 documentados como consumidores Kafka/jobs (sin endpoint público).
 - **Rationale:** Cumple constitution (Compatibility API-First) y orden solicitado: contrato REST → Django → Angular.
 - **Alternatives considered:**
-  - Exponer O22 como `POST` síncrono (rechazado: spec exige ejecución automática al REPORTADO vía evento).
+  - Exponer O59 como `POST` síncrono (rechazado: spec exige ejecución automática al REPORTADO vía evento).
   - Contrato solo Markdown (rechazado: sin contract tests ni tipos Angular).
 
 ## Decision 2: Django capas Vista → Servicio → Repositorio en `apps/despacho/`
@@ -21,18 +21,18 @@
 - **Decision:** Toda mutación de `Fact_Despacho`, `Fact_NotificacionDespacho`, `Fact_HistorialDespachoUnidad`, `Fact_HistorialEstadoUnidad`, `Fact_AccidenteTipoEstadoAccidente`, `Dim_NotaAccidente` publica al topic `{Tabla}_topic`.
 - **Rationale:** Regla vinculante; repositorios existentes (`historial_estado_unidad_repository`) ya publican a Kafka.
 - **Alternatives considered:**
-  - Escritura directa Pinot para latencia O22 (rechazado: viola arquitectura).
+  - Escritura directa Pinot para latencia O59 (rechazado: viola arquitectura).
 
 ## Decision 4: Event-driven entre pasos del camino crítico
 
 - **Decision:**
-  - **O22:** consumer `AccidenteReportado` (desde `Fact_AccidenteTipoEstadoAccidente_topic` estado REPORTADO).
-  - **O35:** job Celery/APScheduler cada 30s; publica `DespachoTimeout_topic` (evento dominio, no tabla Pinot).
-  - **O36 timeout:** worker consume `DespachoTimeout_topic` (asíncrono, clarificación Session 2026-07-09).
-  - **O36 rechazo/fallo O23:** invocación síncrona al mismo `ReasignacionDespachoService`.
+  - **O59:** consumer `AccidenteReportado` (desde `Fact_AccidenteTipoEstadoAccidente_topic` estado REPORTADO).
+  - **O63:** job Celery/APScheduler cada 30s; publica `DespachoTimeout_topic` (evento dominio, no tabla Pinot).
+  - **O63 timeout:** worker consume `DespachoTimeout_topic` (asíncrono, clarificación Session 2026-07-09).
+  - **O63 rechazo/fallo O60:** invocación síncrona al mismo `ReasignacionDespachoService`.
 - **Rationale:** Alinea clarificaciones spec y desacopla job de timeout de re-asignación.
 - **Alternatives considered:**
-  - O35 invoca O36 en mismo ciclo (rechazado por usuario en clarify).
+  - O63 invoca O63 en mismo ciclo (rechazado por usuario en clarify).
 
 ## Decision 5: JWT + RBAC (skills `api-authentication` + `django-expert`)
 
@@ -48,7 +48,7 @@
 ## Decision 6: Algoritmo de asignación — filtro condado + Haversine + scoring
 
 - **Decision:** `AsignacionInteligenteService` implementa RF-DES-001 con clarificaciones:
-  - Filtro geográfico: mismo `Dim_Condado` vía `idcalle` → jerarquía; O34 amplía condados vecinos (catálogo adyacencia en Pinot `Dim_Condado` o tabla auxiliar).
+  - Filtro geográfico: mismo `Dim_Condado` vía `idcalle` → jerarquía; O65 amplía condados vecinos (catálogo adyacencia en Pinot `Dim_Condado` o tabla auxiliar).
   - Posición unidad: snapshot `Dim_UnidadEmergencia` salvo historial GPS más reciente (`RN-DES-010`).
   - Scoring ponderado configurable (RF-DES-010).
   - Exclusión unidad que rechazó mismo caso (`RN-DES-006`); fallo entrega no excluye (`RN-DES-011`).
@@ -56,12 +56,12 @@
 - **Alternatives considered:**
   - Radio fijo 10 km sin condado (rechazado en clarify).
 
-## Decision 7: Notificaciones O23 — push + SMS con fail-fast a O36
+## Decision 7: Notificaciones O60 — push + SMS con fail-fast a O63
 
-- **Decision:** `NotificacionDespachoService` delega a `apps/notificaciones/` (transversal); un reintento por canal; si ambos fallan → `No_entregada`, `activo=false`, O36 síncrono.
+- **Decision:** `NotificacionDespachoService` delega a `apps/notificaciones/` (transversal); un reintento por canal; si ambos fallan → `No_entregada`, `activo=false`, O63 síncrono.
 - **Rationale:** Clarificación B Session 2026-07-09; evita 90s muertos en camino crítico.
 - **Alternatives considered:**
-  - Esperar timeout O35 (rechazado).
+  - Esperar timeout O63 (rechazado).
 
 ## Decision 8: Monitoreo tiempo real — SSE (no WebSocket)
 
@@ -75,7 +75,7 @@
 - **Decision:** Para `idseveridad=3` (Moderada), `ConcordanciaTipoService` evalúa keywords en `Fact_Accidente.descripcion` (`herido`, `ambulancia`, `grúa`, `daño material`) con mapping configurable en parámetros RF-DES-010.
 - **Rationale:** Resuelve ambigüedad diferida del clarify sin NLP/ML en esta fase.
 - **Alternatives considered:**
-  - Operador elige tipo manualmente siempre (rechazado: rompe O22 automático).
+  - Operador elige tipo manualmente siempre (rechazado: rompe O59 automático).
   - Modelo ML severidad (rechazado: fuera de alcance y complejidad).
 
 ## Decision 10: Angular — servicios tipados + guards (skills `angular-architect`, `typescript-expert`)
@@ -91,14 +91,14 @@
 
 ## Tie-Breaker (constitution)
 
-- **Conflicto:** Performance Efficiency (O22 <5s CA-DES-001) vs Maintainability (múltiples servicios + evento async O36).
-- **Prioridad:** Maintainability — servicios separados; performance garantizada con cache lectura Pinot, filtro condado previo y job O35 desacoplado.
+- **Conflicto:** Performance Efficiency (O59 <5s CA-DES-001) vs Maintainability (múltiples servicios + evento async O63).
+- **Prioridad:** Maintainability — servicios separados; performance garantizada con cache lectura Pinot, filtro condado previo y job O63 desacoplado.
 - **Safety:** fail-fast en fallo notificación (Decision 7) prioriza tiempo de respuesta sobre reintento prolongado.
 
 ## Decision 11 (delta 2026-07-24): Alerta Admin + hook plan
 
 - **Decision:**
-  - Sin candidatas tras O34 / agotamiento O36: mantener `Dim_NotaAccidente` **y** fan-out SMTP a rol `Administrador` vía `AlertaAdminService` + `EmailNotificationSender` (fail-open).
+  - Sin candidatas tras O65 / agotamiento O63: mantener `Dim_NotaAccidente` **y** fan-out SMTP a rol `Administrador` vía `AlertaAdminService` + `EmailNotificationSender` (fail-open).
   - Elegibilidad/prioridad por plan: método `filtrar_por_plan_severidad` en `ConsultaCandidatasService` invocado antes del scoring; hoy no-op hasta Suscripciones-Facturación (`Dim_Plan`).
 - **Rationale:** CA-DES-007, CA-DES-011, CA-DES-014 (clarify Session 2026-07-24).
 - **Alternatives considered:**

@@ -6,7 +6,7 @@
 
 **Tests**: Incluidos por requerimiento explícito (`testing.md` + usuario); cada tarea de servicio/repositorio tiene test asociado con markers `unit`/`repository`/`service`/`api` y patrón AAA (Arrange-Act-Assert).
 
-**Organization**: Tareas agrupadas por historia de usuario (CU-O21, consulta/edición, O32, O41, O40) para implementación y validación independiente.
+**Organization**: Tareas agrupadas por historia de usuario (CU-O56, consulta/edición, O58, O57, O73) para implementación y validación independiente.
 
 
 > **Capas:** este archivo es autoridad de **dominio/API**.
@@ -64,7 +64,7 @@
 
 ## Phase 3: User Story 1 — Registrar accidente y confirmar reporte (Priority: P1) 🎯 MVP
 
-**Goal**: CU-O21 + RF-REG-006 geocodificación + RF-REG-010 confirmar BORRADOR→REPORTADO con promoción condicional.
+**Goal**: CU-O56 + RF-REG-006 geocodificación + RF-REG-010 confirmar BORRADOR→REPORTADO con promoción condicional.
 
 **Independent Test**: Operador registra accidente sin advertencias → `REPORTADO`; con advertencias forzadas → `BORRADOR` + confirmación manual → `REPORTADO`.
 
@@ -143,7 +143,7 @@
 
 ## Phase 5: User Story 3 — Descartar caso en BORRADOR (Priority: P2)
 
-**Goal**: CU-O32 descarte antes de despacho.
+**Goal**: CU-O58 descarte antes de despacho.
 
 **Independent Test**: Caso BORRADOR → descartar → `DESCARTADO`, `activo=false`, HTTP 409 si no BORRADOR.
 
@@ -169,7 +169,7 @@
 
 ## Phase 6: User Story 4 — Fusionar reportes duplicados (Priority: P2)
 
-**Goal**: CU-O41 con detección duplicados, padre preseleccionado (más antiguo) y fusión confirmada.
+**Goal**: CU-O57 con detección duplicados, padre preseleccionado (más antiguo) y fusión confirmada.
 
 **Independent Test**: 409 duplicado con sugerencias → fusión → duplicado `FUSIONADO` con `idaccidenteorigen`.
 
@@ -197,7 +197,7 @@
 
 ## Phase 7: User Story 5 — Escalar severidad en sitio (Priority: P2)
 
-**Goal**: CU-O40 en ASIGNADO/EN_ATENCIÓN con despacho confirmado; incremento heridos/fallecidos.
+**Goal**: CU-O73 en ASIGNADO/EN_ATENCIÓN con despacho confirmado; incremento heridos/fallecidos.
 
 **Independent Test**: Unidad escala severidad → nota `escalamiento`, estado sin cambio; 422 si decremento; 409 sin despacho.
 
@@ -237,7 +237,7 @@
 - [X] T087 [P] Actualizar mapeo RF/RNF/CA→Task IDs en `specs/003-operational/Emergencias/registro-accidente/backend/traceability.md`
 - [X] T088 Ejecutar validación E2E escenarios A–G de `specs/003-operational/Emergencias/registro-accidente/backend/quickstart.md`
 - [X] T089 Validar CA-REG-008 (403 roles) y cobertura pytest ≥80% servicios en `backend/apps/accidentes/tests/`
-- [X] T090 [Histórico-UI] [P] Validar conformidad de páginas frontend (registro, lista, detalle, modal fusión) con `.specify/docs/design/design-system.md`: componente de feedback correcto por acción, estados de carga/vacío/error, iconografía semántica de severidad (Tabler). Resuelto en Phase 11: sistema `NotificationService`/`ToastHostComponent`/`AlertHostComponent` + íconos de severidad consistentes en registro y lista. **Snackbar con [Deshacer] para CU-O32/CU-O41**: cerrado en T108 (endpoints de reversión + `toastWithAction`). Accesibilidad (contraste ambos temas) sigue sin verificación formal — modo oscuro diferido.
+- [X] T090 [Histórico-UI] [P] Validar conformidad de páginas frontend (registro, lista, detalle, modal fusión) con `.specify/docs/design/design-system.md`: componente de feedback correcto por acción, estados de carga/vacío/error, iconografía semántica de severidad (Tabler). Resuelto en Phase 11: sistema `NotificationService`/`ToastHostComponent`/`AlertHostComponent` + íconos de severidad consistentes en registro y lista. **Snackbar con [Deshacer] para CU-O58/CU-O57**: cerrado en T108 (endpoints de reversión + `toastWithAction`). Accesibilidad (contraste ambos temas) sigue sin verificación formal — modo oscuro diferido.
 
 ---
 
@@ -256,11 +256,11 @@
 
 | Historia | CU/RF | Depende de |
 |----------|-------|------------|
-| US1 | O21, RF-REG-010, geocodificación | Phase 2 |
+| US1 | O56, RF-REG-010, geocodificación | Phase 2 |
 | US2 | RF-REG-005 | Phase 2 (+ accidentes existentes de US1 para demo) |
-| US3 | O32 | Phase 2, casos BORRADOR |
-| US4 | O41 | US1 validación duplicados |
-| US5 | O40 | Phase 2, seed `Fact_Despacho` |
+| US3 | O58 | Phase 2, casos BORRADOR |
+| US4 | O57 | US1 validación duplicados |
+| US5 | O73 | Phase 2, seed `Fact_Despacho` |
 
 ### Within Each User Story
 
@@ -369,7 +369,7 @@ conforme a `design-system.md` §"Tablas operativas".
 - [X] T105 [Histórico-UI] [P] Implementar `ToastHostComponent` y `AlertHostComponent`, montados una vez en `AppShellComponent`
 - [X] T106 [Histórico-UI] Rewire de mensajes en `registro-accidente.page.ts` y `detalle-accidente.page.ts`: éxito → Toast, fallo de guardado/conexión → Alert. Actualizar specs correspondientes.
 - [X] T107 [Histórico-UI] Agregar íconos de severidad (`circle-check`/`alert-circle`/`alert-triangle`/`alert-octagon`) a los botones de severidad en `registro-accidente.page.ts` (antes solo color, ahora consistente con `lista-accidentes.page.ts`)
-- [X] T108 Snackbar con [Deshacer] para descarte (CU-O32) y fusión (CU-O41): endpoints `POST .../deshacer-descarte` y `POST .../deshacer-fusion` + `NotificationService.toastWithAction` cableado en detalle (descartar) y registro (fusionar). Cierra excepción previa (revisión 2026-08-15) y gap #11 del canónico.
+- [X] T108 Snackbar con [Deshacer] para descarte (CU-O58) y fusión (CU-O57): endpoints `POST .../deshacer-descarte` y `POST .../deshacer-fusion` + `NotificationService.toastWithAction` cableado en detalle (descartar) y registro (fusionar). Cierra excepción previa (revisión 2026-08-15) y gap #11 del canónico.
 
 **Checkpoint**: Toast/Alert funcionando en registro y detalle; iconografía de severidad consistente en toda la app.
 

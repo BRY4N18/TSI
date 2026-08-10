@@ -1,4 +1,4 @@
-"""T103 — Escalamiento O34 sin candidatas notifica Administrador (CA-DES-011)."""
+"""T103 — Escalamiento O65 sin candidatas notifica Administrador (CA-DES-011)."""
 
 from unittest.mock import MagicMock
 

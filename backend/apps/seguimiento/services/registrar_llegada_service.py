@@ -1,4 +1,4 @@
-"""CU-O26 — registro manual/automático de llegada al sitio."""
+"""CU-O70 — registro manual/automático de llegada al sitio."""
 
 from __future__ import annotations
 

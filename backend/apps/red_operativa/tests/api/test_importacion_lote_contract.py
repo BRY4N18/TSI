@@ -92,6 +92,24 @@ class TestImportacionLoteContract:
         assert body["insertadas"] == 0
         assert len(body["fallidas"]) == 1
 
+    def test_post_importacion_lote_when_plan_no_habilita_returns_403(
+        self, api_client, proveedor_auth_headers, pinot_store
+    ):
+        # Arrange — RF-O40.6: gate depende de la suscripción activa del proveedor.
+        pinot_store["Fact_Suscripcion"][0]["carga_lote_habilitada"] = False
+        archivo = self._csv_file(["1,Externa,LOTE-GATE,555,Ambulancia Gate,Ambulancia,g@lote.test"])
+
+        # Act
+        response = api_client.post(
+            "/api/v1/red-operativa/unidades/importacion-lote",
+            {"archivo": archivo},
+            format="multipart",
+            **proveedor_auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 403
+
     def test_post_importacion_lote_when_sin_archivo_returns_400(
         self, api_client, proveedor_auth_headers
     ):

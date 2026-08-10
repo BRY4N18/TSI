@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.red_operativa.idempotency import get_cached_response, store_response
-from apps.red_operativa.permissions import IsProveedorFlota
+from apps.red_operativa.permissions import IsProveedorFlota, IsProveedorFlotaOrAdministrador
 from apps.red_operativa.services.baja_unidad_service import BajaUnidadService
 from apps.red_operativa.services.edicion_unidad_service import EdicionUnidadService
 from apps.red_operativa.services.importacion_lote_unidad_service import (
@@ -200,13 +200,15 @@ class UnidadImportacionLoteView(APIView):
             )
         except ProveedorAccessError as exc:
             return error_response("forbidden", str(exc), "403", status_code=403)
+        except PermissionError as exc:
+            return error_response("forbidden", str(exc), "403", status_code=403)
         except ValueError as exc:
             return error_response("bad_request", str(exc), "400", status_code=400)
         return success_response(resultado)
 
 
 class UnidadBajaView(APIView):
-    permission_classes = [IsAuthenticated401, IsProveedorFlota]
+    permission_classes = [IsAuthenticated401, IsProveedorFlotaOrAdministrador]
     parser_classes = [JSONParser]
 
     def post(self, request: Request, idunidademergencia: int) -> Response:
@@ -223,6 +225,8 @@ class UnidadBajaView(APIView):
                 forzar=forzar,
             )
         except ProveedorAccessError as exc:
+            return error_response("forbidden", str(exc), "403", status_code=403)
+        except PermissionError as exc:
             return error_response("forbidden", str(exc), "403", status_code=403)
         except LookupError:
             return error_response("not_found", "Unidad no encontrada", "404", status_code=404)

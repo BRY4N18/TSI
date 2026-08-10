@@ -14,6 +14,9 @@ from apps.red_operativa.services.registro_unidad_service import RegistroUnidadSe
 from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
+from core.repositories.red_operativa.suscripcion_activa_read_repository import (
+    SuscripcionActivaReadRepository,
+)
 
 MAX_FILAS = 500
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -29,6 +32,7 @@ class ImportacionLoteUnidadService:
         credential_repo: CredentialRepository | None = None,
         role_repo: RoleRepository | None = None,
         notificacion: OnboardingNotificacionService | None = None,
+        suscripciones: SuscripcionActivaReadRepository | None = None,
     ):
         self.registro_service = registro_service or RegistroUnidadService()
         self.access = access or ProveedorAccessService()
@@ -36,6 +40,7 @@ class ImportacionLoteUnidadService:
         self.credential_repo = credential_repo or CredentialRepository()
         self.role_repo = role_repo or RoleRepository()
         self.notificacion = notificacion or OnboardingNotificacionService()
+        self.suscripciones = suscripciones or SuscripcionActivaReadRepository()
 
     def importar(
         self,
@@ -49,6 +54,15 @@ class ImportacionLoteUnidadService:
 
         cliente = self.access.resolve_cliente_activo(user_id=user_id, roles=roles)
         idcliente = cliente["idcliente"]
+
+        # RF-O40.6 / RF-O26.5 (2026-08-08): la carga en lote solo está
+        # habilitada si el plan contratado (congelado en la suscripción
+        # activa, no el plan en vivo — R-04 del SRS) la habilita.
+        suscripcion = self.suscripciones.find_activa_by_cliente(idcliente)
+        if not suscripcion or not suscripcion.get("carga_lote_habilitada"):
+            raise PermissionError(
+                "El plan contratado no habilita la carga en lote de unidades"
+            )
 
         unidad_role = self.role_repo.find_role_by_name(UNIDAD_ROLE)
         if not unidad_role or not unidad_role.get("activo", True):

@@ -13,10 +13,11 @@ Todas las columnas de tiempo / upsert de este módulo (`fecha_actualizacion`, `f
 ### 1) `Dim_Plan`
 
 - **PK:** `idplan`
-- **Campos:** `nombre` (STRING), `precio` (DOUBLE, USD), `limites` (STRING JSON — ver RN-SUSF-019), `nivel` (STRING: `Básico` \| `Profesional` \| `Empresarial`), `activo` (BOOLEAN)
+- **Campos:** `nombre` (STRING), `precio` (DOUBLE, USD), `limites` (STRING JSON — ver RN-SUSF-019), `nivel` (STRING: `Básico` \| `Profesional` \| `Empresarial`), `periodicidad` (STRING: `Mensual` \| `Anual` — RN-SUSF-029, obligatorio), `severidades_desbloqueadas` (STRING JSON — lista no vacía, subconjunto de `Baja`\|`Media`\|`Alta`; independiente de `nivel`, RN-SUSF-002), `carga_lote_habilitada` (BOOLEAN — habilita CU-O40 de Red Operativa para proveedores en este plan; dato independiente y configurable, default `false`, RF-O26.5/RF-O40.6, corrección 2026-08-08), `activo` (BOOLEAN)
+  - **`precio_excedente_llamada` (DOUBLE, añadido 2026-08-08, RN-SUSF-030):** precio unitario de cada llamada que supera el cupo de API. Distinto de `precio`, que es el importe de la suscripción. Configurable por el Director de Estrategia (CU-O26 / RF-O26.1); alimenta el cálculo de excedente de CU-O54 en `api-monitoring-and-billing`. Centinela `-1.0` = sin tarifa configurada (nunca `0.0`, que significaría excedente gratis).
 - **Upsert / time column:** `fecha_actualizacion` (LONG ms)
 - **Topic:** `Dim_Plan_topic`
-- **Reglas:** nunca delete físico; desactivar con `activo=false` (RN-SUSF-001). Severidad operativa se **deriva** de `nivel` (RN-SUSF-002), no hay columna `severidad_permitida`.
+- **Reglas:** nunca delete físico; desactivar con `activo=false` (RN-SUSF-001). `severidades_desbloqueadas` es un campo **independiente**, configurable libremente por el Director de Estrategia — no se deriva de `nivel` (corrección 2026-08-08, RN-SUSF-002).
 - **Actor de mutación (Session 2026-07-30):** solo Director de Estrategia (`DirectorEstrategia`). El esquema y topic **no cambian**.
 - **Listado (RF-SUSF-001 / RNF-SUSF-005a):**
   - Orden estable: `idplan ASC`.
@@ -38,7 +39,7 @@ Todas las columnas de tiempo / upsert de este módulo (`fecha_actualizacion`, `f
 
 - **PK:** `id_suscripcion`
 - **FKs:** `idcliente` → `Dim_Cliente`, `idplan` → `Dim_Plan`
-- **Campos:** `estado` (`Activa` \| `Suspendida` \| `Cancelada`), `activo` (BOOLEAN), `renovacionautomatica` (BOOLEAN), `precio` (DOUBLE), `motivocancelacion`, `fechacancelacion` (LONG ms \| null), `fecha_inicio` (LONG ms), `fecha_fin` (LONG ms)
+- **Campos:** `estado` (`Activa` \| `Suspendida` \| `Cancelada`), `activo` (BOOLEAN), `renovacionautomatica` (BOOLEAN), `precio` (DOUBLE), `periodicidad` (STRING: `Mensual` \| `Anual` — copiada de `Dim_Plan.periodicidad` al alta/cambio de plan, determina `fecha_fin`), `nivel` (STRING — copiado de `Dim_Plan.nivel` al alta/cambio de plan, congelado, RN-SUSF-006), `severidades_desbloqueadas` (STRING JSON — copiado de `Dim_Plan.severidades_desbloqueadas` al alta/cambio de plan, congelado, RN-SUSF-006), `carga_lote_habilitada` (BOOLEAN — copiado de `Dim_Plan.carga_lote_habilitada` al alta/cambio de plan, congelado, RN-SUSF-006; leído por Red Operativa `alta-unidades` para gatear CU-O40), `motivocancelacion`, `fechacancelacion` (LONG ms \| null), `fecha_inicio` (LONG ms), `fecha_fin` (LONG ms)
 - **Upsert:** `fecha_actualizacion` (LONG ms; columna tiempo Pinot puede ser `fecha_inicio`)
 - **Topic:** `Fact_Suscripcion_topic`
 - **Reglas:**
@@ -49,7 +50,7 @@ Todas las columnas de tiempo / upsert de este módulo (`fecha_actualizacion`, `f
 
 ### 4) `Fact_Factura`
 
-- **PK:** `id_factura` (UUID STRING)
+- **PK:** `id_factura` (UUID STRING) — **corrección 2026-08-08:** `database/esquemas.json` declaraba esta columna como `INT`, desalineado con este documento y con el código (`FacturaRepository` siempre generó UUID). Corregido a `STRING` en el esquema; un clúster Pinot ya desplegado con el tipo viejo requiere recrear la tabla.
 - **FKs:** `id_cliente`, `id_suscripcion`, `idmetodopago`
 - **Campos:** `numero_factura` (`FAC-{YYYYMM}-{seq8}`), `periodo` (`YYYY-MM`), `estado_pago` (`Pendiente` \| `Pagada` \| `Fallida`), `desglose_cargos` (JSON STRING), `monto_base`, `impuestos` (siempre `0` en v1), `monto_total`, `fecha_emision` (LONG ms), `fecha_vencimiento` (LONG ms), `reintentos` (INT), `resultado_ultimo_reintento`
 - **NC (fuera de alcance v1):** `es_nota_credito=false`, `id_factura_original=NULL`, `motivo_anulacion=NULL`
@@ -113,6 +114,6 @@ Pendiente → Rechazada   (admin)
 
 ## Validaciones cruzadas
 
-- `limites` JSON mínimo: `unidades_max`, `usuarios_max`, `api_calls_mes` ≥ 0.
+- `limites` JSON mínimo: `unidades_max`, `usuarios_max`, `api_calls_mes`, `api_calls_minuto` ≥ 0. `api_calls_minuto` añadido 2026-08-08 (RN-SUSF-019): lo exige el SRS §3.4.1 y alimenta `Dim_Partner.limitellamadasminuto` en `partner-api-onboarding`.
 - Ciclo: `fecha_fin = add_calendar_months(fecha_inicio, 1)` en `America/Guayaquil`.
 - Montos: `monto_total = monto_base + impuestos` con `impuestos=0`.

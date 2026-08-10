@@ -1,4 +1,4 @@
-"""CU-O37 — detección señal GPS perdida."""
+"""CU-O69 — detección señal GPS perdida."""
 
 from __future__ import annotations
 

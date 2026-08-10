@@ -9,12 +9,12 @@
 
 ## Summary
 
-Implementar el módulo de registro de accidentes con enfoque **contract-first**: primero el contrato OpenAPI REST (`/api/v1/accidentes/*`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**; finalmente frontend Angular 17+ con servicios tipados y guards por rol (`Operador de emergencias`, `Unidad de emergencia`). Cubre CU-O21, CU-O32, CU-O40, CU-O41 y RF-REG-010 con promoción condicional BORRADOR→REPORTADO.
+Implementar el módulo de registro de accidentes con enfoque **contract-first**: primero el contrato OpenAPI REST (`/api/v1/accidentes/*`) alineado a `api-standards.md`; luego backend Django/DRF en capas **Vista → Servicio → Repositorio** con escritura exclusiva vía **Kafka**; finalmente frontend Angular 17+ con servicios tipados y guards por rol (`Operador de emergencias`, `Unidad de emergencia`). Cubre CU-O56, CU-O58, CU-O73, CU-O57 y RF-REG-010 con promoción condicional BORRADOR→REPORTADO.
 
 ## Traceability
 
 - **Objetivo operacional:** entrada al ciclo de emergencias (cadena registro → despacho → cierre).
-- **UC cubiertos:** CU-O21, CU-O32, CU-O40, CU-O41.
+- **UC cubiertos:** CU-O56, CU-O58, CU-O73, CU-O57.
 - **Dependencias:** `autenticacion-y-rbac`, `incorporacion-regional`.
 - **Consumidores downstream:** `despacho-inteligente` (requiere estado REPORTADO).
 
@@ -44,7 +44,7 @@ Implementar el módulo de registro de accidentes con enfoque **contract-first**:
 
 | Característica ISO 25010 | Estado | Justificación |
 |--------------------------|--------|---------------|
-| Functional Suitability | PASS | CU-O21/O32/O40/O41 + CA-REG-001–014 trazables |
+| Functional Suitability | PASS | CU-O56/O58/O73/O57 + CA-REG-001–014 trazables |
 | Reliability | PASS | Idempotencia, eventos Kafka, fail-safe en validaciones |
 | Performance Efficiency | PASS | Validación síncrona <2s declarada; métricas en quickstart |
 | Interaction Capability | PASS | UX advertencias/duplicados/confirmación reporte en contrato; frontend debe cumplir `.specify/docs/design/design-system.md` (Ley de Hick: máx. 3-4 acciones primarias visibles en el formulario de registro; Ley de Fitts: botón de confirmar/reportar ≥44x44px) |
@@ -109,7 +109,7 @@ backend/
             ├── nota_accidente_repository.py
             ├── elemento_climatico_repository.py
             ├── elemento_fisico_repository.py
-            ├── despacho_read_repository.py   # lectura precondición O40
+            ├── despacho_read_repository.py   # lectura precondición O73
             └── region_operativa_repository.py
 
 frontend/
@@ -182,7 +182,7 @@ POST /accidentes
 | `AccidenteApiService` | Todos los paths `/accidentes/*` |
 | `GeocodificacionApiService` | `GET geocodificacion-inversa` |
 | `OperadorEmergenciasGuard` | Rutas registro, lista, detalle, fusión, descarte |
-| `UnidadEmergenciaGuard` | Escalamiento O40 |
+| `UnidadEmergenciaGuard` | Escalamiento O73 |
 | `accidente.types.ts` | Espejo de schemas OpenAPI (typescript-expert: tipos estrictos, sin `any`) |
 
 ### Data model
@@ -217,7 +217,7 @@ Este módulo es la **puerta de entrada** al camino crítico. Decisiones de dise�
 - Promoción a REPORTADO solo sin advertencias → reduce despacho sobre datos dudosos.
 - GPS global inválido bloquea registro (fail-closed).
 - Duplicados no bloquean pero sugieren fusión con padre más antiguo.
-- Escalamiento O40 requiere despacho confirmado (no especulación remota sin asignación).
+- Escalamiento O73 requiere despacho confirmado (no especulación remota sin asignación).
 
 ## Artifacts Generated
 

@@ -19,7 +19,7 @@ describe('PlanDetallePage', () => {
         precio: 299,
         nivel: 'Empresarial',
         activo: true,
-        limites: { unidades_max: 100, usuarios_max: 50, api_calls_mes: 50000 },
+        limites: { unidades_max: 100, usuarios_max: 50, api_calls_mes: 50000, api_calls_minuto: 600 },
       }),
     );
 

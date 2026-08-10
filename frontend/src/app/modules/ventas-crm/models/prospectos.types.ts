@@ -48,6 +48,8 @@ export interface Prospecto {
     idusuariogerenteactual?: number | null;
     error?: string | null;
   } | null;
+  /** Grant de un solo canje para abrir la demo (RF-CPP-001 -> RF-NV-001); solo presente en la respuesta de registro. */
+  demo_grant?: string;
 }
 
 export interface RegistroProspectoRequest {
@@ -86,6 +88,12 @@ export interface EntradaDirectaRequest {
   razon_social: string;
   tipo: TipoCliente;
   nit_identificacion: string;
+  /** Requerido: sin esto la cuenta queda sin nadie que pueda iniciar sesión (CU-O96). */
+  admin_local: {
+    nombres: string;
+    apellidos: string;
+    gmail: string;
+  };
 }
 
 export interface Cliente {
@@ -108,6 +116,7 @@ export interface PlanPublico {
   precio: number;
   limites: string;
   nivel: string;
+  periodicidad?: 'Mensual' | 'Anual';
   severidades_desbloqueadas: SeveridadPlan[];
   /** Opcional: si la API/Dim_Plan lo expone; si no, UI marca Profesional como destacado. */
   destacado?: boolean;

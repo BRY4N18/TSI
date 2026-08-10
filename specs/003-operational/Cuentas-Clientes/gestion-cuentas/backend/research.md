@@ -11,11 +11,11 @@
 ## Decision 2: Endpoints REST y semántica HTTP
 
 - Decision:
-  - `GET/PATCH /cuentas-clientes/{idcliente}/perfil` — CU-O03 perfil corporativo.
-  - `GET/PATCH /cuentas-clientes/{idcliente}/preferencias` — CU-O03 preferencias.
-  - `GET /cuentas-clientes/{idcliente}/usuarios-elegibles` — lista usuarios activos de la cuenta (selector O10).
-  - `POST /cuentas-clientes/{idcliente}/transferencia-propiedad` — CU-O10 (inmediata, `Idempotency-Key`).
-  - `POST /cuentas-clientes/{idcliente}/baja` — CU-O11 solo Administrador (`Idempotency-Key`).
+  - `GET/PATCH /cuentas-clientes/{idcliente}/perfil` — CU-O13 perfil corporativo.
+  - `GET/PATCH /cuentas-clientes/{idcliente}/preferencias` — CU-O14 preferencias.
+  - `GET /cuentas-clientes/{idcliente}/usuarios-elegibles` — lista usuarios activos de la cuenta (selector CU-O15).
+  - `POST /cuentas-clientes/{idcliente}/transferencia-propiedad` — CU-O15 (inmediata, `Idempotency-Key`).
+  - `POST /cuentas-clientes/{idcliente}/baja` — CU-O16 solo Administrador (`Idempotency-Key`).
   - `POST /cuentas-clientes/{idcliente}/logo/upload-url` — URL firmada Azure Blob; cliente sube binario y luego `PATCH perfil` con `logo_url`.
 - Rationale: Recursos anidados bajo cuenta; escrituras POST con idempotencia según `api-standards.md`; PATCH para actualizaciones parciales.
 - Alternatives considered:
@@ -49,7 +49,7 @@
 ## Decision 5: Baja de cuenta — expulsión masiva de sesiones
 
 - Decision: `BajaCuentaService` invoca `SessionRepository.expel_all_by_cliente(idcliente)` publicando eventos `Fact_Session` con `estadosession='Expulsado'`.
-- Rationale: Clarificación aprobada; mismo patrón que CU-O07 revoke-session.
+- Rationale: Clarificación aprobada; mismo patrón que CU-O05 revoke-session (spec `autenticacion-y-rbac`).
 - Alternatives considered:
   - Bloquear solo nuevos logins (rechazado por clarificación).
   - Expiración natural de JWT (rechazado: ventana de operación no autorizada).

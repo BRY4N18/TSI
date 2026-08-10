@@ -1,4 +1,4 @@
-"""Consulta consolidada de enriquecimiento CU-O46."""
+"""Consulta consolidada de enriquecimiento CU-O75/CU-O76."""
 
 from __future__ import annotations
 
