@@ -1565,12 +1565,11 @@
       {
         "name": "descripcion",
         "dataType": "STRING"
-      }
-    ],
-    "metricFieldSpecs": [
+      },
       {
         "name": "severidad",
-        "dataType": "INT"
+        "dataType": "STRING",
+        "defaultNullValue": ""
       }
     ],
     "dateTimeFieldSpecs": [

@@ -118,7 +118,7 @@ Ver `research.md` — 10 decisiones. Las de mayor impacto: **cerrar la ventana d
 
 ### Contrato REST
 
-Artefacto: `contracts/partner-access-management.openapi.yaml` — **4 paths, 10 schemas**, validado sin referencias rotas.
+Artefacto: `contracts/partner-access-management.openapi.yaml` — **5 paths, 12 schemas**, validado sin referencias rotas.
 
 | Endpoint | Actor | Nota |
 |---|---|---|
@@ -126,6 +126,7 @@ Artefacto: `contracts/partner-access-management.openapi.yaml` — **4 paths, 10 
 | `POST /partners/{id}/suspender` | **Administrador** | Motivo obligatorio |
 | `POST /partners/{id}/reactivar` | **Administrador** | El sistema nunca lo hace solo |
 | `GET /partners/{id}/estado-acceso` | Partner (el suyo) / Administrador | Accesible estando suspendido |
+| `GET /partners/cola-acceso` | **Administrador** | Cola de trabajo: suspendidos y en mora avisados (RF-PAC-009 b) |
 
 **Todos con JWT.** Deliberadamente **no** se acepta la credencial de API para revocar: una credencial comprometida podría entonces usarse para revocar las demás del partner, dándole al atacante la herramienta de sabotaje.
 
@@ -177,7 +178,7 @@ Ver `data-model.md` — tres tablas escritas, ningún cambio de esquema, y los d
 
 ### Validación E2E
 
-Ver `quickstart.md` — escenarios A–O, con **B (ventana cerrada), I (reactivación selectiva) y J (no reactiva solo)** como los críticos.
+Ver `quickstart.md` — escenarios A–Q, con **B (ventana cerrada), I (reactivación selectiva), J (no reactiva solo) y Q (la suspensión también corta ya)** como los críticos.
 
 ## Phase 2: Task Decomposition (siguiente comando)
 
@@ -200,6 +201,8 @@ Ejecutar `/speckit-tasks` para producir `tasks.md`:
 |---|---|
 | **Resucitar una credencial comprometida** al reactivar — el peor fallo posible de este módulo | La reactivación solo restituye lo que aparece en la cascada; una credencial ya inactiva **no genera fila**, así que es inalcanzable **por construcción** (§ 15 D1). Test dedicado: escenario I |
 | **Ventana de exposición de 5–15 s** tras revocar, por la ingesta de Pinot | Lista de denegación en memoria (`research.md` Decision 2). Test **sin esperas**: escenario B |
+| **La misma ventana tras suspender**, donde la fuga son **todas** las credenciales del partner a la vez | La cascada alimenta la lista de denegación y la reactivación la limpia (§ 15 D4, añadido tras `/speckit-analyze`). Test sin esperas: escenario Q |
+| **La mora no encuentra a nadie, en silencio**: `Fact_Factura` no tiene `idpartner` | Camino fijado en § 15 D3 (`Dim_Partner.idcliente → Fact_Factura.id_cliente`) y verificado contra Pinot real, no solo con el doble |
 | **Orden invertido entre la caché de #08 y la lista de denegación** — convertiría una optimización en un agujero | Documentado en `research.md` Decision 2 y en las tareas; la caché positiva debe consultarse **después** |
 | **Colisión falsa de nombre** al emitir el reemplazo, que haría fallar la operación urgente | Unicidad resuelta en memoria, sin releer Pinot (Decision 4). Escenario E |
 | **Reactivación automática introducida por un refactor** («si ya pagó, ¿por qué no?») | Test dedicado que exige que siga suspendido tras pagar: escenario J. Choca además con RN-SUSF-011 de Suscripciones |

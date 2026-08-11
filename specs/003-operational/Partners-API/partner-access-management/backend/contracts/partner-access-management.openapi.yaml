@@ -201,6 +201,37 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /partners/cola-acceso:
+    get:
+      tags: [Estado]
+      summary: Cola de trabajo del Administrador (RF-PAC-009 b)
+      description: >
+        Los partners suspendidos y los que están en ciclo de mora con avisos ya
+        enviados, con sus días de mora y el último aviso. SOLO Administrador: un
+        partner recibe 403.
+
+        Sin esta lectura, el Administrador tendría que consultar partner por
+        partner para saber a quién reactivar — y la reactivación solo puede
+        hacerla él (RN-PAC-009).
+
+        Todo es derivado: «en mora» no está persistido en ninguna columna.
+      operationId: consultarColaAcceso
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: estado
+          in: query
+          required: false
+          schema: { type: string, enum: [suspendidos, en_mora] }
+          description: Por defecto devuelve ambos grupos
+      responses:
+        '200':
+          description: Cola de partners suspendidos y en mora
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ColaAccesoResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -283,6 +314,37 @@ components:
         idcredencial:
           type: integer
           description: '-1 cuando el evento es sobre el partner en general (centinela)'
+
+    ColaAccesoItem:
+      type: object
+      description: Nunca incluye secretos ni credenciales; es una vista de gestión
+      properties:
+        idpartner: { type: integer }
+        nombrepartner: { type: string }
+        activo: { type: boolean }
+        motivo_suspension:
+          type: string
+          description: "Centinela '' si no está suspendido (Pinot no almacena NULL)"
+        fecha_suspension: { type: string }
+        dias_mora:
+          type: integer
+          description: Derivado de la factura de excedente vencida más antigua
+        ultimo_aviso:
+          type: string
+          enum: ['', 'T-10', 'T-5']
+          description: "Centinela '' si aún no se le ha avisado"
+
+    ColaAccesoResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ColaAccesoItem' }
+        meta:
+          type: object
+          properties:
+            suspendidos: { type: integer }
+            en_mora: { type: integer }
 
     RevocacionResponse:
       type: object

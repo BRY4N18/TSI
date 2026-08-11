@@ -608,6 +608,10 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
     "Dim_CredencialAPI": [],
     "Fact_HistorialAccesoPartner": [],
     "Dim_VersionContratoAPI": [],
+    # --- api-monitoring-and-billing (#08) ---
+    "Fact_APIIntegracion": [],
+    "Fact_LogLlamadaAPI": [],
+    "Dim_EstadoIntegracion": [],
     "Fact_Historial_Ticket": [],
     "Fact_ArchivosAdjuntosReclamos": [],
 }
@@ -726,6 +730,106 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         rows = PINOT_STORE["Dim_VersionContratoAPI"]
         return [{"max_id": max((r["idversion"] for r in rows), default=0)}]
 
+    # --- Monitoreo y facturacion de API (#08) ---
+    #
+    # OJO: este modulo vive de agregaciones y el doble las reproduce a mano.
+    # Es exactamente el hueco que documenta `decisiones-pendientes.md` #18:
+    # que estas consultas pasen aqui NO garantiza que Pinot las resuelva igual.
+    # La verificacion contra Pinot real (T066) sigue siendo criterio de salida.
+    if "MAX(IDAPIINTEGRACION)" in sql_upper:
+        rows = PINOT_STORE["Fact_APIIntegracion"]
+        return [{"max_id": max((r["idapiintegracion"] for r in rows), default=0)}]
+    if "MAX(IDLOGLLAMADAAPI)" in sql_upper:
+        rows = PINOT_STORE["Fact_LogLlamadaAPI"]
+        return [{"max_id": max((r["idlogllamadaapi"] for r in rows), default=0)}]
+
+    if "FROM DIM_ESTADOINTEGRACION" in sql_upper:
+        rows = list(PINOT_STORE["Dim_EstadoIntegracion"])
+        if "IDESTADOINTEGRACION = %(ID)S" in sql_upper:
+            rows = [r for r in rows if r["idestadointegracion"] == params.get("id")]
+        return rows[: params.get("limit", len(rows))]
+
+    if "FROM FACT_APIINTEGRACION" in sql_upper:
+        rows = list(PINOT_STORE["Fact_APIIntegracion"])
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] == params.get("idpartner")]
+        if "ENTORNO = %(ENTORNO)S" in sql_upper:
+            rows = [r for r in rows if r.get("entorno") == params.get("entorno")]
+        if "FECHAHORA >= %(DESDE)S" in sql_upper:
+            rows = [r for r in rows if r.get("fechahora", 0) >= params.get("desde", 0)]
+        if "FECHAHORA < %(HASTA)S" in sql_upper:
+            rows = [r for r in rows if r.get("fechahora", 0) < params.get("hasta", 0)]
+
+        if "GROUP BY IDSERVICIO" in sql_upper:
+            por_servicio: dict = {}
+            for r in rows:
+                acc = por_servicio.setdefault(
+                    r["idservicio"], {"idservicio": r["idservicio"], "llamadas": 0, "errores": 0}
+                )
+                acc["llamadas"] += r.get("llamadas", 0)
+                acc["errores"] += r.get("errores", 0)
+            agrupado = sorted(
+                por_servicio.values(), key=lambda a: a["llamadas"], reverse=True
+            )
+            return agrupado[: params.get("limit", len(agrupado))]
+
+        if "SUM(LLAMADAS)" in sql_upper:
+            latencias = [r.get("latencia", 0.0) for r in rows]
+            return [{
+                "llamadas": sum(r.get("llamadas", 0) for r in rows),
+                "errores": sum(r.get("errores", 0) for r in rows),
+                "latencia_media": (sum(latencias) / len(latencias)) if latencias else 0.0,
+            }]
+        return rows[: params.get("limit", len(rows))]
+
+    if "FROM FACT_LOGLLAMADAAPI" in sql_upper:
+        rows = list(PINOT_STORE["Fact_LogLlamadaAPI"])
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            rows = [r for r in rows if r["idpartner"] == params.get("idpartner")]
+        if "CODIGOHTTP >= 400" in sql_upper:
+            rows = [r for r in rows if r.get("codigohttp", 0) >= 400]
+        # --- Filtros y paginacion de la consola (#08 FE) ---
+        # Todos se resuelven aqui, contra la "base": la UI no filtra en memoria.
+        if "CODIGOHTTP = %(CODIGOHTTP)S" in sql_upper:
+            rows = [r for r in rows if r.get("codigohttp") == params.get("codigohttp")]
+        if "FECHALLAMADA >= %(DESDE)S" in sql_upper:
+            rows = [r for r in rows if r.get("fechallamada", 0) >= params.get("desde", 0)]
+        if "FECHALLAMADA < %(HASTA)S" in sql_upper:
+            rows = [r for r in rows if r.get("fechallamada", 0) < params.get("hasta", 0)]
+        if "IDCREDENCIALAPI = %(IDCREDENCIALAPI)S" in sql_upper:
+            rows = [
+                r for r in rows
+                if r.get("idcredencialapi") == params.get("idcredencialapi")
+            ]
+        if "ENDPOINT = %(ENDPOINT)S" in sql_upper:
+            rows = [r for r in rows if r.get("endpoint") == params.get("endpoint")]
+        if "IDLOGLLAMADAAPI < %(CURSOR)S" in sql_upper:
+            # Cursor COMPUESTO: replica el ORDER BY (fecha DESC, id DESC).
+            cf = params.get("cursor_fecha", 0)
+            cid = params.get("cursor", 0)
+            rows = [
+                r for r in rows
+                if r.get("fechallamada", 0) < cf
+                or (r.get("fechallamada", 0) == cf and r.get("idlogllamadaapi", 0) < cid)
+            ]
+
+        if "GROUP BY CODIGOHTTP" in sql_upper:
+            por_codigo: dict = {}
+            for r in rows:
+                por_codigo[r["codigohttp"]] = por_codigo.get(r["codigohttp"], 0) + 1
+            agrupado = sorted(
+                ({"codigohttp": c, "total": t} for c, t in por_codigo.items()),
+                key=lambda a: a["total"],
+                reverse=True,
+            )
+            return agrupado[: params.get("limit", len(agrupado))]
+
+        rows.sort(
+            key=lambda r: (r.get("fechallamada", 0), r.get("idlogllamadaapi", 0)),
+            reverse="DESC" in sql_upper,
+        )
+        return rows[: params.get("limit", len(rows))]
+
     if "FROM DIM_PARTNER" in sql_upper:
         rows = list(PINOT_STORE["Dim_Partner"])
         if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
@@ -821,6 +925,33 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             rows = [r for r in rows if r.get("id_suscripcion") == params.get("id_suscripcion")]
         if "PERIODO =" in sql_upper:
             rows = [r for r in rows if r.get("periodo") == params.get("periodo")]
+        # --- Facturacion de excedente de API (#08) ---
+        # `tipo` es lo que distingue la factura de excedente de la de
+        # suscripcion del mismo periodo: sin este filtro, la comprobacion de no
+        # duplicacion daria un falso positivo y no se cobraria el excedente.
+        if "TIPO = %(TIPO)S" in sql_upper:
+            rows = [r for r in rows if r.get("tipo") == params.get("tipo")]
+        if "PROXIMO_REINTENTO > 0" in sql_upper:
+            rows = [r for r in rows if (r.get("proximo_reintento") or 0) > 0]
+        if "PROXIMO_REINTENTO <= %(AHORA)S" in sql_upper:
+            rows = [
+                r for r in rows
+                if (r.get("proximo_reintento") or 0) <= params.get("ahora", 0)
+            ]
+        # --- Mora de excedente de API (#09, § 15 D3) ---
+        # `estado_pago` es lo que separa la mora de este modulo de la de
+        # Suscripciones: aqui SOLO cuenta 'Pendiente'. Si este filtro se
+        # ignorase, una factura 'Fallida' suspenderia al partner y tendriamos
+        # dos modulos suspendiendo por la misma factura.
+        if "ESTADO_PAGO = %(ESTADO)S" in sql_upper:
+            rows = [r for r in rows if r.get("estado_pago") == params.get("estado")]
+        if "FECHA_VENCIMIENTO < %(AHORA)S" in sql_upper:
+            rows = [
+                r for r in rows
+                if int(r.get("fecha_vencimiento") or 0) < params.get("ahora", 0)
+            ]
+        if "ORDER BY FECHA_VENCIMIENTO ASC" in sql_upper:
+            rows = sorted(rows, key=lambda r: r.get("fecha_vencimiento") or 0)
         if "ORDER BY FECHA_EMISION DESC" in sql_upper:
             rows = sorted(rows, key=lambda r: r.get("fecha_emision") or 0, reverse=True)
         if "LIMIT" in sql_upper and params.get("limit") is not None:
@@ -2124,6 +2255,12 @@ def reset_throttle_history():
     for the whole pytest process. Without this reset a test that exhausts a
     scope (p. ej. `prospecto_registro`: 10/min) makes every later test hitting
     the same endpoint fail with 429 depending on collection order.
+
+    OJO: esta limpieza tambien aisla la **lista de denegacion de credenciales**
+    de #09 (`services/denylist_credenciales.py`), que vive en el mismo cache. Si
+    algun dia se acota este reset a las claves de throttle, hay que anadir
+    `partners:denylist:*` explicitamente: sin eso, una credencial revocada en un
+    test rechazaria peticiones en los siguientes.
     """
     from django.core.cache import cache
 
@@ -2499,6 +2636,17 @@ def mock_kafka():
         elif topic.endswith("Fact_HistorialAccesoPartner_topic"):
             # Bitacora inmutable: solo INSERT, nunca upsert (RN-PON-010).
             PINOT_STORE["Fact_HistorialAccesoPartner"].append(payload)
+        # --- Monitoreo y facturacion de API (#08) ---
+        elif topic.endswith("Fact_APIIntegracion_topic"):
+            # Append-only (RNF-APM-005): cada llamada es una fila nueva.
+            PINOT_STORE["Fact_APIIntegracion"].append(payload)
+        elif topic.endswith("Fact_LogLlamadaAPI_topic"):
+            # Append-only: incluye tambien las peticiones rechazadas.
+            PINOT_STORE["Fact_LogLlamadaAPI"].append(payload)
+        elif topic.endswith("Dim_EstadoIntegracion_topic"):
+            _upsert_por_pk(
+                PINOT_STORE["Dim_EstadoIntegracion"], payload, "idestadointegracion"
+            )
         elif topic.endswith("Fact_Reclamo_topic") or topic == "Fact_Reclamo_topic":
             rows = PINOT_STORE["Fact_Reclamo"]
             existing_idx = next(
@@ -2803,6 +2951,67 @@ def cliente_auth_headers(mock_pinot, mock_kafka):
 
 # --- Partners y API (CU-O48 a CU-O55) ---
 
+def _sembrar_credencial_api(*, entorno, idcredencial, idpartner=880):
+    """Siembra partner + credencial y devuelve las cabeceras de maquina.
+
+    La API de datos de partners (#08) NO se autentica con JWT: usa
+    `X-Client-Id` + `X-Client-Secret` contra `Dim_CredencialAPI`. El secreto se
+    hashea aqui igual que en produccion para que la verificacion bcrypt sea la
+    real y no un atajo del test.
+    """
+    from apps.partners.services.secreto_service import SecretoService
+
+    secreto = f"secreto-de-prueba-{entorno.lower()}-{idcredencial}"
+
+    if not any(p["idpartner"] == idpartner for p in PINOT_STORE["Dim_Partner"]):
+        PINOT_STORE["Dim_Partner"].append({
+            "idpartner": idpartner,
+            "idcliente": idpartner,
+            "nombrepartner": "Partner de pruebas",
+            "contacto_tecnico_nombre": "Ana",
+            "contacto_tecnico_gmail": "ana@demo.com",
+            "planapi": "Profesional",
+            "limitellamadasmes": 10000,
+            "limitellamadasminuto": 120,
+            "sandbox_activado": 1,
+            "sandbox_expiracion": 253402300799000,
+            "fecha_suspension": "",
+            "motivo_suspension": "",
+            "activo": True,
+            "fecha_actualizacion": 1,
+        })
+
+    PINOT_STORE["Dim_CredencialAPI"].append({
+        "idcredencial": idcredencial,
+        "idpartner": idpartner,
+        "idcliente": idpartner,
+        "client_secret_hash": SecretoService().hash(secreto),
+        "nombre_credencial": f"cred-{entorno.lower()}",
+        "entorno": entorno,
+        "activo": True,
+        "fecha_creacion": 1,
+        "fecha_expiracion": 253402300799000,
+        "fecha_actualizacion": 1,
+    })
+
+    return {
+        "HTTP_X_CLIENT_ID": f"tsi-p{idpartner}-c{idcredencial}",
+        "HTTP_X_CLIENT_SECRET": secreto,
+    }
+
+
+@pytest.fixture
+def credencial_sandbox_headers(mock_pinot, mock_kafka):
+    """Credencial de API en entorno de pruebas."""
+    return _sembrar_credencial_api(entorno="Sandbox", idcredencial=8801)
+
+
+@pytest.fixture
+def credencial_produccion_headers(mock_pinot, mock_kafka):
+    """Credencial de API en produccion."""
+    return _sembrar_credencial_api(entorno="Producción", idcredencial=8802)
+
+
 @pytest.fixture
 def devapis_auth_headers(mock_pinot, mock_kafka):
     """JWT del Desarrollador de APIs: registra partners y asigna planes."""
@@ -2841,6 +3050,153 @@ def partner_ajeno_auth_headers(mock_pinot, mock_kafka):
     )
     token = create_access_token(user_id=52, roles=["PartnerIntegracion"], session_id=52)
     return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+
+@pytest.fixture
+def partner_con_credenciales(mock_pinot, mock_kafka):
+    """Partner 1 con tres credenciales en los tres estados posibles (#09).
+
+    Es el escenario que da sentido a la reactivacion selectiva: A y B activas, y
+    C que el partner **revoco por seguridad**. Al suspender, las tres quedan
+    inactivas; al reactivar deben volver solo A y B.
+
+    C se siembra ya inactiva Y con su fila de bitacora de revocacion, igual que
+    la habria dejado el servicio real: sin esa fila, un test podria pasar por el
+    motivo equivocado.
+    """
+    from apps.partners.services.secreto_service import SecretoService
+
+    idpartner = 1
+    PINOT_STORE["Dim_Partner"].append({
+        "idpartner": idpartner,
+        "idcliente": 1,
+        "nombrepartner": "Integradora Andina",
+        "contacto_tecnico_nombre": "Ana",
+        "contacto_tecnico_gmail": "ana@integradora.com",
+        "planapi": "Profesional",
+        "limitellamadasmes": 10000,
+        "limitellamadasminuto": 120,
+        "sandbox_activado": 1,
+        "sandbox_expiracion": 253402300799000,
+        "fecha_suspension": "",
+        "motivo_suspension": "",
+        "activo": True,
+        "fecha_actualizacion": 1,
+    })
+
+    hash_secreto = SecretoService().hash("secreto-de-prueba")
+    for idcredencial, nombre, entorno, activo in (
+        (101, "plataforma-siniestros", "Producción", True),
+        (102, "tablero-interno", "Sandbox", True),
+        (103, "credencial-filtrada", "Producción", False),
+    ):
+        PINOT_STORE["Dim_CredencialAPI"].append({
+            "idcredencial": idcredencial,
+            "idpartner": idpartner,
+            "idcliente": 1,
+            "client_secret_hash": hash_secreto,
+            "nombre_credencial": nombre,
+            "entorno": entorno,
+            "activo": activo,
+            "fecha_creacion": 1,
+            "fecha_expiracion": 253402300799000,
+            "fecha_actualizacion": 1,
+        })
+
+    # La 103 la revoco el partner: queda constancia, como en produccion.
+    PINOT_STORE["Fact_HistorialAccesoPartner"].append({
+        "idhistorial": 1,
+        "idpartner": idpartner,
+        "idcredencial": 103,
+        "tipo_cambio": "revocacion_credencial",
+        "ejecutado_por": "Partner",
+        "motivo": "credencial expuesta en repositorio público",
+        "estado_anterior": "Activo",
+        "estado_nuevo": "Activo",
+        "fecha_cambio": 1,
+        "fecha_actualizacion": 1,
+    })
+    return {"idpartner": idpartner, "activas": [101, 102], "revocada": 103}
+
+
+@pytest.fixture
+def partner_suspendido(partner_con_credenciales):
+    """El mismo partner, ya suspendido y con su cascada escrita.
+
+    Reproduce el estado que deja `SuspenderPartnerService`: las tres
+    credenciales inactivas, pero **solo dos filas de cascada** — la revocada no
+    genero ninguna porque ya estaba inactiva cuando llego la suspension. Esa
+    ausencia es justo lo que impide resucitarla al reactivar.
+    """
+    idpartner = partner_con_credenciales["idpartner"]
+    for partner in PINOT_STORE["Dim_Partner"]:
+        if partner["idpartner"] == idpartner:
+            partner.update({
+                "activo": False,
+                "fecha_suspension": "2026-08-10T00:00:00+00:00",
+                "motivo_suspension": "Mora de 16 días en facturas de excedente de API",
+            })
+    for credencial in PINOT_STORE["Dim_CredencialAPI"]:
+        if credencial["idpartner"] == idpartner:
+            credencial["activo"] = False
+
+    for idhistorial, idcredencial in ((2, 101), (3, 102)):
+        PINOT_STORE["Fact_HistorialAccesoPartner"].append({
+            "idhistorial": idhistorial,
+            "idpartner": idpartner,
+            "idcredencial": idcredencial,
+            "tipo_cambio": "desactivacion_por_cascada",
+            "ejecutado_por": "Sistema",
+            "motivo": "Mora de 16 días",
+            "estado_anterior": "Activo",
+            "estado_nuevo": "Suspendido",
+            "fecha_cambio": 100,
+            "fecha_actualizacion": 100,
+        })
+    PINOT_STORE["Fact_HistorialAccesoPartner"].append({
+        "idhistorial": 4,
+        "idpartner": idpartner,
+        "idcredencial": -1,
+        "tipo_cambio": "suspension_automatica",
+        "ejecutado_por": "Sistema",
+        "motivo": "Mora de 16 días",
+        "estado_anterior": "Activo",
+        "estado_nuevo": "Suspendido",
+        "fecha_cambio": 100,
+        "fecha_actualizacion": 100,
+    })
+    return partner_con_credenciales
+
+
+@pytest.fixture
+def factura_excedente_vencida():
+    """Fabrica de facturas de excedente para las pruebas de mora (#09).
+
+    `dias_vencida` positivo = ya vencida. El `estado_pago` es lo que decide si
+    genera mora aqui: solo `Pendiente` cuenta (§ 15 D3).
+    """
+    import time
+
+    def _crear(*, idcliente=1, dias_vencida=20, estado_pago="Pendiente",
+               tipo="excedente_api", id_factura=None):
+        ahora = int(time.time() * 1000)
+        fila = {
+            "id_factura": id_factura or f"FAC-EXC-{idcliente}-{dias_vencida}-{estado_pago}",
+            "id_cliente": idcliente,
+            "id_suscripcion": idcliente,
+            "tipo": tipo,
+            "estado_pago": estado_pago,
+            "monto_total": 42.0,
+            "periodo": "2026-07",
+            "fecha_emision": ahora - dias_vencida * 86_400_000,
+            "fecha_vencimiento": ahora - dias_vencida * 86_400_000,
+            "activo": True,
+            "fecha_actualizacion": ahora,
+        }
+        PINOT_STORE["Fact_Factura"].append(fila)
+        return fila
+
+    return _crear
 
 
 @pytest.fixture

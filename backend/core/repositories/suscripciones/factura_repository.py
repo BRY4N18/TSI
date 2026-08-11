@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 
+from apps.partners.domain_constants import FACTURA_PENDIENTE, FACTURA_TIPO_EXCEDENTE
 from core.pinot.client import PinotClient
 from core.repositories.suscripciones.kafka_writer import KafkaWriter
 
@@ -41,6 +42,51 @@ class FacturaRepository:
             {"idcliente": idcliente, "limit": int(limit)},
         )
         return list(rows or [])
+
+    def vencidas_impagadas_de_excedente(
+        self, idcliente: int, *, ahora_ms: int | None = None, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """Facturas de excedente de API vencidas y sin pagar de un cliente.
+
+        La usa la evaluacion de mora de #09 (§ 15 D3). Tres precisiones que NO
+        son detalles de implementacion:
+
+        1. **Se consulta por `id_cliente`.** `Fact_Factura` NO tiene `idpartner`:
+           el puente es `Dim_Partner.idcliente`. Una consulta contra `idpartner`
+           no fallaria, devolveria **cero morosos en silencio**.
+        2. **Solo `estado_pago='Pendiente'`.** `Fallida` es el disparador de la
+           suspension de suscripcion (RF-SUSF-007); contarla aqui haria que dos
+           modulos suspendieran por la misma factura. `En disputa` se excluye
+           porque el partner esta ejerciendo su derecho a reclamar (RN-PAC-015).
+        3. **`limit` alto por defecto.** El de 20 de `list_by_cliente` es para
+           una pantalla; un job que decide suspensiones no puede quedarse corto.
+
+        Devuelve de la mas antigua a la mas reciente: la primera es la que
+        origina el ciclo de mora.
+        """
+        ahora = int(ahora_ms if ahora_ms is not None else self._now_ms())
+        rows = self.pinot.query(
+            "SELECT * FROM Fact_Factura WHERE id_cliente = %(idcliente)s "
+            "AND tipo = %(tipo)s AND estado_pago = %(estado)s "
+            "AND fecha_vencimiento < %(ahora)s "
+            "ORDER BY fecha_vencimiento ASC LIMIT %(limit)s",
+            {
+                "idcliente": int(idcliente),
+                "tipo": FACTURA_TIPO_EXCEDENTE,
+                "estado": FACTURA_PENDIENTE,
+                "ahora": ahora,
+                "limit": int(limit),
+            },
+        )
+        # Segunda guarda en Python: si el doble de tests o una version de Pinot
+        # ignorase alguno de los filtros, aqui no pasaria una factura que no toca.
+        return [
+            f
+            for f in (rows or [])
+            if str(f.get("tipo")) == FACTURA_TIPO_EXCEDENTE
+            and str(f.get("estado_pago")) == FACTURA_PENDIENTE
+            and int(f.get("fecha_vencimiento") or 0) < ahora
+        ]
 
     def find_by_suscripcion_periodo(self, id_suscripcion: int, periodo: str) -> dict[str, Any] | None:
         rows = self.pinot.query(

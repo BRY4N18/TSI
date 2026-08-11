@@ -537,6 +537,33 @@ Si la escritura del consumo falla, la petición del partner se responde igualmen
 ### CA-APM-016 (RNF-APM-002)
 Los endpoints de consumo responden en p95 ≤ 2 s con el registro de la llamada activo.
 
+
+### D3 — Las excepciones de facturación se exponen, no solo se avisan por correo
+
+**Decidido 2026-08-10, al implementar el frontend de esta capa.**
+
+**El problema.** RF-APM-013 y RN-APM-014 exigen que una factura de excedente
+**nunca quede silenciosamente sin crearse**. El backend cumplía la mitad: los
+dos casos de excepción se auditaban y se mandaba un correo, pero **no había
+forma de consultarlos**. Un correo que se pierde es exactamente el silencio que
+la regla prohíbe, y el caso `no_tarificable` ni siquiera dejaba rastro
+persistido.
+
+**La decisión.** `GET /api/v1/facturacion/excepciones` (BE-DELTA-04) devuelve
+los dos tipos con un discriminador obligatorio:
+
+| `tipo` | Hay factura | Acción |
+|---|---|---|
+| `reintentos_agotados` | Sí | Emitirla manualmente |
+| `no_tarificable` | **No** | Configurar la tarifa del plan y reejecutar el corte |
+
+Los no tarificables (BE-DELTA-05) se **derivan del mismo cálculo** que hace el
+corte, sin emitir nada. Su `importe` va a `None` y **nunca a 0.0**: un cero
+diría «se facturó nada», y la verdad es que no se pudo calcular.
+
+**Sin cambios de esquema.** Expone datos que ya se escribían y un cálculo que ya
+se hacía.
+
 ## 12. Dependencias
 
 - **`partner-api-onboarding` (#07):** provee `Dim_Partner` con su cupo congelado y `Dim_CredencialAPI` con `activo` y `fecha_expiracion`. Sin partners incorporados no hay consumo.

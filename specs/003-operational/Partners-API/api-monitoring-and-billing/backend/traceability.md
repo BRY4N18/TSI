@@ -134,3 +134,68 @@ El throttle por minuto **solo es exacto con un proceso** (`LocMemCache` es por p
 ## Cambios fuera de ciclo
 
 Antes de este plan se aplicaron y verificaron los cambios de esquema que este módulo necesita: `Fact_Factura.tipo`, `Fact_Reclamo.idfactura` INT → STRING (con migración de 8 tickets sin pérdida) y `Dim_Plan.precio_excedente_llamada` con su centinela `-1.0`. Registrados en `decisiones-pendientes.md` #17 y #20.
+
+
+## Estado de implementación (2026-08-09)
+
+**60/71 tareas.** Fases 1, 2, US1, US2, US3, US4 y la mayor parte del polish.
+
+| | |
+|---|---|
+| Tests del módulo `partners` | **405** |
+| Suite completa backend | **1447 passed, 2 skipped** |
+| Cobertura de servicios | **93 %** (umbral 80 %) |
+| Contrato OpenAPI | validado: sintaxis, cero refs rotas, y `credencialAuth` **solo** en `/datos/*` |
+
+**CA cubiertos:** CA-APM-001–005 y CA-APM-015–016 (US1), CA-APM-006–009 (US2),
+CA-APM-010 (US3), CA-APM-011–014 (US4).
+
+### ✅ Verificación contra Pinot real — completada 2026-08-09
+
+**`database/verifica_monitoreo_api.py`: 9/9** (T066, criterio de salida).
+
+| Comprobación | Resultado |
+|---|---|
+| `SUM(llamadas)` exacto sobre filas reales | ✅ 37 de 37 |
+| El filtro de entorno **excluye** el sandbox | ✅ sin él darían 48 |
+| `GROUP BY idservicio` agrupa y la suma cuadra | ✅ 2 grupos |
+| El `LIMIT 10` implícito **no trunca** la agregación | ✅ 37 > 10 |
+| `Dim_EstadoIntegracion` con solo 2 estados activos | ✅ |
+| `Dim_Severidad` con el nombre como STRING | ✅ «Leve» |
+
+Esto cierra el hueco de `decisiones-pendientes.md` #18 **para este módulo**: las
+agregaciones que el doble de `conftest.py` reproduce a mano se comportan igual
+en Pinot, y son de las que sale lo que se le factura a un cliente. La entrada
+#18 sigue abierta para los departamentos que no tienen verificador propio.
+
+### RNF medidos (T063, T064)
+
+| RNF | Medición | Umbral |
+|---|---|---|
+| **RNF-APM-002** p95 de `GET /datos/accidentes` | **214 ms** con registro activo | 2000 ms ✅ |
+| **RNF-APM-003** capacidad de escritura del registro | **21 254 registros/s** | 50/s ✅ |
+
+**Dos advertencias sobre estas cifras, para que nadie las lea de más:**
+
+1. El coste aislado del registro salió **negativo (−29 ms)** al comparar con y
+   sin middleware. No significa que registrar sea gratis: significa que su coste
+   **está por debajo del ruido de medición** con n=20, porque bcrypt (coste 12,
+   cientos de ms por diseño) domina el tiempo total. La conclusión defendible es
+   «el registro es despreciable frente a bcrypt», no un número concreto.
+2. Las 21 254 escrituras/s se miden contra el **doble en memoria**, no contra
+   Kafka real. Miden el sobrecoste del servicio, no el rendimiento de la cola.
+   El número real dependerá del broker.
+
+Si el p95 se acerca al umbral en el futuro, la corrección **no** es bajar
+`BCRYPT_ROUNDS`: es mirar qué se añadió a la ruta. El Tie-Breaker resolvió ese
+conflicto a favor de Security.
+
+### Limpieza de datos de prueba (T068)
+
+`database/limpia_datos_prueba.py` **se extendió** con `Fact_APIIntegracion` y
+`Fact_LogLlamadaAPI`: la versión de #07 no las contemplaba y dejaba 48 filas de
+consumo que habrían falseado cualquier métrica o excedente calculado después.
+
+Recuento final: las 7 tablas del departamento en **0 filas**, y los datos reales
+intactos — `Fact_Reclamo` **8** y `Fact_Historial_Ticket` **9**. Catálogos
+resembrados (`Dim_VersionContratoAPI`, que la limpieza purga por diseño).

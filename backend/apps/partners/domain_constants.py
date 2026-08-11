@@ -33,6 +33,24 @@ CAMBIO_SOLICITUD_PRODUCCION = "solicitud_promocion_produccion"
 CAMBIO_ACTIVACION_PRODUCCION = "activacion_produccion"
 CAMBIO_RECHAZO_PRODUCCION = "rechazo_promocion_produccion"
 
+# --- tipo_cambio escritos por #09 (gestion de acceso, CU-O55) ---
+CAMBIO_REVOCACION_CREDENCIAL = "revocacion_credencial"
+CAMBIO_DESACTIVACION_POR_CASCADA = "desactivacion_por_cascada"
+CAMBIO_AVISO_PREVIO_SUSPENSION = "aviso_previo_suspension"
+CAMBIO_SUSPENSION_AUTOMATICA = "suspension_automatica"
+CAMBIO_SUSPENSION_MANUAL = "suspension_manual"
+CAMBIO_REACTIVACION = "reactivacion"
+
+# `desactivacion_por_cascada` NO es `revocacion_credencial`: la primera se
+# revierte al reactivar, la segunda NUNCA. Son constantes distintas justamente
+# para que la reactivacion selectiva no pueda confundirlas y resucitar una
+# credencial comprometida (spec.md #09 § 15 D1).
+
+# Estado de acceso del partner — vocabulario de estado_anterior/estado_nuevo en
+# los eventos de #09. Es el de la seccion 9 de su spec, NO el del onboarding.
+ESTADO_ACCESO_ACTIVO = "Activo"
+ESTADO_ACCESO_SUSPENDIDO = "Suspendido"
+
 # --- Autores de eventos ---
 EJECUTADO_POR_PARTNER = "Partner"
 EJECUTADO_POR_ADMINISTRADOR = "Administrador"
@@ -70,3 +88,15 @@ SANDBOX_VIGENCIA_DIAS = 30
 SANDBOX_AVISO_PREVIO_DIAS = 7
 # Entropia del secreto (RNF-PON-002). 32 bytes -> ~256 bits.
 SECRETO_BYTES = 32
+
+# --- Mora de excedente de API (#09, RNF-PAC-005) ---
+# Valores por defecto; `settings` puede sobreescribirlos sin tocar codigo.
+MORA_LIMITE_DIAS = 15
+MORA_AVISOS_DIAS = (10, 5)  # T-10 y T-5 dias ANTES del limite
+
+# Solo la factura de excedente de API PENDIENTE y vencida genera mora aqui
+# (spec.md #09 § 15 D3). `Fallida` es el disparador de subscriptions-and-billing:
+# contarla tambien aqui haria que dos modulos suspendieran por la misma factura.
+FACTURA_TIPO_EXCEDENTE = "excedente_api"
+FACTURA_PENDIENTE = "Pendiente"
+FACTURA_EN_DISPUTA = "En disputa"

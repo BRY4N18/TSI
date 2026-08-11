@@ -17,7 +17,7 @@ Guía de validación end-to-end de CU-O55. No contiene código de implementació
 python -c "import yaml; d=yaml.safe_load(open('specs/003-operational/Partners-API/partner-access-management/backend/contracts/partner-access-management.openapi.yaml',encoding='utf-8')); print(len(d['paths']),'paths,',len(d['components']['schemas']),'schemas')"
 ```
 
-Esperado: `4 paths, 10 schemas`.
+Esperado: `5 paths, 12 schemas`.
 
 **Invariante de seguridad** — el secreto solo puede aparecer en `RevocacionResponse`. Si apareciera en `Credencial`, el endpoint de estado filtraría secretos:
 
@@ -117,6 +117,20 @@ Cliente con **suscripción suspendida** pero partner `activo=true` → el consum
 
 Verificar también lo contrario: al reactivarse la suscripción, el partner **no** se reactiva solo si estaba suspendido por su propia mora.
 
+### Escenario P — La cola de trabajo del Administrador (RF-PAC-009 b)
+
+Dos partners suspendidos y uno en mora con aviso T-10 ya enviado → `GET /partners/cola-acceso` los devuelve los tres, con `dias_mora` y `ultimo_aviso`. Un partner consultando esa cola → **403**.
+
+Todo es derivado: no hay columna «en mora» y no debe crearse.
+
+### Escenario Q — La suspensión también corta de inmediato (§ 15 D4)
+
+Partner con tres credenciales activas suspendido por mora → las **tres** dejan de servir **sin esperar** a la ingesta.
+
+> Es el escenario B aplicado a la suspensión, y la fuga que cierra es **mayor**: no es una credencial, son todas las suyas a la vez. Si este test necesita un `sleep`, la cascada no alimentó la lista de denegación.
+
+Verificar también la simetría: al reactivar, las credenciales restituidas **vuelven a servir de inmediato**. Si siguieran rechazadas hasta que caduque el TTL, la reactivación no sería tal.
+
 ### Validaciones transversales
 
 | Comprobación | Esperado |
@@ -137,13 +151,13 @@ pytest backend/apps/partners -q
 cd backend && python -m pytest -q
 ```
 
-Línea base sin regresiones: **1042 passed, 2 skipped**.
+Línea base sin regresiones: **1447 passed** (la que dejó #08 el 2026-08-09; la cifra de 1042 que figuraba aquí era anterior a #07 y #08).
 
 ## 4) Criterios de salida
 
 - [ ] Contrato válido, sin refs rotas, y el secreto solo en `RevocacionResponse`.
-- [ ] Escenarios A–O en verde, con **especial atención a B, I y J**.
-- [ ] Los 15 criterios CA-PAC-001…015 cubiertos por al menos un test.
+- [ ] Escenarios A–Q en verde, con **especial atención a B, I, J y Q**.
+- [ ] Los 18 criterios CA-PAC-001…018 cubiertos por al menos un test.
 - [ ] Cobertura de `apps/partners/services` ≥ 80 % (RNF-PAC-006).
 - [ ] Suite completa sin regresiones.
 - [ ] **Verificación contra Pinot real** (paso 5).
@@ -162,6 +176,9 @@ Debe crearse `database/verifica_acceso_partners.py` comprobando al menos:
 | `Dim_Partner.activo` y el estado de las credenciales **no se contradicen** | RN-PAC-012: fuente de verdad única |
 | El snapshot (`fecha_suspension`, `motivo_suspension`) vuelve al centinela `""` al reactivar | Pinot no almacena NULL |
 | La revocación surte efecto **antes** de que Pinot ingiera | La lista de denegación es la única defensa en esa ventana |
+| La **suspensión** también surte efecto antes de que Pinot ingiera | § 15 D4: ahí la fuga son **todas** las credenciales del partner |
+| La mora se resuelve por `Dim_Partner.idcliente → Fact_Factura.id_cliente` y encuentra al moroso sembrado | § 15 D3: contra `idpartner` daría **cero en silencio**, y el doble en memoria no lo delataría |
+| Una factura `Fallida` del mismo cliente **no** lo pone en mora aquí | § 15 D3: es competencia de Suscripciones |
 
 ## 6) Evidencia de rendimiento (RNF-PAC-001)
 

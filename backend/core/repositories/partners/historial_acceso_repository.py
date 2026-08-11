@@ -15,9 +15,22 @@ from typing import Any
 
 from django.conf import settings
 
-from apps.partners.domain_constants import SIN_CREDENCIAL, SIN_MOTIVO
+from apps.partners.domain_constants import (
+    CAMBIO_DESACTIVACION_POR_CASCADA,
+    CAMBIO_REACTIVACION,
+    CAMBIO_SUSPENSION_AUTOMATICA,
+    CAMBIO_SUSPENSION_MANUAL,
+    SIN_CREDENCIAL,
+    SIN_MOTIVO,
+)
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+
+_TIPOS_SUSPENSION = frozenset({CAMBIO_SUSPENSION_AUTOMATICA, CAMBIO_SUSPENSION_MANUAL})
+
+# Eventos que cierran un ciclo de acceso hacia atras: al encontrarlos, lo que
+# venga despues pertenece a una suspension anterior y NO debe restituirse.
+_TIPOS_CIERRE_DE_CICLO = _TIPOS_SUSPENSION | {CAMBIO_REACTIVACION}
 
 
 class HistorialAccesoRepository:
@@ -71,6 +84,73 @@ class HistorialAccesoRepository:
                 continue
             return True
         return False
+
+    def ultima_suspension(self, idpartner: int) -> dict[str, Any] | None:
+        """El ultimo evento de suspension del partner (automatica o manual).
+
+        Es el ancla temporal de la reactivacion selectiva: marca desde cuando
+        cuentan las filas de cascada que hay que restituir (#09 § 15 D1).
+        """
+        for ev in self.list_by_partner(idpartner, limit=500):
+            if ev.get("tipo_cambio") in _TIPOS_SUSPENSION:
+                return ev
+        return None
+
+    def credenciales_de_la_ultima_cascada(self, idpartner: int) -> list[int]:
+        """Los `idcredencial` que desactivo la ultima suspension.
+
+        **Esta lista ES la reactivacion selectiva** (RN-PAC-011). Se recorre el
+        historial de mas reciente a mas antiguo y se para en cuanto aparece una
+        suspension ANTERIOR a la ultima: asi solo se devuelven las filas del
+        ciclo vigente y no las de suspensiones pasadas.
+
+        Una credencial que ya estaba inactiva cuando llego la suspension —porque
+        el partner la revoco, o porque expiro— **no genero fila de cascada**, asi
+        que no aparece aqui y no se restituye. La regla de seguridad se cumple
+        POR CONSTRUCCION, no por una comprobacion aparte que alguien pudiera
+        olvidar al refactorizar.
+
+        El ciclo se delimita por POSICION, nunca por reloj
+        --------------------------------------------------
+        Una version anterior anclaba el corte en `fecha_cambio` del evento de
+        suspension. Era incorrecto: las filas de cascada se escriben ANTES que
+        ese evento, y si el milisegundo avanzaba entre medias quedaban "antes
+        del corte" y se descartaban. El resultado era que la reactivacion **no
+        restituia nada, en silencio** — el partner se quedaba sin credenciales y
+        nada en el log lo delataba. Ocurria de forma intermitente, solo cuando la
+        maquina iba lenta.
+
+        Se recorre el historial de mas nuevo a mas viejo: primero el evento de
+        suspension, despues sus filas de cascada, y se para en el limite del
+        ciclo anterior (otra suspension o una reactivacion). Los empates de
+        milisegundo ya no importan porque `list_by_partner` desempata por
+        `idhistorial`, que es monotono.
+        """
+        historial = self.list_by_partner(idpartner, limit=500)
+
+        inicio = next(
+            (
+                i
+                for i, ev in enumerate(historial)
+                if ev.get("tipo_cambio") in _TIPOS_SUSPENSION
+            ),
+            None,
+        )
+        if inicio is None:
+            return []
+
+        ids: list[int] = []
+        for ev in historial[inicio + 1:]:
+            tipo = ev.get("tipo_cambio")
+            if tipo in _TIPOS_CIERRE_DE_CICLO:
+                # Empieza el ciclo anterior: lo suyo ya no se restituye.
+                break
+            if tipo != CAMBIO_DESACTIVACION_POR_CASCADA:
+                continue
+            idcredencial = int(ev.get("idcredencial", SIN_CREDENCIAL))
+            if idcredencial != SIN_CREDENCIAL and idcredencial not in ids:
+                ids.append(idcredencial)
+        return ids
 
     # --- Escritura (solo INSERT) --------------------------------------------
 

@@ -31,12 +31,21 @@ A_LIMPIAR = [
     "Fact_HistorialAccesoPartner",
     "Dim_VersionContratoAPI",
     "Fact_Factura",
+    # --- Monitoreo y facturacion de API (#08) ---
+    # Son append-only y de consumo: sus filas de prueba no tienen valor y
+    # falsearian cualquier metrica o excedente que se calcule despues.
+    "Fact_APIIntegracion",
+    "Fact_LogLlamadaAPI",
 ]
 INTOCABLES = {"Fact_Reclamo", "Fact_Historial_Ticket"}
 
 # Dim_VersionContratoAPI se purga junto al resto, pero NO es dato de prueba:
 # es catalogo. Tras esta limpieza hay que resembrarlo o CU-O50 devuelve 404:
 #     python database/seed_versiones_contrato.py
+#
+# `Dim_EstadoIntegracion` y `Dim_Severidad` NO estan en la lista a proposito:
+# tambien son catalogo, y ademas no reciben datos de prueba. Si algun dia se
+# purgan, resembrarlos con `seed_estado_integracion.py` y `seed_severidad.py`.
 
 
 def pedir(metodo, url, cuerpo=None):

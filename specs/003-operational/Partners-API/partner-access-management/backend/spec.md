@@ -111,6 +111,8 @@ Al suspender, el sistema debe:
 
 **Efecto inmediato sobre el consumo:** a partir de ese momento, toda llamada a la API con cualquier credencial de ese partner debe rechazarse. Lo aplica `api-monitoring-and-billing` leyendo `Dim_Partner.activo` (RF-APM-001); este módulo solo fija el estado.
 
+**«Inmediato» significa lo mismo aquí que al revocar (§ 15 D4).** La suspensión también escribe vía Kafka, así que también tiene los 5–15 s de ingesta. La cascada debe añadir a la **lista de denegación** cada credencial que desactiva, igual que hace la revocación (RNF-PAC-001). Sin eso, un partner suspendido seguiría consumiendo durante la ventana con **todas** sus credenciales a la vez — una fuga mayor que la que el módulo cierra en la revocación.
+
 ### RF-PAC-005: Suspensión y reactivación manual (CU-O55 / RF-O55.3)
 
 Un **Administrador** puede suspender o reactivar manualmente, por causas distintas a la mora (por ejemplo, vencimiento de contrato o petición del cliente).
@@ -147,6 +149,19 @@ Una factura **en disputa** (RN-APM-016) **no cuenta como mora** mientras el recl
 
 **Qué cuenta como mora aquí (§ 15 D2).** **Únicamente las facturas de excedente de API** (`Fact_Factura.tipo='excedente_api'`) impagadas y vencidas. La suscripción impagada **no** la gestiona este módulo: es competencia de `subscriptions-and-billing` (RF-SUSF-007), que suspende sobre `Fact_Suscripcion.estado`.
 
+**Qué es exactamente «impagada» (§ 15 D3).** El vocabulario real de `Fact_Factura.estado_pago` tiene cuatro valores, y solo **uno** genera mora aquí:
+
+| `estado_pago` | ¿Genera mora en este módulo? | Por qué |
+|---|---|---|
+| **`Pendiente`** y `fecha_vencimiento` pasada | ✅ **Sí** | Es la única que cuenta |
+| `Pagada` | No | No hay deuda |
+| `En disputa` | No | RN-PAC-015 — el reclamo sigue abierto |
+| **`Fallida`** | **No** | **Es el disparador de `subscriptions-and-billing`** (RF-SUSF-007). Si contase también aquí, **dos módulos suspenderían por la misma factura** con umbrales distintos — exactamente lo que § 15 D2 existe para impedir |
+
+**Cómo se llega de un partner a sus facturas (§ 15 D3).** `Fact_Factura` **no tiene `idpartner`**: su clave de cliente es **`id_cliente`**. La mora se resuelve por `Dim_Partner.idcliente → Fact_Factura.id_cliente`, nunca por un `idpartner` que no existe en esa tabla.
+
+**Qué delimita el ciclo de mora.** La **factura vencida impagada más antigua** del partner. Sus días de mora son los que se comparan con T-10, T-5 y el límite, y su `id_factura` identifica el ciclo a efectos de no duplicar avisos (RNF-PAC-005). Si esa factura se paga y queda otra vencida, **empieza un ciclo nuevo** y los avisos vuelven a contar desde cero: es deuda distinta.
+
 **Las dos suspensiones son independientes por origen**, y el acceso a la API exige **ambas condiciones a la vez**:
 
 | Condición | Dueño | Tabla |
@@ -177,12 +192,27 @@ Valores de `tipo_cambio` que **este módulo** escribe:
 
 `desactivacion_por_cascada` **no es lo mismo que** `revocacion_credencial`, y por eso son tipos distintos: la primera se revierte al reactivar, la segunda **nunca**. Confundirlas resucitaría credenciales comprometidas.
 
+**Qué llevan `estado_anterior` y `estado_nuevo`.** El vocabulario es el del **estado de acceso del partner** (§ 9), no el del ciclo de onboarding de #07, y **nunca** el de la credencial:
+
+| `tipo_cambio` | `estado_anterior` | `estado_nuevo` |
+|---|---|---|
+| `revocacion_credencial` | `Activo` | `Activo` |
+| `desactivacion_por_cascada` | `Activo` | `Suspendido` |
+| `aviso_previo_suspension` | `Activo` | `Activo` |
+| `suspension_automatica` / `suspension_manual` | `Activo` | `Suspendido` |
+| `reactivacion` | `Suspendido` | `Activo` |
+
+Que la revocación y el aviso dejen ambos campos **iguales** no es un descuido: es la forma de decir en la bitácora que **el estado del partner no cambió**. Revocar una credencial no suspende a nadie, y avisar tampoco (RF-PAC-003).
+
 ### RF-PAC-009: Consulta del estado de acceso (CU-O55)
 
-El sistema debe exponer el estado de acceso vigente:
+El sistema debe exponer el estado de acceso vigente en **dos lecturas distintas**, porque son dos preguntas distintas:
 
-- **Partner de integración:** su propio estado (activo o suspendido, con motivo y fecha si aplica), sus credenciales activas y su bitácora. Un partner suspendido **sí** puede consultar: es lectura y le sirve para entender por qué se le cortó.
-- **Administrador:** los partners suspendidos y los que están en ciclo de mora con avisos ya enviados, como cola de trabajo.
+**a) El estado de un partner concreto** — `GET /partners/{id}/estado-acceso`. Su propio estado (activo o suspendido, con motivo y fecha si aplica), sus credenciales activas y su bitácora. Un partner suspendido **sí** puede consultar: es lectura y le sirve para entender por qué se le cortó. El Administrador puede consultar el de cualquiera.
+
+**b) La cola de trabajo del Administrador** — `GET /partners/cola-acceso`, **solo Administrador**. Devuelve los partners **suspendidos** y los que están **en ciclo de mora con avisos ya enviados**, con sus días de mora y el último aviso enviado. Sin esta lectura, un Administrador tendría que consultar partner por partner para saber a quién le toca reactivar o a quién está a punto de cortársele el acceso — y la reactivación, que **solo** él puede hacer (RN-PAC-009), no tendría por dónde empezar.
+
+Ambas son **derivadas**: «en mora» no está persistido en ninguna columna (RN-PAC-012) y se calcula al leer.
 
 ## 5. Requisitos no funcionales
 
@@ -308,8 +338,11 @@ Un partner **suspendido conserva el acceso de lectura** a su propio estado, cred
 - `idpartner` (INT, requerido, path param).
 - `motivo` (STRING, opcional, nota de la reactivación).
 
-### Para consultar el estado de acceso (RF-PAC-009)
+### Para consultar el estado de acceso (RF-PAC-009 a)
 - `idpartner` (INT, requerido, path param; el partner solo puede consultar el suyo).
+
+### Para consultar la cola del Administrador (RF-PAC-009 b)
+- Sin parámetros obligatorios. Opcional: `estado` (`suspendidos` | `en_mora`, por defecto ambos) y paginación por cursor conforme a `api-standards.md`.
 
 ## 8. Salidas
 
@@ -318,11 +351,12 @@ Un partner **suspendido conserva el acceso de lectura** a su propio estado, cred
 - **200 OK — Partner suspendido:** `{ "data": { "idpartner": 12, "activo": false, "fecha_suspension": "...", "motivo_suspension": "...", "credenciales_desactivadas": 3 } }`
 - **200 OK — Partner reactivado:** `{ "data": { "idpartner": 12, "activo": true, "credenciales_restituidas": 2, "credenciales_no_restituidas": 1 } }` — el desglose hace visible que **no todas vuelven**: la revocada por seguridad sigue inactiva.
 - **200 OK — Estado de acceso:** `{ "data": { "idpartner": 12, "activo": true, "en_mora": false, "avisos_enviados": [], "credenciales": [...], "historial": [...] } }`
+- **200 OK — Cola del Administrador:** `{ "data": [ { "idpartner": 12, "nombrepartner": "...", "activo": false, "motivo_suspension": "...", "fecha_suspension": "...", "dias_mora": 21, "ultimo_aviso": "T-5" } ], "meta": { "suspendidos": 2, "en_mora": 1 } }` — `dias_mora` y `ultimo_aviso` son **derivados**, no columnas.
 
 ### Respuestas de error
 - **400 Bad Request** — `motivo` ausente o vacío donde es obligatorio.
 - **401 Unauthorized** — Token ausente, inválido o expirado.
-- **403 Forbidden** — El partner intenta revocar una credencial ajena (RN-PAC-002) o consultar el estado de otro; o un rol distinto de Administrador intenta suspender o reactivar.
+- **403 Forbidden** — El partner intenta revocar una credencial ajena (RN-PAC-002) o consultar el estado de otro; o un rol distinto de Administrador intenta suspender, reactivar o **consultar la cola de acceso**.
 - **404 Not Found** — `idcredencial` o `idpartner` inexistentes.
 - **409 Conflict** — Revocar una credencial **ya inactiva** (RN-PAC-003).
 - **409 Conflict** — Reactivar un partner que **no está suspendido** (RF-PAC-005).
@@ -387,20 +421,34 @@ Y debe entregarle **de inmediato** una credencial de reemplazo del mismo entorno
 Y **las otras dos credenciales deben seguir operando sin interrupción**  
 Y debe registrar `tipo_cambio="revocacion_credencial"` con el `idcredencial` exacto y el motivo.
 
-### Escenario B: Revocación de credencial ajena
+### Escenario B: La ventana de exposición está cerrada 🎯
+
+Dado un partner que acaba de revocar una credencial comprometida
+Cuando intenta consumir la API de datos con esa misma credencial **de inmediato, sin esperar a la ingesta de Pinot**
+Entonces debe rechazarse **ya**, no dentro de 15 segundos
+Y si solo se rechaza tras una espera, la lista de denegación no está funcionando y **una credencial comprometida seguiría sirviendo datos** (RNF-PAC-001).
+
+### Escenario C: Revocación de credencial ajena
 
 Dado un partner autenticado  
 Cuando intenta revocar una credencial que pertenece a otro partner  
 Entonces el sistema debe rechazar con HTTP 403 **sin modificar nada**.
 
-### Escenario C: Revocación de credencial ya inactiva
+### Escenario D: Revocación de credencial ya inactiva
 
 Dado una credencial que ya fue revocada  
 Cuando el partner intenta revocarla de nuevo  
 Entonces el sistema debe rechazar con HTTP 409  
 Y **no debe generar una segunda entrada de revocación** en la bitácora.
 
-### Escenario D: Avisos previos sin duplicación
+### Escenario E: El reemplazo no choca de nombre consigo mismo
+
+Dado un partner que revoca una credencial llamada «plataforma-siniestros»
+Cuando el sistema emite el reemplazo **con el mismo nombre** en la misma operación
+Entonces debe devolver 200
+Y la comprobación de unicidad **no debe releer Pinot**: aún vería la revocada como activa y daría una colisión falsa que **haría fallar la revocación** — justo la operación que no puede fallar (§ 15 D1 de `research.md` Decision 4).
+
+### Escenario F: Avisos previos sin duplicación
 
 Dado un partner con una factura de excedente impagada  
 Cuando se alcanza T-10  
@@ -408,14 +456,14 @@ Entonces el sistema debe enviar el aviso y registrarlo con `motivo="T-10"`, **si
 Y si el job vuelve a ejecutarse el mismo día, **no debe enviar un segundo aviso T-10**  
 Y al alcanzarse T-5 debe enviar el segundo aviso, también una sola vez.
 
-### Escenario E: Regularización entre avisos
+### Escenario G: Regularización entre avisos
 
 Dado un partner que recibió el aviso T-10  
 Cuando paga la factura antes de T-5  
 Entonces **el aviso T-5 nunca debe enviarse**  
 Y el ciclo de mora debe cerrarse sin suspensión.
 
-### Escenario F: Suspensión automática con cascada
+### Escenario H: Suspensión automática con cascada
 
 Dado un partner que superó el límite de mora tras ambos avisos  
 Cuando se ejecuta la evaluación  
@@ -424,7 +472,7 @@ Y debe desactivar **todas** sus credenciales, de pruebas **y** de producción, s
 Y debe registrar `tipo_cambio="suspension_automatica"` con los días de mora  
 Y toda llamada posterior a la API con cualquiera de sus credenciales debe rechazarse.
 
-### Escenario G: Reactivación selectiva — el escenario que da sentido a la regla
+### Escenario I: Reactivación selectiva — el escenario que da sentido a la regla
 
 Dado un partner con tres credenciales: A y B activas, y C que **él mismo revocó por seguridad** semanas antes  
 Y es suspendido por mora, lo que desactiva las tres  
@@ -433,40 +481,61 @@ Entonces deben restituirse **A y B**
 Y **C debe permanecer inactiva**: era una credencial comprometida y resucitarla sería un fallo de seguridad grave  
 Y la respuesta debe informar de `credenciales_restituidas: 2` y `credenciales_no_restituidas: 1`.
 
-### Escenario H: El sistema no reactiva solo
+### Escenario J: El sistema no reactiva solo
 
 Dado un partner suspendido por mora  
 Cuando paga íntegramente la deuda  
 Entonces el sistema **no debe reactivarlo automáticamente**  
 Y el partner debe permanecer suspendido hasta que un Administrador lo reactive explícitamente (RN-PAC-009).
 
-### Escenario I: Reactivación redundante
+### Escenario K: Reactivación redundante
 
 Dado un partner que nunca fue suspendido  
 Cuando un Administrador intenta reactivarlo  
 Entonces el sistema debe rechazar con HTTP 409  
 Y no debe generar una entrada de reactivación sin una suspensión real que la respalde.
 
-### Escenario J: Suspensión manual con motivo obligatorio
+### Escenario L: Suspensión manual con motivo obligatorio
 
 Dado un contrato vencido  
 Cuando el Administrador suspende al partner sin indicar motivo  
 Entonces el sistema debe rechazar con HTTP 400  
 Y con motivo debe suspenderlo con la misma cascada que la suspensión automática, registrando `tipo_cambio="suspension_manual"`.
 
-### Escenario K: Factura en disputa no genera mora
+### Escenario M: Factura en disputa no genera mora
 
 Dado un partner cuya única factura impagada está **en disputa** abierta en Soporte  
 Cuando se evalúa la mora  
 Entonces **no debe contarse como mora**  
 Y no deben enviarse avisos ni suspenderlo mientras el reclamo siga abierto (RN-PAC-015).
 
-### Escenario L: El partner suspendido consulta su estado
+### Escenario N: El partner suspendido consulta su estado
 
 Dado un partner suspendido  
 Cuando consulta su estado de acceso  
 Entonces debe recibir HTTP 200 con `activo=false`, el motivo y la fecha de suspensión  
 Y debe poder ver su historial: es lo que le permite entender por qué se le cortó el acceso.
+
+### Escenario O: Frontera con la suspensión de suscripción
+
+Dado un cliente con la **suscripción suspendida** cuyo partner sigue `activo=true`
+Cuando intenta consumir la API de datos
+Entonces debe rechazarse con **403**: el acceso exige **las dos** condiciones (§ 15 D2)
+Y al reactivarse la suscripción, un partner suspendido por **su propia mora** debe **seguir suspendido**: las dos suspensiones no se arrastran.
+
+### Escenario P: La cola de trabajo del Administrador
+
+Dado un departamento con dos partners suspendidos y uno en mora que ya recibió el aviso T-10
+Cuando el Administrador consulta la cola de acceso
+Entonces debe recibir los tres, con sus días de mora y el último aviso enviado
+Y un partner que intente consultar esa cola debe recibir **403**: es la vista de trabajo del Administrador, no la suya.
+
+### Escenario Q: La suspensión también corta de inmediato
+
+Dado un partner con tres credenciales activas que es suspendido por mora
+Cuando intenta consumir la API con **cualquiera** de las tres, **sin esperar a la ingesta**
+Entonces las tres deben rechazarse **ya** (§ 15 D4)
+Y si alguna sigue sirviendo, la cascada no alimentó la lista de denegación y la fuga es **mayor** que la que se cierra al revocar: son todas sus credenciales a la vez, no una.
 
 ## 11. Criterios de aceptación
 
@@ -514,6 +583,15 @@ Un partner suspendido puede consultar su estado, credenciales e historial (200);
 
 ### CA-PAC-015 (RNF-PAC-001)
 La revocación surte efecto en p95 ≤ 2 s: transcurrido ese tiempo, la credencial revocada ya no sirve para consumir datos.
+
+### CA-PAC-016 (RF-PAC-009 b)
+El Administrador obtiene en una sola lectura los partners suspendidos y los que están en ciclo de mora con avisos enviados, con sus días de mora. Un partner que consulte esa cola recibe 403.
+
+### CA-PAC-017 (RNF-PAC-001, § 15 D4)
+Tras suspender a un partner, **ninguna** de sus credenciales sirve ya para consumir datos, **sin esperar** a la ingesta de Pinot.
+
+### CA-PAC-018 (§ 15 D3)
+Solo las facturas `tipo='excedente_api'` con `estado_pago='Pendiente'` y vencidas generan mora aquí. Una factura `Fallida` **no** suspende al partner: es competencia de Suscripciones.
 
 ## 12. Dependencias
 
@@ -586,3 +664,28 @@ La revocación surte efecto en p95 ≤ 2 s: transcurrido ese tiempo, la credenci
 **Esta decisión cierra un hueco real.** El middleware de #08 hoy solo comprueba `Dim_Partner.activo`, así que **nada impedía que un cliente con la suscripción suspendida siguiera consumiendo la API**. Añadir la comprobación de suscripción vigente es una **tarea derivada en el módulo #08**, ya registrada en su spec.
 
 **Sin cambios de esquema.** Es una regla de negocio sobre tablas existentes.
+
+### D3 — «Impagada» es solo `Pendiente` vencida, y la mora se resuelve por `id_cliente` (RF-PAC-007)
+
+**Decidido 2026-08-10, durante `/speckit-analyze`, antes de implementar.**
+
+**Los dos problemas.** La spec decía «facturas impagadas y vencidas» sin fijar qué valor de `estado_pago` es «impagada», y daba por hecho un camino de datos que **no existe**.
+
+1. El vocabulario real de `Fact_Factura.estado_pago` es `{Pendiente, Pagada, Fallida, En disputa}`. **`Fallida` es precisamente el disparador de `subscriptions-and-billing`** (RF-SUSF-007). Si contase también aquí, dos módulos suspenderían por la misma factura con umbrales distintos — el escenario que § 15 D2 existe para impedir.
+2. **`Fact_Factura` no tiene `idpartner`.** Su clave de cliente es `id_cliente`. Una consulta de mora escrita contra `idpartner` no fallaría: **devolvería siempre cero partners en mora**, el job pasaría sus tests con el doble en memoria y nadie se enteraría hasta que un moroso llevase meses consumiendo gratis. Es el mismo fallo que el `idcondado` inexistente que apareció en #08.
+
+**La decisión.** Mora aquí = `tipo='excedente_api'` **y** `estado_pago='Pendiente'` **y** `fecha_vencimiento` pasada. El camino es `Dim_Partner.idcliente → Fact_Factura.id_cliente`. El ciclo lo delimita la **factura vencida impagada más antigua**.
+
+**Consecuencia de implementación.** `FacturaRepository` no expone hoy ninguna lectura de vencidas impagadas — solo `list_by_cliente(limit=20)` y `find_by_suscripcion_periodo`. Hay que añadirla, y el `limit` por defecto de 20 **no sirve** para un job que barre todo el padrón.
+
+### D4 — La suspensión cierra su ventana de exposición igual que la revocación (RF-PAC-004, RNF-PAC-001)
+
+**Decidido 2026-08-10, durante `/speckit-analyze`, antes de implementar.**
+
+**El problema.** El diseño cerraba con la lista de denegación la ventana de ingesta de 5–15 s **solo al revocar**. Pero la suspensión escribe por el mismo Kafka y sufre el mismo retraso, y ahí la fuga es **mayor**: no es una credencial, son **todas** las del partner a la vez, y el partner ya ha demostrado que no paga.
+
+**La decisión.** La cascada de RF-PAC-006 añade a la lista de denegación **cada** credencial que desactiva, con el mismo TTL de 60 s. La reactivación, simétricamente, **retira** de la lista las que restituye — si no, el partner reactivado seguiría rechazado hasta que caducase el TTL.
+
+**Por qué no se dejó como estaba.** Sería incoherente: el módulo entero se justifica por que un acceso indebido se corte *ya*, y aceptar 15 s de fuga en la suspensión mientras se cierran en la revocación es una asimetría sin fundamento. El coste es nulo — la lista ya existe por Decision 2.
+
+**Limitación heredada:** sigue viviendo en `LocMemCache`, por proceso. Es la misma deuda declarada en `plan.md`, no una nueva.

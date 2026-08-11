@@ -293,6 +293,40 @@ export const NAV_LINKS: NavLink[] = [
     group: 'Partners y API',
   },
   {
+    label: 'Registros de API',
+    description: 'Detalle de cada llamada, con filtros y autodiagnóstico',
+    path: '/partners/consola/logs',
+    roles: ['Administrador', 'DesarrolladorAPIs'],
+    icon: 'list',
+    group: 'Partners y API',
+  },
+  {
+    label: 'Reporte de consumo',
+    description: 'Consumo mensual, comparable entre períodos',
+    path: '/partners/consola/reportes',
+    roles: ['Administrador', 'DesarrolladorAPIs'],
+    icon: 'chart-bar',
+    group: 'Partners y API',
+  },
+  {
+    // Solo Administrador: es una cola de decisiones de negocio, no de
+    // plataforma. El DesarrolladorAPIs no la ve en su sidebar.
+    label: 'Excepciones de facturación',
+    description: 'Excedente que no se pudo facturar y espera acción',
+    path: '/partners/consola/excepciones',
+    roles: ['Administrador'],
+    icon: 'report-money',
+    group: 'Partners y API',
+  },
+  {
+    label: 'Mi consumo',
+    description: 'Tu consumo del período y tu excedente estimado',
+    path: '/partners/portal/consumo',
+    roles: ['PartnerIntegracion'],
+    icon: 'chart-bar',
+    group: 'Partners y API',
+  },
+  {
     label: 'Contrato de integración',
     description: 'Versión vigente y versiones soportadas por servicio',
     path: '/partners/portal/contrato',

@@ -31,6 +31,7 @@ from core.repositories.cuentas_clientes.user_repository import UserRepository
 logger = logging.getLogger("tsi.partners.notificacion")
 
 ROL_ADMINISTRADOR = "Administrador"
+ROL_DESARROLLADOR_APIS = "DesarrolladorAPIs"
 
 EVENTO_SOLICITUD_PENDIENTE = "partner_solicitud_produccion_pendiente"
 EVENTO_APROBACION = "partner_promocion_aprobada"
@@ -38,6 +39,9 @@ EVENTO_RECHAZO = "partner_promocion_rechazada"
 EVENTO_CREDENCIAL_EMITIDA = "partner_credencial_emitida"
 EVENTO_AVISO_VENCIMIENTO = "partner_credencial_por_vencer"
 EVENTO_VENCIMIENTO = "partner_credencial_vencida"
+EVENTO_AVISO_CUOTA = "partner_aviso_cuota"
+EVENTO_AVISO_MORA = "partner_aviso_previo_suspension"
+EVENTO_SUSPENSION = "partner_acceso_suspendido"
 
 
 class PartnerNotificacionService:
@@ -122,6 +126,61 @@ class PartnerNotificacionService:
             ),
         )
 
+    def notificar_aviso_mora(
+        self, *, partner: dict[str, Any], etiqueta: str, dias_mora: int, limite_dias: int
+    ) -> int:
+        """RF-PAC-003 — aviso previo a la suspension por mora (#09).
+
+        **No se reutiliza `notificar_cuota` a proposito.** Aquel documenta que
+        nunca menciona interrupcion del servicio, porque superar el cupo NO
+        bloquea (RN-APM-002). Este aviso dice exactamente lo contrario: si no
+        paga, el acceso se corta. Meterlos en el mismo metodo obligaria a que
+        uno de los dos mintiera.
+        """
+        restantes = max(int(limite_dias) - int(dias_mora), 0)
+        return self._enviar_al_partner(
+            partner,
+            evento=EVENTO_AVISO_MORA,
+            subject=(
+                f"Aviso previo de suspensión ({etiqueta}) — Tráfico Seguro Integral"
+            ),
+            body=(
+                f"Su cuenta acumula {dias_mora} días de mora en facturas de "
+                f"excedente de API.\n\n"
+                f"Si la deuda no se regulariza, el acceso de integración se "
+                f"suspenderá al alcanzar {limite_dias} días de mora "
+                f"(quedan {restantes} días).\n\n"
+                "Al suspenderse, todas sus credenciales dejan de servir. La "
+                "reactivación no es automática: la confirma un Administrador "
+                "una vez regularizado el pago.\n\n"
+                "Si esta factura está en disputa abierta, este aviso no aplica: "
+                "las facturas reclamadas no cuentan como mora."
+            ),
+        )
+
+    def notificar_suspension(self, *, partner: dict[str, Any], motivo: str) -> int:
+        """RF-PAC-004 — el corte ya ocurrio; el partner debe saber por que.
+
+        Se envia DESPUES de suspender, no antes: el estado autoritativo es
+        `Dim_Partner.activo`, y el correo es fail-open (si el buzon falla, la
+        suspension sigue siendo valida).
+        """
+        return self._enviar_al_partner(
+            partner,
+            evento=EVENTO_SUSPENSION,
+            subject="Acceso de integración suspendido — Tráfico Seguro Integral",
+            body=(
+                f"Su acceso de integración fue suspendido.\n\n"
+                f"Motivo: {motivo}\n\n"
+                "Todas sus credenciales, de pruebas y de producción, quedaron "
+                "desactivadas. Puede seguir consultando su estado y su historial "
+                "en el portal.\n\n"
+                "La reactivación la confirma un Administrador. Al reactivarse se "
+                "restituyen las credenciales que estaban activas antes de la "
+                "suspensión; las que usted revocó por seguridad no vuelven."
+            ),
+        )
+
     def notificar_vencimiento(
         self, *, partner: dict[str, Any], nombre_credencial: str
     ) -> int:
@@ -137,6 +196,37 @@ class PartnerNotificacionService:
                 "restablecer su acceso al entorno de pruebas."
             ),
         )
+
+    def notificar_cuota(self, *, partner: dict[str, Any], asunto: str, cuerpo: str) -> int:
+        """RF-APM-010 — aviso de cuota al contacto tecnico y al equipo tecnico.
+
+        El cuerpo lo compone el job, porque el umbral y las cifras son suyos.
+        Aqui solo se decide **a quien** llega: al partner y al Desarrollador de
+        APIs, que vigila la plataforma.
+
+        Nunca menciona interrupcion del servicio: superar el cupo NO bloquea
+        (RN-APM-002), y un aviso que sugiera lo contrario haria que el partner
+        cortara su integracion por su cuenta.
+        """
+        enviados = self._enviar_al_partner(
+            partner, evento=EVENTO_AVISO_CUOTA, subject=asunto, body=cuerpo
+        )
+        try:
+            for tecnico in self._listar_por_rol(ROL_DESARROLLADOR_APIS):
+                if self._enviar(
+                    evento=EVENTO_AVISO_CUOTA,
+                    gmail=str(tecnico["gmail"]),
+                    idcliente=int(partner.get("idcliente", 0) or 0),
+                    subject=f"[TSI] {asunto} — {partner.get('nombrepartner', '')}",
+                    body=cuerpo,
+                ):
+                    enviados += 1
+        except Exception:  # noqa: BLE001 — fail-open
+            logger.exception(
+                "partner_notif_cuota_tecnicos_fallida",
+                extra={"idpartner": partner.get("idpartner")},
+            )
+        return enviados
 
     # --- Aviso a los Administradores -----------------------------------------
 
@@ -184,10 +274,12 @@ class PartnerNotificacionService:
         return enviados
 
     def _listar_administradores(self) -> list[dict[str, Any]]:
-        user_ids = self.roles.list_user_ids_for_role(ROL_ADMINISTRADOR)
+        return self._listar_por_rol(ROL_ADMINISTRADOR)
+
+    def _listar_por_rol(self, rol: str) -> list[dict[str, Any]]:
         return [
             user
-            for uid in user_ids
+            for uid in self.roles.list_user_ids_for_role(rol)
             if (user := self.users.find_by_id(uid))
             and user.get("activo", True)
             and user.get("gmail")

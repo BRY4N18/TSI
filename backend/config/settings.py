@@ -50,6 +50,11 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Mide y registra el consumo de la API de partners. Va el ULTIMO a
+    # proposito: envuelve a todos los demas, asi que la latencia que mide es la
+    # que el partner percibe de verdad. El propio middleware se limita a las
+    # rutas `/api/v1/datos/` y nunca altera la respuesta (RN-APM-005).
+    "apps.partners.middleware.registro_consumo.RegistroConsumoMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -275,6 +280,12 @@ REST_FRAMEWORK = {
         "prospecto_registro": "10/min",
         "demo_sesion_ip": "20/min",
         "demo_interaccion_token": "60/min",
+        # Techo de plataforma para la API de datos de partners. El limite real
+        # de cada partner sale de `Dim_Partner.limitellamadasminuto`; este valor
+        # solo existe porque DRF exige un rate declarado por scope.
+        # NO es la aplicacion de la cuota comercial (RN-APM-002): el cupo
+        # mensual nunca bloquea, se factura.
+        "partner_api": "1000/min",
     },
 }
 
@@ -289,4 +300,22 @@ DEMO_SESSION_MINUTES = int(os.environ.get("DEMO_SESSION_MINUTES", "30"))
 DEMO_REEVAL_DAYS = int(os.environ.get("DEMO_REEVAL_DAYS", "7"))
 EVALUACION_REGLAS_DEMO_INTERVAL_SECONDS = int(
     os.environ.get("EVALUACION_REGLAS_DEMO_INTERVAL_SECONDS", "60")
+)
+
+# --- Partners y API: gestion de acceso (CU-O55, #09) ---
+# Configurables sin tocar codigo (RNF-PAC-005). Los valores por defecto vienen
+# de `PortalPartnersAPI.md`: el SRS solo exige "dos momentos anteriores al
+# limite", no fija cuales.
+PARTNERS_MORA_LIMITE_DIAS = int(os.environ.get("PARTNERS_MORA_LIMITE_DIAS", "15"))
+PARTNERS_MORA_AVISOS_DIAS = tuple(
+    int(d)
+    for d in os.environ.get("PARTNERS_MORA_AVISOS_DIAS", "10,5").split(",")
+    if d.strip()
+)
+
+# TTL de la lista de denegacion de credenciales. Debe ser MAYOR que la ventana
+# de ingesta de Pinot (5-15 s): es el puente que cierra la ventana de exposicion
+# entre la revocacion y el momento en que Pinot la refleja (RNF-PAC-001).
+PARTNERS_DENYLIST_TTL_SEGUNDOS = int(
+    os.environ.get("PARTNERS_DENYLIST_TTL_SEGUNDOS", "60")
 )

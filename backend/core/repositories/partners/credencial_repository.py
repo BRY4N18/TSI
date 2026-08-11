@@ -125,3 +125,19 @@ class CredencialRepository:
         fila = {**actual, "activo": False, "fecha_actualizacion": self._now_ms()}
         self.kafka.publish(self.TOPIC, fila)
         return fila
+
+    def activar(self, idcredencial: int) -> dict[str, Any] | None:
+        """Restituye una credencial desactivada por cascada (RN-PAC-011).
+
+        **No existe un `activar` de proposito general.** Quien decide QUE se
+        restituye es `ReactivarPartnerService`, leyendo las filas de cascada de
+        la bitacora: este metodo solo ejecuta. Llamarlo sobre una credencial que
+        el partner revoco por seguridad resucitaria una credencial comprometida,
+        y por eso la lista de que reactivar no se deriva nunca de esta capa.
+        """
+        actual = self.find_by_id(idcredencial)
+        if not actual:
+            return None
+        fila = {**actual, "activo": True, "fecha_actualizacion": self._now_ms()}
+        self.kafka.publish(self.TOPIC, fila)
+        return fila

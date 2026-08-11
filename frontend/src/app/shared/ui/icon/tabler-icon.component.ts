@@ -51,7 +51,11 @@ export type TablerIconName =
   | 'ban'
   | 'bolt'
   | 'key'
-  | 'copy';
+  | 'copy'
+  // --- Monitoreo y facturacion de API (#08) ---
+  | 'chart-bar'
+  | 'report-money'
+  | 'filter';
 
 const ICON_PATHS: Record<TablerIconName, string[]> = {
   dashboard: [
@@ -198,9 +202,23 @@ const ICON_PATHS: Record<TablerIconName, string[]> = {
     'M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z',
     'M4.012 16.737a2 2 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1',
   ],
-};
 
 /** Paths crudos de un ícono — para reutilizar el mismo lenguaje visual fuera de Angular (ej. marcadores de Leaflet). */
+  'chart-bar': [
+    'M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z',
+    'M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z',
+    'M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z',
+    'M4 20h14',
+  ],
+  'report-money': [
+    'M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2',
+    'M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z',
+    'M14 11h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5',
+    'M12 17v1m0 -8v1',
+  ],
+  filter: ['M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227z'],
+};
+
 export function tablerIconPaths(name: TablerIconName): string[] {
   return ICON_PATHS[name] ?? [];
 }

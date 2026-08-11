@@ -62,6 +62,18 @@
 | `suspension_manual` | `-1` | `Administrador` | Sí → `false` |
 | `reactivacion` | `-1` | `Administrador` | Sí → `true` |
 
+**`estado_anterior` / `estado_nuevo` usan el vocabulario del estado de acceso del partner** (§ Estados), nunca el de la credencial ni el del onboarding de #07:
+
+| `tipo_cambio` | `estado_anterior` | `estado_nuevo` |
+|---|---|---|
+| `revocacion_credencial` | `Activo` | `Activo` |
+| `desactivacion_por_cascada` | `Activo` | `Suspendido` |
+| `aviso_previo_suspension` | `Activo` | `Activo` |
+| `suspension_automatica` / `suspension_manual` | `Activo` | `Suspendido` |
+| `reactivacion` | `Suspendido` | `Activo` |
+
+Que revocación y aviso dejen los dos campos **iguales** es deliberado: así la bitácora dice que el estado del partner **no cambió**.
+
 > **`desactivacion_por_cascada` ≠ `revocacion_credencial`.** El primero se revierte al reactivar; el segundo **nunca**. Son tipos distintos precisamente para que la reactivación no pueda confundirlos (§ 15 D1).
 
 **Esta tabla no es solo auditoría: es la fuente operativa de la reactivación.** Es la única razón por la que la restitución selectiva es posible sin columnas nuevas.
@@ -70,8 +82,30 @@
 
 | Tabla | Uso | Campo clave |
 |---|---|---|
-| `Fact_Factura` | Determinar la mora | `tipo='excedente_api'`, `estado_pago`, `fecha_vencimiento` |
+| `Fact_Factura` | Determinar la mora | `tipo='excedente_api'`, `estado_pago='Pendiente'`, `fecha_vencimiento` — **se une por `id_cliente`** |
 | `Fact_Suscripcion` | **No se lee aquí** | La vigencia de suscripción la comprueba #08 (§ 15 D2) |
+
+### Cómo se llega de un partner a su mora (§ 15 D3)
+
+```
+Dim_Partner.idpartner ──► Dim_Partner.idcliente ──► Fact_Factura.id_cliente
+                                                     tipo            = 'excedente_api'
+                                                     estado_pago     = 'Pendiente'
+                                                     fecha_vencimiento < ahora
+```
+
+> **`Fact_Factura` NO tiene `idpartner`.** Escribir la consulta contra esa columna no daría error: **devolvería siempre cero partners en mora**, en silencio. El único puente es `id_cliente`.
+
+**Los cuatro valores de `estado_pago` y qué hace cada uno aquí:**
+
+| Valor | ¿Mora? | Por qué |
+|---|---|---|
+| `Pendiente` vencida | ✅ | La única que cuenta |
+| `Pagada` | No | No hay deuda |
+| `En disputa` | No | RN-PAC-015 |
+| `Fallida` | **No** | Es el disparador de Suscripciones (RF-SUSF-007); contarla aquí sería suspender dos veces por lo mismo |
+
+**El ciclo de mora** lo delimita la factura vencida impagada **más antigua**: sus días son los que se comparan con T-10, T-5 y el límite, y su `id_factura` identifica el ciclo para no duplicar avisos.
 
 ## Estados
 
@@ -118,8 +152,11 @@ SUSPENSIÓN (automática por mora, o manual por el Administrador)
    │        + fila de bitácora `desactivacion_por_cascada` con su idcredencial
    │        (esta lista ES lo que permitirá la reactivación selectiva)
    │
-   ├─ 3. Dim_Partner: activo=false, fecha_suspension, motivo_suspension
-   └─ 4. Bitácora: `suspension_automatica` | `suspension_manual`, idcredencial=-1
+   ├─ 3. Lista de denegación += cada credencial desactivada   ← § 15 D4: la
+   │        (TTL 60 s, la misma de la revocación)                suspensión también
+   │                                                             tiene 5-15 s de fuga
+   ├─ 4. Dim_Partner: activo=false, fecha_suspension, motivo_suspension
+   └─ 5. Bitácora: `suspension_automatica` | `suspension_manual`, idcredencial=-1
 
         Las credenciales ya inactivas (revocadas o expiradas) NO generan fila:
         por eso la reactivación no las encontrará.
@@ -129,6 +166,8 @@ REACTIVACIÓN (solo Administrador — el sistema nunca reactiva solo)
    ├─ 1. ¿El partner está suspendido?    no ──► 409 (sin escribir)
    ├─ 2. Leer las filas `desactivacion_por_cascada` del ÚLTIMO evento de suspensión
    ├─ 3. Restituir activo=true SOLO en esas credenciales
+   │        + RETIRARLAS de la lista de denegación: si no, el partner reactivado
+   │          seguiría rechazado hasta que caducase el TTL (§ 15 D4)
    ├─ 4. Dim_Partner: activo=true, snapshot de suspensión al centinela vacío
    └─ 5. Bitácora: `reactivacion`, idcredencial=-1
 ```
@@ -155,7 +194,7 @@ REACTIVACIÓN (solo Administrador — el sistema nunca reactiva solo)
 | `Dim_Partner_topic` | Suspensión y reactivación | Muy baja |
 | `Fact_HistorialAccesoPartner_topic` | Los seis `tipo_cambio` | Baja; **N filas** en cada cascada |
 
-> **Retraso de ingesta 5–15 s.** Afecta a este módulo de dos formas que el diseño ya resuelve: la **ventana de exposición** tras revocar (lista de denegación, Decision 2) y la **colisión falsa de nombre** al emitir el reemplazo (comprobación en memoria, Decision 4).
+> **Retraso de ingesta 5–15 s.** Afecta a este módulo de **tres** formas que el diseño resuelve: la **ventana de exposición** tras revocar (lista de denegación, Decision 2), **la misma ventana tras suspender** (§ 15 D4 — ahí la fuga es mayor: son todas las credenciales a la vez) y la **colisión falsa de nombre** al emitir el reemplazo (comprobación en memoria, Decision 4).
 
 ## Auditoría
 
@@ -169,6 +208,7 @@ REACTIVACIÓN (solo Administrador — el sistema nunca reactiva solo)
 | `POST /partners/{id}/suspender` | `Dim_Partner`, `Dim_CredencialAPI` (×N), `Fact_HistorialAccesoPartner` (×N+1) |
 | `POST /partners/{id}/reactivar` | `Dim_Partner`, `Dim_CredencialAPI` (×N), `Fact_HistorialAccesoPartner` |
 | `GET /partners/{id}/estado-acceso` | solo lectura |
+| `GET /partners/cola-acceso` | solo lectura: `Dim_Partner`, `Fact_Factura`, `Fact_HistorialAccesoPartner` — todo derivado |
 | *(job)* evaluación de mora | lee `Fact_Factura`; escribe bitácora y, al suspender, lo del flujo de suspensión |
 
 ## Fuera de este modelo

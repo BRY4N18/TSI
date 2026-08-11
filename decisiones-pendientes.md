@@ -11,6 +11,100 @@ Registro de puntos detectados durante auditorías (código vs. SRS vs. catálogo
 
 ## Pendientes
 
+### 26. El contenedor `accidentes-django` corre una imagen anterior al departamento Partners
+
+- **Departamento:** Infraestructura / entorno de desarrollo
+- **Detectado:** 2026-08-10, al verificar el frontend de #08 contra la app real
+- **Qué pasa:** `accidentes-django` responde **404** en `/api/v1/partners`,
+  `/api/v1/logs-api` y todo lo del departamento, mientras `/api/v1/ventas-crm/planes`
+  funciona. `docker inspect` confirma que **no monta el código**: es una imagen
+  construida antes de #07.
+- **Consecuencia:** cualquier verificación manual contra `localhost:4200`
+  prueba una versión vieja del backend. Yo levanté Django desde el working tree
+  en el puerto 8001 y apunté el proxy ahí; funcionó, pero es un rodeo que hay
+  que repetir cada vez.
+- **Salidas posibles:** reconstruir la imagen tras cada cambio de backend, o
+  montar `backend/` como volumen en `docker-compose` para que el contenedor
+  sirva el código vivo. La segunda es la que evita el problema de raíz.
+- **Ojo con el `.env`:** define `PINOT_BROKER_URL=http://pinot-broker:8099`, que
+  solo resuelve **dentro** de la red Docker. Para correr Django fuera hay que
+  exportar `PINOT_BROKER_URL=http://localhost:8099` (y `KAFKA_BOOTSTRAP_SERVERS`).
+
+### 25. ¿Debe el rol `Cliente` ver el reporte mensual de consumo de API?
+
+- **Departamento:** Partners y API (#08, capa frontend)
+- **Detectado:** 2026-08-10, al especificar el frontend de #08
+- **La contradicción:** RF-APM-009 dice que el reporte mensual lo consultan «el **Cliente** y el
+  Administrador». Pero el endpoint `GET /api/v1/reportes-consumo` usa el permiso `EsPartnerOGestor`,
+  que resuelve a `{PartnerIntegracion, DesarrolladorAPIs, Administrador}`: **el rol `Cliente` no
+  entra**. Una de las dos cosas está mal desde que se cerró el backend, y nadie lo notó porque no
+  había frontend que lo intentara.
+- **Por qué no lo resuelvo yo:** las dos salidas son razonables y la elección es de negocio, no
+  técnica.
+  - **Ampliar el permiso** — el Cliente es quien paga la factura de excedente, así que ver el
+    consumo que la origina es defendible.
+  - **Corregir el RF** — el Cliente ya ve su facturación en Suscripciones; el consumo técnico de la
+    API es cosa del partner que integra, que puede no ser la misma persona.
+- **Lo que hice mientras tanto:** el frontend se ciñe a los tres roles que el endpoint ya admite. No
+  amplié el permiso por conveniencia de la UI: relajar un control de acceso para que una pantalla
+  cargue es exactamente cómo se abren huecos que luego nadie recuerda haber abierto.
+- **Impacto si se decide ampliar:** un permiso nuevo, un test de contrato y una línea en
+  `nav-links.ts`. Barato en cualquier momento.
+
+### 23. Planes y accidentes usan dos vocabularios de severidad sin equivalencia definida
+
+- **Departamento:** Partners y API (#08), con impacto en Suscripciones y Emergencias
+- **Detectado:** 2026-08-09, al implementar `ConsumoDatosService` (RF-APM-002)
+- **El problema:** RF-APM-002 exige entregar «solo casos cuya severidad esté en las severidades desbloqueadas del plan». Pero los dos catálogos **no comparten vocabulario** y **no existe tabla ni constante que los relacione**:
+
+  | Origen | Valores |
+  |---|---|
+  | Planes (`catalogo_plan_service.SEVERIDADES`) | `"Baja"`, `"Media"`, `"Alta"` |
+  | Accidentes (`frontend/.../severidad.constants.ts`) | `1` Leve · `2` Moderado · `3` Grave · `4` Fatal |
+  | `Dim_Severidad` | **vacía** (0 filas), no resuelve la duda |
+
+- **Por qué importa:** sin equivalencia, el filtro de alcance no se puede aplicar. Y como RF-APM-003 es **fail-closed**, una equivalencia mal elegida no da un error visible: da **cero resultados**, que el partner interpretará como «no hubo accidentes».
+- **RESUELTO PARCIALMENTE (2026-08-09).** Decisión del responsable: **el catálogo canónico son las severidades de accidente** (1 Leve, 2 Moderado, 3 Grave, 4 Fatal) y deben vivir en `Dim_Severidad`, que es la tabla que existía para eso. Sembrada con `database/seed_severidad.py`.
+- **Defecto de esquema que había que corregir antes de poder sembrarla:** `Dim_Severidad.severidad` —la columna del **nombre**— estaba declarada como **métrica INT**. Pinot descarta en silencio toda fila cuyo valor no sea numérico, así que la siembra «funcionaba» sin escribir nada: ni error ni aviso. Corregido a **dimensión STRING** con `database/migra_dim_severidad.py`. La tabla estaba vacía, así que no hubo pérdida. *(Nota operativa: un `PUT /schemas` rechaza cambios de tipo con «Only allow adding new columns»; hay que borrar y recrear el esquema.)*
+- **DIRECCIÓN DECIDIDA (2026-08-09):** el vocabulario `"Baja"/"Media"/"Alta"` de los planes **queda deprecado**. Todo el sistema debe trabajar contra `Dim_Severidad` — **también la pantalla de planes**, que debe ofrecer y mostrar las severidades reales (Leve/Moderado/Grave/Fatal), no una escala paralela inventada. Tener dos escalas obliga a traducir, y cada traducción es una oportunidad de equivocarse en silencio: aquí el error no se ve, devuelve cero resultados.
+- **Estado:** la traducción `SEVERIDADES_POR_NIVEL` sigue en pie **como puente**, porque hoy los 5 planes sembrados guardan el vocabulario viejo y quitarla rompería el consumo. Desaparece cuando Suscripciones migre.
+- **Trabajo pendiente en Suscripciones** (no es de Partners, por eso no se hizo aquí):
+  1. `catalogo_plan_service.SEVERIDADES` deja de ser `frozenset({"Baja","Media","Alta"})` y pasa a validar contra `Dim_Severidad`.
+  2. `Dim_Plan.severidades_desbloqueadas` y `Fact_Suscripcion.severidades_desbloqueadas` guardan **`idseveridad`**, no nombres. *(Ojo: los 5 planes tienen hoy el centinela `'null'` en `Dim_Plan`; hay que sembrarlos de verdad.)*
+  3. La UI del Director de Estrategia ofrece las severidades del catálogo.
+  4. Al cerrarse los tres puntos, **borrar `SEVERIDADES_POR_NIVEL`** de `consumo_datos_service.py`.
+
+---
+
+### 24. Datos de catálogo hardcodeados por todo el sistema, en vez de leerse de su tabla
+
+- **Departamento:** transversal (los 9)
+- **Detectado:** 2026-08-09, a raíz de la entrada #23
+- **El patrón:** `Dim_Severidad` existía como tabla, estaba vacía, **nadie la leía**, y sus valores vivían duplicados en al menos tres sitios — el contrato OpenAPI (`enum: [1,2,3,4]`), las etiquetas en `frontend/src/app/modules/accidentes/severidad.constants.ts`, y una escala paralela en `catalogo_plan_service`. No es un descuido puntual: es una forma de trabajar que se repitió sin que nadie lo notara.
+- **Por qué importa:** un catálogo duplicado **diverge en silencio**. Nadie se entera hasta que dos partes del sistema discrepan, y para entonces el dato equivocado ya viajó. En este caso concreto la consecuencia habría sido un partner recibiendo **cero accidentes** e interpretándolo como «no hubo ninguno».
+- **Tarea pendiente:** **auditar todo el sistema en busca de datos de catálogo hardcodeados** —constantes de estado, tipos, severidades, roles, niveles— y para cada hallazgo decidir: (a) se lee de su tabla, (b) la tabla sobra y la constante es la fuente, o (c) hay un defecto de esquema que lo impide, como el de `Dim_Severidad.severidad` declarada métrica INT.
+- **Sitios por los que empezar** (detectados de pasada, sin auditar aún):
+  - `frontend/src/app/modules/accidentes/severidad.constants.ts` — etiquetas de severidad.
+  - `apps/suscripciones/services/catalogo_plan_service.SEVERIDADES` — escala paralela.
+  - `apps/partners/services/consumo_datos_service.SEVERIDADES_POR_NIVEL` — el puente de la entrada #23.
+  - Las tablas `Dim_*` con **0 filas**: son candidatas a estar suplantadas por una constante en código. `Dim_EstadoIntegracion` estaba así hasta hoy.
+- **Estado:** abierto. No bloquea nada en curso; se registra porque el patrón ya produjo dos defectos reales (#23 y este) y es razonable esperar más del mismo tipo.
+- **Segundo hallazgo del mismo análisis, ya resuelto en código:** el spec dice leer las severidades de `Dim_Plan.severidades_desbloqueadas`, pero **los 5 planes sembrados tienen el centinela `'null'`** ahí. Leer de esa tabla daría conjunto vacío y, con el fail-closed, **ningún partner podría consumir nada**. El valor real vive en `Fact_Suscripcion.severidades_desbloqueadas` (`["Baja","Media"]`), que `alta_suscripcion_service` copia al contratar. Se lee de la suscripción, con el plan como respaldo — y además es lo semánticamente correcto: es lo que el cliente **contrató**, congelado, igual que el cupo de #07. *(Nota: `json.loads('null')` devuelve `None`, no una lista; iterarlo habría lanzado `TypeError` en producción.)*
+
+---
+
+### 22. `Fact_APIIntegracion.idestadointegracion` es redundante con `entorno`
+
+- **Departamento:** Partners y API (#08 `api-monitoring-and-billing`)
+- **Detectado:** 2026-08-09, al sembrar `Dim_EstadoIntegracion` (T006)
+- **Contexto:** el catálogo debía tener tres estados. Se comprobó que **`Suspendido` es inalcanzable**: un partner suspendido recibe 403 y su llamada no se atiende, así que nunca se escribe una fila con ese estado (mismo motivo por el que un `429` tampoco genera fila, § 15 D2). Quedó **desactivado** (`activo = false`) con la razón en su descripción; el catálogo opera con 2 estados.
+- **Lo que eso deja a la vista:** los dos estados que sí ocurren —`Pruebas activo` y `Producción activa`— **son exactamente la columna `entorno`**, que además es obligatoria en todo filtro (RN-APM-001). El FK `idestadointegracion` no aporta información que la fila no tenga ya.
+- **Por qué NO se quitó:** el FK está definido en **`PortalPartnersAPI.md`**, el documento fuente del modelo de datos del departamento, que además da como ejemplo de valores *«Sandbox» o «Producción»* — o sea que la redundancia viene del diseño original, no de la spec derivada. Quitarlo implicaría 36 referencias en las specs de #08, 4 en el documento fuente, 7 en `esquemas.json`/`tablas.json`, recrear `Fact_APIIntegracion` en Pinot, y dejar `Dim_EstadoIntegracion` **sin ningún consumidor** (tabla y seed muertos). Deja de ser una limpieza técnica y pasa a ser una decisión de diseño del departamento, con impacto potencial en #09.
+- **Decisión tomada (2026-08-09):** **se mantiene el FK.** Al registrar consumo se escribe el estado que corresponde al entorno de la credencial. Cuesta una línea y no bloquea nada.
+- **Estado:** deuda aceptada y documentada. Si algún día se rediseña el modelo del departamento, este FK es candidato a desaparecer junto con `Dim_EstadoIntegracion`.
+
+---
+
 ### 21. Dos archivos del working tree se revirtieron solos a HEAD durante una sesión de trabajo
 
 - **Departamento:** transversal (herramientas / entorno de desarrollo)

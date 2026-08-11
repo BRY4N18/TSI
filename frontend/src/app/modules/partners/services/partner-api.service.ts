@@ -16,7 +16,12 @@ import type {
 } from './models/partner.types';
 
 export interface EnvelopeMeta {
-  pagination: { next_cursor: number | null; limit: number } | null;
+  pagination: {
+    next_cursor: number | null;
+    /** Solo en `/logs-api`: su cursor es compuesto (fecha + id). */
+    next_cursor_fecha?: number | null;
+    limit: number;
+  } | null;
 }
 
 export interface ApiEnvelope<T> {

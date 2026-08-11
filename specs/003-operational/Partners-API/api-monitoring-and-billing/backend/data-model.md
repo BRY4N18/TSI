@@ -54,6 +54,48 @@ Una fila por cada petición, **incluidas las rechazadas**. Alimenta la consola d
 
 La tabla existe en Pinot con **0 filas**: sin este seed, `idestadointegracion` apunta a nada.
 
+**Sembrada 2026-08-09** con `database/seed_estado_integracion.py` (idempotente): los 3 estados en Pinot.
+
+#### ⚠️ Duda de alcanzabilidad sobre el estado 3 `Suspendido`
+
+Detectada al sembrar. Si un partner suspendido recibe **403 y su llamada no se atiende**, no se
+escribe fila en `Fact_APIIntegracion` — por el mismo motivo por el que un `429` tampoco la escribe
+(§ 15 D2). Entonces **ningún registro podría llevar `idestadointegracion = 3`**, y sería una fila de
+catálogo inalcanzable.
+
+Dos lecturas posibles, **a decidir antes de implementar US1**:
+
+1. **Es inalcanzable y sobra.** El catálogo se queda en 2 estados (`Pruebas activo`,
+   `Producción activa`), que es lo único que puede congelarse en una llamada atendida.
+2. **Es alcanzable en un caso concreto** que el spec no explicita — por ejemplo, una llamada
+   atendida cuya suspensión se materializa entre la autenticación y el registro. Si es así, hay que
+   documentar ese camino, porque hoy no está escrito.
+
+Se sembró igualmente: una fila de catálogo de más es inocua, y borrarla luego es trivial. Lo que no
+es inocuo es implementar US1 asumiendo un estado que nunca se escribe.
+
+#### Estados de consumo — evaluados y descartados para esta tabla
+
+Se propuso sembrar aquí una taxonomía de **condición de acceso** (`Activo`, `Cuota excedida 80 %`,
+`Cuota excedida 100 %`, `Rate limited`, `Suspendido por mora`, `Dado de baja`). **No corresponde a
+esta entidad**, por tres reglas ya documentadas:
+
+| Estado propuesto | Por qué no va aquí |
+|---|---|
+| `Cuota excedida (80 % / 100 %)` | RN-APM-003: el agregado **se calcula al consultar, no se acumula al escribir**. Congelarlo por llamada sería incorrecto y costoso. Las alertas existen en RF-APM-010 como *notificación*, no como estado almacenado |
+| `Rate limited` | Un `429` **no genera fila** en `Fact_APIIntegracion` (§ 15 D2): el estado nunca podría escribirse. Queda registrado en `Fact_LogLlamadaAPI` con su código HTTP |
+| `Suspendido por mora` / `Dado de baja` | Este módulo **no revoca ni suspende** (dueño: `partner-access-management`). Además existen **dos moras independientes** —la del excedente de API y la de la suscripción— que la decisión D2 separó deliberadamente; fundirlas en un estado perdería esa distinción |
+
+Cuidado adicional con el rótulo «crítica» para el 100 % del cupo: RN-APM-002 y el SRS son explícitos
+en que **superar la cuota no bloquea nunca**, y el propio spec dice que lo documenta *«precisamente
+para que nadie la corrija asumiendo que debería bloquear»*. Un nombre que sugiera gravedad invita a
+ese error.
+
+**Dónde sí sirve esa taxonomía:** como **estado derivado de presentación** en la consola de consumo
+(CU-O52) — «Activo», «Al 80 % de tu cuota», «Te estamos limitando el ritmo», «Suspendido por
+impago». Se calcula al consultar y se muestra; no se almacena. Debe recogerse en el `spec.md` del
+frontend de este módulo.
+
 ## Entidad que este módulo escribe en otro departamento
 
 ### 4) `Fact_Factura` (dueño = `subscriptions-and-billing`)

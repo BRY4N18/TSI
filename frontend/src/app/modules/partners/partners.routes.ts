@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { administradorGuard } from './guards/administrador.guard';
 import { administradorPromocionGuard } from './guards/administrador-promocion.guard';
 import { gestorPartnersGuard } from './guards/gestor-partners.guard';
 import { partnerIntegracionGuard } from './guards/partner-integracion.guard';
@@ -40,6 +41,44 @@ export const PARTNERS_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/cola-solicitudes/cola-solicitudes.page').then((m) => m.ColaSolicitudesPage),
     data: { resolver: true },
+  },
+  // Las rutas literales van ANTES de `consola/:idpartner`: si se declaran
+  // despues, el converter las captura y «excepciones» acaba resolviéndose
+  // como el detalle de un partner inexistente. Se detectó en la app real.
+  // --- Monitoreo y facturación de API (#08) ---
+  {
+    path: 'consola/logs',
+    canActivate: [gestorPartnersGuard],
+    loadComponent: () =>
+      import('./pages/consola-logs/consola-logs.page').then((m) => m.ConsolaLogsPage),
+  },
+  {
+    path: 'consola/logs/:idlog',
+    canActivate: [gestorPartnersGuard],
+    loadComponent: () =>
+      import('./pages/detalle-log/detalle-log.page').then((m) => m.DetalleLogPage),
+  },
+  {
+    path: 'consola/reportes',
+    canActivate: [gestorPartnersGuard],
+    loadComponent: () =>
+      import('./pages/reporte-consumo/reporte-consumo.page').then((m) => m.ReporteConsumoPage),
+  },
+  {
+    // Solo Administrador: ni siquiera el Desarrollador de APIs. Decidir qué
+    // hacer con un excedente no cobrado es una decisión de negocio.
+    path: 'consola/excepciones',
+    canActivate: [administradorGuard],
+    loadComponent: () =>
+      import('./pages/excepciones-facturacion/excepciones-facturacion.page').then(
+        (m) => m.ExcepcionesFacturacionPage,
+      ),
+  },
+  {
+    path: 'portal/consumo',
+    canActivate: [partnerIntegracionGuard],
+    loadComponent: () =>
+      import('./pages/mi-consumo/mi-consumo.page').then((m) => m.MiConsumoPage),
   },
   {
     path: 'consola/:idpartner',
