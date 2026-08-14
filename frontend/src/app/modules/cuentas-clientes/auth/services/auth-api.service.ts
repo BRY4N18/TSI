@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 
 import {
   AUTH_STORAGE_KEYS,
+  CuentaSesion,
   LoginRequest,
   LoginSuccessResponse,
   Profile,
@@ -58,6 +59,19 @@ export class AuthApiService {
     return localStorage.getItem(AUTH_STORAGE_KEYS.requiresPasswordChange) === 'true';
   }
 
+  /** Cuenta de la que el usuario es administrador local, si la hay. */
+  getCuenta(): CuentaSesion | null {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEYS.cuenta);
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw) as CuentaSesion;
+    } catch {
+      return null;
+    }
+  }
+
   isAuthenticated(): boolean {
     return Boolean(this.getAccessToken() && this.getProfile());
   }
@@ -76,10 +90,12 @@ export class AuthApiService {
     localStorage.removeItem(AUTH_STORAGE_KEYS.refreshToken);
     localStorage.removeItem(AUTH_STORAGE_KEYS.profile);
     localStorage.removeItem(AUTH_STORAGE_KEYS.requiresPasswordChange);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.cuenta);
   }
 
   private persistSession(response: LoginSuccessResponse): void {
-    const { accessToken, refreshToken, profile, requiresPasswordChange } = response.data;
+    const { accessToken, refreshToken, profile, requiresPasswordChange, cuenta } =
+      response.data;
 
     localStorage.setItem(AUTH_STORAGE_KEYS.accessToken, accessToken);
     localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, refreshToken);
@@ -88,5 +104,10 @@ export class AuthApiService {
       AUTH_STORAGE_KEYS.requiresPasswordChange,
       String(requiresPasswordChange),
     );
+    if (cuenta) {
+      localStorage.setItem(AUTH_STORAGE_KEYS.cuenta, JSON.stringify(cuenta));
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEYS.cuenta);
+    }
   }
 }

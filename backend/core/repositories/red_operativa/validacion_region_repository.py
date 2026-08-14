@@ -13,12 +13,12 @@ unidad_emergencia_repository.py):
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
 
 RESULTADO_APROBADA = "Aprobada"
@@ -39,7 +39,7 @@ class ValidacionRegionRepository:
         self.kafka = kafka or KafkaWriter()
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idvalidacionregion": self._next_id(),
             "idregionoperativa": data["idregionoperativa"],

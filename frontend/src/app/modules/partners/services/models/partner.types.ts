@@ -79,6 +79,66 @@ export interface CredencialEmitida extends CredencialItem {
   client_secret: string;
 }
 
+/**
+ * Respuesta de la revocación (RF-PAC-001): la credencial cortada, su reemplazo
+ * —cuyo secreto viaja **una sola vez**— y cuántas credenciales siguieron
+ * operando sin interrupción.
+ */
+export interface RevocacionCredencial {
+  revocada: CredencialItem;
+  reemplazo: CredencialEmitida;
+  credenciales_intactas: number;
+}
+
+/** Fila de la cola de acceso del Administrador (RF-PAC-009 b). */
+export interface PartnerColaAcceso {
+  idpartner: number;
+  nombrepartner: string;
+  activo: boolean;
+  motivo_suspension: string;
+  fecha_suspension: string;
+  dias_mora: number;
+  ultimo_aviso: string;
+}
+
+/** Estado de acceso vigente de un partner (RF-PAC-009 a). */
+export interface EstadoAcceso {
+  idpartner: number;
+  activo: boolean;
+  fecha_suspension: string;
+  motivo_suspension: string;
+  en_mora: boolean;
+  dias_mora: number;
+  avisos_enviados: { tipo_cambio: string; fecha: string }[];
+  credenciales: CredencialItem[];
+  historial: {
+    tipo_cambio: string;
+    ejecutado_por: string;
+    motivo: string;
+    fecha: string;
+  }[];
+}
+
+export interface SuspensionAplicada {
+  idpartner: number;
+  activo: boolean;
+  fecha_suspension: string;
+  motivo_suspension: string;
+  credenciales_desactivadas: number;
+}
+
+/**
+ * RN-PAC-011: al reactivar se restituyen **solo** las credenciales que estaban
+ * activas antes de la suspensión. El desglose no es un detalle técnico: explica
+ * que la que el partner revocó por seguridad sigue inactiva a propósito.
+ */
+export interface ReactivacionAplicada {
+  idpartner: number;
+  activo: boolean;
+  credenciales_restituidas: number;
+  credenciales_no_restituidas: number;
+}
+
 export interface VersionContrato {
   idversion: number;
   id_servicio: number;

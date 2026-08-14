@@ -12,12 +12,12 @@ unidad_emergencia_repository.py):
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
 
 ESTADO_EN_VALIDACION = "En_Validación"
@@ -59,7 +59,7 @@ class RegionOperativaRepository:
         return sorted(rows, key=lambda r: r["idregionoperativa"])[:limit]
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idregionoperativa": self._next_id(),
             "idestado": data["idestado"],
@@ -75,7 +75,7 @@ class RegionOperativaRepository:
         existing = self.find_by_id(idregionoperativa)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.TOPIC, payload)
         return payload

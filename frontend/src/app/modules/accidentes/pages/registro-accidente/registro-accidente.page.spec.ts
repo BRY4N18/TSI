@@ -221,20 +221,107 @@ describe('RegistroAccidentePage', () => {
     );
   });
 
-  it('confirmarFusion_calls_fusionar_with_selected_principal', () => {
-    // Arrange
+  it('registrar_when_validation_error_shows_backend_detail', () => {
+    // Arrange — un 400 de validación explica qué corregir; presentarlo como
+    // problema de conexión manda al operador a buscar donde no está.
+    fillRequiredFields(component);
+    accidenteApi.registrar.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: { error: 'bad_request', detail: 'Fecha futura no permitida', code: '400' },
+          }),
+      ),
+    );
+
+    // Act
+    component.registrar(false);
+
+    // Assert
+    expect(notifications.activeAlert()?.message).toContain('Fecha futura no permitida');
+    expect(notifications.activeAlert()?.message).not.toContain('conexión');
+  });
+
+  it('registrar_when_server_error_keeps_connection_message', () => {
+    // Arrange — un 500 no le dice nada accionable al operador: ahí sí procede
+    // el mensaje genérico.
+    fillRequiredFields(component);
+    accidenteApi.registrar.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 500, error: { detail: 'boom' } })),
+    );
+
+    // Act
+    component.registrar(false);
+
+    // Assert
+    expect(notifications.activeAlert()?.message).toContain('conexión');
+    expect(notifications.activeAlert()?.message).not.toContain('boom');
+  });
+
+  it('confirmarFusion_registra_el_duplicado_y_lo_fusiona_con_el_padre', () => {
+    // Arrange — SRS §3.6.1: "el duplicado queda marcado como fusionado y
+    // apuntando al caso padre… no se borra". El 409 rechaza el alta, así que el
+    // reporte duplicado todavía no existe: hay que registrarlo forzando la
+    // advertencia y fusionar **ese** caso, no el que ya estaba registrado.
+    fillRequiredFields(component);
     component.duplicadoConflicto.set({
       error: 'duplicado_posible',
       detail: 'Posible duplicado detectado',
       code: '409',
-      idaccidente_similar: 'ACC-10',
+      idaccidente_similar: 'ACC-9',
       idaccidente_principal_sugerido: 'ACC-9',
     });
+    accidenteApi.registrar.and.returnValue(
+      of<any>({ data: { idaccidente: 'ACC-NUEVO', estado: 'BORRADOR' }, meta: {} }),
+    );
     accidenteApi.fusionar.and.returnValue(
       of<any>({
         data: {
           message: 'Reportes fusionados exitosamente',
-          idaccidente_duplicado: 'ACC-10',
+          idaccidente_duplicado: 'ACC-NUEVO',
+          idaccidente_principal: 'ACC-9',
+          estado_duplicado: 'FUSIONADO',
+        },
+        meta: {},
+      }),
+    );
+
+    // Act
+    component.confirmarFusion('ACC-9');
+
+    // Assert — se registra forzando advertencias y se fusiona el caso nuevo
+    expect(accidenteApi.registrar).toHaveBeenCalledWith(jasmine.any(Object), true);
+    expect(accidenteApi.fusionar).toHaveBeenCalledWith('ACC-NUEVO', {
+      idaccidenteprincipal: 'ACC-9',
+      confirmacion: true,
+    });
+    expect(notifications.toasts()).toEqual([
+      jasmine.objectContaining({ tone: 'success' }),
+    ]);
+    expect(component.duplicadoConflicto()).toBeNull();
+  });
+
+  it('confirmarFusion_no_marca_como_duplicado_el_caso_ya_registrado', () => {
+    // Arrange — el fallo que tenía: fusionaba `idaccidente_similar` (el caso
+    // real) contra el id sugerido, que es ese mismo caso. El accidente vivo
+    // quedaba apuntándose a sí mismo, desactivado y en FUSIONADO.
+    fillRequiredFields(component);
+    component.duplicadoConflicto.set({
+      error: 'duplicado_posible',
+      detail: 'Posible duplicado detectado',
+      code: '409',
+      idaccidente_similar: 'ACC-9',
+      idaccidente_principal_sugerido: 'ACC-9',
+    });
+    accidenteApi.registrar.and.returnValue(
+      of<any>({ data: { idaccidente: 'ACC-NUEVO', estado: 'BORRADOR' }, meta: {} }),
+    );
+    accidenteApi.fusionar.and.returnValue(
+      of<any>({
+        data: {
+          message: 'Reportes fusionados exitosamente',
+          idaccidente_duplicado: 'ACC-NUEVO',
           idaccidente_principal: 'ACC-9',
           estado_duplicado: 'FUSIONADO',
         },
@@ -246,14 +333,7 @@ describe('RegistroAccidentePage', () => {
     component.confirmarFusion('ACC-9');
 
     // Assert
-    expect(accidenteApi.fusionar).toHaveBeenCalledWith('ACC-10', {
-      idaccidenteprincipal: 'ACC-9',
-      confirmacion: true,
-    });
-    expect(notifications.toasts()).toEqual([
-      jasmine.objectContaining({ message: 'Reportes fusionados exitosamente', tone: 'success' }),
-    ]);
-    expect(component.duplicadoConflicto()).toBeNull();
+    expect(accidenteApi.fusionar).not.toHaveBeenCalledWith('ACC-9', jasmine.anything());
   });
 
   it('confirmarBorrador_when_no_borrador_pending_does_nothing', () => {

@@ -39,7 +39,14 @@ export interface EstadoDespachoData {
   tiempo_transcurrido_seg: number;
   intentos: IntentoDespacho[];
   unidades_activas: IntentoDespacho[];
+  /** Avisos del caso en curso (señal GPS perdida, sin unidades disponibles). */
+  alertas?: AlertaCaso[];
   mensaje?: string;
+}
+
+export interface AlertaCaso {
+  nota: string;
+  fechahora: number;
 }
 
 export interface UnidadCandidata {

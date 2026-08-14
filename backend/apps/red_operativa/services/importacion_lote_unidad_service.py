@@ -102,8 +102,9 @@ class ImportacionLoteUnidadService:
                 placa = payload["placa"]
                 if placa in placas_en_archivo:
                     raise ValueError(f"placa {placa} duplicada dentro del archivo")
-                if self.registro_service.unidad_repo.find_by_placa_activa(placa):
-                    raise ValueError(f"Ya existe una unidad activa con placa {placa}")
+                # Mismo criterio que el alta individual, incluida la excepción para el
+                # rastro de un lote fallido y compensado.
+                self.registro_service._validar_placa_libre(placa)
                 if not self.registro_service.unidad_repo.condado_exists(payload["idcondado"]):
                     raise LookupError(f"idcondado {payload['idcondado']} no existe")
 

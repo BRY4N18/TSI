@@ -26,6 +26,28 @@ class TestBajaUnidadService:
         # Assert
         assert result["activo"] is False
 
+    def test_baja_de_unidad_ajena_con_despacho_responde_por_pertenencia(
+        self, mock_pinot, mock_kafka, mock_despacho_activo, mock_unidad_emergencia
+    ):
+        """La pertenencia se comprueba antes que el despacho.
+
+        Al revés, a un proveedor que intentaba dar de baja una unidad **de otra
+        organización** que además tenía un despacho en curso se le respondía "la
+        unidad tiene un despacho activo": se le negaba la operación, pero de paso se
+        le revelaba el estado operativo de flota ajena.
+        """
+        # Arrange — la unidad pertenece a otro cliente
+        mock_unidad_emergencia["idcliente"] = 999999
+        service = BajaUnidadService()
+        # Act & Assert
+        with pytest.raises(ProveedorAccessError, match="no pertenece"):
+            service.dar_de_baja(
+                mock_unidad_emergencia["idunidademergencia"],
+                motivo="intento ajeno",
+                idusuario=3,
+                **PROVEEDOR_KW,
+            )
+
     def test_dar_de_baja_when_despacho_activo_sin_forzar_raises(
         self, mock_pinot, mock_kafka, mock_despacho_activo
     ):

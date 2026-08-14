@@ -13,8 +13,23 @@ describe('PlanFormPage', () => {
   let planApi: jasmine.SpyObj<PlanApiService>;
 
   beforeEach(async () => {
-    planApi = jasmine.createSpyObj('PlanApiService', ['crear', 'actualizar', 'listar']);
+    planApi = jasmine.createSpyObj('PlanApiService', [
+      'crear',
+      'actualizar',
+      'listar',
+      'listarSeveridades',
+    ]);
     planApi.crear.and.returnValue(of({ data: { idplan: 9, nombre: 'Nuevo' } }));
+    // El selector de severidades se alimenta de `Dim_Severidad`, no de una lista
+    // escrita en duro en el componente.
+    planApi.listarSeveridades.and.returnValue(
+      of([
+        { idseveridad: 1, severidad: 'Leve' },
+        { idseveridad: 2, severidad: 'Moderado' },
+        { idseveridad: 3, severidad: 'Grave' },
+        { idseveridad: 4, severidad: 'Fatal' },
+      ]),
+    );
 
     await TestBed.configureTestingModule({
       imports: [PlanFormPage, ReactiveFormsModule],
@@ -45,9 +60,6 @@ describe('PlanFormPage', () => {
       precio_excedente_llamada: 0.05,
       nivel: 'Básico',
       periodicidad: 'Mensual',
-      severidad_baja: true,
-      severidad_media: false,
-      severidad_alta: false,
       carga_lote_habilitada: false,
       unidades_max: 5,
       usuarios_max: 3,
@@ -56,6 +68,16 @@ describe('PlanFormPage', () => {
     });
     page.guardar();
     expect(planApi.crear).toHaveBeenCalled();
+  });
+
+  it('carga las severidades del catálogo y envía sus identificadores', () => {
+    expect(page.severidadesCatalogo().length).toBe(4);
+    // Por defecto queda marcada la más leve.
+    expect(page.severidadesSeleccionadas()).toEqual([1]);
+    page.alternarSeveridad(3);
+    expect(page.severidadesSeleccionadas()).toEqual([1, 3]);
+    page.alternarSeveridad(1);
+    expect(page.severidadesSeleccionadas()).toEqual([3]);
   });
 
   it('places primary save CTA in the page header', () => {

@@ -30,9 +30,9 @@ Agente abre Cola de soporte, filtra por prioridad/estado, selecciona ticket, res
 
 **Independent Test**: `/soporte-cliente/cola` — lista+detalle visibles ≥1024px; filtros recargan lista; empty state tipado si cero resultados.
 
-### US-FE-2 — Mis tickets (Cliente) (P1)
+### US-FE-2 — Mis tickets (Cliente o Partner de integración) (P1)
 
-Cliente registra ticket, ve historial filtrado por rol, confirma cierre o reabre; nunca ve notas internas.
+Cliente registra ticket, ve historial filtrado por rol, confirma cierre o reabre; nunca ve notas internas. El **Partner de integración** usa la misma pantalla con el mismo alcance: el SRS le reconoce abrir una disputa sobre su factura, y su vista se acota a sus propios tickets igual que la del Cliente.
 
 **Independent Test**: Rol Cliente en `/soporte-cliente/mis-tickets` — composer sin toggle nota interna; historial sin entradas `es_nota_interna=true`.
 
@@ -63,6 +63,13 @@ Administrador configura reglas versionadas; supervisor consulta métricas RF-TIC
 - **FR-UI-011**: Cliente en detalle/mis-tickets: historial filtrado (defensa UI; autoridad API) — RN-TIC-002.
 - **FR-UI-012**: Mis tickets: formulario registro CU-O83 con select opcional `idservicio` (catálogo servicios) — RF-TIC-001 / T098 backend.
 - **FR-UI-013**: Mis tickets: flujo confirmar cierre y reabrir (CU-O88) con CTAs explícitos según estado Resuelto/Cerrado.
+- **FR-UI-018**: Mis tickets: select opcional **`idfactura`** (STRING — `Fact_Factura.id_factura` es un UUID) con las facturas del cliente que aún tienen cobro pendiente, y texto que declare el efecto: elegir factura **detiene el cobro automático** de ese importe hasta que el ticket se resuelva (RF-O83.2 x RN-TIC-009). El backend ya aceptaba `idfactura` y la UI no lo ofrecía: la disputa era inalcanzable desde el portal.
+- **FR-UI-019**: Historial de facturas: acción **«Disputar este cargo»** en el detalle de la factura —que es donde el cliente mira el importe— con deep-link a `mis-tickets?idfactura=<id>`, que llega preseleccionado. Se ofrece solo con cobro pendiente; si la factura ya está en disputa se explica que el cobro está detenido, en vez de ofrecer una segunda que el backend rechazaría con 422 (RN-TIC-008).
+- **FR-UI-020**: Los mensajes de error del registro muestran el `detail` del backend cuando existe. Un 422 de "esa factura ya tiene una disputa abierta" convertido en "Error al registrar el ticket" hace reintentar a ciegas.
+- **FR-UI-021**: El estado de pago **`En disputa`** se representa con badge informativo, no de error: el cobro está detenido a propósito.
+- **FR-UI-022**: El historial del ticket se presenta con **frases legibles**, no con el `tipo_accion` crudo («escalado_automatico_sla»). Quien lo lee está reconstruyendo qué pasó con el caso de un cliente, no depurando la base.
+- **FR-UI-023**: Las entradas del historial **sin autor humano** se marcan como **«Sistema»** (R-03). Un guion se lee como dato que falta, no como acción automática, y sin esa marca no se distingue una decisión humana de una del vigilante de SLA.
+- **FR-UI-024**: Un ticket con `sla_status = 'sin compromiso'` se **destaca** en la cola y explica el motivo en el detalle. Sin esa señal parece un ticket cronometrado y nadie repara en que ningún plazo lo vigila (RN-TIC-010).
 - **FR-UI-014**: Configuración SLA: tabla/formulario alta y modificación con feedback éxito/error — CU-O97.
 - **FR-UI-015**: Dashboard soporte: tarjetas/tablas métricas RF-TIC-007 (estado, prioridad, SLA en riesgo/incumplido, tiempos, reapertura) — CA-TIC-016.
 - **FR-UI-016**: Guards por rol en rutas lazy (`cliente-soporte`, `agente-soporte`, `administrador-sla`) — reutiliza RBAC backend.

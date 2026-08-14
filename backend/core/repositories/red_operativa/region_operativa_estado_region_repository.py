@@ -6,12 +6,12 @@ No es historial de ciclo de vida (eso vive en Dim_RegionOperativa.estadoregion).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
 
 
@@ -48,7 +48,7 @@ class RegionOperativaEstadoRegionRepository:
         if existing:
             return existing[0]
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idregionoperativaestadoregion": self._next_id(),
             "idregionoperativa": idregionoperativa,

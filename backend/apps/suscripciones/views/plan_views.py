@@ -28,6 +28,19 @@ def _parse_bool(raw: str | None) -> bool | None:
     raise ValueError("invalid boolean")
 
 
+class SeveridadCatalogoView(APIView):
+    """Catálogo de severidades para el formulario de plan (`Dim_Severidad`).
+
+    El formulario traía las opciones escritas en duro. Leerlas de la tabla es lo
+    que permite añadir o retirar una severidad sin tocar el sistema (SRS §6).
+    """
+
+    permission_classes = [IsCatalogoPlanesReader]
+
+    def get(self, request):
+        return success_response({"items": CatalogoPlanService().listar_severidades()})
+
+
 class PlanListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == "POST":

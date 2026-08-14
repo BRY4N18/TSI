@@ -53,16 +53,20 @@ class SuscripcionRepository:
         return rows[0] if rows else None
 
     def find_activa_by_cliente(self, idcliente: int) -> dict[str, Any] | None:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Suscripcion", {}) or [])
-        candidates = [
-            r
-            for r in rows
-            if r.get("idcliente") == idcliente and r.get("activo") is True
-        ]
-        if not candidates:
-            return None
-        candidates.sort(key=lambda r: r.get("fecha_inicio") or 0, reverse=True)
-        return candidates[0]
+        # El filtro va en SQL y el LIMIT es explícito. Sin `LIMIT`, Pinot recorta a 10
+        # filas de la tabla entera antes de filtrar: en cuanto haya suscripciones de
+        # once clientes, a algunos les responde "Sin suscripción activa" y se quedan
+        # sin plan, sin factura y sin acceso, sin ningún error de por medio.
+        #
+        # Devuelve también las Suspendidas: `activo` sigue en true y hay flujos que las
+        # necesitan (regularizar la mora, mostrar el estado). Quien exija que esté
+        # Activa debe comprobar `estado` — lo hace `CambioPlanService.solicitar()`.
+        rows = self.pinot.query(
+            "SELECT * FROM Fact_Suscripcion WHERE idcliente = %(idcliente)s "
+            "AND activo = true ORDER BY fecha_inicio DESC LIMIT 100",
+            {"idcliente": idcliente},
+        )
+        return rows[0] if rows else None
 
     def list_elegibles_facturacion(self) -> list[dict[str, Any]]:
         rows = list(self.pinot.query("SELECT * FROM Fact_Suscripcion", {}) or [])

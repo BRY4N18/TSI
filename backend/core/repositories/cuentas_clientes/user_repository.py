@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import SIN_FECHA, ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 
@@ -50,7 +50,7 @@ class UserRepository:
         return self.pinot.query(sql, params)
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         user_id = self._next_id()
         payload = {
             "idusuario": user_id,
@@ -60,7 +60,12 @@ class UserRepository:
             "identificacion": data.get("identificacion", ""),
             "genero": data.get("genero", ""),
             "telefono": data.get("telefono", ""),
-            "fechanacimiento": data.get("fechanacimiento", ""),
+            # `fechanacimiento` es LONG epoch-ms en el esquema. El valor por
+            # defecto era `""`, y una cadena en una columna LONG hace que Pinot
+            # **descarte la fila entera en silencio**: el alta respondía 201 y el
+            # usuario no existía. Se publica el centinela de "sin fecha" que ya
+            # llevan las filas sembradas.
+            "fechanacimiento": data.get("fechanacimiento") or SIN_FECHA,
             "activo": data.get("activo", True),
             "fecha_actualizacion": now,
         }
@@ -71,7 +76,7 @@ class UserRepository:
         existing = self.find_by_id(user_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.TOPIC, payload)
         return payload

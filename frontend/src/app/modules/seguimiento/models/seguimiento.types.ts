@@ -49,6 +49,16 @@ export interface LlegadaRegistradaData {
   estado_caso: string;
 }
 
+/** Respuesta de «finalizar mi parte» (SRS §3.6.4). */
+export interface FinalizarAtencionData {
+  iddespacho: number;
+  idaccidente: string;
+  fechahoraretiro: number;
+  /** Cuántas unidades siguen sin retirarse del caso. */
+  unidades_sin_retirar: number;
+  caso_listo_para_cierre: boolean;
+}
+
 export interface MarcadorAccidente {
   idaccidente: string;
   idseveridad: number;

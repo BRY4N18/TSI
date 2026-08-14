@@ -40,15 +40,20 @@ class TransferenciaPropiedadService:
         self.notificacion = notificacion or CuentaNotificacionService()
         self.audit = audit or AuditService()
 
-    def _cliente_role_users(self) -> list[dict]:
-        users = self.user_repo.list_users(limit=100)
-        elegibles = []
-        for user in users:
-            if not user.get("activo", False):
-                continue
-            if "Cliente" in self.role_repo.get_user_roles(user["idusuario"]):
-                elegibles.append(user)
-        return elegibles
+    def _cliente_role_users(self, cliente_id: int) -> list[dict]:
+        """Candidatos a responsable: miembros **de esta organización**.
+
+        Antes se listaba a todo usuario activo con rol Cliente del sistema
+        entero, sin filtrar por organización. Con eso, el responsable de una
+        empresa podía transferir el control de su cuenta a una persona de otra
+        empresa — justo lo contrario de lo que pide el SRS §3.2.3, que exige
+        designar a alguien «de su misma organización».
+        """
+        return [
+            user
+            for user in self.cuenta_usuario_repo.list_miembros(cliente_id)
+            if "Cliente" in self.role_repo.get_user_roles(user["idusuario"])
+        ]
 
     def list_usuarios_elegibles(
         self, *, user_id: int, roles: list[str], cliente_id: int
@@ -57,7 +62,7 @@ class TransferenciaPropiedadService:
         self.access.require_admin_local(user_id=user_id, cliente_id=cliente_id)
         cliente = self.cliente_repo.find_by_id(cliente_id)
         admin_local_id = cliente.get("admin_local_id") if cliente else None
-        usuarios = self._cliente_role_users()
+        usuarios = self._cliente_role_users(cliente_id)
         return [
             {
                 "idusuario": u["idusuario"],
@@ -87,7 +92,7 @@ class TransferenciaPropiedadService:
         if nuevo_responsable_id == anterior_admin_id:
             raise TransferenciaPropiedadError("El responsable ya es admin local")
 
-        if not self._is_eligible_transfer_target(nuevo_responsable_id):
+        if not self._is_eligible_transfer_target(nuevo_responsable_id, cliente_id):
             raise TransferenciaPropiedadError("Usuario no pertenece a la cuenta")
 
         nuevo_user = self.user_repo.find_by_id(nuevo_responsable_id)
@@ -123,8 +128,12 @@ class TransferenciaPropiedadService:
             "admin_local_anterior_id": anterior_admin_id,
         }
 
-    def _is_eligible_transfer_target(self, user_id: int) -> bool:
+    def _is_eligible_transfer_target(self, user_id: int, cliente_id: int) -> bool:
         user = self.user_repo.find_by_id(user_id)
         if not user or not user.get("activo", False):
             return False
-        return "Cliente" in self.role_repo.get_user_roles(user_id)
+        if "Cliente" not in self.role_repo.get_user_roles(user_id):
+            return False
+        # La comprobación que faltaba: el mensaje de error decía «no pertenece a
+        # la cuenta» y la pertenencia nunca se verificaba.
+        return self.cuenta_usuario_repo.es_miembro(user_id, cliente_id)

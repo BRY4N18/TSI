@@ -6,6 +6,7 @@ from typing import Any
 
 from apps.despacho.services.consulta_candidatas_service import ConsultaCandidatasService
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
+from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.notificacion_despacho_repository import (
     ESTADO_CONFIRMADA,
     ESTADO_NOTIFICADA,
@@ -28,11 +29,13 @@ class MiDespachoService:
         unidad_repo: UnidadEmergenciaRepository | None = None,
         accidente_repo: AccidenteRepository | None = None,
         candidatas: ConsultaCandidatasService | None = None,
+        despacho_repo: DespachoRepository | None = None,
     ):
         self.notificaciones = notificacion_repo or NotificacionDespachoRepository()
         self.unidades = unidad_repo or UnidadEmergenciaRepository()
         self.accidentes = accidente_repo or AccidenteRepository()
         self.candidatas = candidatas or ConsultaCandidatasService()
+        self.despachos = despacho_repo or DespachoRepository()
 
     def listar_pendientes(self, *, idusuario: int) -> list[dict[str, Any]]:
         unidad = self.unidades.find_by_usuario(idusuario)
@@ -44,10 +47,24 @@ class MiDespachoService:
             estado = notif.get("estadonotificaciondespacho")
             if estado not in PENDIENTES:
                 continue
+            # El vencimiento cierra el despacho pero no toca la notificación,
+            # que se queda "Notificada" para siempre. Sin esta comprobación la
+            # unidad sigue viendo despachos ya vencidos como trabajo pendiente
+            # —y al responderlos recibe un error—, justo en la pantalla donde
+            # tiene que saber de un vistazo a qué caso va.
+            if not self._tiene_despacho_activo(notif):
+                continue
             item = self._map_pendiente(notif, unidad)
             if item:
                 pendientes.append(item)
         return pendientes
+
+    def _tiene_despacho_activo(self, notif: dict[str, Any]) -> bool:
+        idnotif = notif.get("idnotificaciondespacho")
+        return any(
+            d.get("idnotificaciondespacho") == idnotif
+            for d in self.despachos.list_by_accidente(notif["idaccidente"], activo=True)
+        )
 
     def obtener_detalle(
         self, *, idnotificaciondespacho: int, idunidademergencia: int

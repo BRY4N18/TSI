@@ -10,6 +10,7 @@ import type {
   Entorno,
   PartnerDetalle,
 } from '../../services/models/partner.types';
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { MiIntegracionPage } from './mi-integracion.page';
 
 function credencial(over: Partial<CredencialItem> = {}): CredencialItem {
@@ -66,6 +67,8 @@ describe('MiIntegracionPage', () => {
       'miPartner',
       'emitirCredencial',
       'solicitarProduccion',
+      'revocarCredencial',
+      'estadoAcceso',
     ]);
     api.miPartner.and.returnValue(of(sobre(detalle())) as never);
   });
@@ -342,6 +345,103 @@ describe('MiIntegracionPage', () => {
       const [, cuerpo] = api.emitirCredencial.calls.mostRecent().args;
       expect(cuerpo.nombre_credencial).toBe('vieja');
       expect(cuerpo.entorno).toBe('Sandbox');
+    });
+  });
+
+  describe('partner suspendido (RN-PAC-016)', () => {
+    it('explica por qué se le cortó el acceso, no solo que está suspendido', () => {
+      // Arrange — el partner suspendido conserva la lectura y esta es la
+      // pantalla donde entiende el motivo y qué hacer.
+      api.miPartner.and.returnValue(of(sobre(detalle({ estado: 'Suspendido' }))) as never);
+      api.estadoAcceso.and.returnValue(
+        of(
+          sobre({
+            idpartner: 1,
+            activo: false,
+            fecha_suspension: '2026-08-01T09:00:00+00:00',
+            motivo_suspension: 'Mora de 18 días en excedente de API',
+            en_mora: true,
+            dias_mora: 18,
+            avisos_enviados: [],
+            credenciales: [],
+            historial: [],
+          }),
+        ) as never,
+      );
+
+      // Act
+      montar();
+
+      // Assert
+      const panel = html().querySelector('[data-testid="panel-suspension"]');
+      expect(panel).toBeTruthy();
+      expect(panel!.textContent).toContain('Mora de 18 días en excedente de API');
+      expect(html().querySelector('[data-testid="dias-mora"]')?.textContent).toContain('18');
+    });
+
+    it('no pide el detalle de acceso cuando el partner no está suspendido', () => {
+      // Act
+      montar();
+
+      // Assert
+      expect(api.estadoAcceso).not.toHaveBeenCalled();
+      expect(html().querySelector('[data-testid="panel-suspension"]')).toBeNull();
+    });
+  });
+
+  describe('revocación de autoservicio (SRS §3.4.3)', () => {
+    it('ofrece revocar cada credencial vigente', () => {
+      // Arrange — el endpoint existía y ninguna pantalla lo llamaba: el partner
+      // no podía cortar una credencial comprometida.
+      api.miPartner.and.returnValue(
+        of(sobre(detalle({ credenciales: [credencial({ idcredencial: 7 })] }))) as never,
+      );
+
+      // Act
+      montar();
+
+      // Assert
+      expect(html().querySelector('[data-testid="btn-revocar-7"]')).toBeTruthy();
+    });
+
+    it('no ofrece revocar una credencial ya vencida (se regenera, no se revoca)', () => {
+      // Arrange
+      api.miPartner.and.returnValue(
+        of(
+          sobre(
+            detalle({
+              credenciales: [credencial({ idcredencial: 8, fecha_expiracion: 1000 })],
+            }),
+          ),
+        ) as never,
+      );
+
+      // Act
+      montar();
+
+      // Assert
+      expect(html().querySelector('[data-testid="btn-revocar-8"]')).toBeNull();
+      expect(html().querySelector('[data-testid="btn-regenerar-8"]')).toBeTruthy();
+    });
+
+    it('avisa en 2 pasos y explica que las demás credenciales siguen operando', async () => {
+      // Arrange — montar primero: `TestBed.inject` antes de configurar el
+      // módulo lo instancia y rompe el `configureTestingModule` de `montar()`.
+      montar();
+      const dialog = TestBed.inject(ConfirmDialogService);
+      spyOn(dialog, 'confirm').and.resolveTo(false);
+
+      // Act
+      await fixture.componentInstance.revocar(
+        credencial({ idcredencial: 7, nombre_credencial: 'tablero-interno' }),
+      );
+
+      // Assert — cancelar no llama al backend
+      const peticion = (dialog.confirm as jasmine.Spy).calls.mostRecent().args[0];
+      expect(peticion.tone).toBe('danger');
+      expect(peticion.message).toContain('tablero-interno');
+      expect(peticion.message).toContain('reemplazo');
+      expect(api.revocarCredencial).not.toHaveBeenCalled();
     });
   });
 

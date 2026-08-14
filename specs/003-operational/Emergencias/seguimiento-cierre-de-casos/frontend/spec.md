@@ -62,6 +62,13 @@ Operador filtra historial; Cliente lista expedientes jurisdicción y exporta PDF
 - **FR-UI-015**: Cliente: export PDF expediente — RF-SEG-006 §4.
 - **FR-UI-016**: Guards: operador (`mapa`, `historial`), unidad (`mi-seguimiento`), cliente (`expedientes`); Cliente **403** en mapa — CA-SEG-010.
 - **FR-UI-017**: Alertas GPS perdido (O69) visibles como notas tipo alerta en detalle caso — RF-SEG-008 (lectura).
+- **FR-UI-018**: **Acciones de cierre en el monitoreo del caso** (`/despacho/monitoreo/:idaccidente`): «Cerrar caso» con resultado de la atención y observaciones, «Cancelar caso (falsa alarma)» y «Forzar retiro» **por unidad activa** — RF-SEG-003/010/011.
+  *(Añadido el 2026-08-12. Antes no existía **ninguna** acción de cierre en la aplicación: los tres métodos estaban en el cliente de API sin un solo llamador, así que un caso no podía cerrarse desde la interfaz. Las pruebas del cliente HTTP pasaban en verde y ocultaban el hueco.)*
+- **FR-UI-019**: El cierre **muestra el motivo del backend** cuando se rechaza (p. ej. cuántas unidades siguen sin retirarse), no un error genérico — RF-SEG-003.
+- **FR-UI-020**: «Forzar retiro» solo se ofrece para despachos en curso (`Confirmado`, `En_transito`, `En_sitio`) y **avisa en la confirmación de que quedará registrado como retiro forzado, no como finalización normal** — RF-SEG-011, design-system §Alert (confirmación en 2 pasos, tono destructivo).
+- **FR-UI-022**: **Unidad — «Escalar severidad» en `/seguimiento/mi-seguimiento`**, disponible tras registrar la llegada — RF-SEG-009 / SRS §3.6.4.
+  *(Corregido el 2026-08-13: el panel vivía en el detalle del accidente, pantalla de Operador/Técnico/Administrador, mientras el endpoint exige el rol **Unidad**; ahí respondía siempre 403 y la unidad no tenía dónde hacerlo. El detalle del accidente conserva una nota explicando que la severidad en sitio la actualiza la unidad.)*
+- **FR-UI-021**: **Unidad — «Finalizar mi atención»** en `/seguimiento/mi-seguimiento`, disponible tras registrar la llegada; confirma en 2 pasos e informa de cuántas unidades siguen en el caso — RF-SEG-012.
 
 ## Out of Scope
 

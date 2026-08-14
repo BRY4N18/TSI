@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
+import { esAccionDelSistema, etiquetaAccion } from '../../historial-ui';
 import { TicketApiService } from '../../services/ticket-api.service';
 import {
   EstadoTicket,
@@ -271,4 +272,14 @@ export class ColaAgentePage {
         return 'tsi-badge-neutral';
     }
   }
+  /** Frase legible en vez del identificador interno de la acción. */
+  etiqueta(tipoAccion: string): string {
+    return etiquetaAccion(tipoAccion);
+  }
+
+  /** R-03: una acción automática debe distinguirse de una humana al leerla. */
+  esDelSistema(h: HistorialTicketItem): boolean {
+    return esAccionDelSistema(h);
+  }
+
 }

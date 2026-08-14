@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 import bcrypt
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 # Valores canónicos de `Dim_Credencial.estadocredencial`. Se centralizan aquí
@@ -63,7 +63,7 @@ class CredentialRepository:
         ).decode("utf-8")
 
     def create_temporary(self, user_id: int, temp_password: str) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         cred_id = self._next_id()
         payload = {
             "idcredencial": cred_id,
@@ -76,7 +76,7 @@ class CredentialRepository:
         return payload
 
     def create(self, user_id: int, plain_password: str) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         cred_id = self._next_id()
         payload = {
             "idcredencial": cred_id,
@@ -92,7 +92,7 @@ class CredentialRepository:
         existing = self.find_by_user_id(user_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             **existing,
             "contrasena": self.hash_password(temporary_password),
@@ -106,7 +106,7 @@ class CredentialRepository:
         existing = self.find_by_user_id(user_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             **existing,
             "contrasena": self.hash_password(new_password),

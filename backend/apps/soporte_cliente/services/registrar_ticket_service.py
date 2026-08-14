@@ -5,11 +5,13 @@ from __future__ import annotations
 from apps.soporte_cliente.domain_constants import (
     ESTADO_ABIERTO,
     ESTADO_PENDIENTE_DE_CLASIFICACION,
+    SLA_SIN_COMPROMISO,
 )
 from apps.soporte_cliente.services.asignacion_sla_service import AsignacionSLAService
 from apps.soporte_cliente.services.clasificacion_automatica_service import (
     ClasificacionAutomaticaService,
 )
+from apps.soporte_cliente.services.disputa_factura_service import DisputaFacturaService
 from core.repositories.soporte.archivo_adjunto_reclamo_repository import (
     ArchivoAdjuntoReclamoRepository,
 )
@@ -32,6 +34,7 @@ class RegistrarTicketService:
         clasificacion_service: ClasificacionAutomaticaService | None = None,
         asignacion_sla_service: AsignacionSLAService | None = None,
         blob_storage: BlobStorageService | None = None,
+        disputa_service: DisputaFacturaService | None = None,
     ):
         self.reclamo_repo = reclamo_repo or ReclamoRepository()
         self.historial_repo = historial_repo or HistorialTicketRepository()
@@ -39,6 +42,7 @@ class RegistrarTicketService:
         self.clasificacion_service = clasificacion_service or ClasificacionAutomaticaService()
         self.asignacion_sla_service = asignacion_sla_service or AsignacionSLAService()
         self.blob_storage = blob_storage or BlobStorageService()
+        self.disputa_service = disputa_service or DisputaFacturaService()
 
     def _subir_adjuntos(self, id_reclamo: int, archivos: list[tuple[bytes, str]]) -> None:
         for content, content_type in archivos:
@@ -67,7 +71,14 @@ class RegistrarTicketService:
         if idfactura is not None:
             disputa_abierta = self.reclamo_repo.find_disputa_abierta_por_factura(str(idfactura))
             if disputa_abierta is not None:
-                raise ValueError("La factura ya tiene una disputa abierta")
+                # El SRS pide nombrar el ticket existente "para que continue la
+                # conversacion ahi": sin el numero, el cliente sabe que no puede
+                # abrir otra pero no adonde ir, y el mensaje es un callejon sin
+                # salida.
+                raise ValueError(
+                    "La factura ya tiene una disputa abierta en el ticket "
+                    f"#{disputa_abierta['id_reclamo']}. Continua la conversacion ahi."
+                )
 
         clasificacion = self.clasificacion_service.clasificar(
             tipo=tipo, asunto=asunto, descripcion=descripcion, idaccidente=idaccidente
@@ -111,7 +122,8 @@ class RegistrarTicketService:
                     "idslaconfig": None,
                     "sla_primera_respuesta": None,
                     "sla_resolucion": None,
-                    "sla_status": None,
+                    # Clasificado pero sin regla aplicable: se dice, no se calla.
+                    "sla_status": SLA_SIN_COMPROMISO,
                     **(sla or {}),
                 }
             )
@@ -125,6 +137,13 @@ class RegistrarTicketService:
             idusuario=idusuario,
             estado_nuevo=reclamo["estado"],
         )
+
+        # RF-O83.2 / RF-APM-014 — recien aqui, con el ticket ya creado: la
+        # exclusion del cobro automatico acompaña a una disputa que existe. Si se
+        # marcara antes y la creacion fallara, la factura quedaria congelada sin
+        # reclamo que la respalde.
+        if idfactura is not None:
+            self.disputa_service.marcar_en_disputa(str(idfactura))
         return reclamo
 
     def clasificar_manual(
@@ -153,6 +172,9 @@ class RegistrarTicketService:
                 "tipo_incidencia": tipo_incidencia,
                 "prioridad": prioridad,
                 "estado": ESTADO_ABIERTO,
+                # Igual que en el alta: clasificar sin regla aplicable deja el
+                # ticket sin compromiso, y eso hay que decirlo.
+                "sla_status": SLA_SIN_COMPROMISO,
                 **(sla or {}),
             },
         )

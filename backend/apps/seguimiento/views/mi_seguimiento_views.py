@@ -13,6 +13,9 @@ from apps.seguimiento.idempotency import get_cached_response, store_response
 from apps.seguimiento.permissions import IsUnidadSeguimiento
 from apps.seguimiento.services.abortar_mision_service import AbortarMisionService
 from apps.seguimiento.services.escalar_severidad_service import EscalarSeveridadService
+from apps.seguimiento.services.finalizar_atencion_unidad_service import (
+    FinalizarAtencionUnidadService,
+)
 from apps.seguimiento.services.obtener_mi_seguimiento_actual_service import (
     ObtenerMiSeguimientoActualService,
 )
@@ -95,6 +98,37 @@ class RegistrarLlegadaView(APIView):
             return error_response("conflict", str(exc), "409", status_code=409)
         response = success_response(data)
         store_response(request, "registrar_llegada", response)
+        return response
+
+
+class FinalizarAtencionView(APIView):
+    """La unidad da por terminada su parte (SRS §3.6.4)."""
+
+    permission_classes = [IsAuthenticated401, IsUnidadSeguimiento]
+
+    def post(self, request: Request, iddespacho: int) -> Response:
+        cached = get_cached_response(request, "finalizar_atencion")
+        if cached is not None:
+            return cached
+        unidad = UnidadEmergenciaRepository().find_by_usuario(request.user.idusuario)
+        if not unidad:
+            return error_response("forbidden", "Unidad no vinculada", "403", status_code=403)
+        try:
+            data = FinalizarAtencionUnidadService().finalizar(
+                iddespacho=iddespacho,
+                idunidademergencia=int(unidad["idunidademergencia"]),
+                idusuario=request.user.idusuario,
+            )
+        except PermissionError:
+            return error_response(
+                "forbidden", "Despacho no pertenece a la unidad", "403", status_code=403
+            )
+        except LookupError:
+            return error_response("not_found", "Despacho no encontrado", "404", status_code=404)
+        except ValueError as exc:
+            return error_response("conflict", str(exc), "409", status_code=409)
+        response = success_response(data)
+        store_response(request, "finalizar_atencion", response)
         return response
 
 

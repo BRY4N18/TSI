@@ -139,7 +139,7 @@ Todo el consumo de todas las credenciales se agrega contra el **único cupo cont
 
 El sistema debe:
 
-1. Avisar al contacto técnico **antes del vencimiento** y **de nuevo al producirse**, sin duplicar el mismo aviso dentro del mismo ciclo de vigencia.
+1. Avisar al contacto técnico **antes del vencimiento** y **de nuevo al producirse**, sin duplicar el mismo aviso dentro del mismo ciclo de vigencia. El aviso es un **envío a una persona**, no una entrada en la bitácora: `Fact_HistorialAccesoPartner` sirve para deduplicarlo (punto 3), no lo sustituye. Se implementó una vez escribiendo solo la bitácora y el partner descubría el vencimiento cuando su integración fallaba. El envío es **fail-open y aislado**: un buzón caído no puede dejar operativa una credencial vencida, que es un control de seguridad.
 2. Al vencer, marcar únicamente esa credencial `activo=false`. `Dim_Partner.activo` **no se toca** y el plan asignado se conserva.
 3. Insertar en `Fact_HistorialAccesoPartner` con `tipo_cambio="expiracion_sandbox"`, `idcredencial` = la vencida, `ejecutado_por="Sistema"`.
 4. Permitir al partner **generar una credencial de pruebas nueva por autoservicio**, sin repetir el registro (RF-PON-001) ni la asignación de plan (RF-PON-003).
@@ -532,7 +532,7 @@ Al vencer una credencial de pruebas, solo esa credencial pasa a `activo=false`. 
 La solicitud de promoción desde un estado distinto de "Pruebas activo" retorna HTTP 409. Desde "Pruebas activo" retorna HTTP 202 y deja al partner en "Pendiente de aprobación" sin emitir credencial de producción.
 
 ### CA-PON-010 (CU-O49)
-Solo un Administrador puede resolver la promoción; otros roles reciben HTTP 403. Al aprobar se emite la credencial de producción y la de pruebas permanece activa. Al rechazar se exige motivo no vacío (HTTP 422 si falta), el partner vuelve a "Pruebas activo" con su acceso de pruebas operativo, y puede reintentar sin tope.
+Solo un Administrador puede resolver la promoción; otros roles reciben HTTP 403. Al aprobar, el partner queda habilitado para producción y la de pruebas permanece activa (RN-PON-008); la credencial productiva **no se emite en la aprobación**, la emite el propio partner desde su portal (BE-DELTA-02) porque el secreto solo puede verlo quien lo custodia (RN-PON-005) — devolverlo aquí obligaría al Administrador a transmitírselo por un canal inseguro. Al rechazar se exige motivo no vacío (HTTP 422 si falta), el partner vuelve a "Pruebas activo" con su acceso de pruebas operativo, y puede reintentar sin tope.
 
 ### CA-PON-011 (RNF-16)
 Cada uno de los siete eventos del ciclo de vida inserta exactamente una fila en `Fact_HistorialAccesoPartner` con autor, motivo y fecha. Ninguna operación del módulo ejecuta UPDATE ni DELETE sobre esa tabla.

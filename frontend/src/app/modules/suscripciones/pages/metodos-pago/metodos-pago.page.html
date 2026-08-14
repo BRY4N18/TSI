@@ -41,7 +41,7 @@
                 <tr [class]="rowClass">
                   <td [class]="tdPrimaryClass">{{ m.tipo }}</td>
                   <td [class]="tdClass">···· {{ m.ultimosdigitos }}</td>
-                  <td [class]="tdClass">{{ m.fechaexpiracion || '—' }}</td>
+                  <td [class]="tdClass">{{ expiracion(m.fechaexpiracion) }}</td>
                   <td [class]="tdClass">
                     <span [class]="m.activo ? badgeOk() : badgeNeutral()">
                       {{ m.activo ? 'Activo' : 'Inactivo' }}
@@ -68,7 +68,7 @@
                   </div>
                   <div class="flex justify-between gap-2">
                     <dt class="text-text-secondary">Expiración</dt>
-                    <dd class="font-medium text-text-primary">{{ m.fechaexpiracion || '—' }}</dd>
+                    <dd class="font-medium text-text-primary">{{ expiracion(m.fechaexpiracion) }}</dd>
                   </div>
                 </dl>
               </div>

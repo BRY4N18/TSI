@@ -104,6 +104,16 @@ class TestCadenaCompletaAccidenteDespachoSeguimiento:
         )
         assert llegada.status_code == 200
 
+        # --- 3b. La unidad da por terminada su parte ---
+        # SRS §3.6.4: el caso no cierra mientras quede una unidad sin retirarse.
+        finalizar = api_client.post(
+            f"/api/v1/mi-seguimiento/despachos/{iddespacho}/finalizar",
+            {},
+            format="json",
+            **unidad_seguimiento_auth_headers,
+        )
+        assert finalizar.status_code == 200
+
         # --- 4. Cierre del caso ---
         cierre = api_client.post(
             f"/api/v1/accidentes/{idaccidente}/cerrar",

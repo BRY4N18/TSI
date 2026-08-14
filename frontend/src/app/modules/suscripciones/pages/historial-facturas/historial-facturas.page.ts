@@ -1,5 +1,6 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
@@ -26,6 +27,7 @@ import { billingEstadoBadge } from '../../billing-ui';
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
     ListEmptyStateComponent,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './historial-facturas.page.html',
@@ -66,6 +68,17 @@ export class HistorialFacturasPage implements OnInit {
 
   badge(estado?: string): string {
     return billingEstadoBadge(estado);
+  }
+
+  /** Ya en disputa: el cobro esta detenido y el backend rechaza una segunda
+   * (RN-TIC-008). Ofrecer el boton solo llevaria a un 422. */
+  enDisputa(f: Factura): boolean {
+    return f.estado_pago === 'En disputa';
+  }
+
+  /** Solo hay algo que disputar mientras quede cobro pendiente. */
+  puedeDisputar(f: Factura): boolean {
+    return f.estado_pago === 'Pendiente' || f.estado_pago === 'Fallida';
   }
 
   verDetalle(f: Factura): void {

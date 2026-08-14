@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -17,6 +17,9 @@ export class PerfilPage implements OnInit {
   private readonly api = inject(CuentaClienteApiService);
   private readonly facade = inject(CuentaClienteFacadeService);
   private readonly route = inject(ActivatedRoute);
+  // El shell de la aplicación es OnPush: sin marcar la vista, nada de lo que
+  // llega por HTTP se repinta. Ver §9 del design-system.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   perfil: PerfilData | null = null;
   logoFile: File | null = null;
@@ -27,9 +30,11 @@ export class PerfilPage implements OnInit {
   ngOnInit(): void {
     this.api.getPerfil(this.idcliente).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.perfil = res.data;
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.error = err?.error?.detail ?? 'No se pudo cargar el perfil';
       },
     });
@@ -48,6 +53,7 @@ export class PerfilPage implements OnInit {
     if (this.logoFile) {
       this.facade.uploadLogoAndUpdatePerfil(this.idcliente, this.logoFile).subscribe({
         next: (data) => {
+        this.cdr.markForCheck();
           if (this.perfil && data.perfil) {
             this.perfil.logo_url = data.perfil.logo_url;
           }
@@ -55,6 +61,7 @@ export class PerfilPage implements OnInit {
           this._guardarTextos();
         },
         error: (err) => {
+        this.cdr.markForCheck();
           this.error = err?.error?.detail ?? 'No se pudo subir el logo';
         },
       });
@@ -73,9 +80,11 @@ export class PerfilPage implements OnInit {
       })
       .subscribe({
         next: () => {
+        this.cdr.markForCheck();
           this.mensaje = 'Perfil actualizado';
         },
         error: (err) => {
+        this.cdr.markForCheck();
           this.error = err?.error?.detail ?? 'No se pudo guardar el perfil';
         },
       });

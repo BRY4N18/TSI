@@ -44,12 +44,23 @@ class BajaUnidadService:
         if not unidad:
             raise LookupError("Unidad no encontrada")
 
+        es_admin = ROLE_ADMIN in roles
+        if not es_admin:
+            # La pertenencia se comprueba ANTES que el despacho. Al revés, a un
+            # proveedor que intentaba dar de baja una unidad ajena se le respondía
+            # "la unidad tiene un despacho activo": se le negaba la operación, sí,
+            # pero de paso se le revelaba el estado operativo de la flota de otra
+            # organización.
+            self.access.require_unidad_propia(
+                user_id=idusuario, roles=roles, unidad=unidad
+            )
+
         despacho_activo = self.despacho_repo.find_despacho_activo(idunidademergencia)
         if despacho_activo:
             # SRS 3.5.1: única excepción al autoservicio del proveedor — la baja
             # de una unidad con despacho activo requiere intervención de un
             # Administrador (RF-O42.4); el proveedor no puede autoforzarla.
-            if ROLE_ADMIN not in roles:
+            if not es_admin:
                 raise PermissionError(
                     "La unidad tiene un despacho activo; solo un Administrador puede "
                     "ejecutar la baja forzada. Espere al cierre del caso."
@@ -58,8 +69,13 @@ class BajaUnidadService:
                 raise ValueError(
                     "La unidad tiene un despacho activo; se requiere forzar la baja explícitamente"
                 )
-        else:
-            self.access.require_unidad_propia(user_id=idusuario, roles=roles, unidad=unidad)
+        elif es_admin:
+            # Sin despacho activo la baja es gestión ordinaria de flota, y el SRS
+            # §3.5.1 dice que la intervención de TSI es "la única excepción al
+            # autoservicio del proveedor": aplica a la baja forzada, no a esta.
+            self.access.require_unidad_propia(
+                user_id=idusuario, roles=roles, unidad=unidad
+            )
 
         self.baja_repo.create(
             {

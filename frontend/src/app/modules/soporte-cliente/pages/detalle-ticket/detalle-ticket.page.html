@@ -22,6 +22,15 @@
             <span class="tsi-badge" [ngClass]="estadoBadge(t.estado)">{{ labelEstado(t.estado) }}</span>
             <span class="tsi-badge tsi-badge-neutral">Prioridad: {{ t.prioridad ?? '—' }}</span>
             <span class="tsi-badge tsi-badge-neutral">SLA: {{ t.sla_status ?? '—' }}</span>
+            @if (t.sla_status === 'sin compromiso') {
+              <!-- El motivo, no solo la etiqueta: el agente necesita saber que no
+                   es un fallo de datos sino la ausencia de una regla aplicable. -->
+              <span class="text-xs text-alert-warning" data-testid="motivo-sin-compromiso">
+                No hay compromiso de tiempo aplicable a este ticket: el cliente no
+                tiene una suscripción activa o su plan no tiene regla para este tipo
+                y prioridad. Nadie está midiendo un plazo.
+              </span>
+            }
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -58,7 +67,10 @@
             @for (h of historial(); track h.id_historial) {
               <li class="rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm">
                 <div class="mb-1 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-                  <span class="font-medium text-text-primary">{{ h.tipo_accion }}</span>
+                  <span class="font-medium text-text-primary">{{ etiqueta(h.tipo_accion) }}</span>
+                  @if (esDelSistema(h)) {
+                    <span class="tsi-badge tsi-badge-neutral" data-testid="autor-sistema">Sistema</span>
+                  }
                   @if (h.es_nota_interna) {
                     <span class="tsi-badge tsi-badge-warning">Nota interna</span>
                   }

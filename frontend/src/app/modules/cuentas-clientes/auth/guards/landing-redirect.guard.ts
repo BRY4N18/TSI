@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-import { homePathForRoles } from '../services/post-login-home';
+import { homePathForRoles, onboardingPathForCuenta } from '../services/post-login-home';
 import { AuthApiService } from '../services/auth-api.service';
 
 /**
@@ -24,6 +24,11 @@ export const landingRedirectGuard: CanActivateFn = () => {
     return router.createUrlTree(['/cuentas-clientes/auth/password-reset'], {
       queryParams: { forced: 'true' },
     });
+  }
+
+  const onboarding = onboardingPathForCuenta(authApi.getCuenta());
+  if (onboarding) {
+    return router.createUrlTree([onboarding]);
   }
 
   return router.createUrlTree([homePathForRoles(authApi.getProfile()?.roles)]);

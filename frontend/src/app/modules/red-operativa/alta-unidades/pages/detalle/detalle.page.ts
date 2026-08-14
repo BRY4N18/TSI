@@ -118,7 +118,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
           </div>
           <div>
             <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Usuario login</dt>
-            <dd class="mt-1 text-sm text-text-primary">{{ unidad.idusuario ?? '—' }}</dd>
+            <dd class="mt-1 text-sm text-text-primary">{{ usuarioLabel }}</dd>
           </div>
           <div>
             <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Latitud</dt>
@@ -152,6 +152,9 @@ export class DetallePage implements OnInit {
   errorMensaje: string | null = null;
   duenioLabel = 'Cuenta proveedor (sesión)';
   condadoLabel = '—';
+  // Nombre del usuario de acceso de la unidad. Nunca se pinta el `idusuario`:
+  // un identificador interno no le dice nada a quien administra la flota.
+  usuarioLabel = '—';
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('idunidademergencia'));
@@ -168,6 +171,7 @@ export class DetallePage implements OnInit {
         this.unidad = result.data;
         this.errorMensaje = null;
         this.duenioLabel = this.auth.getProfile()?.gmail ?? 'Cuenta proveedor (sesión)';
+        this.usuarioLabel = result.data.usuario_nombre ?? 'Sin acceso asignado';
         this.condadoLabel = `Condado #${result.data.idcondado}`;
         this.resolverCondado(result.data.idcondado);
       } else {

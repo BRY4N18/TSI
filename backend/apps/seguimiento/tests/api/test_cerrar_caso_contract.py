@@ -1,6 +1,9 @@
 import pytest
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO, ESTADO_EN_ATENCION
+from apps.seguimiento.services.finalizar_atencion_unidad_service import (
+    FinalizarAtencionUnidadService,
+)
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 from core.repositories.accidentes.estado_accidente_repository import (
     EstadoAccidenteRepository,
@@ -24,6 +27,10 @@ class TestCerrarCasoContract:
             idusuario=6,
         )
         assert EstadoAccidenteRepository().get_current_estado(accidente_activo) == ESTADO_EN_ATENCION
+        # SRS §3.6.4: el caso no cierra hasta que la unidad se ha retirado.
+        FinalizarAtencionUnidadService().finalizar(
+            iddespacho=iddespacho, idunidademergencia=1, idusuario=6
+        )
         payload = {"resultado_atencion": "Atención completada sin novedad"}
 
         # Act

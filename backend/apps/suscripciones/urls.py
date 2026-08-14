@@ -9,7 +9,11 @@ from apps.suscripciones.views.cambio_plan_views import (
 )
 from apps.suscripciones.views.factura_views import FacturaDetailView, FacturaListView
 from apps.suscripciones.views.metodo_pago_views import MetodoPagoListCreateView
-from apps.suscripciones.views.plan_views import PlanDetailView, PlanListCreateView
+from apps.suscripciones.views.plan_views import (
+    PlanDetailView,
+    PlanListCreateView,
+    SeveridadCatalogoView,
+)
 from apps.suscripciones.views.suscripcion_views import (
     AltaSuscripcionView,
     CancelarSuscripcionView,
@@ -32,6 +36,7 @@ urlpatterns = [
         "suscripciones/solicitudes-cambio-plan/<int:idsolicitud>/rechazar",
         RechazarCambioPlanView.as_view(),
     ),
+    path("suscripciones/severidades", SeveridadCatalogoView.as_view()),
     path("suscripciones/planes", PlanListCreateView.as_view()),
     path("suscripciones/planes/<int:idplan>", PlanDetailView.as_view()),
     path("suscripciones/facturas", FacturaListView.as_view()),

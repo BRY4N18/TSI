@@ -17,7 +17,6 @@ import json
 import pytest
 
 from apps.partners.services.consumo_datos_service import (
-    SEVERIDADES_POR_NIVEL,
     ConsumoDatosError,
     ConsumoDatosService,
 )
@@ -28,7 +27,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.service]
 ID_CLIENTE = 830
 
 
-def _suscripcion(severidades='["Baja","Media"]', idcliente=ID_CLIENTE):
+def _suscripcion(severidades="[1, 2]", idcliente=ID_CLIENTE):
     PINOT_STORE["Dim_Plan"].append(
         {
             "idplan": idcliente,
@@ -99,13 +98,13 @@ class TestSeveridadesDelContrato:
         """Los 5 planes sembrados tienen el centinela `'null'`; leer de ahí
         dejaría a todo partner sin poder consumir nada."""
         # Arrange
-        _suscripcion(severidades='["Baja","Media"]')
+        _suscripcion(severidades="[1, 2]")
 
         # Act
         severidades = ConsumoDatosService().severidades_habilitadas(ID_CLIENTE)
 
         # Assert
-        assert severidades == set(SEVERIDADES_POR_NIVEL["media"])
+        assert severidades == {1, 2}
 
     def test_el_centinela_null_no_revienta(self, mock_pinot, mock_kafka):
         """`json.loads('null')` devuelve None; iterarlo lanzaría TypeError."""
@@ -128,12 +127,19 @@ class TestSeveridadesDelContrato:
             ConsumoDatosService().severidades_habilitadas(999999)
         assert exc.value.code == "sin_suscripcion"
 
-    def test_los_niveles_son_acumulativos(self):
-        """Contratar «Media» incluye «Baja»: un nivel superior no puede ver
-        menos que uno inferior."""
+    def test_el_vocabulario_retirado_ya_no_habilita_nada(
+        self, mock_pinot, mock_kafka
+    ):
+        """La escala paralela «Baja/Media/Alta» se retiró el 2026-08-11.
+
+        Si una fila antigua se colara sin migrar, debe dar conjunto vacío —
+        fail-closed — y nunca reinterpretarse como una severidad real.
+        """
+        # Arrange
+        _suscripcion(severidades='["Media"]')
+
         # Act / Assert
-        assert set(SEVERIDADES_POR_NIVEL["baja"]) < set(SEVERIDADES_POR_NIVEL["media"])
-        assert set(SEVERIDADES_POR_NIVEL["media"]) < set(SEVERIDADES_POR_NIVEL["alta"])
+        assert ConsumoDatosService().severidades_habilitadas(ID_CLIENTE) == set()
 
 
 class TestZonasFailClosed:
@@ -185,7 +191,7 @@ class TestSeveridadFueraDeAlcance:
     ):
         """Lista vacía le diría «no hay accidentes graves», que es falso."""
         # Arrange — «Media» habilita {1,2}; se pide la 4
-        _suscripcion(severidades='["Media"]')
+        _suscripcion(severidades="[1, 2]")
         _preferencias()
 
         # Act / Assert
@@ -199,7 +205,7 @@ class TestSeveridadFueraDeAlcance:
         self, mock_pinot, mock_kafka
     ):
         # Arrange
-        _suscripcion(severidades='["Media"]')
+        _suscripcion(severidades="[1, 2]")
         _preferencias(zonas="[10]")
         _accidente(1, idseveridad=1, idcalle=100)
         _accidente(2, idseveridad=2, idcalle=100)
@@ -216,7 +222,7 @@ class TestSeveridadFueraDeAlcance:
         self, mock_pinot, mock_kafka
     ):
         # Arrange
-        _suscripcion(severidades='["Media"]')
+        _suscripcion(severidades="[1, 2]")
         _preferencias(zonas="[10]")
         _accidente(1, idseveridad=1, idcalle=100)
         _accidente(2, idseveridad=2, idcalle=100)
@@ -235,7 +241,7 @@ class TestResultadoExplicable:
     ):
         """Un resultado vacío tiene que ser explicable sin abrir la base."""
         # Arrange
-        _suscripcion(severidades='["Baja"]')
+        _suscripcion(severidades="[1]")
         _preferencias(zonas="[10, 20]")
 
         # Act

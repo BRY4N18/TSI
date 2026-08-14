@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -28,12 +29,29 @@ class FacturaRepository:
     def _now_ms(self) -> int:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
+    @classmethod
+    def _hidratar(cls, row: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Devuelve `desglose_cargos` como lista de conceptos.
+
+        En Pinot se guarda como JSON en una columna STRING (ver `_desglose_json`),
+        pero quien la consume —la pantalla de facturas— la recorre como lista.
+        """
+        if not row or "desglose_cargos" not in row:
+            return row
+        valor = row["desglose_cargos"]
+        if isinstance(valor, str):
+            try:
+                row = {**row, "desglose_cargos": json.loads(valor or "[]")}
+            except json.JSONDecodeError:
+                row = {**row, "desglose_cargos": []}
+        return row
+
     def find_by_id(self, id_factura: str) -> dict[str, Any] | None:
         rows = self.pinot.query(
             "SELECT * FROM Fact_Factura WHERE id_factura = %(id)s",
             {"id": id_factura},
         )
-        return rows[0] if rows else None
+        return self._hidratar(rows[0]) if rows else None
 
     def list_by_cliente(self, idcliente: int, *, limit: int = 20) -> list[dict[str, Any]]:
         rows = self.pinot.query(
@@ -41,7 +59,7 @@ class FacturaRepository:
             "ORDER BY fecha_emision DESC LIMIT %(limit)s",
             {"idcliente": idcliente, "limit": int(limit)},
         )
-        return list(rows or [])
+        return [self._hidratar(r) for r in (rows or [])]
 
     def vencidas_impagadas_de_excedente(
         self, idcliente: int, *, ahora_ms: int | None = None, limit: int = 200
@@ -113,6 +131,21 @@ class FacturaRepository:
                 max_seq = max(max_seq, int(m.group(2)))
         return max_seq + 1
 
+    @staticmethod
+    def _desglose_json(valor: Any) -> str:
+        """`desglose_cargos` es una columna STRING de valor único, no un array.
+
+        Publicar la lista de conceptos tal cual hacía que Pinot descartara la fila
+        entera (`Cannot read single-value from Collection`): la factura respondía como
+        creada y no existía. Se guarda como JSON, que es lo que ya tenían las filas
+        sembradas.
+        """
+        if valor is None:
+            return "[]"
+        if isinstance(valor, str):
+            return valor
+        return json.dumps(valor, ensure_ascii=False)
+
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         now = datetime.now(TZ)
         periodo = data["periodo"]
@@ -134,7 +167,7 @@ class FacturaRepository:
             "numero_factura": numero,
             "periodo": periodo,
             "estado_pago": "Pendiente",
-            "desglose_cargos": data.get("desglose_cargos", []),
+            "desglose_cargos": self._desglose_json(data.get("desglose_cargos")),
             "monto_base": float(data["monto_base"]),
             "impuestos": 0.0,
             "monto_total": float(data["monto_base"]),
@@ -148,12 +181,28 @@ class FacturaRepository:
             "fecha_actualizacion": self._now_ms(),
         }
         self.kafka.publish(self.TOPIC, record)
-        return record
+        # Se publica el JSON, pero quien recibe la factura recién creada la trata igual
+        # que una leída: con el desglose ya como lista.
+        return self._hidratar(record)
 
     def update(self, id_factura: str, changes: dict[str, Any]) -> dict[str, Any] | None:
         current = self.find_by_id(id_factura)
         if not current:
             return None
+        return self.update_from(current, changes)
+
+    def update_from(
+        self, current: dict[str, Any], changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Republica la fila completa a partir de una copia ya en memoria.
+
+        La tabla es upsert por clave primaria, así que hay que reenviar todas las
+        columnas. Esta variante existe para cobrar una factura recién emitida: releerla
+        por id contra Pinot devuelve vacío durante 5-15 s.
+        """
         payload = {**current, **changes, "fecha_actualizacion": self._now_ms()}
+        # La tabla es upsert y se republica la fila entera: si `current` viene ya
+        # hidratado, el desglose volvería a salir como lista y Pinot descartaría la fila.
+        payload["desglose_cargos"] = self._desglose_json(payload.get("desglose_cargos"))
         self.kafka.publish(self.TOPIC, payload)
-        return payload
+        return self._hidratar(payload)

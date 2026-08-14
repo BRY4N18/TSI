@@ -12,7 +12,16 @@ export type EstadoTicket =
   | 'Cerrado'
   | 'Reabierto';
 
-export type SlaStatus = 'en curso' | 'en riesgo' | 'incumplido' | 'cumplido' | null;
+// 'sin compromiso': ticket YA clasificado para el que no hay plazo aplicable
+// —el cliente no tiene suscripción activa, o no hay regla para su plan—. Es un
+// estado distinto de `null`, que corresponde al ticket aún sin clasificar.
+export type SlaStatus =
+  | 'en curso'
+  | 'en riesgo'
+  | 'incumplido'
+  | 'cumplido'
+  | 'sin compromiso'
+  | null;
 
 export interface Ticket {
   id_reclamo: number;
@@ -67,6 +76,8 @@ export interface RegistrarTicketRequest {
   tipo: string;
   idaccidente?: string;
   idservicio?: number;
+  /** STRING, no numero: `Fact_Factura.id_factura` es un UUID (RF-O83.2). */
+  idfactura?: string;
 }
 
 export interface SLAConfig {

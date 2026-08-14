@@ -33,6 +33,24 @@ def _roles(request: Request) -> list[str]:
     return list(getattr(request.user, "roles", []) or [])
 
 
+def _nombre_usuario(idusuario: int | None) -> str | None:
+    """Nombre legible del usuario de acceso de la unidad.
+
+    La pantalla de detalle mostraba el `idusuario` crudo, que no le dice nada a
+    quien administra una flota. El identificador sigue viajando en la respuesta
+    para uso interno; esto añade el nombre para pintarlo en su lugar.
+    """
+    if not idusuario:
+        return None
+    from core.repositories.cuentas_clientes.user_repository import UserRepository
+
+    usuario = UserRepository().find_by_id(int(idusuario))
+    if not usuario:
+        return None
+    nombre = f"{usuario.get('nombres') or ''} {usuario.get('apellidos') or ''}".strip()
+    return nombre or usuario.get("gmail")
+
+
 class UnidadListCreateView(APIView):
     permission_classes = [IsAuthenticated401, IsProveedorFlota]
     parser_classes = [JSONParser]
@@ -147,7 +165,7 @@ class UnidadDetailView(APIView):
             return error_response("forbidden", str(exc), "403", status_code=403)
         except LookupError:
             return error_response("not_found", "Unidad no encontrada", "404", status_code=404)
-        return success_response(unidad)
+        return success_response({**unidad, "usuario_nombre": _nombre_usuario(unidad.get("idusuario"))})
 
     def patch(self, request: Request, idunidademergencia: int) -> Response:
         confirmar = str(request.query_params.get("confirmar_edicion_critica", "")).lower() == "true"

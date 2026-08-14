@@ -15,7 +15,7 @@ def test_planes_publicos_sin_jwt_200(mock_pinot, mock_kafka):
     assert all("severidades_desbloqueadas" in p for p in data)
     assert not any(p.get("nombre") == "Legacy Off" for p in data)
     profesional = next(p for p in data if p["nivel"] == "Profesional")
-    assert profesional["severidades_desbloqueadas"] == ["Baja", "Media"]
+    assert profesional["severidades_desbloqueadas"] == ["Leve", "Moderado"]
 
 
 @pytest.mark.api

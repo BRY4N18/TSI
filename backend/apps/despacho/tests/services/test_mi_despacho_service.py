@@ -1,6 +1,7 @@
 import pytest
 
 from apps.despacho.services.mi_despacho_service import MiDespachoService
+from apps.despacho.services.timeout_despacho_service import TimeoutDespachoService
 
 
 @pytest.mark.service
@@ -29,6 +30,29 @@ class TestMiDespachoService:
         # Act / Assert
         with pytest.raises(LookupError):
             service.listar_pendientes(idusuario=9999)
+
+    def test_listar_pendientes_no_ofrece_despachos_ya_vencidos(
+        self,
+        mock_pinot,
+        mock_kafka,
+        accidente_activo,
+        unidad_con_estado_activa,
+        despacho_pendiente_unidad,
+    ):
+        # Arrange — el vencimiento cierra el despacho pero deja la notificación
+        # en "Notificada": sin filtrar por despacho activo, la unidad sigue
+        # viendo como trabajo pendiente un caso que ya fue reasignado.
+        service = MiDespachoService()
+        assert service.listar_pendientes(idusuario=6)
+        TimeoutDespachoService().marcar_timeout(
+            iddespacho=despacho_pendiente_unidad["iddespacho"]
+        )
+
+        # Act
+        pendientes = service.listar_pendientes(idusuario=6)
+
+        # Assert
+        assert pendientes == []
 
     def test_obtener_detalle_when_own_notificacion_incluye_datos_de_unidad(
         self, mock_pinot, mock_kafka, accidente_activo, unidad_con_estado_activa, despacho_pendiente_unidad

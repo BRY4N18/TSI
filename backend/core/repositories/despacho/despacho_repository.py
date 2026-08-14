@@ -42,10 +42,14 @@ class DespachoRepository:
         *,
         activo: bool | None = None,
     ) -> list[dict[str, Any]]:
+        # LIMIT explícito: sin él Pinot recorta a 10, y un caso con varias unidades
+        # coordinadas (una grúa sumándose a una ambulancia, SRS §3.6.2) perdería
+        # despachos del agregado sin ningún aviso.
         rows = self.pinot.query(
             """
             SELECT * FROM Fact_Despacho
             WHERE idaccidente = %(idaccidente)s
+            LIMIT 1000
             """,
             {"idaccidente": idaccidente},
         )
@@ -59,6 +63,7 @@ class DespachoRepository:
             """
             SELECT * FROM Fact_Despacho
             WHERE idunidademergencia = %(idunidademergencia)s AND activo = true
+            LIMIT 1000
             """,
             {"idunidademergencia": idunidademergencia},
         )
@@ -68,8 +73,11 @@ class DespachoRepository:
         return bool(self.list_activos_by_unidad(idunidademergencia))
 
     def list_all_active(self) -> list[dict[str, Any]]:
+        # LIMIT explícito: es la consulta que recorre el ciclo de vencimientos.
+        # Sin él, Pinot recorta a 10 despachos activos de todo el sistema y el
+        # resto no vence nunca — nadie los reasigna y el caso queda encallado.
         rows = self.pinot.query(
-            "SELECT * FROM Fact_Despacho WHERE activo = true",
+            "SELECT * FROM Fact_Despacho WHERE activo = true LIMIT 10000",
             {},
         )
         rows.sort(key=lambda r: r.get("fechahoradespacho", 0))

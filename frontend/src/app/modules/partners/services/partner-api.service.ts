@@ -10,7 +10,12 @@ import type {
   EstadoPartner,
   PartnerDetalle,
   PartnerListItem,
+  EstadoAcceso,
+  PartnerColaAcceso,
+  ReactivacionAplicada,
   RegistrarPartnerRequest,
+  RevocacionCredencial,
+  SuspensionAplicada,
   ResolucionPromocionData,
   ResolucionPromocionRequest,
 } from './models/partner.types';
@@ -159,6 +164,26 @@ export class PartnerApiService {
     );
   }
 
+  /**
+   * RF-PAC-001 / SRS §3.4.3: el partner revoca por sí mismo una credencial
+   * comprometida y recibe **en el mismo acto** un reemplazo del mismo entorno y
+   * nombre. Es autoservicio a propósito: "esperar autorización sería el peor
+   * comportamiento posible" ante un incidente de seguridad.
+   *
+   * El endpoint existía desde el principio y **ninguna pantalla lo llamaba**.
+   */
+  revocarCredencial(
+    idcredencial: number,
+    motivo: string,
+    idempotencyKey: string,
+  ): Observable<ApiEnvelope<RevocacionCredencial>> {
+    return this.http.post<ApiEnvelope<RevocacionCredencial>>(
+      `/api/v1/credenciales/${idcredencial}/revocar`,
+      { motivo },
+      { headers: this.conIdempotencia(idempotencyKey) },
+    );
+  }
+
   solicitarProduccion(
     idpartner: number,
     nombreCredencial: string,
@@ -167,6 +192,47 @@ export class PartnerApiService {
     return this.http.post<ApiEnvelope<{ idpartner: number; estado: EstadoPartner }>>(
       `${this.base}/${idpartner}/solicitud-produccion`,
       { nombre_credencial: nombreCredencial },
+      { headers: this.conIdempotencia(idempotencyKey) },
+    );
+  }
+
+  // --- Gestión de acceso (RF-PAC-005 / RF-PAC-009) -------------------------
+
+  /** Cola del Administrador: suspendidos y en ciclo de mora (RF-PAC-009 b). */
+  colaAcceso(): Observable<ApiEnvelope<PartnerColaAcceso[]>> {
+    return this.http.get<ApiEnvelope<PartnerColaAcceso[]>>(`${this.base}/cola-acceso`);
+  }
+
+  /**
+   * Estado de acceso de un partner (RF-PAC-009 a). Un partner **suspendido** sí
+   * puede consultarlo: es lectura y es justo donde entiende por qué se le cortó
+   * el acceso y qué debe hacer (RN-PAC-016).
+   */
+  estadoAcceso(idpartner: number): Observable<ApiEnvelope<EstadoAcceso>> {
+    return this.http.get<ApiEnvelope<EstadoAcceso>>(`${this.base}/${idpartner}/estado-acceso`);
+  }
+
+  suspender(
+    idpartner: number,
+    motivo: string,
+    idempotencyKey: string,
+  ): Observable<ApiEnvelope<SuspensionAplicada>> {
+    return this.http.post<ApiEnvelope<SuspensionAplicada>>(
+      `${this.base}/${idpartner}/suspender`,
+      { motivo },
+      { headers: this.conIdempotencia(idempotencyKey) },
+    );
+  }
+
+  /** El sistema nunca reactiva solo (RN-PAC-009): siempre lo confirma un Administrador. */
+  reactivar(
+    idpartner: number,
+    motivo: string,
+    idempotencyKey: string,
+  ): Observable<ApiEnvelope<ReactivacionAplicada>> {
+    return this.http.post<ApiEnvelope<ReactivacionAplicada>>(
+      `${this.base}/${idpartner}/reactivar`,
+      { motivo },
       { headers: this.conIdempotencia(idempotencyKey) },
     );
   }

@@ -17,7 +17,9 @@ def run_facturacion_mensual() -> dict:
     cobradas = 0
     for fac in creadas:
         if fac.get("estado_pago") == "Pendiente":
-            cobro.intentar(fac["id_factura"])
+            # Sobre la factura recién creada, sin releerla: Pinot no la expone todavía
+            # y el job entero moría con "factura no encontrada".
+            cobro.intentar_factura(fac)
             cobradas += 1
     logger.info(
         "facturacion_mensual_done",

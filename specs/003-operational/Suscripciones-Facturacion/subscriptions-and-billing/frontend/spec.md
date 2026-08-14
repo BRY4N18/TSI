@@ -100,6 +100,7 @@ UI refleja RN-SUSF-017 — mensaje cuando suscripción Suspendida bloquea accion
 - **FR-UI-018**: Desactivar / reactivar desde la lista con confirmación explícita (diálogo); no se completa con un solo clic accidental.
 - **FR-UI-019**: El catálogo **MUST** consumir el listado **paginado** del backend (`cursor`/`limit`, default **20**, `meta.pagination`). **Prohibido** pedir o cachear el catálogo completo en el cliente para paginar en memoria.
 - **FR-UI-020**: Filtros UI: **texto** (nombre), **estado** (Activo / Inactivo / Todas), **nivel**. Cambiar filtros reinicia cursor/página 1.
+- **FR-UI-021** *(2026-08-11)*: El selector de **severidades atendibles** de `plan-form` **MUST** alimentarse de `GET /api/v1/suscripciones/severidades` (`Dim_Severidad`). **Prohibido** escribir las opciones en el componente: añadir o retirar una severidad no puede exigir un cambio de código (SRS §6, Configurabilidad). El formulario envía y recibe `idseveridad`; el catálogo y el detalle de plan **MUST** mostrar el **nombre** de cada severidad, nunca su identificador (§8 del `design-system.md`).
 - **FR-UI-021**: Pager (Anterior/Siguiente o equivalente) según `next_cursor`; «Actualizar» reaplica filtros+página actuales; timeout → error + Reintentar (sin skeleton infinito).
 
 ## Success Criteria

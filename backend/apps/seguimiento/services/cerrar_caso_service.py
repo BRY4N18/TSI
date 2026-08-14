@@ -59,13 +59,26 @@ class CerrarCasoService:
         if estado_actual not in (ESTADO_EN_ATENCION, ESTADO_ASIGNADO):
             raise ValueError(f"Estado inválido para cierre: {estado_actual}")
 
-        auto_retirados: list[int] = []
-        for d in self.despachos.list_by_accidente(idaccidente):
-            idd = int(d["iddespacho"])
-            est, _ = self.historial.get_current_estado(idd)
-            if est not in (ESTADO_RETIRADO, ESTADO_ABORTADO):
-                self.retiro.retirar(iddespacho=idd, idusuario=idusuario)
-                auto_retirados.append(idd)
+        # SRS §3.6.4, la regla más estricta del departamento: "un caso solo pasa
+        # a cerrado cuando **todas** las unidades despachadas se han retirado.
+        # No existe el cierre parcial". Antes esta operación retiraba por su
+        # cuenta a las unidades que siguieran trabajando, y además las
+        # registraba como retiro **normal**: la regla no llegaba a aplicarse
+        # nunca y se perdía la distinción entre una finalización y un cierre
+        # decidido desde central. Quien no ha terminado se retira por su propia
+        # vía, o el Operador fuerza su retiro y eso queda marcado como tal.
+        sin_retirar = [
+            int(d["iddespacho"])
+            for d in self.despachos.list_by_accidente(idaccidente)
+            if self.historial.get_current_estado(int(d["iddespacho"]))[0]
+            not in (ESTADO_RETIRADO, ESTADO_ABORTADO)
+        ]
+        if sin_retirar:
+            raise ValueError(
+                "No se puede cerrar: "
+                f"{len(sin_retirar)} unidad(es) siguen sin retirarse. "
+                "Espera a que finalicen o fuerza su retiro desde central."
+            )
 
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         horainicio = acc.get("horainicio") or acc.get("fechahoraaccidente") or now
@@ -98,5 +111,5 @@ class CerrarCasoService:
             "horafin": now,
             "duracionminutos": duracion,
             "tiempos": {"duracionminutos": duracion},
-            "despachos_retirados": auto_retirados,
+            "despachos_retirados": [],
         }

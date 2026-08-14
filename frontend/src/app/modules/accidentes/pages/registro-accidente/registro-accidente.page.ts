@@ -16,7 +16,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, finalize } from 'rxjs';
+import { debounceTime, finalize, map, switchMap } from 'rxjs';
 
 import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
@@ -324,24 +324,7 @@ export class RegistroAccidentePage {
       return;
     }
 
-    const raw = this.form.getRawValue();
-    const payload: RegistrarAccidenteRequest = {
-      latitudinicio: raw.latitudinicio,
-      longitudinicio: raw.longitudinicio,
-      fechahoraaccidente: new Date(raw.fechahoraaccidente).getTime(),
-      idseveridad: raw.idseveridad as 1 | 2 | 3 | 4,
-      descripcion: raw.descripcion,
-      idcalle: raw.idcalle,
-      codigopostal: raw.codigopostal || undefined,
-      numvehiculos: raw.numvehiculos || undefined,
-      numheridos: raw.numheridos || undefined,
-      numvictimas: raw.numvictimas || undefined,
-      numfallecidos: raw.numfallecidos || undefined,
-      idtiporeportado: raw.idtiporeportado ?? undefined,
-      idreferenciaestacion: raw.idreferenciaestacion ?? undefined,
-      registroRetrospectivo: raw.registroRetrospectivo || undefined,
-      justificacionRetrospectiva: raw.justificacionRetrospectiva || undefined,
-    };
+    const payload = this.construirPayload();
 
     this.loading.set(true);
     this.duplicadoConflicto.set(null);
@@ -372,36 +355,95 @@ export class RegistroAccidentePage {
             );
             return;
           }
+          // El backend explica en `detail` qué hay que corregir (p. ej. "Fecha
+          // futura no permitida"). Descartarlo y culpar a la conexión deja al
+          // operador sin saber qué cambiar, y le hace buscar el problema donde
+          // no está. La excusa de conexión se reserva a lo que sí puede serlo:
+          // fallo de red (status 0) o error del servidor.
+          const detalle = this.detalleDeError(err);
           this.notifications.alert(
-            'No se pudo registrar el accidente. Verifica la conexión e inténtalo de nuevo.',
+            detalle
+              ? `No se pudo registrar el accidente: ${detalle}`
+              : 'No se pudo registrar el accidente. Verifica la conexión e inténtalo de nuevo.',
             'Error al registrar',
           );
         },
       });
   }
 
+  /** Payload de registro a partir del formulario (lo comparten el alta y la fusión). */
+  private construirPayload(): RegistrarAccidenteRequest {
+    const raw = this.form.getRawValue();
+    return {
+      latitudinicio: raw.latitudinicio,
+      longitudinicio: raw.longitudinicio,
+      fechahoraaccidente: new Date(raw.fechahoraaccidente).getTime(),
+      idseveridad: raw.idseveridad as 1 | 2 | 3 | 4,
+      descripcion: raw.descripcion,
+      idcalle: raw.idcalle,
+      codigopostal: raw.codigopostal || undefined,
+      numvehiculos: raw.numvehiculos || undefined,
+      numheridos: raw.numheridos || undefined,
+      numvictimas: raw.numvictimas || undefined,
+      numfallecidos: raw.numfallecidos || undefined,
+      idtiporeportado: raw.idtiporeportado ?? undefined,
+      idreferenciaestacion: raw.idreferenciaestacion ?? undefined,
+      registroRetrospectivo: raw.registroRetrospectivo || undefined,
+      justificacionRetrospectiva: raw.justificacionRetrospectiva || undefined,
+    };
+  }
+
+  /** Detalle accionable de un error 4xx, si el backend lo envió. */
+  private detalleDeError(err: HttpErrorResponse): string | null {
+    if (err.status < 400 || err.status >= 500) {
+      return null;
+    }
+    const cuerpo = err.error as { detail?: unknown; data?: { detail?: unknown } } | undefined;
+    const detalle = cuerpo?.detail ?? cuerpo?.data?.detail;
+    return typeof detalle === 'string' && detalle.trim() ? detalle : null;
+  }
+
+  /**
+   * SRS §3.6.1: "el duplicado queda marcado como fusionado y apuntando al caso
+   * padre… El duplicado no se borra: queda con trazabilidad completa hacia el
+   * caso que lo absorbió."
+   *
+   * El 409 rechaza el alta, así que el reporte duplicado **todavía no existe**:
+   * primero hay que registrarlo forzando la advertencia y luego fusionarlo. La
+   * versión anterior fusionaba el **caso ya registrado** contra el id sugerido
+   * —que es ese mismo caso—, de modo que el accidente real quedaba apuntándose
+   * a sí mismo y desactivado, y el segundo reporte no llegaba a existir.
+   */
   confirmarFusion(idPrincipalElegido: string): void {
     const conflicto = this.duplicadoConflicto();
-    if (!conflicto?.idaccidente_similar) {
+    const idPrincipal = idPrincipalElegido?.trim();
+    if (!conflicto || !idPrincipal) {
       return;
     }
+    this.loading.set(true);
     this.accidenteApi
-      .fusionar(conflicto.idaccidente_similar, {
-        idaccidenteprincipal: idPrincipalElegido,
-        confirmacion: true,
-      })
+      .registrar(this.construirPayload(), true)
+      .pipe(
+        switchMap((registro) =>
+          this.accidenteApi
+            .fusionar(registro.data.idaccidente, {
+              idaccidenteprincipal: idPrincipal,
+              confirmacion: true,
+            })
+            .pipe(map((fusion) => ({ registro, fusion }))),
+        ),
+        finalize(() => this.loading.set(false)),
+      )
       .subscribe({
-        next: (res) => {
-          const idDuplicado = res.data.idaccidente_duplicado;
+        next: ({ fusion }) => {
+          const idDuplicado = fusion.data.idaccidente_duplicado;
           this.notifications.toastWithAction(
-            res.data.message,
+            `${fusion.data.message} (duplicado ${idDuplicado})`,
             'success',
             'Deshacer',
             () => {
               this.accidenteApi.deshacerFusion(idDuplicado).subscribe({
-                next: (undo) => {
-                  this.notifications.toast(undo.data.message, 'info');
-                },
+                next: (undo) => this.notifications.toast(undo.data.message, 'info'),
                 error: () =>
                   this.notifications.alert(
                     'No se pudo deshacer la fusión.',
@@ -411,8 +453,17 @@ export class RegistroAccidentePage {
             },
           );
           this.duplicadoConflicto.set(null);
+          this.limpiarBorrador();
         },
-        error: () => this.notifications.alert('No se pudo fusionar los reportes.', 'Error al fusionar'),
+        error: (err: HttpErrorResponse) => {
+          const detalle = this.detalleDeError(err);
+          this.notifications.alert(
+            detalle
+              ? `No se pudo fusionar: ${detalle}`
+              : 'No se pudo fusionar los reportes.',
+            'Error al fusionar',
+          );
+        },
       });
   }
 

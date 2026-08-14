@@ -117,13 +117,37 @@
           }
         </ul>
       }
-      <button
-        type="button"
-        class="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
-        (click)="selected.set(null)"
-      >
-        Cerrar
-      </button>
+      <!-- RF-O83.2: la disputa se abre desde la factura, que es donde el cliente
+           esta mirando el cargo. Solo cuando queda algo que discutir: disputar una
+           factura ya cerrada no la saca del cobro ni cambia nada. -->
+      @if (puedeDisputar(f)) {
+        <p class="mt-4 mb-0 text-sm text-text-secondary">
+          Mientras la disputa siga abierta no se te reintentara el cobro de esta factura.
+        </p>
+      }
+      <div class="mt-4 flex flex-wrap gap-2">
+        @if (puedeDisputar(f)) {
+          <a
+            data-testid="btn-disputar"
+            [routerLink]="['/soporte-cliente', 'mis-tickets']"
+            [queryParams]="{ idfactura: f.id_factura }"
+            class="inline-flex min-h-11 items-center justify-center rounded-lg border border-alert-warning bg-transparent px-4 text-sm font-medium text-alert-warning hover:bg-alert-warning-bg"
+          >
+            Disputar este cargo
+          </a>
+        } @else if (enDisputa(f)) {
+          <p data-testid="aviso-en-disputa" class="m-0 self-center text-sm text-alert-warning">
+            Esta factura ya tiene una disputa abierta: el cobro esta detenido hasta que se resuelva.
+          </p>
+        }
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+          (click)="selected.set(null)"
+        >
+          Cerrar
+        </button>
+      </div>
     </aside>
   }
 </section>

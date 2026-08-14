@@ -43,7 +43,7 @@ def suscripcion_vigente(credencial_produccion_headers):
         "estado": "Activa",
         "activo": True,
         "fecha_inicio": 1,
-        "severidades_desbloqueadas": '["Media"]',
+        "severidades_desbloqueadas": "[1, 2]",
     }
     PINOT_STORE["Fact_Suscripcion"].append(suscripcion)
     PINOT_STORE["Dim_Preferencias_Cliente"].append(

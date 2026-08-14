@@ -48,6 +48,18 @@ class GpsSenalPerdidaService:
             uid = int(d["idunidademergencia"])
             last = self.historial_ubicacion.latest_fechahora(uid)
             if last is None or (now - last) / 1000.0 > umbral_seg:
+                # Una pérdida de señal, un aviso. El job corre cada 30 s: sin
+                # esta guarda, una unidad fuera de cobertura media hora llenaba
+                # el expediente con sesenta notas idénticas y enterraba lo demás
+                # —incluida la evidencia que el cliente consulta—. Si ya hay un
+                # aviso posterior a la última posición conocida, esta misma
+                # interrupción ya está avisada.
+                marcador = f"despacho {idd}"
+                ultima_alerta = self.notas.latest_alerta_fechahora(
+                    idaccidente=d["idaccidente"], contiene=marcador
+                )
+                if ultima_alerta is not None and (last is None or ultima_alerta > last):
+                    continue
                 nota = self.notas.create_alerta(
                     idaccidente=d["idaccidente"],
                     idusuario=idusuario_operador,

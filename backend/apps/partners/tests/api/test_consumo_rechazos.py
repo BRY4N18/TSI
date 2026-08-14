@@ -36,7 +36,7 @@ def _suscripcion_vigente(idcliente=ID_PARTNER, estado="Activa"):
         "estado": estado,
         "activo": True,
         "fecha_inicio": 1,
-        "severidades_desbloqueadas": '["Media"]',
+        "severidades_desbloqueadas": "[1, 2]",
     })
 
 

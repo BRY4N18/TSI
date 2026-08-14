@@ -6,6 +6,7 @@ import {
   AbortarMisionData,
   AbortarMisionRequest,
   ApiEnvelope,
+  FinalizarAtencionData,
   LlegadaRegistradaData,
   MiSeguimientoActualData,
   PosicionAceptadaData,
@@ -38,6 +39,19 @@ export class MiSeguimientoApiService {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
     return this.http.post<ApiEnvelope<LlegadaRegistradaData>>(
       `${this.baseUrl}/despachos/${iddespacho}/llegada`,
+      {},
+      { headers },
+    );
+  }
+
+  /** La unidad da por terminada su parte (SRS §3.6.4). */
+  finalizarAtencion(
+    iddespacho: number,
+    idempotencyKey?: string,
+  ): Observable<ApiEnvelope<FinalizarAtencionData>> {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
+    return this.http.post<ApiEnvelope<FinalizarAtencionData>>(
+      `${this.baseUrl}/despachos/${iddespacho}/finalizar`,
       {},
       { headers },
     );

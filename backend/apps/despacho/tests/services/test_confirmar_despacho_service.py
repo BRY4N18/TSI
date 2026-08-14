@@ -35,3 +35,35 @@ class TestConfirmarDespachoService:
         assert result["idunidademergencia"] == 1
         notif = NotificacionDespachoRepository().find_by_id(created["idnotificaciondespacho"])
         assert notif["estadonotificaciondespacho"] == ESTADO_CONFIRMADA
+
+
+@pytest.mark.service
+class TestEstadoDelCasoConVariasUnidades:
+    def test_confirmar_apoyo_no_hace_retroceder_un_caso_en_atencion(
+        self, mock_pinot, mock_kafka, accidente_activo, unidad_con_estado_activa
+    ):
+        # Arrange — SRS §3.6.2: el caso pasa a ASIGNADO con el **primer**
+        # despacho confirmado. Con una unidad ya en el sitio (EN_ATENCIÓN), la
+        # confirmación de la unidad de apoyo hacía retroceder el expediente a
+        # ASIGNADO, como si nadie hubiera llegado.
+        from apps.accidentes.domain_constants import ESTADO_EN_ATENCION
+        from core.repositories.accidentes.estado_accidente_repository import (
+            EstadoAccidenteRepository,
+        )
+        from core.repositories.despacho.estado_accidente_despacho_repository import (
+            EstadoAccidenteDespachoRepository,
+        )
+
+        estados = EstadoAccidenteRepository()
+        estados.append_estado(
+            idaccidente=accidente_activo, estado=ESTADO_EN_ATENCION, idusuario=2
+        )
+
+        # Act
+        resultado = EstadoAccidenteDespachoRepository().publish_asignado_if_first_confirmed(
+            idaccidente=accidente_activo, idusuario=2
+        )
+
+        # Assert
+        assert resultado is None
+        assert estados.get_current_estado(accidente_activo) == ESTADO_EN_ATENCION

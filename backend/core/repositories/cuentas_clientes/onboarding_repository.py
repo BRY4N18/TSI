@@ -8,6 +8,7 @@ from typing import Any
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 
@@ -53,7 +54,7 @@ class OnboardingRepository:
     ) -> dict[str, Any]:
         now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
         completed_at = fecha_completado if fecha_completado is not None else now_ms
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         existing = self.find_etapa(id_cliente, etapa)
         onboarding_id = existing["id_onboarding"] if existing else self._next_id()
         payload = {

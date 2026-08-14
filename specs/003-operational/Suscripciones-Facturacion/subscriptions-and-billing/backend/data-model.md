@@ -13,11 +13,11 @@ Todas las columnas de tiempo / upsert de este módulo (`fecha_actualizacion`, `f
 ### 1) `Dim_Plan`
 
 - **PK:** `idplan`
-- **Campos:** `nombre` (STRING), `precio` (DOUBLE, USD), `limites` (STRING JSON — ver RN-SUSF-019), `nivel` (STRING: `Básico` \| `Profesional` \| `Empresarial`), `periodicidad` (STRING: `Mensual` \| `Anual` — RN-SUSF-029, obligatorio), `severidades_desbloqueadas` (STRING JSON — lista no vacía, subconjunto de `Baja`\|`Media`\|`Alta`; independiente de `nivel`, RN-SUSF-002), `carga_lote_habilitada` (BOOLEAN — habilita CU-O40 de Red Operativa para proveedores en este plan; dato independiente y configurable, default `false`, RF-O26.5/RF-O40.6, corrección 2026-08-08), `activo` (BOOLEAN)
+- **Campos:** `nombre` (STRING), `precio` (DOUBLE, USD), `limites` (STRING JSON — ver RN-SUSF-019), `nivel` (STRING: `Básico` \| `Profesional` \| `Empresarial`), `periodicidad` (STRING: `Mensual` \| `Anual` — RN-SUSF-029, obligatorio), `severidades_desbloqueadas` (STRING JSON — lista no vacía de `idseveridad` de `Dim_Severidad`; independiente de `nivel`, RN-SUSF-002), `carga_lote_habilitada` (BOOLEAN — habilita CU-O40 de Red Operativa para proveedores en este plan; dato independiente y configurable, default `false`, RF-O26.5/RF-O40.6, corrección 2026-08-08), `activo` (BOOLEAN)
   - **`precio_excedente_llamada` (DOUBLE, añadido 2026-08-08, RN-SUSF-030):** precio unitario de cada llamada que supera el cupo de API. Distinto de `precio`, que es el importe de la suscripción. Configurable por el Director de Estrategia (CU-O26 / RF-O26.1); alimenta el cálculo de excedente de CU-O54 en `api-monitoring-and-billing`. Centinela `-1.0` = sin tarifa configurada (nunca `0.0`, que significaría excedente gratis).
 - **Upsert / time column:** `fecha_actualizacion` (LONG ms)
 - **Topic:** `Dim_Plan_topic`
-- **Reglas:** nunca delete físico; desactivar con `activo=false` (RN-SUSF-001). `severidades_desbloqueadas` es un campo **independiente**, configurable libremente por el Director de Estrategia — no se deriva de `nivel` (corrección 2026-08-08, RN-SUSF-002).
+- **Reglas:** nunca delete físico; desactivar con `activo=false` (RN-SUSF-001). `severidades_desbloqueadas` es un campo **independiente**, configurable libremente por el Director de Estrategia — no se deriva de `nivel` (corrección 2026-08-08, RN-SUSF-002). Guarda **ids de `Dim_Severidad`** desde la migración del 2026-08-11 (`database/migra_severidades_plan_a_idseveridad.py`); antes guardaba nombres de una escala paralela que no existía en el catálogo.
 - **Actor de mutación (Session 2026-07-30):** solo Director de Estrategia (`DirectorEstrategia`). El esquema y topic **no cambian**.
 - **Listado (RF-SUSF-001 / RNF-SUSF-005a):**
   - Orden estable: `idplan ASC`.

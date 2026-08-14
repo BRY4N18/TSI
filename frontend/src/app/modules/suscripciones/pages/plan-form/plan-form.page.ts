@@ -12,9 +12,18 @@ import {
   PlanLimites,
   PlanPatchRequest,
   PlanRequest,
+  SeveridadCatalogo,
   SeveridadPlan,
 } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
+
+function safeJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 @Component({
   selector: 'app-plan-form-page',
@@ -38,7 +47,15 @@ export class PlanFormPage implements OnInit {
 
   readonly niveles: NivelPlan[] = ['Básico', 'Profesional', 'Empresarial'];
   readonly periodicidades: PeriodicidadPlan[] = ['Mensual', 'Anual'];
-  readonly severidades: SeveridadPlan[] = ['Baja', 'Media', 'Alta'];
+
+  /**
+   * Catálogo de severidades leído de `Dim_Severidad`. Antes eran tres opciones
+   * escritas en duro ('Baja'/'Media'/'Alta') que no correspondían a ninguna fila
+   * del catálogo real; añadir o retirar una severidad exigía tocar el código.
+   */
+  readonly severidadesCatalogo = signal<SeveridadCatalogo[]>([]);
+  /** Ids de severidad marcados. Vive fuera del form porque la lista es dinámica. */
+  private readonly seleccion = signal<ReadonlySet<number>>(new Set<number>());
 
   readonly form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
@@ -46,9 +63,6 @@ export class PlanFormPage implements OnInit {
     precio_excedente_llamada: [0, [Validators.required, Validators.min(0)]],
     nivel: ['Básico' as NivelPlan, Validators.required],
     periodicidad: ['Mensual' as PeriodicidadPlan, Validators.required],
-    severidad_baja: [true],
-    severidad_media: [false],
-    severidad_alta: [false],
     carga_lote_habilitada: [false],
     unidades_max: [1, [Validators.required, Validators.min(0)]],
     usuarios_max: [1, [Validators.required, Validators.min(0)]],
@@ -57,6 +71,18 @@ export class PlanFormPage implements OnInit {
   });
 
   ngOnInit(): void {
+    this.api.listarSeveridades().subscribe({
+      next: (items) => {
+        this.severidadesCatalogo.set(items);
+        // Sin selección previa (alta), se marca la más leve: es el plan mínimo
+        // razonable y evita publicar un plan que no cubre nada.
+        if (!this.esEdicion() && this.seleccion().size === 0 && items.length) {
+          this.seleccion.set(new Set([items[0].idseveridad]));
+        }
+      },
+      error: () => this.error.set('No se pudo cargar el catálogo de severidades.'),
+    });
+
     const idRaw = this.route.snapshot.paramMap.get('idplan');
     if (idRaw) {
       const id = Number(idRaw);
@@ -147,16 +173,13 @@ export class PlanFormPage implements OnInit {
 
   private patchFromPlan(plan: Plan): void {
     const lim = this.parseLimites(plan.limites);
-    const sevs = this.parseSeveridades(plan.severidades_desbloqueadas);
+    this.seleccion.set(new Set(this.parseSeveridades(plan.severidades_desbloqueadas)));
     this.form.setValue({
       nombre: plan.nombre ?? '',
       precio: Number(plan.precio ?? 0),
       precio_excedente_llamada: Number(plan.precio_excedente_llamada ?? 0),
       nivel: (plan.nivel as NivelPlan) || 'Básico',
       periodicidad: (plan.periodicidad as PeriodicidadPlan) || 'Mensual',
-      severidad_baja: sevs.includes('Baja'),
-      severidad_media: sevs.includes('Media'),
-      severidad_alta: sevs.includes('Alta'),
       carga_lote_habilitada: Boolean(plan.carga_lote_habilitada),
       unidades_max: lim.unidades_max,
       usuarios_max: lim.usuarios_max,
@@ -165,26 +188,24 @@ export class PlanFormPage implements OnInit {
     });
   }
 
+  estaSeleccionada(idseveridad: number): boolean {
+    return this.seleccion().has(idseveridad);
+  }
+
+  alternarSeveridad(idseveridad: number): void {
+    const siguiente = new Set(this.seleccion());
+    if (!siguiente.delete(idseveridad)) siguiente.add(idseveridad);
+    this.seleccion.set(siguiente);
+  }
+
   severidadesSeleccionadas(): SeveridadPlan[] {
-    const v = this.form.getRawValue();
-    const out: SeveridadPlan[] = [];
-    if (v.severidad_baja) out.push('Baja');
-    if (v.severidad_media) out.push('Media');
-    if (v.severidad_alta) out.push('Alta');
-    return out;
+    return [...this.seleccion()].sort((a, b) => a - b);
   }
 
   private parseSeveridades(raw?: SeveridadPlan[] | string): SeveridadPlan[] {
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === 'string' && raw.trim()) {
-      try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
+    const bruto: unknown = typeof raw === 'string' && raw.trim() ? safeJson(raw) : raw;
+    if (!Array.isArray(bruto)) return [];
+    return bruto.map(Number).filter((n) => Number.isFinite(n));
   }
 
   private toRequest(): PlanRequest {

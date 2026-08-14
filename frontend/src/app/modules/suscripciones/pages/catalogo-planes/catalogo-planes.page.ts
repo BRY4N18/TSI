@@ -42,6 +42,7 @@ import {
   Plan,
   PlanLimites,
   PlanListQuery,
+  SeveridadCatalogo,
   SeveridadPlan,
 } from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
@@ -94,6 +95,8 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
   readonly desactivando = signal(false);
   readonly nextCursor = signal<number | null>(null);
   readonly pageLimit = PAGE_LIMIT;
+  /** Catálogo `Dim_Severidad` para traducir los ids que guardan los planes. */
+  readonly severidadesCatalogo = signal<SeveridadCatalogo[]>([]);
 
   filtroQ = '';
   filtroEstado: EstadoFiltro = 'todas';
@@ -112,6 +115,10 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.api.listarSeveridades().subscribe({
+      next: (items) => this.severidadesCatalogo.set(items),
+      error: () => this.severidadesCatalogo.set([]),
+    });
     this.esDirector.set(this.auth.hasRole('DirectorEstrategia'));
     if (!this.esDirector()) {
       this.filtroEstado = 'activo';
@@ -302,14 +309,22 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
         return limites;
       }
     }
-    return [
-      `${limites.unidades_max} unidades`,
-      `${limites.usuarios_max} usuarios`,
-      `${limites.api_calls_mes} API/mes`,
-      `${limites.api_calls_minuto} API/min`,
-    ].join(' · ');
+    // Un plan puede no traer todas las claves de límites (los sembrados de demo
+    // solo llevan las de API). Omitimos las ausentes en vez de imprimir
+    // `undefined unidades`, que era lo que veía el usuario.
+    const partes = [
+      limites.unidades_max == null ? null : `${limites.unidades_max} unidades`,
+      limites.usuarios_max == null ? null : `${limites.usuarios_max} usuarios`,
+      limites.api_calls_mes == null ? null : `${limites.api_calls_mes} API/mes`,
+      limites.api_calls_minuto == null ? null : `${limites.api_calls_minuto} API/min`,
+    ].filter((p): p is string => p !== null);
+    return partes.length ? partes.join(' · ') : 'Sin límites';
   }
 
+  /**
+   * Los planes guardan ids de `Dim_Severidad`; la tabla muestra los nombres del
+   * catálogo, nunca los identificadores.
+   */
   severidadesTexto(severidades?: SeveridadPlan[] | string): string {
     if (!severidades) return 'Sin configurar';
     if (typeof severidades === 'string') {
@@ -319,6 +334,14 @@ export class CatalogoPlanesPage implements OnInit, OnDestroy {
         return 'Sin configurar';
       }
     }
-    return severidades.length ? severidades.join(' · ') : 'Sin configurar';
+    const nombres = this.nombresSeveridad();
+    const etiquetas = severidades
+      .map((id) => nombres.get(Number(id)))
+      .filter((n): n is string => Boolean(n));
+    return etiquetas.length ? etiquetas.join(' · ') : 'Sin configurar';
+  }
+
+  private nombresSeveridad(): Map<number, string> {
+    return new Map(this.severidadesCatalogo().map((s) => [s.idseveridad, s.severidad]));
   }
 }

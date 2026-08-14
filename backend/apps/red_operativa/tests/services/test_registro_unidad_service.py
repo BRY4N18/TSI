@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from apps.red_operativa.services.proveedor_access_service import ProveedorAccessError
 from apps.red_operativa.services.registro_unidad_service import RegistroUnidadService
+from core.repositories.red_operativa.baja_unidad_repository import BajaUnidadRepository
 
 PROVEEDOR = {"user_id": 3, "roles": ["Cliente"]}
 
@@ -57,6 +58,33 @@ class TestRegistroUnidadService:
         service = RegistroUnidadService()
         data = self._valid_data(placa=mock_unidad_emergencia["placa"], gmail="otra@test.com")
         with pytest.raises(ValueError):
+            service.registrar(data, **PROVEEDOR)
+
+    def test_registrar_rechaza_placa_de_unidad_dada_de_baja(
+        self, mock_pinot, mock_kafka, mock_unidad_emergencia
+    ):
+        """La placa es el identificador único de negocio, esté la unidad activa o no.
+
+        La comprobación solo miraba entre las activas, así que se podía registrar una
+        unidad nueva con la placa de una dada de baja. Como el SRS §3.5.1 permite
+        **reactivar** la antigua, se llegaba a dos unidades activas con la misma placa.
+        """
+        # Arrange — la unidad existente queda dada de baja, con su registro de baja
+        mock_unidad_emergencia["activo"] = False
+        BajaUnidadRepository().create(
+            {
+                "idunidademergencia": mock_unidad_emergencia["idunidademergencia"],
+                "idusuario": 3,
+                "motivo": "retiro de flota",
+                "tipobaja": "Normal",
+            }
+        )
+        service = RegistroUnidadService()
+        data = self._valid_data(
+            placa=mock_unidad_emergencia["placa"], gmail="otra-baja@test.com"
+        )
+        # Act / Assert
+        with pytest.raises(ValueError, match="dada de baja"):
             service.registrar(data, **PROVEEDOR)
 
     def test_registrar_when_idcondado_invalido_raises_lookup_error(self, mock_pinot, mock_kafka):

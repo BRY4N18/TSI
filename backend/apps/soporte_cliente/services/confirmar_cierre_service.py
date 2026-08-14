@@ -9,6 +9,7 @@ from apps.soporte_cliente.domain_constants import (
     ESTADO_CERRADO,
     ESTADO_RESUELTO,
 )
+from apps.soporte_cliente.services.disputa_factura_service import DisputaFacturaService
 from core.repositories.soporte.historial_ticket_repository import HistorialTicketRepository
 from core.repositories.soporte.reclamo_repository import ReclamoRepository
 
@@ -18,9 +19,11 @@ class ConfirmarCierreService:
         self,
         reclamo_repo: ReclamoRepository | None = None,
         historial_repo: HistorialTicketRepository | None = None,
+        disputa_service: DisputaFacturaService | None = None,
     ):
         self.reclamo_repo = reclamo_repo or ReclamoRepository()
         self.historial_repo = historial_repo or HistorialTicketRepository()
+        self.disputa_service = disputa_service or DisputaFacturaService()
 
     def confirmar(
         self, id_reclamo: int, *, idcliente: int, idusuario: int | None = None
@@ -49,6 +52,7 @@ class ConfirmarCierreService:
             estado_anterior=ESTADO_RESUELTO,
             estado_nuevo=ESTADO_CERRADO,
         )
+        self._liberar_disputa(actualizado)
         return {
             **actualizado,
             "estado_anterior": ESTADO_RESUELTO,
@@ -78,5 +82,17 @@ class ConfirmarCierreService:
                     estado_anterior=ESTADO_RESUELTO,
                     estado_nuevo=ESTADO_CERRADO,
                 )
+                self._liberar_disputa(actualizado)
                 cerrados.append(actualizado)
         return cerrados
+
+    def _liberar_disputa(self, reclamo: dict) -> None:
+        """RF-APM-014 — cerrado el reclamo, la factura vuelve al cobro normal.
+
+        Va en los DOS caminos de cierre: si solo estuviera en la confirmacion del
+        cliente, una factura disputada por un ticket auto-cerrado a los 5 dias
+        quedaria excluida del cobro para siempre.
+        """
+        idfactura = reclamo.get("idfactura")
+        if idfactura:
+            self.disputa_service.liberar(str(idfactura))

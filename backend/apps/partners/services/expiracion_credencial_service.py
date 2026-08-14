@@ -12,6 +12,7 @@ vencidas operativas: un fallo abierto en un control de seguridad.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -23,12 +24,16 @@ from apps.partners.domain_constants import (
     NUNCA_EXPIRA,
     SANDBOX_AVISO_PREVIO_DIAS,
 )
+from apps.partners.services.partner_notificacion_service import PartnerNotificacionService
 from core.repositories.partners.credencial_repository import CredencialRepository
+from core.repositories.partners.partner_repository import PartnerRepository
 from core.repositories.partners.historial_acceso_repository import (
     HistorialAccesoRepository,
 )
 
 AVISO_PREVIO = "aviso_previo_expiracion"
+
+logger = logging.getLogger("tsi.partners")
 
 
 class ExpiracionCredencialService:
@@ -36,9 +41,13 @@ class ExpiracionCredencialService:
         self,
         credenciales: CredencialRepository | None = None,
         historial: HistorialAccesoRepository | None = None,
+        partners: PartnerRepository | None = None,
+        notificacion: PartnerNotificacionService | None = None,
     ):
         self.credenciales = credenciales or CredencialRepository()
         self.historial = historial or HistorialAccesoRepository()
+        self.partners = partners or PartnerRepository()
+        self.notificacion = notificacion or PartnerNotificacionService()
 
     @staticmethod
     def _now_ms() -> int:
@@ -84,6 +93,17 @@ class ExpiracionCredencialService:
                 estado_anterior=ESTADO_PRUEBAS_ACTIVO,
                 estado_nuevo=ESTADO_PLAN_ASIGNADO,
             )
+            # El SRS pide avisar "de nuevo al producirse". La bitacora registra
+            # que ocurrio, pero no se lo cuenta a nadie: sin este envio el
+            # partner descubre el vencimiento cuando su integracion empieza a
+            # fallar contra el entorno de pruebas.
+            self._avisar(
+                idpartner=int(credencial["idpartner"]),
+                enviar=lambda partner, nombre: self.notificacion.notificar_vencimiento(
+                    partner=partner, nombre_credencial=nombre
+                ),
+                nombre=str(credencial.get("nombre_credencial", "")),
+            )
             expiradas.append(idcredencial)
 
         return {"expiradas": expiradas, "total": len(expiradas)}
@@ -124,6 +144,33 @@ class ExpiracionCredencialService:
                 estado_anterior=ESTADO_PRUEBAS_ACTIVO,
                 estado_nuevo=ESTADO_PRUEBAS_ACTIVO,
             )
+            dias = max(
+                1,
+                round((expira - ahora) / (24 * 60 * 60 * 1000)),
+            )
+            self._avisar(
+                idpartner=idpartner,
+                enviar=lambda partner, nombre, d=dias: (
+                    self.notificacion.notificar_proximo_vencimiento(
+                        partner=partner, nombre_credencial=nombre, dias_restantes=d
+                    )
+                ),
+                nombre=str(credencial.get("nombre_credencial", "")),
+            )
             avisadas.append(idcredencial)
 
         return {"avisadas": avisadas, "total": len(avisadas)}
+
+    def _avisar(self, *, idpartner: int, enviar, nombre: str) -> None:
+        """Envia el aviso al contacto tecnico del partner.
+
+        Un fallo de correo NO puede tumbar el job: la expiracion ya esta
+        materializada y es un control de seguridad. Se registra y se sigue con
+        las demas credenciales.
+        """
+        try:
+            partner = self.partners.find_by_id(idpartner)
+            if partner:
+                enviar(partner, nombre)
+        except Exception:  # noqa: BLE001 - el job debe terminar su barrido
+            logger.warning("aviso_expiracion_no_enviado", extra={"idpartner": idpartner})

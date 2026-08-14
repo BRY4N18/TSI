@@ -7,6 +7,7 @@ from typing import Any
 from apps.accidentes.domain_constants import (
     ESTADO_ASIGNADO,
     ESTADO_BUSCANDO_UNIDAD,
+    ESTADO_EN_ATENCION,
     ESTADO_REPORTADO,
 )
 from apps.despacho.services.asignacion_inteligente_service import (
@@ -74,5 +75,18 @@ class AsignacionManualService:
         if not self.accidentes.find_by_id(idaccidente):
             raise LookupError("Accidente no encontrado")
         estado = self.estado.get_current_estado(idaccidente)
-        if estado not in (ESTADO_REPORTADO, ESTADO_BUSCANDO_UNIDAD, ESTADO_ASIGNADO, None):
+        # EN_ATENCIÓN entra a propósito: el SRS §3.6.4 dice que si tras la
+        # escalada en sitio "hace falta apoyo adicional, el despacho de la
+        # unidad extra se ejecuta en el módulo de Despacho", y §3.6.2 describe
+        # la coordinación de varias unidades sobre el mismo caso. Excluirlo
+        # dejaba sin apoyo posible justo al caso que ya se está atendiendo:
+        # en cuanto la primera unidad registraba su llegada, no se podía sumar
+        # ninguna otra.
+        if estado not in (
+            ESTADO_REPORTADO,
+            ESTADO_BUSCANDO_UNIDAD,
+            ESTADO_ASIGNADO,
+            ESTADO_EN_ATENCION,
+            None,
+        ):
             raise ValueError("Caso no elegible para despacho")

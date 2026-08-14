@@ -35,13 +35,32 @@ export function homePathForRoles(roles: string[] | undefined | null): string {
   return '/cuentas-clientes';
 }
 
+/**
+ * Destino de la incorporación guiada cuando la cuenta la tiene pendiente.
+ *
+ * El SRS §3.2.2 dice que el sistema **lleva** al cliente a su siguiente paso
+ * pendiente, no que él lo busque: antes el asistente solo se alcanzaba
+ * escribiendo la URL, así que la incorporación no llegaba a ocurrir nunca.
+ */
+export function onboardingPathForCuenta(
+  cuenta: { idcliente: number; onboardingPendiente: boolean } | null | undefined,
+): string | null {
+  if (!cuenta?.onboardingPendiente) {
+    return null;
+  }
+  return `/cuentas-clientes/incorporacion-clientes/${cuenta.idcliente}/onboarding`;
+}
+
 /** Prefer explicit deep-link returnUrl; otherwise role home (ignore generic cuentas hub). */
 export function resolvePostLoginPath(
   roles: string[] | undefined | null,
   returnUrl: string | null,
+  cuenta?: { idcliente: number; onboardingPendiente: boolean } | null,
 ): string {
   if (returnUrl && returnUrl !== '/' && returnUrl !== '/cuentas-clientes') {
     return returnUrl;
   }
-  return homePathForRoles(roles);
+  // La incorporación pendiente manda sobre el home del rol: hasta completarla,
+  // la cuenta no está lista para operar.
+  return onboardingPathForCuenta(cuenta) ?? homePathForRoles(roles);
 }

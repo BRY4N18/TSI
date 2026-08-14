@@ -59,18 +59,14 @@ class ConsumoDatosService:
         """Las severidades contratadas por el cliente (RF-APM-002).
 
         **Se lee de `Fact_Suscripcion`, no de `Dim_Plan`**, contra lo que dice
-        literalmente el spec. Verificado 2026-08-09 contra la base real:
+        literalmente el spec, porque es lo semanticamente correcto: la
+        suscripcion guarda lo que el cliente **contrato**, congelado — misma
+        filosofia que el cupo congelado de #07. Si el plan cambia despues, lo
+        contratado no se mueve. El plan queda como respaldo para las
+        suscripciones antiguas que no copiaron el valor.
 
-          - `Dim_Plan.severidades_desbloqueadas` vale el centinela `'null'` en
-            los 5 planes sembrados. Leer de ahi daria conjunto vacio y, con el
-            fail-closed de RF-APM-003, **ningun partner podria consumir nada**.
-          - `Fact_Suscripcion.severidades_desbloqueadas` si esta poblado
-            (`["Baja","Media"]`) porque `alta_suscripcion_service` copia el
-            valor del plan al contratar.
-
-        Ademas es lo semanticamente correcto: la suscripcion guarda lo que el
-        cliente **contrato**, congelado — misma filosofia que el cupo congelado
-        de #07. Si el plan cambia despues, lo contratado no se mueve.
+        Los valores son ids de `Dim_Severidad` (1 Leve · 2 Moderado · 3 Grave ·
+        4 Fatal) desde la migracion del 2026-08-11.
         """
         suscripcion = self.planes.suscripcion_vigente(idcliente)
         if not suscripcion:
@@ -84,9 +80,7 @@ class ConsumoDatosService:
         if severidades:
             return severidades
 
-        # Respaldo: si la suscripcion no lo trae, se intenta el plan. Hoy da
-        # vacio por el centinela, pero deja de ser un punto ciego si algun dia
-        # se corrigen los planes.
+        # Respaldo: si la suscripcion no lo trae, se intenta el plan.
         plan = self.planes.find_plan(int(suscripcion["idplan"]))
         if not plan:
             raise ConsumoDatosError(
@@ -117,8 +111,10 @@ class ConsumoDatosService:
                 continue
             if isinstance(v, int):
                 ids.add(v)
-            elif isinstance(v, str):
-                ids.update(SEVERIDADES_POR_NIVEL.get(v.strip().lower(), ()))
+            elif isinstance(v, str) and v.strip().isdigit():
+                # Tolerado porque el JSON podria traer el id como texto; los
+                # nombres del vocabulario retirado ya no se reconocen.
+                ids.add(int(v.strip()))
         return ids
 
     def zonas_contratadas(self, idcliente: int) -> set[int]:
@@ -214,33 +210,8 @@ class ConsumoDatosService:
         return {"items": items, "meta": meta}
 
 
-# ---------------------------------------------------------------------------
-# Equivalencia plan -> severidades de accidente
-# ---------------------------------------------------------------------------
-# El catalogo canonico es **`Dim_Severidad`**, sembrado el 2026-08-09 con los
-# valores que de verdad viajan en los datos:
-#
-#     1 Leve · 2 Moderado · 3 Grave · 4 Fatal
-#
-# Los planes, en cambio, siguen guardando su propio vocabulario
-# ("Baja"/"Media"/"Alta"), asi que hace falta traducir. Los niveles son
-# **acumulativos**: contratar "Media" incluye "Baja", porque un nivel superior
-# no puede ver menos que uno inferior. "Alta" cubre tambien "Fatal", ya que
-# dejar los casos fatales fuera de todos los planes seria peor que incluirlos
-# en el mas alto.
-#
-# ⚠️ ESTE DICCIONARIO ES UN PUENTE, NO EL DISENO FINAL.
-#
-# Decidido el 2026-08-09: el vocabulario "Baja/Media/Alta" **queda deprecado**.
-# Todo el sistema —incluida la pantalla de planes— debe trabajar contra
-# `Dim_Severidad`. Cuando Suscripciones migre `severidades_desbloqueadas` a
-# guardar `idseveridad`, **este diccionario se borra**.
-#
-# Sigue aqui solo porque los 5 planes sembrados aun guardan el vocabulario
-# viejo y quitarlo ahora dejaria a los partners sin consumo. Plan de retirada
-# completo en `decisiones-pendientes.md` #23.
-SEVERIDADES_POR_NIVEL: dict[str, tuple[int, ...]] = {
-    "baja": (1,),           # Leve
-    "media": (1, 2),        # + Moderado
-    "alta": (1, 2, 3, 4),   # + Grave y Fatal
-}
+# Aqui vivia `SEVERIDADES_POR_NIVEL`, el puente que traducia el vocabulario
+# propio de los planes ("Baja"/"Media"/"Alta") a los ids de `Dim_Severidad`.
+# Retirado el 2026-08-11: los planes y las suscripciones ya guardan ids reales
+# (`database/migra_severidades_plan_a_idseveridad.py`) y el catalogo unico es
+# `Dim_Severidad`. Cierra `decisiones-pendientes.md` #23.

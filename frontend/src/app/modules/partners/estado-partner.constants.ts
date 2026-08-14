@@ -75,6 +75,7 @@ export const ESTADOS_PARTNER: readonly EstadoPartner[] = [
   'Suspendido',
 ] as const;
 
+export const ESTADO_SUSPENDIDO: EstadoPartner = 'Suspendido';
 export const ESTADO_PENDIENTE_APROBACION: EstadoPartner = 'Pendiente de aprobación';
 export const ESTADO_PRUEBAS_ACTIVO: EstadoPartner = 'Pruebas activo';
 export const ESTADO_PRODUCCION_ACTIVA: EstadoPartner = 'Producción activa';

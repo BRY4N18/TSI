@@ -3,6 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
+import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { PartnerApiService } from '../../services/partner-api.service';
 import type { PartnerDetalle } from '../../services/models/partner.types';
 import { DetallePartnerPage } from './detalle-partner.page';
@@ -31,6 +33,7 @@ const sobre = <T,>(data: T) => ({ data, meta: { pagination: null } });
 
 describe('DetallePartnerPage', () => {
   let api: jasmine.SpyObj<PartnerApiService>;
+  let authApi: jasmine.SpyObj<AuthApiService>;
   let fixture: ComponentFixture<DetallePartnerPage>;
 
   function configurar(modo: 'ver' | 'crear'): void {
@@ -38,6 +41,9 @@ describe('DetallePartnerPage', () => {
       imports: [DetallePartnerPage],
       providers: [
         provideRouter([]),
+        // La ficha consulta el rol para decidir si ofrece suspender/reactivar
+        // (RF-PAC-005): es acción de Administrador.
+        { provide: AuthApiService, useValue: authApi },
         { provide: PartnerApiService, useValue: api },
         {
           provide: ActivatedRoute,
@@ -59,7 +65,11 @@ describe('DetallePartnerPage', () => {
       'registrar',
       'asignarPlan',
       'clientesElegibles',
+      'suspender',
+      'reactivar',
     ]);
+    authApi = jasmine.createSpyObj<AuthApiService>('AuthApiService', ['hasRole']);
+    authApi.hasRole.and.returnValue(false);
     api.detalle.and.returnValue(of(sobre(detalle())) as never);
     api.clientesElegibles.and.returnValue(
       of(sobre([{ idcliente: 100, nombre: 'Empresa Demo Torres' }])) as never,
@@ -376,6 +386,50 @@ describe('DetallePartnerPage', () => {
       const [, clave1] = api.registrar.calls.argsFor(0);
       const [, clave2] = api.registrar.calls.argsFor(1);
       expect(clave1).toBe(clave2);
+    });
+  });
+
+  describe('suspensión manual (RF-PAC-005)', () => {
+    it('solo el Administrador ve la acción de suspender', () => {
+      // Arrange — el Desarrollador de APIs gestiona partners pero no corta
+      // accesos: es una decisión de negocio.
+      authApi.hasRole.and.returnValue(false);
+
+      // Act
+      configurar('ver');
+
+      // Assert
+      expect(html().querySelector('[data-testid="btn-suspender"]')).toBeNull();
+    });
+
+    it('ofrece suspender a un partner activo aunque no esté en mora', () => {
+      // Arrange — el SRS admite suspender "por causas distintas a la mora"
+      // (vencimiento de contrato, petición del cliente), y el panel de
+      // suspensiones solo lista morosos y suspendidos.
+      authApi.hasRole.and.returnValue(true);
+
+      // Act
+      configurar('ver');
+
+      // Assert
+      expect(html().querySelector('[data-testid="btn-suspender"]')).toBeTruthy();
+      expect(html().querySelector('[data-testid="btn-reactivar"]')).toBeNull();
+    });
+
+    it('avisa de que la suspensión alcanza a todas las credenciales', async () => {
+      // Arrange
+      authApi.hasRole.and.returnValue(true);
+      configurar('ver');
+      const dialog = TestBed.inject(ConfirmDialogService);
+      spyOn(dialog, 'confirm').and.resolveTo(false);
+
+      // Act
+      await fixture.componentInstance.suspender(detalle());
+
+      // Assert
+      const peticion = (dialog.confirm as jasmine.Spy).calls.mostRecent().args[0];
+      expect(peticion.message).toContain('TODAS');
+      expect(api.suspender).not.toHaveBeenCalled();
     });
   });
 });

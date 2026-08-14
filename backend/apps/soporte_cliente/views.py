@@ -8,13 +8,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.soporte_cliente.domain_constants import ROL_CLIENTE
 from apps.soporte_cliente.permissions import (
     IsAdministradorSLA,
     IsClienteSoporte,
     IsSoporteAgente,
     IsSoporteAgenteOrCliente,
     IsSoporteAgenteOrNivelEscalado,
+    es_solo_reportador,
 )
 from apps.soporte_cliente.services.catalogo_servicio_service import CatalogoServicioService
 from apps.soporte_cliente.services.cliente_lookup_service import ClienteLookupService
@@ -53,7 +53,7 @@ class TicketsView(APIView):
         cursor_int = int(cursor) if cursor else None
 
         idcliente = None
-        if set(getattr(request.user, "roles", [])) == {ROL_CLIENTE}:
+        if es_solo_reportador(getattr(request.user, "roles", [])):
             idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
 
         items = ReclamoRepository().list(
@@ -138,7 +138,7 @@ class TicketDetalleView(APIView):
             return error_response("not_found", "Ticket no encontrado", "404", status_code=404)
 
         roles = set(getattr(request.user, "roles", []))
-        es_solo_cliente = roles == {ROL_CLIENTE}
+        es_solo_cliente = es_solo_reportador(roles)
         if es_solo_cliente:
             idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
             if idcliente != reclamo.get("idcliente"):
@@ -294,7 +294,7 @@ class ComentarTicketView(APIView):
             return error_response("bad_request", "mensaje requerido", "400", status_code=400)
 
         roles = set(getattr(request.user, "roles", []))
-        es_solo_cliente = roles == {ROL_CLIENTE}
+        es_solo_cliente = es_solo_reportador(roles)
         if es_solo_cliente:
             reclamo = ReclamoRepository().find_by_id(id_reclamo)
             if not reclamo:

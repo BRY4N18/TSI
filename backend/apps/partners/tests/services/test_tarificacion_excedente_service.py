@@ -55,7 +55,7 @@ def _plan(precio=0.05):
         "nombre": "Profesional",
         "limites": '{"api_calls_mes": 100, "api_calls_minuto": 120}',
         "precio_excedente_llamada": precio,
-        "severidades_desbloqueadas": '["Media"]',
+        "severidades_desbloqueadas": "[1, 2]",
         "activo": True,
     })
     PINOT_STORE["Fact_Suscripcion"].append({
@@ -65,7 +65,7 @@ def _plan(precio=0.05):
         "estado": "Activa",
         "activo": True,
         "fecha_inicio": 1,
-        "severidades_desbloqueadas": '["Media"]',
+        "severidades_desbloqueadas": "[1, 2]",
     })
 
 
@@ -379,16 +379,19 @@ class TestReintentosPersistidos:
     """
 
     def _factura(self, reintentos=0):
+        # Solo columnas que `Fact_Factura` tiene de verdad: ni `monto` ni
+        # `proximo_reintento` existen en el esquema, y una fila de prueba que
+        # las lleve deja de parecerse a la que devuelve Pinot.
         return {
             "id_factura": "f-1",
             "id_cliente": ID_CLIENTE,
             "tipo": TIPO_EXCEDENTE,
             "periodo": PERIODO,
-            "monto": 2.5,
+            "monto_base": 2.5,
+            "monto_total": 2.5,
             "estado_pago": "Pendiente",
             "reintentos": reintentos,
             "resultado_ultimo_reintento": "",
-            "proximo_reintento": 0,
             "activo": True,
         }
 
@@ -409,14 +412,37 @@ class TestReintentosPersistidos:
 
     def test_cada_intento_persiste_su_resultado(self, mock_pinot, mock_kafka):
         # Arrange / Act
-        r = _servicio().programar_reintento(
-            self._factura(), "Kafka caído", ahora_ms=1000
-        )
+        servicio = _servicio()
+        r = servicio.programar_reintento(self._factura(), "Kafka caído", ahora_ms=1000)
 
-        # Assert
+        # Assert — se persisten las columnas que Fact_Factura tiene de verdad
         assert r["reintentos"] == 1
         assert r["resultado_ultimo_reintento"] == "Kafka caído"
-        assert r["proximo_reintento"] == 1000 + ESPERAS_REINTENTO_MS[0]
+        assert r["fecha_actualizacion"] == 1000
+        # ...y el "cuándo toca" se deriva de ellas: aún no, pero sí al vencer
+        assert servicio.vencimiento_reintento(r, ahora_ms=1000) is False
+        assert (
+            servicio.vencimiento_reintento(
+                r, ahora_ms=1000 + ESPERAS_REINTENTO_MS[0]
+            )
+            is True
+        )
+
+    def test_no_publica_columnas_que_el_esquema_no_tiene(self, mock_pinot, mock_kafka):
+        # Arrange — `Fact_Factura` no tiene `proximo_reintento`. Publicarla era
+        # inocuo al escribir (Pinot la descarta) pero **rompía la consulta** que
+        # la filtraba, y con ella el job entero. La prueba mira el payload
+        # publicado, no el doble, que acepta cualquier campo.
+        servicio = _servicio()
+
+        # Act
+        servicio.programar_reintento(self._factura(), "timeout", ahora_ms=1000)
+
+        # Assert
+        publicados = [m["payload"] for m in mock_kafka if "id_factura" in m["payload"]]
+        assert publicados
+        for payload in publicados:
+            assert "proximo_reintento" not in payload
 
     def test_agotados_los_tres_queda_pendiente_de_emision_manual(
         self, mock_pinot, mock_kafka
@@ -431,7 +457,10 @@ class TestReintentosPersistidos:
 
         # Assert
         assert r["resultado"] == "reintentos_agotados"
-        assert r["proximo_reintento"] == 0
+        # Agotada: ya no se reintenta, y eso se deriva de `reintentos`, que
+        # supera el máximo — no de una columna de agenda que no existe.
+        assert r["reintentos"] > MAX_REINTENTOS
+        assert _servicio().vencimiento_reintento(r, ahora_ms=10**12) is False
         assert len(alertas.avisos) == 1
         assert "manual" in alertas.avisos[0]["cuerpo"].lower()
 
@@ -451,16 +480,25 @@ class TestReintentosPersistidos:
 
     def test_solo_devuelve_los_reintentos_ya_vencidos(self, mock_pinot, mock_kafka):
         # Arrange
-        for idf, proximo in (("vencido", 500), ("futuro", 50_000), ("sin_reintento", 0)):
+        # El vencimiento se deriva de `reintentos` + `fecha_actualizacion`:
+        # con un intento hecho, toca a los ESPERAS_REINTENTO_MS[0] ms.
+        espera = ESPERAS_REINTENTO_MS[0]
+        casos = (
+            ("vencido", 1, 1000 - espera),        # agendado hace justo la espera
+            ("futuro", 1, 1000),                   # agendado ahora: aún no toca
+            ("sin_reintento", 0, 1000 - espera),   # sin fallos: no se reintenta
+        )
+        for idf, intentos, agendado in casos:
             PINOT_STORE["Fact_Factura"].append({
                 "id_factura": idf,
                 "id_cliente": ID_CLIENTE,
                 "tipo": TIPO_EXCEDENTE,
                 "periodo": PERIODO,
-                "monto": 1.0,
+                "monto_base": 1.0,
+                "monto_total": 1.0,
                 "estado_pago": "Pendiente",
-                "reintentos": 1,
-                "proximo_reintento": proximo,
+                "reintentos": intentos,
+                "fecha_actualizacion": agendado,
                 "activo": True,
             })
 

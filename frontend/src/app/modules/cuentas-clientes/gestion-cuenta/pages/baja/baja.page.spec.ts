@@ -10,7 +10,11 @@ describe('BajaPage', () => {
   let api: jasmine.SpyObj<CuentaClienteApiService>;
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj('CuentaClienteApiService', ['darBaja']);
+    api = jasmine.createSpyObj('CuentaClienteApiService', ['darBaja', 'getPerfil']);
+    // La pantalla nombra la cuenta por su razón social, no por su identificador.
+    api.getPerfil.and.returnValue(
+      of({ data: { razon_social: 'Rescate Vial Andino S.A.' } }) as never,
+    );
     api.darBaja.and.returnValue(
       of({
         data: { message: 'Cuenta dada de baja', estado: 'Dado de baja', sesiones_expulsadas: 1 },

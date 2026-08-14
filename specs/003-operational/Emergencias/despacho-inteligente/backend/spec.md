@@ -200,6 +200,11 @@ Para un caso que ya tiene uno o más despachos activos, el Operador debe poder a
 - Ejecuta el mismo patrón que O59/O64 para el **mismo `idaccidente`** con una **nueva `idunidademergencia`**.
 - `idorigendespacho` = Manual.
 - Valida que la nueva unidad no tenga ya un despacho activo (`Fact_Despacho.activo=true`) para el mismo caso.
+- **Estados del caso admitidos:** `REPORTADO`, `BUSCANDO_UNIDAD`, `ASIGNADO` y **`EN_ATENCIÓN`**.
+  Este último es el escenario principal de la coordinación, no una excepción: el SRS §3.6.4
+  establece que si tras la escalada en sitio hace falta apoyo adicional, la unidad extra se
+  despacha desde este módulo. Excluirlo dejaba sin apoyo posible a todo caso que ya estuviera
+  siendo atendido. `BORRADOR`, `CERRADO`, `DESCARTADO` y `FUSIONADO` se rechazan.
 - INSERT en `Fact_NotificacionDespacho` + `Fact_Despacho` + `Fact_HistorialDespachoUnidad`.
 
 ### RF-DES-010: Parámetros configurables del algoritmo
@@ -222,6 +227,44 @@ El Operador de emergencias debe poder ver en tiempo real el estado del proceso d
 - Historial de intentos (unidades notificadas y su respuesta: Confirmado / Rechazado con motivo / Timeout / Pendiente).
 - Tiempo transcurrido desde el registro del accidente.
 - Mapa con ubicación del accidente y posición de unidades candidatas.
+
+### RF-DES-013: La unidad que aborta queda excluida de ese caso
+
+*(Corrección 2026-08-12.)* La consulta de candidatas excluye, además de las unidades que
+**rechazaron** el despacho, a las que **abortaron su misión** en ese mismo accidente
+(`Fact_HistorialDespachoUnidad` con estado `Abortado`). El SRS §3.6.4 dispara una nueva
+asignación al abortar, y RF-DES-006 la define "con una unidad **nueva**": sin la exclusión, la
+unidad que acababa de abortar volvía a ser la mejor candidata y el sistema le devolvía el
+mismo caso, de modo que una unidad averiada podía recibirlo indefinidamente.
+
+### RF-DES-012: Proceso consumidor de eventos de despacho (worker)
+
+Los disparadores asíncronos de este módulo —la asignación automática al reportarse un
+accidente (RF-DES-001) y la re-asignación al vencer un despacho (RF-DES-006)— **solo existen
+si hay un proceso que consuma sus eventos de Kafka**. Registrar el handler no lo ejecuta.
+
+- **Proceso.** `python manage.py run_kafka_consumers` consume los topics de los handlers que
+  `DespachoConfig.ready()` inscribe: `Fact_AccidenteTipoEstadoAccidente_topic` y
+  `DespachoTimeout_topic`.
+- **Despliegue.** Corre como servicio propio (`despacho-worker` en `docker/accidentes.yml`),
+  **separado del servidor de aplicación**: el autoreloader de `runserver` duplicaría el
+  consumidor, y un fallo del bucle no debe afectar a la API. La supervisión es la política
+  `restart` del contenedor.
+- **Posición inicial (`auto_offset_reset = latest`).** Un worker que arranca por primera vez
+  **no reprocesa el historial del topic**: reprocesarlo intentaría despachar accidentes ya
+  atendidos.
+- **Confirmación de offset manual, posterior al proceso** (*at-least-once*): si el worker
+  muere a mitad de un lote, ese lote se reprocesa; ningún evento se pierde.
+- **Idempotencia de la asignación inicial.** Como consecuencia de lo anterior, el handler de
+  accidente reportado **no crea despacho si el caso ya tiene uno activo**. Esto cubre además
+  el caso de que el Operador haya despachado a mano (RF-DES-007) entretanto. La comprobación
+  lee de Pinot, así que no cubre el reintento dentro de la ventana de ingesta (5–15 s).
+- **Aislamiento de fallos.** Un handler que lanza excepción se registra y **no detiene el
+  bucle ni bloquea la partición**: un mensaje envenenado no puede impedir el despacho de los
+  accidentes siguientes.
+- **Formato del evento de estado.** El productor publica `idtipoestadoincidente` (FK a
+  `Dim_TipoEstadoAccidente`), **no** el nombre del estado. El consumidor debe resolver la FK;
+  leer una clave `estado` inexistente hace que ignore en silencio todos los mensajes reales.
 
 ## 5. Requisitos no funcionales
 

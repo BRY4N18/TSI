@@ -54,7 +54,12 @@ class RechazarDespachoService:
             if d.get("idnotificaciondespacho") == idnotificaciondespacho
         ]
         if not despachos:
-            raise LookupError("Despacho no encontrado")
+            # La notificación existe; lo que ya no está vigente es el despacho
+            # (venció por falta de respuesta o se cerró). Devolver "no
+            # encontrada" mandaba a la unidad a buscar un problema inexistente.
+            raise ValueError(
+                "Este despacho ya venció por falta de respuesta y fue reasignado"
+            )
         despacho = despachos[0]
         self.notificaciones.publish_update(
             idnotificaciondespacho,

@@ -26,9 +26,15 @@ def run_dunning(*, now: datetime | None = None) -> dict:
     facturas = FacturaRepository()
     cobro = CobroService()
     intentos = 0
-    for fac in list(facturas.pinot.query("SELECT * FROM Fact_Factura", {}) or []):
-        if fac.get("estado_pago") != "Pendiente":
-            continue
+    # El filtro va en SQL y el LIMIT es explícito: sin `LIMIT`, Pinot recorta a 10 filas
+    # de la tabla entera, así que el ciclo de mora solo miraba diez facturas de todo el
+    # sistema y el resto no se reintentaba ni se suspendía nunca.
+    pendientes = facturas.pinot.query(
+        "SELECT * FROM Fact_Factura WHERE estado_pago = %(estado)s "
+        "ORDER BY fecha_emision DESC LIMIT %(limit)s",
+        {"estado": "Pendiente", "limit": 10000},
+    )
+    for fac in list(pendientes or []):
         reintentos = int(fac.get("reintentos") or 0)
         emision = _parse_emision(fac.get("fecha_emision"))
         if not emision:
@@ -36,10 +42,10 @@ def run_dunning(*, now: datetime | None = None) -> dict:
         dias = (now.date() - emision.astimezone(TZ).date()).days
         # Day 0 already tried at generation; D+3 → reintentos==1; D+5 → reintentos==2
         if dias >= 5 and reintentos == 2:
-            cobro.intentar(fac["id_factura"])
+            cobro.intentar_factura(fac)
             intentos += 1
         elif dias >= 3 and reintentos == 1:
-            cobro.intentar(fac["id_factura"])
+            cobro.intentar_factura(fac)
             intentos += 1
     logger.info("dunning_done", extra={"intentos": intentos})
     return {"intentos": intentos}

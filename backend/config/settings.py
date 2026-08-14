@@ -319,3 +319,30 @@ PARTNERS_MORA_AVISOS_DIAS = tuple(
 PARTNERS_DENYLIST_TTL_SEGUNDOS = int(
     os.environ.get("PARTNERS_DENYLIST_TTL_SEGUNDOS", "60")
 )
+
+# --- Registro de actividad ---
+# Sin esto, los loggers `tsi.*` no llegan a ninguna parte: el nivel por defecto
+# de la raiz es WARNING. Importa para los procesos que no tienen pantalla ni
+# respuesta HTTP donde mirar --- el worker de consumo de Kafka del despacho es
+# una caja negra si no registra lo que hace (B27).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "tsi": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "tsi"},
+    },
+    "loggers": {
+        "tsi": {
+            "handlers": ["console"],
+            "level": os.environ.get("TSI_LOG_LEVEL", "INFO"),
+            # Propaga a la raiz a proposito: `caplog` de pytest captura en la
+            # raiz, y varias pruebas aseveran el contenido del rastro de
+            # auditoria. Cortar la propagacion las deja sin ver nada. La raiz
+            # no tiene handler propio, asi que no se duplica la salida.
+            "propagate": True,
+        },
+    },
+}

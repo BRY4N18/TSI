@@ -45,7 +45,7 @@ class AltaSuscripcionService:
         if existente and existente.get("activo"):
             raise AltaSuscripcionError(
                 "conflict",
-                "Ya existe una suscripción activo=true",
+                "Esta cuenta ya tiene una suscripción vigente",
                 409,
             )
         plan = self.plans.find_by_id(idplan)
@@ -75,6 +75,9 @@ class AltaSuscripcionService:
 
             factura = GeneracionFacturaService().para_suscripcion(suscripcion)
             if factura:
-                CobroService().intentar(factura["id_factura"])
+                # La factura acaba de emitirse en esta misma petición: cobrarla por id
+                # obligaba a releerla de Pinot, que aún no la expone, y el alta
+                # respondía 500 a todo cliente que ya tuviera método de pago.
+                CobroService().intentar_factura(factura)
                 result["factura"] = factura
         return result

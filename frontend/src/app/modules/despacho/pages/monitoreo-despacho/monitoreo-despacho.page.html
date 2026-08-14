@@ -30,6 +30,18 @@
       </div>
 
       <div class="flex items-center gap-4">
+        <!-- SRS §3.6.2: la vía manual "permanece disponible aunque la
+             asignación automática falle". Sin este enlace la pantalla de
+             asignación manual solo era alcanzable escribiendo la URL, y sirve
+             además para sumar una segunda unidad al mismo caso. -->
+        <a
+          [routerLink]="['/despacho/asignacion', idaccidente]"
+          data-testid="link-asignacion-manual"
+          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-bg-page"
+        >
+          <app-tabler-icon name="radio" [size]="16" />
+          Asignar unidad
+        </a>
         <div class="text-right">
           <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
             Tiempo transcurrido
@@ -54,6 +66,35 @@
       <div class="mb-4 rounded-md border border-alert-info bg-alert-info-bg px-4 py-3 text-sm text-alert-info">
         {{ e.mensaje }}
       </div>
+    }
+
+    <!-- SRS §3.6.4: la pérdida de señal "deja constancia visible para el
+         operador". Antes solo se veía en el expediente, que exige el caso ya
+         cerrado — es decir, cuando ya no sirve de nada. -->
+    @if (e.alertas?.length) {
+      <section
+        class="mb-4 rounded-lg border border-alert-warning bg-alert-warning-bg p-6"
+        data-testid="alertas-caso"
+      >
+        <h2 class="m-0 mb-3 flex items-center gap-2 text-base font-semibold text-alert-warning">
+          <app-tabler-icon name="alert-triangle" [size]="18" />
+          Avisos del caso
+        </h2>
+        <ul class="m-0 grid gap-2">
+          @for (a of e.alertas; track a.fechahora) {
+            <li class="flex items-baseline justify-between gap-3 text-sm text-text-primary">
+              <span>{{ a.nota }}</span>
+              <span class="shrink-0 font-mono text-xs text-text-secondary">
+                {{ a.fechahora | date: 'dd/MM/yyyy HH:mm' }}
+              </span>
+            </li>
+          }
+        </ul>
+        <p class="m-0 mt-3 text-xs text-text-secondary">
+          La unidad sigue asignada al caso: se perdió visibilidad de su posición, no la
+          responsabilidad sobre la atención.
+        </p>
+      </section>
     }
 
     <section class="mb-4 rounded-lg border border-border-default bg-bg-surface p-6">
@@ -83,11 +124,101 @@
               >
                 {{ u.estado }}
               </span>
+              <!-- SRS §3.6.4: "cuando un técnico olvida cerrar su parte, el
+                   Operador de central puede forzar el retiro de ese despacho
+                   puntual", y queda registrado como forzado. -->
+              @if (esRetirable(u.estado)) {
+                <button
+                  type="button"
+                  [attr.data-testid]="'btn-forzar-retiro-' + u.iddespacho"
+                  [disabled]="forzando() === u.iddespacho"
+                  class="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-alert-warning px-3 py-2 text-xs font-medium text-alert-warning hover:bg-alert-warning-bg disabled:opacity-50"
+                  (click)="forzarRetiro(u.iddespacho, u.unidademergencia)"
+                >
+                  @if (forzando() === u.iddespacho) {
+                    Retirando…
+                  } @else {
+                    Forzar retiro
+                  }
+                </button>
+              }
             </li>
           }
         </ul>
       }
     </section>
+
+    <!-- Cierre del caso (SRS §3.6.4). Antes no existía ninguna acción de
+         cierre en toda la aplicación: los casos no podían terminar. -->
+    @if (puedeCerrarse(e.estado_caso)) {
+      <section class="mb-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <h2 class="m-0 mb-1 text-base font-semibold text-text-primary">Cierre del caso</h2>
+        <p class="m-0 mb-4 text-sm text-text-secondary">
+          El caso solo puede cerrarse cuando todas las unidades se han retirado. La evidencia
+          adjunta no es requisito para cerrar.
+        </p>
+
+        @if (cierreError()) {
+          <div
+            class="mb-4 flex items-start gap-2 rounded-md border border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
+            data-testid="cierre-error"
+          >
+            <app-tabler-icon name="alert-triangle" [size]="18" />
+            <span>{{ cierreError() }}</span>
+          </div>
+        }
+
+        <div class="grid gap-4">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-text-secondary">
+            Resultado de la atención
+            <input
+              type="text"
+              data-testid="input-resultado"
+              [(ngModel)]="resultadoAtencion"
+              name="resultadoAtencion"
+              placeholder="Ej. Atención completada sin novedad"
+              class="rounded-md border border-border-default bg-transparent px-3.5 py-2.5 text-text-primary"
+            />
+          </label>
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-text-secondary">
+            Observaciones finales (opcional)
+            <textarea
+              rows="2"
+              [(ngModel)]="observacionesFinales"
+              name="observacionesFinales"
+              class="rounded-md border border-border-default bg-transparent px-3.5 py-2.5 text-text-primary"
+            ></textarea>
+          </label>
+
+          <div class="flex flex-wrap gap-3">
+            <button
+              type="button"
+              data-testid="btn-cerrar-caso"
+              [disabled]="cerrando()"
+              class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              (click)="cerrarCaso()"
+            >
+              <app-tabler-icon name="circle-check" [size]="16" />
+              @if (cerrando()) {
+                Cerrando…
+              } @else {
+                Cerrar caso
+              }
+            </button>
+            <button
+              type="button"
+              data-testid="btn-cancelar-caso"
+              [disabled]="cancelando()"
+              class="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-alert-critical px-4 py-2.5 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-50"
+              (click)="cancelarCaso()"
+            >
+              <app-tabler-icon name="x" [size]="16" />
+              Cancelar caso (falsa alarma)
+            </button>
+          </div>
+        </div>
+      </section>
+    }
 
     <section class="rounded-lg border border-border-default bg-bg-surface p-6">
       <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Historial de intentos</h2>

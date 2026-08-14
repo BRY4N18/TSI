@@ -12,6 +12,9 @@ from apps.despacho.services.despacho_math import haversine_km
 from core.repositories.accidentes.accidente_repository import AccidenteRepository
 from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.geografia_repository import GeografiaRepository
+from core.repositories.despacho.historial_despacho_repository import (
+    HistorialDespachoRepository,
+)
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
     HistorialEstadoUnidadRepository,
@@ -43,6 +46,7 @@ class ConsultaCandidatasService:
         notificacion_repo: NotificacionDespachoRepository | None = None,
         parametros_repo: ParametrosDespachoRepository | None = None,
         concordancia: ConcordanciaTipoService | None = None,
+        historial_despacho_repo: HistorialDespachoRepository | None = None,
     ):
         self.accidentes = accidente_repo or AccidenteRepository()
         self.unidades = unidad_repo or UnidadEmergenciaRepository()
@@ -50,6 +54,7 @@ class ConsultaCandidatasService:
         self.ubicacion = ubicacion_repo or UbicacionUnidadRepository()
         self.historial_unidad = historial_unidad_repo or HistorialEstadoUnidadRepository()
         self.despachos = despacho_repo or DespachoRepository()
+        self.historial_despacho = historial_despacho_repo or HistorialDespachoRepository()
         self.notificaciones = notificacion_repo or NotificacionDespachoRepository()
         self.parametros = parametros_repo or ParametrosDespachoRepository()
         self.concordancia = concordancia or ConcordanciaTipoService(self.parametros)
@@ -148,4 +153,26 @@ class ConsultaCandidatasService:
         for notif in self.notificaciones.list_by_accidente(idaccidente):
             if notif.get("estadonotificaciondespacho") == ESTADO_RECHAZADA:
                 rechazadas.add(int(notif["idunidaddemergencia"]))
-        return rechazadas
+        return rechazadas | self._unidades_abortaron(idaccidente)
+
+    def _unidades_abortaron(self, idaccidente: str) -> set[int]:
+        """Unidades que abortaron su misión en este caso.
+
+        SRS §3.6.4: al abortar "se dispara automáticamente una nueva asignación"
+        y §3.6.2 define la reasignación como el mismo proceso "con una unidad
+        **nueva**". Sin esta exclusión, la unidad que acaba de abortar volvía a
+        salir como mejor candidata y el sistema le devolvía el mismo caso: una
+        ambulancia averiada podía recibirlo una y otra vez.
+        """
+        from core.repositories.despacho.historial_despacho_repository import (
+            ESTADO_ABORTADO,
+        )
+
+        abortadas: set[int] = set()
+        for despacho in self.despachos.list_by_accidente(idaccidente):
+            estado, _ = self.historial_despacho.get_current_estado(
+                int(despacho["iddespacho"])
+            )
+            if estado == ESTADO_ABORTADO:
+                abortadas.add(int(despacho["idunidademergencia"]))
+        return abortadas

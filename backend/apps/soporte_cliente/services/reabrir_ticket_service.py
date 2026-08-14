@@ -7,7 +7,11 @@ actual, en vez de conservar los valores originales.
 
 from __future__ import annotations
 
-from apps.soporte_cliente.domain_constants import ESTADO_CERRADO, ESTADO_REABIERTO
+from apps.soporte_cliente.domain_constants import (
+    ESTADO_CERRADO,
+    ESTADO_REABIERTO,
+    SLA_SIN_COMPROMISO,
+)
 from apps.soporte_cliente.services.asignacion_sla_service import AsignacionSLAService
 from core.repositories.soporte.archivo_adjunto_reclamo_repository import (
     ArchivoAdjuntoReclamoRepository,
@@ -65,7 +69,13 @@ class ReabrirTicketService:
             tipo_incidencia=reclamo["tipo_incidencia"],
             prioridad=reclamo["prioridad"],
         )
-        cambios = {"estado": ESTADO_REABIERTO, **(sla or {})}
+        # Si al reabrir ya no hay regla aplicable —el cliente cancelo su
+        # suscripcion entre medias, por ejemplo—, el ticket NO puede conservar el
+        # «en curso» viejo: mostraria un plazo que ya nadie vigila.
+        cambios = {
+            "estado": ESTADO_REABIERTO,
+            **(sla or {"sla_status": SLA_SIN_COMPROMISO}),
+        }
         actualizado = self.reclamo_repo.update(id_reclamo, cambios)
 
         self.historial_repo.append(

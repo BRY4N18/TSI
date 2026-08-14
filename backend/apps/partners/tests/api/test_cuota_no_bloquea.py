@@ -39,7 +39,7 @@ def _entorno_consumible(cupo=5):
         "estado": "Activa",
         "activo": True,
         "fecha_inicio": 1,
-        "severidades_desbloqueadas": '["Alta"]',
+        "severidades_desbloqueadas": "[1, 2, 3, 4]",
     })
     PINOT_STORE["Dim_Preferencias_Cliente"].append(
         {"id_cliente": ID_PARTNER, "zonas_geograficas": "[10]"}

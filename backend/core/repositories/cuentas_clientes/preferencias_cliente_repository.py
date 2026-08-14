@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 
@@ -35,7 +35,7 @@ class PreferenciasClienteRepository:
         return rows[0] if rows else None
 
     def create(self, cliente_id: int, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         pref_id = self._next_id()
         payload = {
             "id_preferencia": pref_id,
@@ -64,7 +64,7 @@ class PreferenciasClienteRepository:
         if not rows:
             return None
         existing = rows[0]
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.TOPIC, payload)
         return payload

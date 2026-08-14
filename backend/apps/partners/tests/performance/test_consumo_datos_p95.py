@@ -50,7 +50,7 @@ def entorno_consumible(credencial_produccion_headers):
         "estado": "Activa",
         "activo": True,
         "fecha_inicio": 1,
-        "severidades_desbloqueadas": '["Media"]',
+        "severidades_desbloqueadas": "[1, 2]",
     })
     PINOT_STORE["Dim_Preferencias_Cliente"].append(
         {"id_cliente": ID_PARTNER, "zonas_geograficas": "[10]"}

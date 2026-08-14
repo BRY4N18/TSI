@@ -418,6 +418,10 @@
         "dataType": "INT"
       },
       {
+        "name": "idplan_programado",
+        "dataType": "INT"
+      },
+      {
         "name": "estado",
         "dataType": "STRING"
       },

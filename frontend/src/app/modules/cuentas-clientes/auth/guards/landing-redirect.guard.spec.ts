@@ -19,8 +19,11 @@ describe('landingRedirectGuard', () => {
       'isAuthenticated',
       'requiresPasswordChange',
       'getProfile',
+      'getCuenta',
     ]);
     authApi.requiresPasswordChange.and.returnValue(false);
+    // Sin cuenta de cliente asociada: el guard resuelve por rol.
+    authApi.getCuenta.and.returnValue(null);
 
     TestBed.configureTestingModule({
       providers: [{ provide: AuthApiService, useValue: authApi }, provideRouter([])],
@@ -77,6 +80,24 @@ describe('landingRedirectGuard', () => {
     // Assert
     expect(TestBed.inject(Router).serializeUrl(destino)).toBe(
       '/cuentas-clientes/auth/password-reset?forced=true',
+    );
+  });
+  it('con_incorporacion_pendiente_va_al_asistente', () => {
+    // Arrange — la cuenta aún no está lista para operar (SRS §3.2.2).
+    authApi.isAuthenticated.and.returnValue(true);
+    authApi.getProfile.and.returnValue({ idusuario: 9002, gmail: 'x@y.z', roles: ['Cliente'] });
+    authApi.getCuenta.and.returnValue({
+      idcliente: 920003,
+      estadoOnboarding: 'Pendiente',
+      onboardingPendiente: true,
+    });
+
+    // Act
+    const destino = ejecutar();
+
+    // Assert
+    expect(TestBed.inject(Router).serializeUrl(destino)).toBe(
+      '/cuentas-clientes/incorporacion-clientes/920003/onboarding',
     );
   });
 });

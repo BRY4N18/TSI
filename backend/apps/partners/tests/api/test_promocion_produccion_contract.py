@@ -184,9 +184,13 @@ class TestSolicitudContract:
 
 
 class TestResolucionContract:
-    def test_aprobar_when_pendiente_returns_200_con_credencial(
+    def test_aprobar_when_pendiente_returns_200_sin_secreto_para_el_admin(
         self, api_client, partner_en_pruebas, partner_auth_headers, administrador_auth_headers
     ):
+        """BE-DELTA-02 / RN-PON-005 — la respuesta de quien **aprueba** no
+        puede llevar el `client_secret`: obligaría al Administrador a
+        transmitirselo al partner por un canal inseguro. El partner lo emite
+        desde su portal."""
         # Arrange
         assert _solicitar(api_client, partner_auth_headers).status_code == 202
 
@@ -197,7 +201,8 @@ class TestResolucionContract:
         assert response.status_code == 200
         data = response.json()["data"]
         assert data["estado"] == "Producción activa"
-        assert data["credencial"]["entorno"] == "Producción"
+        assert "credencial" not in data
+        assert "client_secret" not in response.content.decode()
 
     def test_rechazar_when_sin_motivo_returns_422(
         self, api_client, partner_en_pruebas, partner_auth_headers, administrador_auth_headers

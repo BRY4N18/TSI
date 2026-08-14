@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 
@@ -39,7 +39,7 @@ class ServerAccessRepository:
         return rows[0] if rows else None
 
     def create_server_user(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         server_user_id = self._next_server_user_id()
         payload = {
             "idusuariosservidor": server_user_id,
@@ -55,7 +55,7 @@ class ServerAccessRepository:
         existing = self.find_server_user_by_id(server_user_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.SERVER_USER_TOPIC, payload)
         return payload
@@ -72,7 +72,7 @@ class ServerAccessRepository:
         return rows[0] if rows else None
 
     def create_server_role(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         server_role_id = self._next_server_role_id()
         payload = {
             "idrolservidor": server_role_id,
@@ -88,7 +88,7 @@ class ServerAccessRepository:
         existing = self.find_server_role_by_id(server_role_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.SERVER_ROLE_TOPIC, payload)
         return payload
@@ -97,7 +97,7 @@ class ServerAccessRepository:
     def assign_server_role(
         self, server_user_id: int, server_role_id: int
     ) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idusuariosservidor": server_user_id,
             "idrolservidor": server_role_id,
@@ -109,7 +109,7 @@ class ServerAccessRepository:
     def map_server_role_to_app_role(
         self, server_role_id: int, app_role_id: int
     ) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idrolservidor": server_role_id,
             "idrol": app_role_id,

@@ -6,6 +6,8 @@ import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.comp
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { LIST_PAGE_SHELL_CLASS } from '../../../../shared/ui/list-states/list-table.styles';
+import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { presentacionDe } from '../../estado-partner.constants';
 import { presentacionEntorno } from '../../entorno.constants';
 import {
@@ -205,6 +207,50 @@ const COPY_ERROR: Record<string, string> = {
                 </button>
               </div>
             }
+
+            <!-- RF-PAC-005: el Administrador suspende o reactiva por causas
+                 distintas a la mora —vencimiento de contrato, petición del
+                 cliente—. El panel de suspensiones solo lista suspendidos y
+                 morosos, así que la acción tiene que vivir también aquí, donde
+                 está cualquier partner. -->
+            @if (esAdministrador()) {
+              <div class="mt-5 border-t border-border-default pt-4">
+                @if (suspendido(p)) {
+                  <p class="mb-3 text-sm text-text-secondary">
+                    Al reactivar se restituyen solo las credenciales que estaban activas antes
+                    de la suspensión; las que el partner revocó por seguridad seguirán inactivas.
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="btn-reactivar"
+                    class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                    [disabled]="cambiandoAcceso()"
+                    (click)="reactivar(p)"
+                  >
+                    {{ cambiandoAcceso() ? 'Reactivando…' : 'Reactivar acceso' }}
+                  </button>
+                } @else {
+                  <p class="mb-3 text-sm text-text-secondary">
+                    Suspender desactiva <strong>todas</strong> sus credenciales, de pruebas y de
+                    producción. Se usa por mora, vencimiento de contrato o petición del cliente.
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="btn-suspender"
+                    class="rounded-lg border border-alert-critical px-5 py-2.5 text-sm font-medium text-alert-critical disabled:opacity-50"
+                    [disabled]="cambiandoAcceso()"
+                    (click)="suspender(p)"
+                  >
+                    {{ cambiandoAcceso() ? 'Suspendiendo…' : 'Suspender acceso' }}
+                  </button>
+                }
+                @if (mensajeAcceso()) {
+                  <p class="mt-3 text-sm text-text-primary" data-testid="mensaje-acceso">
+                    {{ mensajeAcceso() }}
+                  </p>
+                }
+              </div>
+            }
           </section>
 
           <section class="rounded-lg border border-border-default bg-bg-surface p-6 md:col-span-2">
@@ -237,6 +283,8 @@ const COPY_ERROR: Record<string, string> = {
 })
 export class DetallePartnerPage implements OnInit {
   private readonly api = inject(PartnerApiService);
+  private readonly authApi = inject(AuthApiService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -246,6 +294,8 @@ export class DetallePartnerPage implements OnInit {
   readonly cargando = signal(false);
   readonly guardando = signal(false);
   readonly asignando = signal(false);
+  readonly cambiandoAcceso = signal(false);
+  readonly mensajeAcceso = signal<string | null>(null);
   readonly errorCarga = signal<string | null>(null);
   readonly errorAccion = signal<string | null>(null);
   readonly idpartnerDuplicado = signal<number | null>(null);
@@ -318,6 +368,71 @@ export class DetallePartnerPage implements OnInit {
    */
   puedeAsignarPlan(p: PartnerDetalle): boolean {
     return !estaSuspendido(p) && p.estado === 'Registrado';
+  }
+
+  suspendido = estaSuspendido;
+
+  esAdministrador(): boolean {
+    return this.authApi.hasRole('Administrador');
+  }
+
+  async suspender(p: PartnerDetalle): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Suspender acceso',
+      message: `Se desactivarán TODAS las credenciales de ${p.nombrepartner}, de pruebas y de producción, y se le notificará el motivo.`,
+      tone: 'danger',
+      confirmLabel: 'Suspender',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.cambiandoAcceso.set(true);
+    this.api
+      .suspender(p.idpartner, 'Suspensión manual desde la consola', nuevaClaveIdempotencia())
+      .subscribe({
+        next: (res) => {
+          this.cambiandoAcceso.set(false);
+          this.mensajeAcceso.set(
+            `Acceso suspendido. Credenciales desactivadas: ${res.data.credenciales_desactivadas}.`,
+          );
+          this.cargar();
+        },
+        error: () => {
+          this.cambiandoAcceso.set(false);
+          this.mensajeAcceso.set('No se pudo suspender el acceso.');
+        },
+      });
+  }
+
+  async reactivar(p: PartnerDetalle): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Reactivar acceso',
+      message: `Se restituirán solo las credenciales que estaban activas antes de la suspensión de ${p.nombrepartner}.`,
+      confirmLabel: 'Reactivar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.cambiandoAcceso.set(true);
+    this.api
+      .reactivar(p.idpartner, 'Reactivación manual desde la consola', nuevaClaveIdempotencia())
+      .subscribe({
+        next: (res) => {
+          this.cambiandoAcceso.set(false);
+          const noRest = res.data.credenciales_no_restituidas;
+          this.mensajeAcceso.set(
+            `Acceso reactivado. Credenciales restituidas: ${res.data.credenciales_restituidas}` +
+              (noRest ? `; ${noRest} siguen inactivas por haber sido revocadas.` : '.'),
+          );
+          this.cargar();
+        },
+        error: () => {
+          this.cambiandoAcceso.set(false);
+          this.mensajeAcceso.set('No se pudo reactivar el acceso.');
+        },
+      });
   }
 
   cargar(): void {

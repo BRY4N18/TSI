@@ -18,6 +18,9 @@ export interface UnidadEmergenciaData {
   unidademergencia: string;
   tipounidademergencia: TipoUnidadEmergencia;
   idusuario?: number | null;
+  /** Nombre y apellidos del usuario de acceso de la unidad. Solo lo devuelve el
+   * detalle; es lo que se pinta en pantalla en lugar de `idusuario`. */
+  usuario_nombre?: string | null;
   activo: boolean;
   latitud: number | null;
   longitud: number | null;

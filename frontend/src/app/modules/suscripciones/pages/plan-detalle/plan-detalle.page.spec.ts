@@ -11,7 +11,17 @@ describe('PlanDetallePage', () => {
   let planApi: jasmine.SpyObj<PlanApiService>;
 
   beforeEach(async () => {
-    planApi = jasmine.createSpyObj('PlanApiService', ['buscarPorId']);
+    planApi = jasmine.createSpyObj('PlanApiService', ['buscarPorId', 'listarSeveridades']);
+    // Ambas pantallas traducen los ids de severidad que guarda el plan a los
+    // nombres de `Dim_Severidad`.
+    planApi.listarSeveridades.and.returnValue(
+      of([
+        { idseveridad: 1, severidad: 'Leve' },
+        { idseveridad: 2, severidad: 'Moderado' },
+        { idseveridad: 3, severidad: 'Grave' },
+        { idseveridad: 4, severidad: 'Fatal' },
+      ]),
+    );
     planApi.buscarPorId.and.returnValue(
       of({
         idplan: 7,

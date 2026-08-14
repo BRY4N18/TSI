@@ -23,30 +23,40 @@ interface NavGroup {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex h-screen flex-col overflow-hidden bg-bg-page">
+      <!-- El header se adapta encogiendo, no recortando: cada grupo puede
+           reducirse y los textos largos se truncan; lo único que nunca se
+           encoge son los controles accionables. Así no existe un ancho en el
+           que un botón quede fuera del borde. Antes, con un correo largo, el de
+           cerrar sesión desaparecía por la derecha a partir de 1024px. -->
       <header
-        class="relative flex h-16 shrink-0 items-center justify-between border-b border-border-default bg-bg-surface px-6"
+        class="relative flex h-16 shrink-0 items-center gap-3 border-b border-border-default bg-bg-surface px-4 sm:px-6"
       >
-        <div class="flex shrink-0 items-center gap-3">
+        <div class="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-md border border-border-default text-text-primary sm:hidden"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-primary sm:hidden"
             (click)="toggleSidebar()"
             aria-label="Abrir menú de navegación"
           >
             <app-tabler-icon name="menu" [size]="22" />
           </button>
-          <div class="flex items-center gap-3">
+          <div class="flex min-w-0 items-center gap-3">
             <span
-              class="grid h-8 w-8 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
+              class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
               >TSI</span
             >
-            <span class="text-sm font-semibold text-text-primary">Tráfico Seguro Integral</span>
+            <!-- Se trunca de forma fluida cuando hay sitio; en pantallas muy
+                 estrechas se oculta, porque "Tr…" no informa de nada y el
+                 logotipo ya identifica el producto. -->
+            <span class="hidden truncate text-sm font-semibold text-text-primary sm:block"
+              >Tráfico Seguro Integral</span
+            >
           </div>
         </div>
 
         <!-- Buscador global: solo estructura visual, sin lógica de búsqueda todavía
              (pendiente hasta que exista un endpoint/índice de búsqueda global). -->
-        <div class="flex flex-1 items-center justify-end sm:justify-center">
+        <div class="flex min-w-0 flex-1 items-center justify-end sm:justify-center">
           <!-- Desktop/tablet: siempre visible, centrado -->
           <input
             type="search"
@@ -79,10 +89,10 @@ interface NavGroup {
           }
         </div>
 
-        <div class="flex shrink-0 items-center gap-3 text-sm">
+        <div class="ml-auto flex min-w-0 items-center gap-3 text-sm">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
             (click)="themeService.toggle()"
             [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
             [attr.aria-pressed]="themeService.isDark()"
@@ -94,7 +104,7 @@ interface NavGroup {
                disponible para el usuario autenticado todavía. -->
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-md border border-border-default text-text-secondary opacity-60 disabled:cursor-not-allowed"
+            class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary opacity-60 disabled:cursor-not-allowed sm:flex"
             disabled
             title="Región: Todas las regiones"
           >
@@ -102,10 +112,10 @@ interface NavGroup {
           </button>
 
           <!-- Campana de notificaciones: sin fuente de datos todavía, sin contador. -->
-          <div class="relative">
+          <div class="relative shrink-0">
             <button
               type="button"
-              class="flex h-9 w-9 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
               (click)="toggleNotifications()"
               aria-label="Notificaciones"
             >
@@ -120,24 +130,34 @@ interface NavGroup {
             }
           </div>
 
+          <!-- Identidad: se encoge y trunca según el espacio libre, sin saltos.
+               El avatar y el botón de sesión no se encogen nunca; el correo
+               completo y los roles quedan siempre en el title del avatar. -->
           @if (profile) {
-            <span
-              class="grid h-8 w-8 place-items-center rounded-full bg-accent-primary text-xs font-semibold text-white"
-              >{{ initials }}</span
+            <div
+              class="flex min-w-0 items-center gap-3"
+              [title]="profile.gmail + ' · ' + profile.roles.join(', ')"
             >
-            <span class="text-text-primary">{{ profile.gmail }}</span>
-            <span
-              class="rounded-full border border-border-default bg-bg-page px-2 py-0.5 text-xs text-text-secondary"
-              >{{ profile.roles.join(', ') }}</span
-            >
+              <span
+                class="hidden h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-primary text-xs font-semibold text-white sm:grid"
+                >{{ initials }}</span
+              >
+              <span class="hidden truncate text-text-primary sm:block">{{ profile.gmail }}</span>
+              <span
+                class="hidden shrink truncate rounded-full border border-border-default bg-bg-page px-2 py-0.5 text-xs text-text-secondary md:block"
+                >{{ profile.roles.join(', ') }}</span
+              >
+            </div>
           }
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-md border border-border-default px-3 py-1.5 font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border-default px-3 py-1.5 font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary"
             (click)="logout()"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
           >
             <app-tabler-icon name="logout" [size]="18" />
-            Cerrar sesión
+            <span class="hidden sm:inline">Cerrar sesión</span>
           </button>
         </div>
       </header>

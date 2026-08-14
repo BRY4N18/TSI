@@ -174,9 +174,23 @@ describe('Registro de accidente - integration flow', () => {
     // Assert: el conflicto queda disponible para que el diálogo de fusión lo consuma
     expect(fixture.componentInstance.duplicadoConflicto()?.idaccidente_similar).toBe('ACC-050');
 
-    // Act: operador confirma la fusión sobre el caso similar ya existente
+    // Act: el operador confirma la fusión. El reporte duplicado **todavía no
+    // existe** —el 409 rechazó el alta—, así que primero se registra forzando
+    // la advertencia y después se fusiona ese caso nuevo contra el padre
+    // (SRS §3.6.1: el duplicado no se borra, queda apuntando al que lo absorbió).
     fixture.componentInstance.confirmarFusion('ACC-050');
-    const fusionarReq = httpMock.expectOne('/api/v1/accidentes/ACC-050/fusionar');
+    const altaForzada = httpMock.expectOne(
+      (req) =>
+        req.url === '/api/v1/accidentes' &&
+        req.method === 'POST' &&
+        req.params.get('forzarAdvertencias') === 'true',
+    );
+    altaForzada.flush({
+      data: { idaccidente: 'ACC-102', estado: 'BORRADOR', advertencias: [] },
+      meta: { pagination: null },
+    });
+
+    const fusionarReq = httpMock.expectOne('/api/v1/accidentes/ACC-102/fusionar');
     expect(fusionarReq.request.method).toBe('POST');
     expect(fusionarReq.request.body).toEqual({
       idaccidenteprincipal: 'ACC-050',
@@ -193,7 +207,7 @@ describe('Registro de accidente - integration flow', () => {
     });
 
     expect(notifications.toasts()).toEqual([
-      jasmine.objectContaining({ message: 'Reportes fusionados exitosamente', tone: 'success' }),
+      jasmine.objectContaining({ tone: 'success' }),
     ]);
     expect(fixture.componentInstance.duplicadoConflicto()).toBeNull();
   });

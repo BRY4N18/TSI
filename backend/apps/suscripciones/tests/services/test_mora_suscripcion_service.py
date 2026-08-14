@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from apps.suscripciones.services.mora_suscripcion_service import MoraSuscripcionService
@@ -39,6 +41,26 @@ class TestMoraSuscripcionService:
         self._seed_fallida()
         # Act
         result = MoraSuscripcionService().regularizar(id_suscripcion=1)
+        # Assert
+        assert result["estado_pago"] == "Pagada"
+        assert result["estado_suscripcion"] == "Activa"
+
+    def test_regularizar_no_depende_de_releer_la_factura_reabierta(
+        self, mock_pinot, mock_kafka
+    ):
+        """El cliente suspendido tiene que poder salir de la mora.
+
+        `regularizar` reabre la factura a Pendiente y la cobra. Cuando el cobro la
+        releía por id, Pinot devolvía todavía la versión `Fallida` durante 5-15 s y el
+        cobro salía por la guarda de "no está Pendiente" sin intentar nada: la
+        suscripción se quedaba Suspendida para siempre, que es exactamente lo que el
+        SRS §3.3.1 quiere evitar al conservarle el acceso mínimo para regularizar.
+        """
+        # Arrange — Pinot no expone nada de lo que se escriba en esta operación
+        self._seed_fallida()
+        with patch.object(FacturaRepository, "find_by_id", return_value=None):
+            # Act
+            result = MoraSuscripcionService().regularizar(id_suscripcion=1)
         # Assert
         assert result["estado_pago"] == "Pagada"
         assert result["estado_suscripcion"] == "Activa"

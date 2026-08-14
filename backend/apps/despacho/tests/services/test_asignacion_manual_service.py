@@ -91,3 +91,59 @@ class TestMonitoreoDespachoService:
         # Assert
         assert estado["idaccidente"] == accidente_activo
         assert len(estado["intentos"]) >= 1
+
+
+@pytest.mark.service
+class TestApoyoAdicionalEnAtencion:
+    def test_coordinar_segunda_unidad_con_el_caso_en_atencion(
+        self, mock_pinot, mock_kafka, accidente_activo, unidad_con_estado_activa
+    ):
+        # Arrange — SRS §3.6.4: "si tras la escalada hace falta apoyo adicional,
+        # el despacho de la unidad extra se ejecuta en el módulo de Despacho".
+        # La primera unidad ya está en el sitio y el caso pasó a EN_ATENCIÓN.
+        from apps.accidentes.domain_constants import ESTADO_EN_ATENCION
+        from core.repositories.accidentes.estado_accidente_repository import (
+            EstadoAccidenteRepository,
+        )
+        from core.repositories.despacho.historial_estado_unidad_repository import (
+            HistorialEstadoUnidadRepository,
+        )
+
+        AsignacionInteligenteService().ejecutar(idaccidente=accidente_activo, idusuario=2)
+        EstadoAccidenteRepository().append_estado(
+            idaccidente=accidente_activo, estado=ESTADO_EN_ATENCION, idusuario=2
+        )
+        HistorialEstadoUnidadRepository().append_estado(
+            idunidademergencia=2,
+            estadonuevo="Activa",
+            idusuario=99,
+            estadoanterior="Fuera de servicio",
+        )
+
+        # Act
+        result = CoordinacionMultipleService().coordinar(
+            idaccidente=accidente_activo, idunidademergencia=2, idusuario=2
+        )
+
+        # Assert
+        assert result["iddespacho"] is not None
+        assert result["message"] == "Despacho múltiple coordinado"
+
+    def test_no_se_despacha_sobre_un_caso_cerrado(
+        self, mock_pinot, mock_kafka, accidente_activo, unidad_con_estado_activa
+    ):
+        # Arrange
+        from apps.accidentes.domain_constants import ESTADO_CERRADO
+        from core.repositories.accidentes.estado_accidente_repository import (
+            EstadoAccidenteRepository,
+        )
+
+        EstadoAccidenteRepository().append_estado(
+            idaccidente=accidente_activo, estado=ESTADO_CERRADO, idusuario=2
+        )
+
+        # Act / Assert
+        with pytest.raises(ValueError, match="no elegible"):
+            AsignacionManualService().asignar(
+                idaccidente=accidente_activo, idunidademergencia=1, idusuario=2
+            )

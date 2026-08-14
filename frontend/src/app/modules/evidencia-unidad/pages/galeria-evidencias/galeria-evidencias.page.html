@@ -1,10 +1,12 @@
 <div class="mx-auto max-w-6xl p-8">
+  <!-- El detalle del accidente es una pantalla de Operador: enviar ahí a la
+       unidad la deja en "Acceso denegado". Cada rol vuelve a donde sí puede. -->
   <a
-    [routerLink]="['/accidentes', idaccidente]"
+    [routerLink]="rutaVolver()"
     class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
   >
     <app-tabler-icon name="arrow-left" [size]="16" />
-    Volver al accidente
+    {{ etiquetaVolver() }}
   </a>
 
   <div class="mb-6 flex flex-wrap items-center justify-between gap-4">

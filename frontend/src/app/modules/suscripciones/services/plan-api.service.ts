@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import {
   Plan,
@@ -10,12 +10,20 @@ import {
   PlanListQuery,
   PlanPatchRequest,
   PlanRequest,
+  SeveridadCatalogo,
 } from './models/suscripciones.types';
 
 @Injectable({ providedIn: 'root' })
 export class PlanApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/suscripciones/planes';
+
+  /** Catálogo `Dim_Severidad` que alimenta el selector del formulario de plan. */
+  listarSeveridades(): Observable<SeveridadCatalogo[]> {
+    return this.http
+      .get<{ data: { items: SeveridadCatalogo[] } }>('/api/v1/suscripciones/severidades')
+      .pipe(map((res) => res?.data?.items ?? []));
+  }
 
   /**
    * Listado paginado. Preferir `PlanListQuery` con `limit` (default 20).

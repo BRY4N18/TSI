@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -161,6 +161,9 @@ const ESTADO_BADGE: Record<EstadoRegion, string> = {
 export class CatalogoRegionesPage implements OnInit {
   private readonly facade = inject(RegionOperativaFacadeService);
   private readonly authApi = inject(AuthApiService);
+  // El shell de la aplicación es OnPush: sin marcar la vista, nada de lo que
+  // llega por HTTP se repinta. Ver §9 del design-system.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly esDirector = this.authApi.hasRole('DirectorTecnologico');
   readonly listTableClass = LIST_TABLE_CLASS;
@@ -186,6 +189,7 @@ export class CatalogoRegionesPage implements OnInit {
     this.error = null;
     this.loading = true;
     this.facade.listar().subscribe((result) => {
+      this.cdr.markForCheck();
       this.loading = false;
       if (result.ok && result.data) {
         this.regiones = result.data;

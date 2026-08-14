@@ -33,6 +33,24 @@ class CobroService:
         factura = self.facturas.find_by_id(id_factura)
         if not factura:
             raise ValueError("factura no encontrada")
+        return self.intentar_factura(
+            factura, force_fail=force_fail, idempotency_override=idempotency_override
+        )
+
+    def intentar_factura(
+        self,
+        factura: dict[str, Any],
+        *,
+        force_fail: bool = False,
+        idempotency_override: str | None = None,
+    ) -> dict[str, Any]:
+        """Cobra una factura ya en memoria, sin releerla.
+
+        La renovación cobra la factura que acaba de emitir: buscarla por id contra
+        Pinot fallaba con "factura no encontrada" durante los 5-15 s que tarda la
+        ingesta, y el job entero reventaba.
+        """
+        id_factura = factura["id_factura"]
         if factura.get("estado_pago") != "Pendiente":
             return factura
         reintentos = int(factura.get("reintentos") or 0)
@@ -60,14 +78,14 @@ class CobroService:
             },
         )
         if resultado.exitoso:
-            return self.facturas.update(
-                id_factura,
+            return self.facturas.update_from(
+                factura,
                 {
                     "estado_pago": "Pagada",
                     "resultado_ultimo_reintento": "Exitoso",
                     "idmetodopago": metodo["idmetodopago"],
                 },
-            ) or factura
+            )
         return self._fallo(factura, reintentos, resultado.codigo)
 
     def _fallo(self, factura: dict[str, Any], reintentos: int, codigo: str) -> dict[str, Any]:
@@ -78,7 +96,7 @@ class CobroService:
         }
         if nuevo >= 3:
             changes["estado_pago"] = "Fallida"
-        updated = self.facturas.update(factura["id_factura"], changes) or factura
+        updated = self.facturas.update_from(factura, changes)
         if nuevo >= 3:
             from apps.suscripciones.services.mora_suscripcion_service import MoraSuscripcionService
 

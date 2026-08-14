@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -105,6 +105,9 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
 export class ReevaluacionPage {
   private readonly route = inject(ActivatedRoute);
   private readonly facade = inject(RegionOperativaFacadeService);
+  // El shell de la aplicación es OnPush: sin marcar la vista, nada de lo que
+  // llega por HTTP se repinta. Ver §9 del design-system.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly idregionoperativa = Number(this.route.snapshot.paramMap.get('idregionoperativa'));
   estadoregion: 'En_Alerta' | 'Despublicada' = 'En_Alerta';
@@ -123,6 +126,7 @@ export class ReevaluacionPage {
     this.facade
       .reevaluarRegion(this.idregionoperativa, this.estadoregion, this.motivo)
       .subscribe((result) => {
+      this.cdr.markForCheck();
         if (result.ok && result.data) {
           this.mensaje = 'Región re-evaluada correctamente.';
           this.estadoregionActual = result.data.estadoregion;

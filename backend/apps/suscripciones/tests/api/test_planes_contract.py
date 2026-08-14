@@ -121,7 +121,7 @@ class TestPlanesContract:
                 "precio_excedente_llamada": 0.05,
                 "nivel": "Básico",
                 "periodicidad": "Mensual",
-                "severidades_desbloqueadas": ["Baja"],
+                "severidades_desbloqueadas": [1],
                 "limites": {
                     "unidades_max": 2,
                     "usuarios_max": 2,
@@ -245,7 +245,7 @@ class TestIdempotencyKeyContract:
             "precio_excedente_llamada": 0.05,
             "nivel": "Básico",
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": ["Baja"],
+            "severidades_desbloqueadas": [1],
             "limites": {
                 "unidades_max": 1,
                 "usuarios_max": 1,

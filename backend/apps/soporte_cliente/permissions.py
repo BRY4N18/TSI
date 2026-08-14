@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from rest_framework.permissions import BasePermission
 
+from apps.partners.domain_constants import ROL_PARTNER_INTEGRACION
 from apps.soporte_cliente.domain_constants import (
     ROL_ADMINISTRADOR,
     ROL_CLIENTE,
@@ -13,14 +14,24 @@ from apps.soporte_cliente.domain_constants import (
 )
 
 
+# Quien REPORTA un ticket. `PartnerIntegracion` esta aqui porque el SRS dice que
+# el partner puede registrar una disputa sobre su factura: es el mismo actor
+# —quien recibe el servicio y reclama—, solo que su relacion con TSI pasa por la
+# API en vez de por el portal. Excluirlo dejaba la disputa de facturacion sin
+# nadie que pudiera abrirla desde el lado del partner (era el hallazgo F18).
+ROLES_REPORTADORES = frozenset({ROL_CLIENTE, ROL_PARTNER_INTEGRACION})
+
+
 class IsClienteSoporte(BasePermission):
-    """Cliente role — registra tickets, comenta, confirma cierre, reabre."""
+    """Reportador del ticket (Cliente o PartnerIntegracion) — registra, comenta,
+    confirma cierre, reabre. La pertenencia del ticket la sigue filtrando cada
+    vista por `idcliente`: este permiso solo abre la puerta, no da alcance."""
 
     def has_permission(self, request, view) -> bool:
         user = request.user
         if not user or not getattr(user, "is_authenticated", False):
             return False
-        return ROL_CLIENTE in getattr(user, "roles", [])
+        return bool(ROLES_REPORTADORES & set(getattr(user, "roles", [])))
 
 
 class IsSoporteAgente(BasePermission):
@@ -75,7 +86,7 @@ class IsAdministradorSLA(BasePermission):
 
 
 class IsSoporteAgenteOrCliente(BasePermission):
-    """Lectura/listado accesible a Cliente (sus tickets) y agentes/admin (todos)."""
+    """Lectura/listado accesible al reportador (sus tickets) y agentes/admin (todos)."""
 
     def has_permission(self, request, view) -> bool:
         user = request.user
@@ -84,5 +95,26 @@ class IsSoporteAgenteOrCliente(BasePermission):
         roles = set(getattr(user, "roles", []))
         return bool(
             roles
-            & {ROL_CLIENTE, ROL_SOPORTE, ROL_ADMINISTRADOR, ROL_DESARROLLADOR_APIS, ROL_DIRECTOR_TECNOLOGICO}
+            & (
+                ROLES_REPORTADORES
+                | {
+                    ROL_SOPORTE,
+                    ROL_ADMINISTRADOR,
+                    ROL_DESARROLLADOR_APIS,
+                    ROL_DIRECTOR_TECNOLOGICO,
+                }
+            )
         )
+
+
+def es_solo_reportador(roles) -> bool:
+    """True si el usuario SOLO reporta —Cliente o PartnerIntegracion— y por tanto
+    su vista debe acotarse a sus propios tickets y ocultar las notas internas.
+
+    Existe como funcion y no como comparacion suelta porque las vistas lo hacian
+    con `roles == {ROL_CLIENTE}`: al admitir al partner (F18), esa igualdad lo
+    habria dejado **fuera del acotamiento**, es decir viendo tickets ajenos y
+    notas internas. El acotamiento no se decide por "ser Cliente" sino por "no
+    tener ningun rol de atencion".
+    """
+    return bool(roles) and set(roles) <= ROLES_REPORTADORES

@@ -53,7 +53,8 @@ Todas las peticiones HTTP autenticadas incluyen `Authorization: Bearer` desde al
 - **FR-UI-004**: `SessionGuard` bloquea rutas del `AppShellComponent` sin sesión válida → redirect `/cuentas-clientes/auth/login` con `returnUrl`.
 - **FR-UI-005**: `RoleGuard` valida `data.roles` contra claims del perfil post-login (RF-AUT-004).
 - **FR-UI-006**: Tras login con cambio obligatorio, redirect a flujo de cambio de contraseña antes del home por rol (RF-AUT-005).
-- **FR-UI-007**: Pantalla `password-reset` para solicitud (correo) y cambio de contraseña definitiva (RF-AUT-006).
+- **FR-UI-007**: Pantalla `password-reset` con sus dos flujos: solicitud de temporal por correo (sin sesión) y **cambio de la contraseña definitiva** con `?forced=true` (con sesión, CU-O04 / RF-AUT-006b). *Implementado el 2026-08-11: hasta entonces la pantalla solo traía el primer flujo, así que quien entraba con credencial temporal no podía activar su cuenta.*
+- **FR-UI-022** *(2026-08-11)*: Tras el login, y en la resolución de la raíz `/`, una cuenta con la incorporación pendiente **MUST** llevar a su asistente (`/cuentas-clientes/incorporacion-clientes/:idcliente/onboarding`) por delante del home del rol. El dato viaja en `LoginData.cuenta`. Un `returnUrl` explícito conserva prioridad.
 - **FR-UI-008**: `resolvePostLoginPath` / `homePathForRoles` — destino inicial por rol tras login exitoso (RNF-AUT-004 UX).
 - **FR-UI-009**: `AuthApiService` encapsula login/logout/refresh de perfil sin duplicar contratos OpenAPI en componentes.
 - **FR-UI-010**: `UserRoleAdminService` y `ServerAccessAdminService` disponibles para pantallas admin futuras; guards reutilizables en rutas CU-O06/O07/O08 (numeración corregida 2026-08-08, catálogo vigente).

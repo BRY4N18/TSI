@@ -35,11 +35,16 @@ class SolicitudCambioPlanRepository:
         return rows[0] if rows else None
 
     def find_pendiente(self, idcliente: int) -> dict[str, Any] | None:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Solicitud_Cambio_Plan", {}) or [])
-        for r in rows:
-            if r.get("idcliente") == idcliente and r.get("estado") == "Pendiente":
-                return r
-        return None
+        # El filtro va en SQL y el LIMIT es explícito: sin `LIMIT`, Pinot recorta a
+        # 10 filas de la tabla entera y la pendiente de este cliente puede quedar
+        # fuera, con lo que se aceptaría una segunda solicitud simultánea.
+        rows = self.pinot.query(
+            "SELECT * FROM Fact_Solicitud_Cambio_Plan "
+            "WHERE idcliente = %(idcliente)s AND estado = 'Pendiente' "
+            "ORDER BY idsolicitud DESC LIMIT 100",
+            {"idcliente": idcliente},
+        )
+        return rows[0] if rows else None
 
     def list(
         self,
@@ -48,13 +53,21 @@ class SolicitudCambioPlanRepository:
         estado: str | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
-        rows = list(self.pinot.query("SELECT * FROM Fact_Solicitud_Cambio_Plan", {}) or [])
+        condiciones = []
+        params: dict[str, Any] = {}
         if idcliente is not None:
-            rows = [r for r in rows if r.get("idcliente") == idcliente]
+            condiciones.append("idcliente = %(idcliente)s")
+            params["idcliente"] = idcliente
         if estado:
-            rows = [r for r in rows if r.get("estado") == estado]
-        rows.sort(key=lambda r: r.get("idsolicitud", 0), reverse=True)
-        return rows[:limit]
+            condiciones.append("estado = %(estado)s")
+            params["estado"] = estado
+        where = f"WHERE {' AND '.join(condiciones)} " if condiciones else ""
+        rows = self.pinot.query(
+            f"SELECT * FROM Fact_Solicitud_Cambio_Plan {where}"
+            "ORDER BY idsolicitud DESC LIMIT %(limit)s",
+            {**params, "limit": limit},
+        )
+        return list(rows or [])
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         record = {
@@ -77,6 +90,18 @@ class SolicitudCambioPlanRepository:
         current = self.find_by_id(idsolicitud)
         if not current:
             return None
+        return self.update_from(current, changes)
+
+    def update_from(
+        self, current: dict[str, Any], changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Republica la fila completa a partir de una copia ya en memoria.
+
+        La tabla es upsert por clave primaria, así que hay que reenviar todas las
+        columnas. Esta variante existe para la auto-aprobación de un upgrade, que
+        ocurre en la misma operación que el alta: releer por id contra Pinot ahí
+        devuelve vacío durante 5-15 s y el cambio se perdía en silencio.
+        """
         payload = {**current, **changes, "fecha_actualizacion": self._now_ms()}
         self.kafka.publish(self.TOPIC, payload)
         return payload

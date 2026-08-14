@@ -21,7 +21,6 @@ import { AccidenteApiService } from '../../services/accidente-api.service';
 import { AccidenteDetalle } from '../../services/models/accidente.types';
 import { SEVERIDAD_INFO, SeveridadInfo } from '../../severidad.constants';
 import { estadoInfo } from '../../estado.constants';
-import { EscalarSeveridadPanel } from './escalar-severidad.panel';
 import { EvidenciaApiService } from '../../../evidencia-unidad/services/evidencia-api.service';
 import { EvidenciaFotoItem } from '../../../evidencia-unidad/services/models/evidencia-unidad.types';
 import { estadoDespachoTono } from '../../../despacho/despacho-tono.constants';
@@ -31,7 +30,7 @@ import { IntentoDespacho } from '../../../despacho/services/models/despacho.type
 @Component({
   selector: 'app-detalle-accidente',
   standalone: true,
-  imports: [RouterLink, FormsModule, EscalarSeveridadPanel, TablerIconComponent, DatePipe],
+  imports: [RouterLink, FormsModule, TablerIconComponent, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detalle-accidente.page.html',
 })

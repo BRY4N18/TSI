@@ -173,14 +173,13 @@ class PromocionProduccionService:
         )
         nombre = (solicitud or {}).get("motivo") or "produccion"
 
-        credencial = self.emision.emitir(
-            idpartner=idpartner,
-            nombre_credencial=nombre,
-            entorno=ENTORNO_PRODUCCION,
-            ejecutado_por=EJECUTADO_POR_ADMINISTRADOR,
-        )
-
-        # El aviso NUNCA lleva el secreto (RN-PON-005): solo confirma la emision.
+        # BE-DELTA-02 / RN-PON-005: la aprobación **no emite** la credencial de
+        # producción. La emite el partner desde su portal, que es quien custodia
+        # el secreto y el único que debe verlo. Emitirla aquí devolvía el
+        # `client_secret` en la respuesta del **Administrador**, que la consola
+        # descarta a propósito (FR-UI-009) y ningún endpoint recupera después:
+        # el secreto se generaba y se perdía, y el partner quedaba con una
+        # credencial productiva activa que no podía usar.
         self.notificaciones.notificar_aprobacion(
             partner=partner, nombre_credencial=nombre
         )
@@ -190,5 +189,7 @@ class PromocionProduccionService:
         return {
             "idpartner": idpartner,
             "estado": ESTADO_PRODUCCION_ACTIVA,
-            "credencial": credencial,
+            # Sin `credencial`: la emite el partner cuando esté listo, y el
+            # secreto viaja una sola vez en **su** respuesta.
+            "credencial_pendiente_de_emision": nombre,
         }

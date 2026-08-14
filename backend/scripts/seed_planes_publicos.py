@@ -36,9 +36,10 @@ def main() -> None:
                 ensure_ascii=False,
             ),
             "periodicidad": "Mensual",
-            # Valor inicial de siembra — el Director de Estrategia puede reconfigurarlo
-            # libremente; ya no está atado a `nivel` (SRS §3.3.1, RN-SUSF-002).
-            "severidades_desbloqueadas": json.dumps(["Baja"], ensure_ascii=False),
+            # Ids de `Dim_Severidad` (Leve/Moderado/Grave/Fatal). Valor inicial de
+            # siembra: el Director de Estrategia lo reconfigura libremente y no está
+            # atado a `nivel` (SRS §3.3.1, RN-SUSF-002).
+            "severidades_desbloqueadas": json.dumps([1], ensure_ascii=False),  # Leve
             "carga_lote_habilitada": False,
             "activo": True,
             "precio": 49.0,
@@ -56,7 +57,7 @@ def main() -> None:
                 ensure_ascii=False,
             ),
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": json.dumps(["Baja", "Media"], ensure_ascii=False),
+            "severidades_desbloqueadas": json.dumps([1, 2], ensure_ascii=False),  # Leve, Moderado
             "carga_lote_habilitada": True,
             "activo": True,
             "precio": 149.0,
@@ -74,7 +75,7 @@ def main() -> None:
                 ensure_ascii=False,
             ),
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": json.dumps(["Baja", "Media", "Alta"], ensure_ascii=False),
+            "severidades_desbloqueadas": json.dumps([1, 2, 3, 4], ensure_ascii=False),  # todas
             "carga_lote_habilitada": True,
             "activo": True,
             "precio": 399.0,

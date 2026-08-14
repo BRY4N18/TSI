@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { ConnectivityService } from '../../../../shared/connectivity/connectivity.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
@@ -31,7 +32,11 @@ export class GaleriaEvidenciasPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly syncScheduler = inject(EvidenciaSyncSchedulerService);
   private readonly notifications = inject(NotificationService);
+  private readonly authApi = inject(AuthApiService);
   readonly connectivity = inject(ConnectivityService);
+
+  /** Roles que sí pueden abrir el detalle del accidente (accidentesLecturaGuard). */
+  private static readonly ROLES_DETALLE = ['Operador', 'Tecnico', 'Administrador'];
 
   idaccidente = '';
   /** Solo consulta cuando se abre desde Detalles (`?mode=view`). */
@@ -42,6 +47,23 @@ export class GaleriaEvidenciasPage implements OnInit {
   readonly sincronizando = signal(false);
   readonly mostrarSubida = signal(false);
   readonly fotoVisorIndice = signal<number | null>(null);
+
+  /**
+   * A dónde vuelve el enlace de la cabecera. El detalle del accidente es una
+   * pantalla de Operador: la unidad que llega desde su seguimiento no puede
+   * abrirlo y acabaría en "Acceso denegado", sin forma de volver a lo suyo.
+   */
+  rutaVolver(): string[] {
+    return this.authApi.hasAnyRole(GaleriaEvidenciasPage.ROLES_DETALLE)
+      ? ['/accidentes', this.idaccidente]
+      : ['/seguimiento/mi-seguimiento'];
+  }
+
+  etiquetaVolver(): string {
+    return this.authApi.hasAnyRole(GaleriaEvidenciasPage.ROLES_DETALLE)
+      ? 'Volver al accidente'
+      : 'Volver a mi seguimiento';
+  }
 
   fotos() {
     return this.items().filter((item) => this.evidenciaApi.isFotoItem(item));

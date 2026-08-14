@@ -82,7 +82,7 @@ El identificador estable de requisito en esta spec es `RF-SUSF-###`. **Correcci�
 | En la narrativa | Nombre real verificado | Nota |
 |---|---|---|
 | `Dim_metodopago` | `Dim_MetodoPago` | Solo capitalización |
-| `Dim_Plan.severidad_permitida` | `Dim_Plan.severidades_desbloqueadas` (STRING, JSON-encoded list) | Campo **independiente** y configurable por el Director de Estrategia, no derivado de `nivel` (corrección 2026-08-08, RN-SUSF-002) |
+| `Dim_Plan.severidad_permitida` | `Dim_Plan.severidades_desbloqueadas` (STRING, JSON-encoded list de `idseveridad`) | Campo **independiente** y configurable por el Director de Estrategia, no derivado de `nivel` (corrección 2026-08-08, RN-SUSF-002). Guarda ids de `Dim_Severidad` desde la migración del 2026-08-11 |
 
 Este documento usa siempre los nombres verificados.
 
@@ -391,7 +391,7 @@ Justificación ISO/IEC 25010:2023 (mandato `constitution.md`). Resumen de las 9 
 |---|---|
 | RN-SUSF-001 | Un plan solo se desactiva (`activo=false`); nunca delete físico. |
 | RN-SUSF-001a | El listado de planes **nunca** entrega el catálogo completo de golpe: siempre página acotada + filtros aplicados en origen (RF-SUSF-001 listado / RNF-SUSF-005a). |
-| RN-SUSF-002 | `Dim_Plan.severidades_desbloqueadas` es un campo **independiente y libremente configurable** por el Director de Estrategia al crear/editar un plan — subconjunto no vacío de {`Baja`,`Media`,`Alta`}; ya no se deriva de `nivel` (corrección 2026-08-08). |
+| RN-SUSF-002 | `Dim_Plan.severidades_desbloqueadas` es un campo **independiente y libremente configurable** por el Director de Estrategia al crear/editar un plan — subconjunto no vacío de los `idseveridad` **activos de `Dim_Severidad`**; ya no se deriva de `nivel` (corrección 2026-08-08). **Corrección 2026-08-11:** hasta esa fecha el campo guardaba una escala paralela de nombres (`Baja`/`Media`/`Alta`) que no correspondía a ninguna fila del catálogo real (`Leve`/`Moderado`/`Grave`/`Fatal`) y obligaba a un diccionario puente en Partners. El conjunto válido se lee de la tabla, de modo que añadir o retirar una severidad no exige tocar código (SRS §6, Configurabilidad). |
 | RN-SUSF-003 | Como máximo un `Dim_MetodoPago.activo=true` por `idcliente`. |
 | RN-SUSF-004 | Sin PAN/CVV en modelo TSI; solo token + últimos 4 dígitos. *(Normativa de negocio; el RNF equivalente es RNF-SUSF-001.)* |
 | RN-SUSF-005 | Upgrade/downgrade **solo por `nivel`**: `Básico` < `Profesional` < `Empresarial`. Mayor = upgrade (auto). Menor o mismo nivel con otro `idplan` = downgrade (admin). |

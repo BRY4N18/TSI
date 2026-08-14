@@ -14,11 +14,12 @@ import { FormsModule } from '@angular/forms';
       >
         <h2 class="m-0 mb-2 text-lg font-semibold text-text-primary">Posible duplicado</h2>
         <p class="m-0 mb-4 text-sm text-text-secondary">
-          Se detectó un reporte similar. Confirme la fusión (CU-O41) o cancele para registrar el
-          caso como independiente.
+          Ya hay un caso registrado en el mismo punto y a la misma hora. Al fusionar, este
+          reporte se guarda marcado como duplicado y apuntando al caso que lo absorbe, que
+          sigue su curso sin cambios. Cancele para registrarlo como un caso independiente.
         </p>
         <label for="idPrincipal" class="mb-1.5 block text-sm font-medium text-text-secondary">
-          ID del caso padre (más antiguo sugerido)
+          Caso que absorbe este reporte (el más antiguo, sugerido)
         </label>
         <input
           id="idPrincipal"

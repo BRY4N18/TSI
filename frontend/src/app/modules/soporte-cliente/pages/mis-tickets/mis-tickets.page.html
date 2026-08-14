@@ -51,6 +51,23 @@
           }
         </select>
       </label>
+      <label class="grid gap-1 text-sm font-medium text-text-secondary">
+        Factura en disputa (opcional)
+        <select class="tsi-select" name="idfactura" [(ngModel)]="idfactura">
+          <option [ngValue]="null">— Ninguna —</option>
+          @for (f of facturasDisputables(); track f.id_factura) {
+            <option [ngValue]="f.id_factura">
+              {{ f.numero_factura }} — {{ f.periodo }}
+            </option>
+          }
+        </select>
+        <!-- Se dice lo que hace, no solo lo que es: el efecto sobre el cobro es
+             la razon por la que el cliente rellena este campo. -->
+        <span class="text-xs font-normal text-text-secondary">
+          Si eliges una factura, el cobro automatico de ese importe se detiene hasta
+          que se resuelva el ticket.
+        </span>
+      </label>
       <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Enviar</button>
     </form>
   </details>

@@ -27,6 +27,7 @@ from apps.red_operativa.services.proveedor_access_service import (
 from core.repositories.cuentas_clientes.credential_repository import CredentialRepository
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
+from core.repositories.red_operativa.baja_unidad_repository import BajaUnidadRepository
 from core.repositories.red_operativa.unidad_emergencia_repository import (
     UnidadEmergenciaRepository,
 )
@@ -47,7 +48,9 @@ class RegistroUnidadService:
         credential_repo: CredentialRepository | None = None,
         role_repo: RoleRepository | None = None,
         notificacion: OnboardingNotificacionService | None = None,
+        baja_repo: BajaUnidadRepository | None = None,
     ):
+        self.baja_repo = baja_repo or BajaUnidadRepository()
         self.unidad_repo = unidad_repo or UnidadEmergenciaRepository()
         self.access = access or ProveedorAccessService()
         self.user_repo = user_repo or UserRepository()
@@ -70,8 +73,7 @@ class RegistroUnidadService:
         if not payload.get("tipopropiedad"):
             payload["tipopropiedad"] = "Externa"
         self._validar(payload)
-        if self.unidad_repo.find_by_placa_activa(payload["placa"]):
-            raise ValueError(f"Ya existe una unidad activa con placa {payload['placa']}")
+        self._validar_placa_libre(payload["placa"])
         if not self.unidad_repo.condado_exists(payload["idcondado"]):
             raise LookupError(f"idcondado {payload['idcondado']} no existe")
 
@@ -151,6 +153,30 @@ class RegistroUnidadService:
                 "activo": True,
             }
         )
+
+    def _validar_placa_libre(self, placa: str) -> None:
+        """La placa es el identificador único de negocio (SRS §3.5.1).
+
+        No basta con mirar entre las unidades activas: una unidad **dada de baja**
+        conserva su placa y el SRS permite reactivarla, así que dejar registrar otra
+        con esa misma placa acababa en dos unidades activas con la misma.
+
+        Sí se admite reutilizar la placa de una unidad inactiva **sin baja
+        registrada**: eso no es una baja de negocio sino el rastro de una carga en
+        lote que falló y se compensó desactivando lo ya insertado. Bloquearla dejaría
+        el reintento del lote permanentemente roto, y toda baja real registra su
+        motivo y su tipo en `Fact_BajaUnidad`, así que la distinción es fiable.
+        """
+        existente = self.unidad_repo.find_by_placa(placa)
+        if not existente:
+            return
+        if existente.get("activo"):
+            raise ValueError(f"Ya existe una unidad con placa {placa}")
+        if self.baja_repo.list_by_unidad(int(existente["idunidademergencia"])):
+            raise ValueError(
+                f"La placa {placa} pertenece a una unidad dada de baja. "
+                "Reactívala en vez de registrar una nueva."
+            )
 
     def _validar(self, data: dict[str, Any]) -> None:
         if not data.get("idcliente"):

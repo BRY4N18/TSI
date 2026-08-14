@@ -38,3 +38,36 @@ class TestRoleRepository:
         assert assignment["idusuario"] == 2
         assert assignment["idrol"] == 1
         assert len(mock_kafka) == 1
+
+    def test_assign_role_to_user_genera_clave_primaria_unica(
+        self, mock_pinot, mock_kafka
+    ):
+        """`Dim_Usuario_Rol` es upsert por `idusuariorol`.
+
+        El payload no llevaba esa clave, así que la fila aterrizaba con el defecto de
+        Pinot para INT (`Integer.MIN_VALUE`) y cada asignación nueva **sobrescribía a
+        la anterior**: solo podía existir una en todo el sistema. El usuario pisado se
+        quedaba sin roles y no podía volver a entrar.
+        """
+        # Arrange
+        repo = RoleRepository()
+        # Act — dos asignaciones a usuarios distintos
+        primera = repo.assign_role_to_user(101, 1)
+        segunda = repo.assign_role_to_user(102, 1)
+        # Assert
+        for asignacion in (primera, segunda):
+            assert isinstance(asignacion["idusuariorol"], int)
+            assert asignacion["idusuariorol"] > 0
+        assert primera["idusuariorol"] != segunda["idusuariorol"]
+
+    def test_assign_role_to_user_es_idempotente(self, mock_pinot, mock_kafka):
+        """Repetir la misma asignación no debe duplicar filas ni consumir claves."""
+        # Arrange
+        repo = RoleRepository()
+        # Act
+        primera = repo.assign_role_to_user(103, 1)
+        publicados = len(mock_kafka)
+        repetida = repo.assign_role_to_user(103, 1)
+        # Assert
+        assert repetida["idusuariorol"] == primera["idusuariorol"]
+        assert len(mock_kafka) == publicados

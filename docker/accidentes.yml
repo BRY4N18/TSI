@@ -26,6 +26,29 @@ services:
       - pipeline-net
     restart: unless-stopped
 
+  # Worker de consumo de Kafka del despacho (B27). Sin este proceso, la
+  # asignación automática al reportarse un accidente y la reasignación al
+  # vencer un despacho no se ejecutan nunca. Va aparte de `django` a
+  # propósito: el autoreloader de runserver duplicaría el consumidor y un
+  # fallo del bucle no debe tumbar la API. La supervisión es `restart`.
+  despacho-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: accidentes-despacho-worker
+    command: python manage.py run_kafka_consumers
+    env_file:
+      - ../backend/.env
+    environment:
+      # Sin esto la salida queda en el buffer y `docker logs` no muestra nada:
+      # el worker no tiene pantalla, sus registros son la única forma de verlo.
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      - django
+    networks:
+      - pipeline-net
+    restart: unless-stopped
+
   frontend:
     build:
       context: ../frontend

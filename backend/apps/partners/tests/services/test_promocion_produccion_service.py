@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from apps.partners.domain_constants import (
@@ -16,6 +18,7 @@ from apps.partners.domain_constants import (
     NUNCA_EXPIRA,
 )
 from apps.partners.services.emitir_credencial_service import EmitirCredencialService
+from core.repositories.partners.credencial_repository import CredencialRepository
 from apps.partners.services.promocion_produccion_service import (
     PromocionProduccionError,
     PromocionProduccionService,
@@ -102,8 +105,14 @@ class TestSolicitud:
 
 
 class TestAprobacion:
-    def test_aprobar_when_pendiente_emite_produccion(self, mock_pinot, mock_kafka):
-        # Arrange
+    def test_aprobar_habilita_produccion_pero_NO_emite_la_credencial(
+        self, mock_pinot, mock_kafka
+    ):
+        # Arrange — BE-DELTA-02 / RN-PON-005: la emite el partner desde su
+        # portal, que es quien custodia el secreto. Emitirla aquí devolvía el
+        # `client_secret` al **Administrador**, que la consola descarta a
+        # propósito y ningún endpoint recupera: el secreto se perdía y el
+        # partner quedaba con una credencial productiva inservible.
         _con_sandbox()
         servicio = PromocionProduccionService()
         servicio.solicitar(idpartner=ID_PARTNER, nombre_credencial="produccion-siniestros")
@@ -113,10 +122,17 @@ class TestAprobacion:
 
         # Assert
         assert resultado["estado"] == ESTADO_PRODUCCION_ACTIVA
-        cred = resultado["credencial"]
-        assert cred["entorno"] == ENTORNO_PRODUCCION
-        assert cred["client_secret"]  # una sola vez
-        assert cred["fecha_expiracion"] == NUNCA_EXPIRA
+        assert "credencial" not in resultado
+        assert resultado["credencial_pendiente_de_emision"] == "produccion-siniestros"
+        # Y ningún secreto viaja en la respuesta de quien aprueba
+        assert "client_secret" not in json.dumps(resultado)
+        # Tampoco se creó ninguna credencial de producción todavía
+        producidas = [
+            c
+            for c in CredencialRepository().list_by_partner(ID_PARTNER)
+            if c["entorno"] == ENTORNO_PRODUCCION
+        ]
+        assert producidas == []
 
     def test_aprobar_when_exitosa_la_credencial_de_pruebas_sigue_activa(
         self, mock_pinot, mock_kafka

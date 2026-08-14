@@ -28,6 +28,18 @@ export interface LoginData {
   expiresInSeconds: number;
   profile: Profile;
   requiresPasswordChange: boolean;
+  /**
+   * Cuenta de la que el usuario es administrador local, si la hay. Permite
+   * llevarlo a su incorporación pendiente (SRS §3.2.2); sin este dato el
+   * asistente solo era alcanzable escribiendo la URL.
+   */
+  cuenta?: CuentaSesion | null;
+}
+
+export interface CuentaSesion {
+  idcliente: number;
+  estadoOnboarding: string | null;
+  onboardingPendiente: boolean;
 }
 
 export interface LoginSuccessResponse {
@@ -87,6 +99,7 @@ export const AUTH_STORAGE_KEYS = {
   refreshToken: 'tsi.auth.refreshToken',
   profile: 'tsi.auth.profile',
   requiresPasswordChange: 'tsi.auth.requiresPasswordChange',
+  cuenta: 'tsi.auth.cuenta',
 } as const;
 
 /** Business user management (CU-O04 / CU-O13) */

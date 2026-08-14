@@ -41,7 +41,7 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 
 | CU | Descripción | Actor |
 |----|-------------|-------|
-| CU-O83 | Registrar ticket de soporte con clasificación automática y asignación de SLA | Cliente / Soporte al cliente |
+| CU-O83 | Registrar ticket de soporte con clasificación automática y asignación de SLA | Cliente / Partner de integración / Soporte al cliente |
 | CU-O84-O87 | Atender, escalar y resolver ticket con confirmación de cierre del cliente | Soporte al cliente |
 | CU-O97 | Configurar niveles de SLA por tipo de cliente/plan (temporal versioning) | Administrador |
 | CU-O89 | Notificar incumplimiento de SLA y escalar automáticamente (job de fondo) | Sistema |
@@ -64,6 +64,7 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 | Actor | Rol en este spec | Interacción principal |
 |-------|--------------------|-----------------------|
 | **Cliente** | Reportador de incidencias | Registra tickets, adjunta evidencias, da seguimiento, confirma resolución, reabre tickets. |
+| **Partner de integración** (`PartnerIntegracion`) | Reportador, para disputas de facturación | Mismo alcance que el Cliente. El SRS le reconoce registrar una disputa sobre su factura (RF-O83.2); es el mismo actor —quien recibe el servicio y reclama—, solo que su relación con TSI pasa por la API en vez del portal. Se acota a sus propios tickets por `Fact_Reclamo.idcliente`, igual que el Cliente, y **no** ve notas internas. |
 | **Soporte al cliente** | Atiende y resuelve tickets | Toma tickets, clasifica, investiga, resuelve, escala manualmente, registra notas internas. |
 | **Desarrollador de APIs / Director Tecnológico** | Nivel de escalado | Recibe tickets escalados que requieren intervención técnica o decisión ejecutiva. |
 | **Administrador** | Configura SLA | Define reglas de SLA por plan/tipo/prioridad con vigencia temporal. |
@@ -196,6 +197,56 @@ La modificación de una regla de SLA nunca afecta tickets ya creados. Cada ticke
 
 ### RN-TIC-008 (RF-O83.2)
 Una factura admite una sola disputa (ticket) abierta a la vez. Se considera "abierta" cualquier ticket con esa `idfactura` cuyo `estado` sea distinto de `Cerrado` (incluye `Reabierto`). Aplicado a nivel de aplicación en `RegistrarTicketService.registrar()`, no como constraint de esquema (Pinot no soporta `UNIQUE` declarativo).
+
+### RN-TIC-009 (RF-O83.2 x RF-APM-014) — la disputa excluye la factura del cobro automático
+
+Registrar un ticket con `idfactura` marca esa factura como **en disputa**
+(`Fact_Factura.estado_pago = 'En disputa'`), y cerrar el reclamo la devuelve a
+`'Pendiente'`. Es la contraparte de RF-APM-014, que declara que la factura la marca
+**este** módulo y que facturación "no abre ni resuelve disputas: solo respeta la exclusión";
+sin esta regla nadie ejecutaba el marcado y se seguía reintentando el cobro del cargo que el
+cliente estaba discutiendo.
+
+No se usa un flag propio: `estado_pago` es la columna que ya consultan todos los cobradores
+(excedente de API, cobro de suscripción, dunning y mora), y todos exigen `'Pendiente'`, así
+que la exclusión es automática.
+
+La liberación se aplica en **ambos** cierres —confirmación del cliente y cierre automático
+por vencimiento (RN-TIC-004)—, porque de otro modo un ticket auto-cerrado dejaría la factura
+fuera del cobro indefinidamente. No pisa una factura que la resolución ya dejó `Pagada` o con
+el monto ajustado: ese resultado manda.
+
+Implementado en `DisputaFacturaService`, invocado por `RegistrarTicketService.registrar()`
+(después de crear el ticket) y por `ConfirmarCierreService`.
+
+### RN-TIC-010 — Ticket clasificado sin compromiso aplicable: se declara, no se calla
+
+Si el ticket **sí** se clasificó pero no hay regla aplicable —el cliente no tiene suscripción
+activa, o su plan no tiene fila en `Dim_SLAConfig` para ese tipo y prioridad—, se guarda con
+`sla_status = 'sin compromiso'`, nunca con `null`.
+
+`null` está reservado al ticket **sin clasificar**, que además tiene su propio estado
+(`Pendiente_de_clasificacion`) y por eso se ve. Un ticket clasificado sin plazo no tenía ninguna
+señal: aparecía en la cola como cualquier otro mientras `MonitoreoSLAService` lo descartaba por
+`idslaconfig is None`, de modo que nadie lo marcaba en riesgo ni lo escalaba. Puede ser correcto
+que no haya plazo; lo que no puede es no verse.
+
+Aplica en el alta, en la clasificación manual y en la **reapertura** — ahí además impide conservar
+el `'en curso'` anterior, que mostraría un plazo que ya nadie vigila.
+
+### RN-TIC-011 — Las acciones automáticas no llevan autor humano
+
+`Fact_Historial_Ticket.idusuario` queda **vacío** en lo que ejecuta un proceso de fondo: el
+escalado por incumplimiento de SLA, la alerta de riesgo y el cierre automático por vencimiento.
+R-03 del SRS exige que una acción automática se registre explícitamente como del sistema, "lo que
+permite distinguir una decisión humana de una automática".
+
+En el escalado automático, el supervisor de turno va en `id_agente_asignado` —es el **destino**— y
+en ningún otro sitio. Estamparlo también como `idusuario` hacía que la bitácora afirmara que lo
+había escalado él.
+
+La UI lo refleja marcando esas entradas como **«Sistema»**: en pantalla, un autor vacío se lee
+como dato que falta, no como acción automática.
 
 ## 7. Entradas
 

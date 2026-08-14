@@ -127,18 +127,18 @@
           plan.
         </p>
         <div class="flex flex-wrap gap-4">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" formControlName="severidad_baja" />
-            <span>Baja</span>
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" formControlName="severidad_media" />
-            <span>Media</span>
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" formControlName="severidad_alta" />
-            <span>Alta</span>
-          </label>
+          @for (s of severidadesCatalogo(); track s.idseveridad) {
+            <label class="flex items-center gap-2 text-sm" [title]="s.descripcion ?? ''">
+              <input
+                type="checkbox"
+                [checked]="estaSeleccionada(s.idseveridad)"
+                (change)="alternarSeveridad(s.idseveridad)"
+              />
+              <span>{{ s.severidad }}</span>
+            </label>
+          } @empty {
+            <p class="m-0 text-sm text-text-secondary">No hay severidades configuradas.</p>
+          }
         </div>
         @if (severidadesSeleccionadas().length === 0) {
           <p class="m-0 text-sm text-alert-critical">Selecciona al menos una severidad.</p>

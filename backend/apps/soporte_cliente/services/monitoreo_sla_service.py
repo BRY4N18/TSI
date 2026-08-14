@@ -51,6 +51,11 @@ class MonitoreoSLAService:
         for ticket in tickets:
             if ticket["estado"] in _ESTADOS_NO_VIGILADOS:
                 continue
+            # Sin compromiso no hay nada que vigilar, y son DOS casos distintos
+            # que antes se confundian en este mismo silencio: el ticket sin
+            # clasificar (que tiene su propio estado y se ve) y el clasificado
+            # sin regla aplicable, que se marca `sla_status='sin compromiso'`
+            # precisamente para que no parezca un ticket cronometrado.
             if ticket.get("idslaconfig") is None:
                 continue
             fechahora = ticket["fechahora"]
@@ -87,10 +92,15 @@ class MonitoreoSLAService:
                 "id_agente_asignado": supervisor_idusuario,
             },
         )
+        # SIN `idusuario`: R-03 y §3.7.1 del SRS piden que el escalado automatico
+        # quede "registrado como accion del sistema, NO de una persona". Estampar
+        # aqui al supervisor hacia que la bitacora dijera que lo escalo el, cuando
+        # el es el destino, no el autor: el supervisor va en `id_agente_asignado`
+        # y en ningun otro sitio. Sin esto no se puede distinguir una decision
+        # humana de una automatica, que es justo lo que R-03 protege.
         self.historial_repo.append(
             id_reclamo=ticket["id_reclamo"],
             tipo_accion="escalado_automatico_sla",
-            idusuario=supervisor_idusuario,
             estado_anterior=estado_anterior,
             estado_nuevo=ESTADO_ESCALADO,
         )

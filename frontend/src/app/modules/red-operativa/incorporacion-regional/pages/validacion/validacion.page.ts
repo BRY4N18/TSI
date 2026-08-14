@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -186,7 +186,9 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                         </span>
                       </td>
                       <td class="px-4 py-3 text-text-secondary">{{ item.motivo }}</td>
-                      <td class="px-4 py-3 text-text-secondary">{{ item.fechahora }}</td>
+                      <td class="px-4 py-3 text-text-secondary">
+                        {{ item.fechahora | date: 'medium' }}
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -221,6 +223,9 @@ export class ValidacionPage implements OnInit {
   private readonly facade = inject(RegionOperativaFacadeService);
   private readonly authApi = inject(AuthApiService);
   private readonly route = inject(ActivatedRoute);
+  // El shell de la aplicación es OnPush: sin marcar la vista, nada de lo que
+  // llega por HTTP se repinta. Ver §9 del design-system.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly esAdministrador = this.authApi.hasRole('Administrador');
 
@@ -265,6 +270,7 @@ export class ValidacionPage implements OnInit {
         motivo: this.resultado === 'Rechazada' ? this.motivo : undefined,
       })
       .subscribe((result) => {
+      this.cdr.markForCheck();
         if (result.ok && result.data) {
           this.mensaje = 'Validación registrada correctamente.';
           this.estadoregionActual = result.data.estadoregion_actual;
@@ -285,6 +291,7 @@ export class ValidacionPage implements OnInit {
     this.historialError = null;
     this.facade.listarHistorialValidacion(this.idregionoperativa).subscribe({
       next: (result) => {
+        this.cdr.markForCheck();
         this.historialLoading = false;
         this.historial = result.ok ? (result.data ?? []) : [];
         if (!result.ok) {
@@ -292,6 +299,7 @@ export class ValidacionPage implements OnInit {
         }
       },
       error: () => {
+        this.cdr.markForCheck();
         this.historialLoading = false;
         this.historial = [];
         this.historialError = 'No se pudo cargar el historial de validaciones.';
@@ -305,6 +313,7 @@ export class ValidacionPage implements OnInit {
     }
     this.mensajeRechazo = null;
     this.facade.rechazarDefinitivamente(this.idregionoperativa).subscribe((result) => {
+      this.cdr.markForCheck();
       this.mensajeRechazo = result.ok
         ? 'Región marcada como inactiva (rechazo definitivo).'
         : (result.error ?? 'Error al marcar el rechazo definitivo');

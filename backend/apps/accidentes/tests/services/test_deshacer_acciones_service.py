@@ -33,8 +33,11 @@ class TestDeshacerFusionService:
     def test_deshacer_when_fusionado_restores_activo(
         self, mock_pinot, mock_kafka, seed_accidente
     ):
-        principal = seed_accidente(estado="REPORTADO")
-        duplicado = seed_accidente(estado="REPORTADO")
+        # Ids distintos a propósito: sin ellos ambos eran el mismo caso
+        # (`ACC-SEED-1` por defecto) y la prueba ejercitaba una fusión de un
+        # caso consigo mismo, que es justo lo que ahora está prohibido.
+        principal = seed_accidente(idaccidente="ACC-DESH-P", estado="REPORTADO")
+        duplicado = seed_accidente(idaccidente="ACC-DESH-D", estado="REPORTADO")
         FusionarReportesService().fusionar(
             idaccidente_duplicado=duplicado,
             idaccidente_principal=principal,

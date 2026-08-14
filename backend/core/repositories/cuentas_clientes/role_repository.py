@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
 
@@ -43,7 +43,7 @@ class RoleRepository:
         return self.pinot.query("SELECT * FROM Dim_Rol ORDER BY idrol ASC")
 
     def create_role(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         role_id = self._next_role_id()
         payload = {
             "idrol": role_id,
@@ -59,7 +59,7 @@ class RoleRepository:
         existing = self.find_role_by_id(role_id)
         if not existing:
             return None
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
         self.kafka.publish(self.ROLE_TOPIC, payload)
         return payload
@@ -93,14 +93,47 @@ class RoleRepository:
         return [int(row["idusuario"]) for row in links]
 
     def assign_role_to_user(self, user_id: int, role_id: int) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        """Asigna un rol, generando la clave primaria de `Dim_Usuario_Rol`.
+
+        El payload no llevaba `idusuariorol`. Como Pinot no almacena NULL, la fila
+        aterrizaba con el defecto para INT (`Integer.MIN_VALUE`) y, al ser una tabla
+        upsert por esa clave, **cada asignación nueva sobrescribía a la anterior**:
+        solo podía existir una en todo el sistema. El usuario pisado se quedaba sin
+        roles y su login pasaba a fallar con "Usuario sin roles asignados".
+        """
+        existente = self.find_user_role(user_id, role_id)
+        if existente:
+            return existente
+        now = ahora_ms()
         payload = {
+            "idusuariorol": self._next_user_role_id(),
             "idusuario": user_id,
             "idrol": role_id,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.USER_ROLE_TOPIC, payload)
         return payload
+
+    def find_user_role(self, user_id: int, role_id: int) -> dict[str, Any] | None:
+        rows = self.pinot.query(
+            "SELECT * FROM Dim_Usuario_Rol WHERE idusuario = %(idusuario)s "
+            "AND idrol = %(idrol)s LIMIT 1",
+            {"idusuario": int(user_id), "idrol": int(role_id)},
+        )
+        return rows[0] if rows else None
+
+    def _next_user_role_id(self) -> int:
+        rows = self.pinot.query(
+            "SELECT MAX(idusuariorol) AS max_id FROM Dim_Usuario_Rol"
+        )
+        max_id = rows[0].get("max_id") if rows else 0
+        try:
+            actual = int(max_id or 0)
+        except (TypeError, ValueError):
+            actual = 0
+        # Las filas huérfanas que quedaron con Integer.MIN_VALUE no deben arrastrar
+        # el contador a negativo.
+        return max(actual, 0) + 1
 
     def _next_role_id(self) -> int:
         rows = self.pinot.query("SELECT MAX(idrol) AS max_id FROM Dim_Rol")

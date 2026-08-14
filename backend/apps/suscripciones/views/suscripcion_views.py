@@ -10,6 +10,7 @@ from apps.suscripciones.services.alta_suscripcion_service import (
     AltaSuscripcionError,
     AltaSuscripcionService,
 )
+from apps.suscripciones.services.cambio_plan_service import CambioPlanService
 from apps.suscripciones.services.cancelacion_suscripcion_service import (
     CancelacionError,
     CancelacionSuscripcionService,
@@ -56,11 +57,19 @@ class MiSuscripcionView(APIView):
         if not sus:
             return error_response("not_found", "Sin suscripción", "404", status_code=404)
         plan = PlanRepository().find_by_id(sus.get("idplan"))
+        # Una reducción aprobada no cambia el plan hasta el cierre del ciclo
+        # (decisión #27). Sin este dato el cliente vería su plan actual y no sabría
+        # que ya está aprobado el cambio. Se envía el nombre, no el id (design-system §8).
+        idplan_programado = CambioPlanService.plan_programado_id(sus)
+        plan_programado = (
+            PlanRepository().find_by_id(idplan_programado) if idplan_programado else None
+        )
         payload = {
             **sus,
             "acceso_permitido": svc.acceso_permitido(request.billing_idcliente),
             "plan_nombre": plan.get("nombre") if plan else None,
             "nivel": plan.get("nivel") if plan else None,
+            "plan_programado_nombre": plan_programado.get("nombre") if plan_programado else None,
         }
         return success_response(payload)
 

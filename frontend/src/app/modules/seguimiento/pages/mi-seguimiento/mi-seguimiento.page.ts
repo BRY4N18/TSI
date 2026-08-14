@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
+import { EscalarSeveridadPanel } from '../../../accidentes/pages/detalle-accidente/escalar-severidad.panel';
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { MiSeguimientoApiService } from '../../services/mi-seguimiento-api.service';
 import { DespachoActualData } from '../../models/seguimiento.types';
@@ -19,6 +21,8 @@ const INTERVALO_ENVIO_GPS_MS = 10_000;
   standalone: true,
   imports: [
     FormsModule,
+    RouterLink,
+    EscalarSeveridadPanel,
     TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
@@ -31,6 +35,7 @@ export class MiSeguimientoPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly api = inject(MiSeguimientoApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly cargando = signal(true);
   readonly despacho = signal<DespachoActualData | null>(null);
@@ -38,6 +43,7 @@ export class MiSeguimientoPage implements OnInit, OnDestroy {
   readonly gpsError = signal<string | null>(null);
   readonly apiError = signal<string | null>(null);
   readonly registrandoLlegada = signal(false);
+  readonly finalizando = signal(false);
   readonly abortando = signal(false);
   readonly confirmandoAbortar = signal(false);
   motivoAbortar = '';
@@ -141,6 +147,46 @@ export class MiSeguimientoPage implements OnInit, OnDestroy {
       error: () => {
         this.registrandoLlegada.set(false);
         this.apiError.set('No se pudo registrar la llegada.');
+      },
+    });
+  }
+
+  /**
+   * SRS §3.6.4: la unidad termina su parte. Es la vía normal por la que un
+   * despacho queda retirado; el caso solo cierra cuando lo han hecho todas.
+   */
+  async finalizarAtencion(): Promise<void> {
+    const despacho = this.despacho();
+    if (!despacho || this.finalizando()) {
+      return;
+    }
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Finalizar mi atención',
+      message:
+        '¿Das por terminada tu parte de este caso? Tu unidad volverá a estar disponible.',
+      confirmLabel: 'Finalizar',
+      cancelLabel: 'Seguir en el caso',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.finalizando.set(true);
+    this.apiError.set(null);
+    this.api.finalizarAtencion(despacho.iddespacho, crypto.randomUUID()).subscribe({
+      next: (res) => {
+        this.finalizando.set(false);
+        this.detenerRastreoGps();
+        this.notifications.toast(
+          res.data.caso_listo_para_cierre
+            ? 'Atención finalizada. No quedan unidades en el caso.'
+            : `Atención finalizada. Quedan ${res.data.unidades_sin_retirar} unidad(es) en el caso.`,
+          'success',
+        );
+        this.router.navigate(['/despacho/mi-despacho']);
+      },
+      error: () => {
+        this.finalizando.set(false);
+        this.apiError.set('No se pudo finalizar la atención.');
       },
     });
   }

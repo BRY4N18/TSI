@@ -5,7 +5,7 @@ from core.repositories.accidentes.estado_accidente_repository import (
     EstadoAccidenteRepository,
 )
 from core.repositories.despacho.historial_despacho_repository import (
-    ESTADO_EN_SITIO,
+    ESTADO_RETIRADO,
     HistorialDespachoRepository,
 )
 
@@ -44,6 +44,14 @@ class TestCaminoCriticoSeguimientoCierreIntegration:
             format="json",
             **unidad_seguimiento_auth_headers,
         )
+        # Act — la unidad da por terminada su parte (SRS §3.6.4: sin esto el
+        # caso no puede cerrarse, y es la vía normal de retiro)
+        finalizar = api_client.post(
+            f"/api/v1/mi-seguimiento/despachos/{iddespacho}/finalizar",
+            {},
+            format="json",
+            **unidad_seguimiento_auth_headers,
+        )
         # Act — cierre
         cierre = api_client.post(
             f"/api/v1/accidentes/{accidente_activo}/cerrar",
@@ -55,8 +63,10 @@ class TestCaminoCriticoSeguimientoCierreIntegration:
         # Assert
         assert pos.status_code == 202
         assert llegada.status_code == 200
+        assert finalizar.status_code == 200
+        assert finalizar.json()["data"]["caso_listo_para_cierre"] is True
         assert cierre.status_code == 200
         estado_despacho, _ = HistorialDespachoRepository().get_current_estado(iddespacho)
-        assert estado_despacho == ESTADO_EN_SITIO or cierre.json()["data"]["estado_caso"] == ESTADO_CERRADO
+        assert estado_despacho == ESTADO_RETIRADO
         assert EstadoAccidenteRepository().get_current_estado(accidente_activo) == ESTADO_CERRADO
         assert cierre.json()["data"]["estado_caso"] == ESTADO_CERRADO

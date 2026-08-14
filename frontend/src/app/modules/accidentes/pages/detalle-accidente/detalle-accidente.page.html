@@ -309,8 +309,17 @@
         </section>
         }
 
+        <!-- La escalada de severidad la hace la Unidad desde el sitio (SRS
+             §3.6.4) y el endpoint exige el rol Unidad: aquí el panel respondía
+             siempre 403. Vive ahora en «Mi seguimiento». -->
         @if (a.estado_actual === 'ASIGNADO' || a.estado_actual === 'EN_ATENCIÓN') {
-          <app-escalar-severidad-panel [idaccidente]="a.idaccidente" />
+          <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <h2 class="m-0 mb-2 text-base font-semibold text-text-primary">Severidad en sitio</h2>
+            <p class="m-0 text-sm text-text-secondary">
+              La actualiza la unidad que está atendiendo el caso, con lo que observa en el
+              lugar. Los cambios aparecen en el historial de este expediente.
+            </p>
+          </section>
         }
       </div>
     </div>

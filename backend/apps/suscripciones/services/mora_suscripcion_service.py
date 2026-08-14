@@ -26,15 +26,15 @@ class MoraSuscripcionService:
         )
 
     def factura_vigente_fallida(self, id_suscripcion: int) -> dict[str, Any] | None:
-        rows = list(
-            r
-            for r in (self.facturas.pinot.query("SELECT * FROM Fact_Factura", {}) or [])
-            if r.get("id_suscripcion") == id_suscripcion and r.get("estado_pago") == "Fallida"
+        # Filtro en SQL y LIMIT explícito: sin `LIMIT`, Pinot recorta a 10 filas de la
+        # tabla entera y la factura fallida de este cliente podía no aparecer, dejándolo
+        # suspendido sin nada que regularizar.
+        rows = self.facturas.pinot.query(
+            "SELECT * FROM Fact_Factura WHERE id_suscripcion = %(id_suscripcion)s "
+            "AND estado_pago = %(estado)s ORDER BY fecha_emision DESC LIMIT %(limit)s",
+            {"id_suscripcion": id_suscripcion, "estado": "Fallida", "limit": 100},
         )
-        if not rows:
-            return None
-        rows.sort(key=lambda r: r.get("fecha_emision") or 0, reverse=True)
-        return rows[0]
+        return rows[0] if rows else None
 
     def suspender_por_factura(self, factura: dict[str, Any]) -> dict[str, Any] | None:
         sus = self.suscripciones.find_by_id(factura["id_suscripcion"])
@@ -49,13 +49,16 @@ class MoraSuscripcionService:
         factura = self.factura_vigente_fallida(id_suscripcion)
         if not factura:
             return {"estado_pago": None, "estado_suscripcion": "Suspendida"}
-        self.facturas.update(factura["id_factura"], {"estado_pago": "Pendiente"})
+        # Se reabre la factura a Pendiente y se cobra sobre ESA copia en memoria.
+        # Releerla por id devolvía la versión anterior mientras Pinot ingería, con
+        # `estado_pago = "Fallida"`, y el cobro salía por la guarda de "no está
+        # Pendiente" sin intentar nada: el cliente suspendido no podía regularizar
+        # nunca, que es justo lo que el SRS §3.3.1 quiere evitar.
+        reabierta = self.facturas.update_from(factura, {"estado_pago": "Pendiente"})
         metodo = self.metodos.find_activo(sus["idcliente"])
         mid = metodo["idmetodopago"] if metodo else "none"
         key = f"{factura['id_factura']}-reactivacion-{mid}"
-        updated = self.cobro.intentar(
-            factura["id_factura"], idempotency_override=key
-        )
+        updated = self.cobro.intentar_factura(reabierta, idempotency_override=key)
         if updated.get("estado_pago") == "Pagada":
             self.suscripciones.update(id_suscripcion, {"estado": "Activa"})
             return {
@@ -64,7 +67,7 @@ class MoraSuscripcionService:
                 "resultado_ultimo_reintento": updated.get("resultado_ultimo_reintento"),
             }
         if updated.get("estado_pago") != "Fallida":
-            self.facturas.update(factura["id_factura"], {"estado_pago": "Fallida"})
+            self.facturas.update_from(updated, {"estado_pago": "Fallida"})
         return {
             "estado_pago": "Fallida",
             "estado_suscripcion": "Suspendida",

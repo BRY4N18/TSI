@@ -70,3 +70,52 @@ class TestMonitoreoSLAService:
         assert actualizado["sla_status"] == "incumplido"
         assert actualizado["estado"] == "Escalado"
         assert actualizado["id_agente_asignado"] == 2  # usuario con rol SupervisorSoporte
+
+    def test_el_escalado_automatico_no_se_atribuye_a_una_persona(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        """R-03 y §3.7.1 — «queda registrado como acción del sistema, no de una
+        persona». Se estampaba al supervisor en `idusuario`, de modo que la
+        bitácora decía que lo había escalado él: es el destino, no el autor, y sin
+        esta distinción no se puede separar una decisión humana de una automática.
+        """
+        # Arrange
+        from core.repositories.soporte.historial_ticket_repository import (
+            HistorialTicketRepository,
+        )
+
+        id_reclamo = _ticket_con_plazos(pinot_store, resolucion_pct=1.5)
+
+        # Act
+        MonitoreoSLAService().ejecutar_ciclo()
+
+        # Assert
+        entrada = next(
+            h
+            for h in HistorialTicketRepository().list_by_ticket(id_reclamo)
+            if h["tipo_accion"] == "escalado_automatico_sla"
+        )
+        assert entrada.get("idusuario") is None
+        # El supervisor sigue siendo el destino, en el campo que le corresponde
+        assert ReclamoRepository().find_by_id(id_reclamo)["id_agente_asignado"] == 2
+
+    def test_la_alerta_de_riesgo_tampoco_tiene_autor_humano(
+        self, mock_pinot, mock_kafka, pinot_store
+    ):
+        # Arrange
+        from core.repositories.soporte.historial_ticket_repository import (
+            HistorialTicketRepository,
+        )
+
+        id_reclamo = _ticket_con_plazos(pinot_store, resolucion_pct=0.9)
+
+        # Act
+        MonitoreoSLAService().ejecutar_ciclo()
+
+        # Assert
+        entrada = next(
+            h
+            for h in HistorialTicketRepository().list_by_ticket(id_reclamo)
+            if h["tipo_accion"] == "alerta_sla_riesgo"
+        )
+        assert entrada.get("idusuario") is None

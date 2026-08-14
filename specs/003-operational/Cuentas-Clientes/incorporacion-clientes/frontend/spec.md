@@ -51,6 +51,8 @@ Guards impiden wizard si cuenta no está `Activo` o onboarding ya completado (RN
 - **FR-UI-010**: `OnboardingFacadeService` centraliza estado UI del wizard sin lógica de dominio duplicada.
 - **FR-UI-011**: Sin rutas ni enlaces a pantallas O01/O12 retiradas (RF-ONB-002b/c).
 - **FR-UI-012**: Feedback de error 403 cuando cuenta no `Activo` intenta onboarding — mensaje orientado al usuario (RN-ONB-011).
+- **FR-UI-013** *(2026-08-11)*: La etapa `preferencias` **MUST** capturar las cuatro dimensiones del SRS §3.2.2 —umbral de tiempo de llegada, canal de notificación, zonas geográficas de interés y destinatarios de reportes—, no solo el canal. Las zonas se eligen con un selector encadenado país → estado → condado alimentado del catálogo geográfico y se muestran por su nombre, nunca por su identificador (§8 del `design-system.md`). Se comparte el componente `app-preferencias-operativas-form` con Gestión de Cuenta para que ambas pantallas capturen lo mismo.
+- **FR-UI-014** *(2026-08-11)*: La etapa `perfil_corporativo` **MUST** llegar precargada con la razón social y el nombre comercial que la cuenta ya declaró al darse de alta. El SRS exige que la cuenta herede los datos capturados "sin volver a digitarlos".
 
 ## Out of Scope
 

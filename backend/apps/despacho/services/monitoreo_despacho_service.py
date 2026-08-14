@@ -66,7 +66,13 @@ class MonitoreoDespachoService:
         historial_repo: HistorialDespachoRepository | None = None,
         notificacion_repo: NotificacionDespachoRepository | None = None,
         unidad_repo: UnidadEmergenciaRepository | None = None,
+        nota_repo: "NotaAccidenteRepository | None" = None,
     ):
+        from core.repositories.accidentes.nota_accidente_repository import (
+            NotaAccidenteRepository,
+        )
+
+        self.notas = nota_repo or NotaAccidenteRepository()
         self.accidentes = accidente_repo or AccidenteRepository()
         self.estado = estado_repo or EstadoAccidenteRepository()
         self.despachos = despacho_repo or DespachoRepository()
@@ -95,8 +101,24 @@ class MonitoreoDespachoService:
             "tiempo_transcurrido_seg": max(0, (now - inicio) // 1000),
             "intentos": intentos,
             "unidades_activas": activos,
+            "alertas": self._alertas_vigentes(idaccidente),
             "mensaje": mensaje,
         }
+
+    def _alertas_vigentes(self, idaccidente: str) -> list[dict[str, Any]]:
+        """Avisos del caso en curso (señal GPS perdida, agotamiento de unidades).
+
+        SRS §3.6.4: la pérdida de señal "deja constancia **visible para el
+        operador**". La constancia se escribía en `Dim_NotaAccidente`, pero solo
+        el expediente la leía y el expediente exige el caso **cerrado**: durante
+        la emergencia —el único momento en que sirve— no se veía en ninguna
+        pantalla.
+        """
+        filas = self.notas.list_alertas(idaccidente)
+        return [
+            {"nota": f.get("nota"), "fechahora": f.get("fechahora")}
+            for f in filas
+        ]
 
     def notificar_actualizacion(self, idaccidente: str) -> None:
         data = self.obtener_estado(idaccidente)

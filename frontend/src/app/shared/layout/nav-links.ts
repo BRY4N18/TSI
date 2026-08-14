@@ -319,6 +319,16 @@ export const NAV_LINKS: NavLink[] = [
     group: 'Partners y API',
   },
   {
+    // Solo Administrador: la reactivación de un partner es competencia suya
+    // (RN-PAC-009) y el sistema nunca la ejecuta por su cuenta.
+    label: 'Suspensiones de partners',
+    description: 'Suspendidos y en mora; suspender y reactivar',
+    path: '/partners/consola/suspensiones',
+    roles: ['Administrador'],
+    icon: 'license',
+    group: 'Partners y API',
+  },
+  {
     label: 'Mi consumo',
     description: 'Tu consumo del período y tu excedente estimado',
     path: '/partners/portal/consumo',

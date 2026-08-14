@@ -262,7 +262,6 @@ class TarificacionExcedenteService:
             "estado_pago": ESTADO_PENDIENTE,
             "reintentos": 0,
             "resultado_ultimo_reintento": "",
-            "proximo_reintento": 0,
             "fecha_emision": ahora,
             "fecha_actualizacion": ahora,
             "activo": True,
@@ -289,7 +288,6 @@ class TarificacionExcedenteService:
                 **factura,
                 "reintentos": intentos,
                 "resultado_ultimo_reintento": f"agotados: {motivo}",
-                "proximo_reintento": 0,
                 "fecha_actualizacion": ahora,
             }
             self.kafka.publish(TOPIC_FACTURA, actualizada)
@@ -301,7 +299,13 @@ class TarificacionExcedenteService:
             **factura,
             "reintentos": intentos,
             "resultado_ultimo_reintento": motivo,
-            "proximo_reintento": ahora + espera,
+            # El "cuándo toca" NO se guarda en una columna propia: se deriva de
+            # `reintentos` + `fecha_actualizacion`. Antes se publicaba
+            # `proximo_reintento`, que **no existe en el esquema de
+            # Fact_Factura**: Pinot lo descartaba al escribir y **rechazaba la
+            # consulta** que lo filtraba, así que el job moría en cada
+            # ejecución y ninguna factura de excedente llegaba a emitirse.
+            # Mismo error que ya se había cometido con `monto` (ver arriba).
             "fecha_actualizacion": ahora,
         }
         self.kafka.publish(TOPIC_FACTURA, actualizada)
@@ -312,15 +316,42 @@ class TarificacionExcedenteService:
         }
 
     def reintentos_vencidos(self, *, ahora_ms: int | None = None) -> list[dict[str, Any]]:
-        """Facturas cuyo proximo reintento ya toca. `0` = sin reintento pendiente."""
+        """Facturas de excedente cuyo siguiente intento ya toca.
+
+        El vencimiento se **deriva** de `reintentos` (cuántos van) y
+        `fecha_actualizacion` (cuándo se agendó el último), que son columnas
+        reales de `Fact_Factura`. No existe ninguna `proximo_reintento`: la
+        versión anterior la consultaba y Pinot rechazaba la consulta entera, de
+        modo que el job caía antes de emitir nada.
+        """
         ahora = ahora_ms if ahora_ms is not None else self._now_ms()
         filas = self.pinot.query(
-            "SELECT * FROM Fact_Factura WHERE tipo = %(tipo)s "
-            "AND proximo_reintento > 0 AND proximo_reintento <= %(ahora)s LIMIT 1000",
-            {"tipo": TIPO_EXCEDENTE, "ahora": ahora},
+            "SELECT * FROM Fact_Factura WHERE tipo = %(tipo)s LIMIT 1000",
+            {"tipo": TIPO_EXCEDENTE},
         )
-        # Una factura en disputa no se reintenta aunque le toque (RF-APM-014).
-        return [f for f in filas if not self.en_disputa(f)]
+        vencidas = []
+        for f in filas:
+            # Una factura en disputa no se reintenta aunque le toque (RF-APM-014).
+            if self.en_disputa(f):
+                continue
+            if self.vencimiento_reintento(f, ahora_ms=ahora) is True:
+                vencidas.append(f)
+        return vencidas
+
+    def vencimiento_reintento(
+        self, factura: dict[str, Any], *, ahora_ms: int
+    ) -> bool:
+        """¿Le toca ya el siguiente intento a esta factura?
+
+        `reintentos = 0` es una factura recién emitida sin fallo; por encima de
+        `MAX_REINTENTOS` está agotada y espera emisión manual. En ambos casos no
+        se reintenta.
+        """
+        intentos = int(factura.get("reintentos", 0) or 0)
+        if not 1 <= intentos <= MAX_REINTENTOS:
+            return False
+        agendado = int(factura.get("fecha_actualizacion", 0) or 0)
+        return agendado + ESPERAS_REINTENTO_MS[intentos - 1] <= ahora_ms
 
     # --- Alertas de excepcion ------------------------------------------------
 

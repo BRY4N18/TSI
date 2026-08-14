@@ -1,6 +1,6 @@
 /** @marker unit */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { NotificationService } from '../../../../shared/notifications/notification.service';
@@ -60,7 +60,17 @@ describe('MiSeguimientoPage', () => {
     api.obtenerActual.and.returnValue(of<any>({ data: { despacho }, meta: {} }));
     api.registrarPosicion.and.returnValue(of<any>({ data: {}, meta: {} }));
     notifications = jasmine.createSpyObj('NotificationService', ['toast', 'alert']);
-    router = jasmine.createSpyObj('Router', ['navigate']);
+    // `events` lo consume RouterLink al construirse; `createUrlTree`/`serializeUrl`
+    // resuelven el href del enlace a la galeria de evidencia.
+    router = jasmine.createSpyObj(
+      'Router',
+      ['navigate', 'createUrlTree', 'serializeUrl'],
+      { events: of() },
+    );
+    router.createUrlTree.and.callFake((commands: unknown[]) => commands as never);
+    router.serializeUrl.and.callFake((tree: unknown) =>
+      Array.isArray(tree) ? tree.join('/') : String(tree),
+    );
 
     await TestBed.configureTestingModule({
       imports: [MiSeguimientoPage],
@@ -68,6 +78,10 @@ describe('MiSeguimientoPage', () => {
         { provide: MiSeguimientoApiService, useValue: api },
         { provide: NotificationService, useValue: notifications },
         { provide: Router, useValue: router },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => null } } },
+        },
       ],
     }).compileComponents();
 
@@ -77,6 +91,20 @@ describe('MiSeguimientoPage', () => {
 
   describe('con despacho activo', () => {
     beforeEach(() => setup(DESPACHO_CONFIRMADO));
+
+    it('ofrece_a_la_unidad_el_acceso_a_la_evidencia_de_su_caso', () => {
+      // SRS 3.6.3: la unidad adjunta evidencia en el sitio. El unico enlace a
+      // la galeria vivia en el detalle del accidente, que es pantalla de
+      // Operador: sin esto la unidad no tenia forma de llegar.
+      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+        '[data-testid="link-evidencia"]',
+      );
+
+      expect(link).not.toBeNull();
+      expect(link!.getAttribute('href')).toBe(
+        '/evidencia-unidad/accidentes/ACC-1/galeria',
+      );
+    });
 
     it('ngOnInit_loads_actual_and_starts_gps_watch', () => {
       expect(api.obtenerActual).toHaveBeenCalled();

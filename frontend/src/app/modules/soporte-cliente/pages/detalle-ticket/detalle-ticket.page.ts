@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
+import { esAccionDelSistema, etiquetaAccion } from '../../historial-ui';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { HistorialTicketItem, Ticket } from '../../services/models/soporte.types';
 
@@ -120,4 +121,14 @@ export class DetalleTicketPage {
       error: () => this.mensajeAccion.set('Error al reabrir'),
     });
   }
+  /** Frase legible en vez del identificador interno de la acción. */
+  etiqueta(tipoAccion: string): string {
+    return etiquetaAccion(tipoAccion);
+  }
+
+  /** R-03: una acción automática debe distinguirse de una humana al leerla. */
+  esDelSistema(h: HistorialTicketItem): boolean {
+    return esAccionDelSistema(h);
+  }
+
 }

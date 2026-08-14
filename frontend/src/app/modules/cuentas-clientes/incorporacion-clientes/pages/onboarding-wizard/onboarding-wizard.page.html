@@ -2,7 +2,7 @@
   <header class="space-y-2">
     <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Onboarding</p>
     <h1 class="m-0 text-[28px] font-bold text-text-primary">Configuración inicial</h1>
-    <p class="m-0 text-sm text-text-secondary">Cuenta #{{ idcliente }}</p>
+    <p class="m-0 text-sm text-text-secondary">{{ perfil.razon_social || 'Tu cuenta' }}</p>
   </header>
 
   <div class="flex flex-wrap gap-2">
@@ -105,35 +105,11 @@
           </form>
         }
         @case ('preferencias') {
-          <form (ngSubmit)="completarPreferencias()" class="grid gap-4">
-            <label class="block">
-              <span class="mb-1 block text-sm font-medium text-text-secondary">Canales</span>
-              <select
-                [(ngModel)]="preferencias.canales_notificacion"
-                name="canales"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
-              >
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-                <option value="ambos">Ambos</option>
-              </select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-sm font-medium text-text-secondary">Teléfono SMS</span>
-              <input
-                [(ngModel)]="preferencias.telefono_sms"
-                name="telefono"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
-              />
-            </label>
-            <button
-              type="submit"
-              class="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
-            >
-              <app-tabler-icon name="circle-check" [size]="18" />
-              Finalizar onboarding
-            </button>
-          </form>
+          <app-preferencias-operativas-form
+            [valor]="prefsForm"
+            submitLabel="Finalizar onboarding"
+            (guardar)="completarPreferencias($event)"
+          />
         }
         @default {
           <div class="space-y-3">

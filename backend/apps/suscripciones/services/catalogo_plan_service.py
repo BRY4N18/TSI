@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from core.repositories.suscripciones.plan_repository import PlanRepository
+from core.repositories.suscripciones.severidad_repository import SeveridadRepository
 
 NIVELES = frozenset({"Básico", "Profesional", "Empresarial"})
 PERIODICIDADES = frozenset({"Mensual", "Anual"})
-SEVERIDADES = frozenset({"Baja", "Media", "Alta"})
 
 
 class CatalogoPlanError(Exception):
@@ -19,8 +19,17 @@ class CatalogoPlanError(Exception):
 
 
 class CatalogoPlanService:
-    def __init__(self, plans: PlanRepository | None = None):
+    def __init__(
+        self,
+        plans: PlanRepository | None = None,
+        severidades: SeveridadRepository | None = None,
+    ):
         self.plans = plans or PlanRepository()
+        self.severidades = severidades or SeveridadRepository()
+
+    def listar_severidades(self) -> list[dict[str, Any]]:
+        """Catálogo vigente para alimentar el selector del formulario de plan."""
+        return self.severidades.listar_activas()
 
     def listar(
         self,
@@ -137,15 +146,32 @@ class CatalogoPlanService:
                 raise CatalogoPlanError("invalid_limites", f"limites.{k} inválido")
 
     def _validate_severidades(self, severidades: Any) -> None:
-        """RN-SUSF-002 (corrección 2026-08-08): severidad es campo independiente y
-        totalmente configurable por el Director — ya no se deriva de `nivel`."""
+        """RN-SUSF-002 — severidad es campo independiente y totalmente
+        configurable por el Director; no se deriva de `nivel`.
+
+        Desde 2026-08-11 se guardan **identificadores de `Dim_Severidad`**, no la
+        escala paralela `Baja/Media/Alta` que existía aquí y que no correspondía a
+        ninguna fila del catálogo real (Leve/Moderado/Grave/Fatal). El conjunto
+        válido se lee de la tabla, de modo que añadir una severidad nueva no exige
+        tocar el código (SRS §6, Configurabilidad).
+        """
         if not isinstance(severidades, list) or not severidades:
             raise CatalogoPlanError(
                 "invalid_severidades", "severidades_desbloqueadas debe ser una lista no vacía"
             )
-        if not all(s in SEVERIDADES for s in severidades):
+        try:
+            ids = [int(s) for s in severidades]
+        except (TypeError, ValueError):
             raise CatalogoPlanError(
-                "invalid_severidades", f"severidades_desbloqueadas debe ser subconjunto de {sorted(SEVERIDADES)}"
+                "invalid_severidades",
+                "severidades_desbloqueadas debe contener identificadores de severidad",
+            )
+        validos = self.severidades.ids_validos()
+        desconocidos = sorted(set(ids) - validos)
+        if desconocidos:
+            raise CatalogoPlanError(
+                "invalid_severidades",
+                f"severidades_desbloqueadas contiene severidades inexistentes: {desconocidos}",
             )
 
     def _validate_carga_lote_habilitada(self, valor: Any) -> None:

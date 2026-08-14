@@ -1,6 +1,6 @@
 # Sistema de Diseño (UX/UI) — TSI
 **Ubicación de este archivo:** `docs/diseno/design-system.md`
-**Última actualización:** 2026-07-12 (v5 — corrección de IDs de caso de uso en ejemplos de Toast/Snackbar/Alert para alinear con la numeración vigente de los specs de Emergencias: CU-O39 abortar misión, CU-O32 descartar caso, CU-O41 fusionar reportes, CU-O44 forzar cierre, CU-O42 cancelar con unidad despachada; "sin unidades disponibles" ya no es un CU independiente, es una alerta dentro de CU-O34)
+**Última actualización:** 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend). Anterior: 2026-07-12 (v5 — corrección de IDs de caso de uso en ejemplos de Toast/Snackbar/Alert para alinear con la numeración vigente de los specs de Emergencias: CU-O39 abortar misión, CU-O32 descartar caso, CU-O41 fusionar reportes, CU-O44 forzar cierre, CU-O42 cancelar con unidad despachada; "sin unidades disponibles" ya no es un CU independiente, es una alerta dentro de CU-O34)
 
 ---
 
@@ -308,3 +308,117 @@ No usar:
 - Colores pastel o saturados que resten seriedad
 - Ilustraciones stock genéricas (preferir iconografía lineal consistente, un solo set de íconos en todo el sistema)
 - Exceso de whitespace decorativo que no aporte jerarquía — el espacio debe agrupar, no solo "verse limpio"
+
+## 8. Identificadores internos en pantalla
+
+**Regla.** Un identificador de base de datos no es información para el usuario. Ninguna
+pantalla le muestra un `id*` crudo ni le pide escribirlo.
+
+Cómo se resuelve cada caso:
+
+| Situación | Qué se hace |
+|---|---|
+| **Mostrar a quién/qué apunta una relación** (usuario, cliente, proveedor, plan, condado, región) | Se muestra el nombre legible. Para una persona, nombre y apellidos; si no los hay, el correo. Si el endpoint solo devuelve el id, se amplía el endpoint para que devuelva también el nombre — no se deja el id en pantalla "porque el API no lo trae" |
+| **Elegir un valor de una tabla catálogo o maestra** (tipos, estados, motivos, severidades, planes, roles, condados) | Combobox alimentado **de esa tabla**, mostrando el nombre y enviando el id. Nunca un campo de texto donde el usuario escriba el identificador, y nunca una lista de opciones escrita en duro en el componente |
+| **El identificador es el lenguaje del negocio** | Se muestra. Es el caso de los accidentes: el número de caso se dice por radio, se anota y se busca por él. También lo son la placa de una unidad y el número de factura — identificadores que el usuario ya usa fuera del sistema |
+| **El dato no tiene nombre legible que mostrar** | No se muestra nada, o se muestra un texto de estado ("Sin acceso asignado"). Un id nunca es el relleno por defecto |
+
+**Por qué.** Un id no le permite al usuario verificar nada ni tomar ninguna decisión: no
+sabe si `#12` es la persona correcta. Pedirle que lo escriba es peor — le obliga a
+conocer la clave primaria de una tabla, y un dígito equivocado apunta en silencio a otro
+registro existente. El caso que originó esta regla: el detalle de una unidad mostraba
+"Usuario login: 12" a quien administra una flota.
+
+**Alcance.** Los ids siguen viajando en las respuestas del API y en las URLs — la regla es
+sobre lo que se pinta y lo que se pide escribir, no sobre el transporte.
+
+**Deuda conocida al escribir esta regla.** Quedan pantallas que aún muestran ids crudos y
+que se irán corrigiendo: gestión de cuenta (`Cliente #`), aprobación de solicitudes de
+onboarding, catálogo de unidades y de regiones, configuración de SLA (`idplan`),
+aprobaciones de reducción de plan (`Cliente {id}`) y el listado de usuarios del hub de
+cuenta. Se listan aquí para que la regla no se lea como "ya cumplida".
+
+## 9. Repintado de la vista tras una operación asíncrona
+
+**Regla.** El shell de la aplicación (`app-shell.component`) usa
+`ChangeDetectionStrategy.OnPush`. Toda página que viva dentro del shell **debe**
+declarar explícitamente cómo se entera Angular de que sus datos cambiaron:
+
+- con **signals** (`signal()` / `computed()`) para el estado que se pinta, o
+- inyectando `ChangeDetectorRef` y llamando a `markForCheck()` dentro de **cada**
+  callback asíncrono — `next`, `error` y `complete` de cada `subscribe`.
+
+**Qué pasa si no se hace.** Nada visible en desarrollo y nada en la consola. La
+petición sale, el backend responde 200, los campos del componente se actualizan
+correctamente… y la pantalla sigue mostrando el estado anterior: el esqueleto de
+carga, la lista vacía o el spinner del botón congelado. Un ancestro OnPush que no
+está marcado como sucio detiene el recorrido de detección de cambios antes de
+llegar al hijo, por muy `Default` que sea la estrategia del hijo.
+
+**Por qué es fácil que se cuele.** El bug no aparece en las pruebas unitarias
+—que instancian el componente sin el shell y llaman a `detectChanges()` a mano—
+ni en las pantallas públicas, que viven fuera del shell y por eso funcionan. Solo
+se ve abriendo la página real con sesión iniciada. El caso que originó esta
+regla: nueve páginas de Cuentas y Clientes y de Regiones Operativas cargaban sus
+datos sin repintar nunca; la bandeja de aprobación de autorregistros mostraba
+"No hay solicitudes pendientes" mientras el API devolvía la solicitud.
+
+**Cómo verificarlo.** Abrir la página con sesión, provocar la carga y comprobar
+que el contenido cambia. Que la petición devuelva 200 en la pestaña de red **no
+es** evidencia de que la pantalla funcione.
+
+## 10. El chrome de la aplicación se adapta encogiendo, nunca recortando
+
+**Regla.** En el header, la barra lateral y cualquier barra de acciones, los grupos deben
+poder reducirse y los textos largos truncarse. Los **controles accionables nunca se
+encogen ni se recortan**: si no cabe todo, lo que desaparece es texto informativo, no un
+botón.
+
+En la práctica, para una fila de elementos:
+
+- cada grupo permite encogerse y su texto largo se trunca;
+- los botones e iconos se marcan como no encogibles;
+- lo que se oculta al estrechar es aquello que no informa una vez truncado —un rótulo
+  reducido a "Tr…" no dice nada— y su contenido íntegro queda en el `title`;
+- ningún contenedor puede quedar con contenido más ancho que él sin scroll: eso no es una
+  degradación, es contenido inalcanzable.
+
+**Por qué.** El caso que originó esta regla: el bloque de identidad del header crecía con
+la longitud del correo dentro de un contenedor que no encogía. Con un correo largo, el
+botón de "Cerrar sesión" quedaba fuera del borde a partir de ~1070px de ancho, y como el
+documento no tiene scroll horizontal, a 1024px —una resolución de portátil corriente— era
+imposible cerrar sesión. No hubo error, ni aviso, ni nada roto a la vista: simplemente el
+botón no estaba.
+
+**Cómo verificarlo.** Barrer los anchos habituales (320, 375, 768, 1024, 1280, 1440) y
+comprobar que ningún elemento interactivo sobresale del borde de su contenedor. Mirar solo
+el ancho de escritorio no basta, y una captura tampoco: el elemento recortado no aparece en
+ella, que es justo lo que lo hace fácil de pasar por alto.
+
+---
+
+## 11. Un overlay que bloquea la pantalla tiene que anunciarse como diálogo
+
+Todo elemento que cubre la vista y **captura los clics** —el Alert modal y el diálogo de
+confirmación de la sección 5— debe cumplir, sin excepción:
+
+- `role="dialog"` (o `role="alertdialog"` cuando comunica un error o exige reconocimiento),
+  con `aria-modal="true"`.
+- `aria-labelledby` apuntando al título y `aria-describedby` al mensaje.
+- **El foco entra en el diálogo al abrirse.** En un diálogo destructivo, el foco inicial va al
+  botón **no destructivo** (Cancelar), coherente con la regla de confirmación en 2 pasos.
+- **Escape lo cierra**, y en un diálogo de confirmación Escape equivale siempre a **cancelar**,
+  nunca a confirmar.
+
+**Por qué.** El caso que originó esta regla: el Alert modal era un `div` con `position: fixed`
+sobre toda la pantalla, sin `role` ni presencia en el árbol de accesibilidad. Interceptaba
+todos los clics, así que desde fuera —lector de pantalla, navegación por teclado, o
+simplemente una herramienta que lee la página— la aplicación parecía haber dejado de
+responder: los clics no llegaban a nada y no había ningún elemento que explicara por qué. El
+diálogo estaba ahí; para todo lo que no fueran ojos, no existía.
+
+**Mensajes de error dentro del Alert.** Si el backend devolvió un detalle accionable (un 4xx
+con su `detail`), el Alert lo muestra. Sustituirlo por un texto genérico —"verifica la
+conexión"— manda al usuario a buscar el problema donde no está: la fecha que escribió mal no
+se arregla revisando la red. El mensaje genérico se reserva a lo que de verdad puede ser de
+conexión: fallo de red o error del servidor (5xx).

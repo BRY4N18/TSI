@@ -48,7 +48,10 @@ Director Tecnológico ajusta timeout, pesos ranking, prioridades severidad→tip
 - **FR-UI-003**: Detalle: temporizador tiempo desde registro accidente — RF-DES-011.
 - **FR-UI-004**: Detalle: mapa accidente + posiciones unidades candidatas/asignadas — RF-DES-011.
 - **FR-UI-005**: Actualizaciones monitoreo vía SSE `DespachoSseService` alineado seguimiento — RF-DES-011 / patrón RF-SEG-007.
-- **FR-UI-006**: CTA «Asignar manualmente» → ruta asignación — CU-O64.
+- **FR-UI-006**: CTA «Asignar unidad» en el detalle de monitoreo → ruta `/despacho/asignacion/:idaccidente` — CU-O64.
+  *(Este requisito estaba escrito pero no construido: la ruta existía y ninguna pantalla
+  enlazaba a ella, así que la vía manual —red de seguridad que el SRS §3.6.2 exige— solo se
+  alcanzaba escribiendo la URL. Corregido el 2026-08-12.)*
 - **FR-UI-007**: CTA «Coordinar unidad adicional» (despacho múltiple O66) cuando ya hay despacho activo — RF-DES-009.
 - **FR-UI-008**: Mi despacho: card notificación con severidad, dirección, coordenadas, ETA, mapa ruta sugerida — RF-DES-002.
 - **FR-UI-009**: Mi despacho: Aceptar (O61) y Rechazar (O62) — motivo texto libre **requerido** en rechazo — RF-DES-003/004.

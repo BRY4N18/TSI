@@ -54,6 +54,21 @@ class UnidadEmergenciaRepository:
         )
         return self._normalize_row(rows[0]) if rows else None
 
+    def find_by_placa(self, placa: str) -> dict[str, Any] | None:
+        """Busca la placa **en cualquier estado**, también entre las dadas de baja.
+
+        La placa es el identificador único de negocio y una unidad de baja conserva
+        la suya —el SRS §3.5.1 permite reactivarla—. Comprobar solo entre las activas
+        dejaba registrar una unidad nueva con la placa de una de baja, y al reactivar
+        la antigua quedaban dos unidades activas con la misma placa.
+        """
+        rows = self.pinot.query(
+            "SELECT * FROM Dim_UnidadEmergencia WHERE placa = %(placa)s "
+            "ORDER BY idunidademergencia DESC LIMIT 1",
+            {"placa": placa},
+        )
+        return self._normalize_row(rows[0]) if rows else None
+
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         now = self._now_ms()
         idunidademergencia = self._next_id()

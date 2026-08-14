@@ -51,7 +51,11 @@ export class LoginPage {
             return;
           }
 
-          const target = resolvePostLoginPath(response.data.profile?.roles, requestedReturn);
+          const target = resolvePostLoginPath(
+            response.data.profile?.roles,
+            requestedReturn,
+            response.data.cuenta,
+          );
           void this.router.navigateByUrl(target);
         },
         error: () => {

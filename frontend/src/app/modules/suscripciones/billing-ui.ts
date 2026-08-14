@@ -29,6 +29,10 @@ export function billingEstadoBadge(estado?: string): string {
     case 'Suspendida':
     case 'Pendiente':
       return billingBadge('warn');
+    // Informativo, no error: el cobro esta detenido a proposito mientras se
+    // resuelve el reclamo.
+    case 'En disputa':
+      return billingBadge('info');
     case 'Cancelada':
     case 'Fallida':
     case 'Rechazada':

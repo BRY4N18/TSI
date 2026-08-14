@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Suscripciones y Facturación — TSI
-  version: "1.1.0"
+  version: "1.2.0"
   description: >
     Contrato REST contract-first para RF-SUSF-001…003, 006, 009, 010 y regularización.
     RF-004/005/007 (batch)/008 son jobs sin endpoint público — ver research.md Decision 1.
@@ -9,6 +9,9 @@ info:
     RF-SUSF-001 (POST/PATCH planes): rol JWT `DirectorEstrategia` (Session 2026-07-30);
     Administrador conserva aprobaciones de downgrade y consulta de facturas.
     v1.1.0: GET /suscripciones/planes — cursor/limit/filtros + meta.pagination (RNF-SUSF-005a).
+    v1.2.0 (2026-08-11): `severidades_desbloqueadas` pasa de nombres (`Baja`/`Media`/`Alta`)
+    a `idseveridad` de `Dim_Severidad`; nuevo GET /suscripciones/severidades que expone el
+    catálogo vigente para alimentar el selector. Cambio incompatible: ver changelog.
 servers:
   - url: /api/v1
 
@@ -252,6 +255,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/SolicitudEnvelope"
 
+  /suscripciones/severidades:
+    get:
+      summary: Catálogo de severidades atendibles (RN-SUSF-002)
+      description: |
+        Severidades activas de `Dim_Severidad`, ordenadas de la más leve a la más grave.
+        Alimenta el selector del formulario de plan: la lista **no** puede estar escrita
+        en el cliente, para que añadir o retirar una severidad no exija tocar el sistema
+        (SRS §6, Configurabilidad).
+      tags: [Plan]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            idseveridad: { type: integer }
+                            severidad: { type: string }
+                            descripcion: { type: string, nullable: true }
+
   /suscripciones/planes:
     get:
       summary: Catálogo de planes paginado (RF-SUSF-001 listado / RNF-SUSF-005a)
@@ -462,8 +495,10 @@ components:
           description: Congelado desde `Dim_Plan.nivel` al alta/cambio de plan (RN-SUSF-006)
         severidades_desbloqueadas:
           type: array
-          items: { type: string, enum: [Baja, Media, Alta] }
-          description: Congelado desde `Dim_Plan.severidades_desbloqueadas` al alta/cambio de plan (RN-SUSF-006)
+          items: { type: integer }
+          description: >
+            `idseveridad` de `Dim_Severidad`, congelados desde
+            `Dim_Plan.severidades_desbloqueadas` al alta/cambio de plan (RN-SUSF-006)
         carga_lote_habilitada:
           type: boolean
           description: Congelado desde `Dim_Plan.carga_lote_habilitada` al alta/cambio de plan (RN-SUSF-030); leído por Red Operativa para gatear CU-O40
@@ -597,8 +632,11 @@ components:
         severidades_desbloqueadas:
           type: array
           minItems: 1
-          items: { type: string, enum: [Baja, Media, Alta] }
-          description: Independiente de `nivel`, configurable libremente por el Director de Estrategia (RN-SUSF-002)
+          items: { type: integer }
+          description: >
+            `idseveridad` activos de `Dim_Severidad` (ver GET /suscripciones/severidades).
+            Independiente de `nivel`, configurable libremente por el Director de Estrategia
+            (RN-SUSF-002)
         carga_lote_habilitada:
           type: boolean
           default: false
@@ -619,7 +657,7 @@ components:
         severidades_desbloqueadas:
           type: array
           minItems: 1
-          items: { type: string, enum: [Baja, Media, Alta] }
+          items: { type: integer }
         carga_lote_habilitada: { type: boolean }
         activo: { type: boolean }
 
@@ -638,7 +676,7 @@ components:
           enum: [Mensual, Anual]
         severidades_desbloqueadas:
           type: array
-          items: { type: string, enum: [Baja, Media, Alta] }
+          items: { type: integer }
         carga_lote_habilitada: { type: boolean }
         activo: { type: boolean }
 

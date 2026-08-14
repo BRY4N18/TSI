@@ -26,7 +26,10 @@ from apps.cuentas_clientes.views.onboarding_views import (
     ReenviarInvitacionView,
     RegistrarCuentaView,
 )
-from apps.cuentas_clientes.views.password_reset_views import PasswordResetView
+from apps.cuentas_clientes.views.password_reset_views import (
+    PasswordChangeView,
+    PasswordResetView,
+)
 from apps.cuentas_clientes.views.server_access_views import (
     ServerRoleAssignView,
     ServerRoleDetailView,
@@ -49,6 +52,7 @@ urlpatterns = [
     path("auth/logout", LogoutView.as_view(), name="auth-logout"),
     path("auth/revoke-session", RevokeSessionView.as_view(), name="auth-revoke-session"),
     path("auth/password-reset", PasswordResetView.as_view(), name="auth-password-reset"),
+    path("auth/password-change", PasswordChangeView.as_view(), name="auth-password-change"),
     # Users & roles (US2) — static paths before parameterized routes
     path("usuarios/roles/asignar", UserRoleAssignView.as_view(), name="usuarios-roles-assign"),
     path("usuarios", UserListCreateView.as_view(), name="usuarios-list-create"),

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from apps.accidentes.domain_constants import (
     ESTADO_BORRADOR,
+    ESTADO_CERRADO,
+    ESTADO_DESCARTADO,
     ESTADO_FUSIONADO,
     ESTADO_REPORTADO,
 )
@@ -16,7 +18,15 @@ from core.repositories.accidentes.estado_accidente_repository import (
 
 
 class FusionarReportesService:
-    ALLOWED = {ESTADO_BORRADOR, ESTADO_REPORTADO}
+    # El **duplicado** es un reporte que muere antes de cualquier despacho
+    # (SRS §3.6.1: este módulo cubre "todos los caminos que terminan antes de
+    # que exista cualquier despacho").
+    ALLOWED_DUPLICADO = {ESTADO_BORRADOR, ESTADO_REPORTADO}
+    # El **padre**, en cambio, "continúa su flujo normal sin alteración": puede
+    # estar ya buscando unidad, asignado o en atención. Exigirle BORRADOR o
+    # REPORTADO impedía fusionar en el caso normal —el duplicado llega cuando el
+    # caso real ya se está despachando—, que es justo cuando hace falta.
+    PROHIBIDOS_PADRE = {ESTADO_CERRADO, ESTADO_DESCARTADO, ESTADO_FUSIONADO}
 
     def __init__(
         self,
@@ -38,10 +48,23 @@ class FusionarReportesService:
     ) -> dict:
         if not confirmacion:
             raise ValueError("Confirmación requerida")
-        for aid in (idaccidente_duplicado, idaccidente_principal):
-            estado = self.estado_repo.get_current_estado(aid)
-            if estado not in self.ALLOWED:
-                raise ConflictError("Fusión no permitida para el estado actual")
+        if idaccidente_duplicado == idaccidente_principal:
+            # Sin esta guarda, un caso podía quedar marcado como duplicado de sí
+            # mismo: apuntándose con `idaccidenteorigen`, desactivado y en
+            # FUSIONADO. El accidente real desaparecía del flujo.
+            raise ValueError("Un caso no puede fusionarse consigo mismo")
+
+        estado_duplicado = self.estado_repo.get_current_estado(idaccidente_duplicado)
+        if estado_duplicado not in self.ALLOWED_DUPLICADO:
+            raise ConflictError(
+                "Solo puede fusionarse un reporte que aún no tiene despacho "
+                f"(estado actual: {estado_duplicado})"
+            )
+        estado_principal = self.estado_repo.get_current_estado(idaccidente_principal)
+        if estado_principal in self.PROHIBIDOS_PADRE or estado_principal is None:
+            raise ConflictError(
+                f"El caso padre no admite fusiones en estado {estado_principal}"
+            )
 
         self.accidente_repo.update(
             idaccidente_duplicado,

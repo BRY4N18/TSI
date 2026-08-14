@@ -65,6 +65,14 @@ export const PARTNERS_ROUTES: Routes = [
       import('./pages/reporte-consumo/reporte-consumo.page').then((m) => m.ReporteConsumoPage),
   },
   {
+    // Panel de suspensiones (RF-PAC-005 + RF-PAC-009 b). Solo Administrador:
+    // la reactivación es suya y el sistema nunca la ejecuta solo (RN-PAC-009).
+    path: 'consola/suspensiones',
+    canActivate: [administradorGuard],
+    loadComponent: () =>
+      import('./pages/cola-acceso/cola-acceso.page').then((m) => m.ColaAccesoPage),
+  },
+  {
     // Solo Administrador: ni siquiera el Desarrollador de APIs. Decidir qué
     // hacer con un excedente no cobrado es una decisión de negocio.
     path: 'consola/excepciones',

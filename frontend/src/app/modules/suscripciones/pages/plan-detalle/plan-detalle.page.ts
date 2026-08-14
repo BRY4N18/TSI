@@ -5,7 +5,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
-import { Plan, PlanLimites, SeveridadPlan } from '../../services/models/suscripciones.types';
+import {
+  Plan,
+  PlanLimites,
+  SeveridadCatalogo,
+  SeveridadPlan,
+} from '../../services/models/suscripciones.types';
 import { PlanApiService } from '../../services/plan-api.service';
 import { billingBadge } from '../../billing-ui';
 
@@ -31,8 +36,14 @@ export class PlanDetallePage implements OnInit {
   readonly error = signal<string | null>(null);
   readonly plan = signal<Plan | null>(null);
   readonly idplan = signal<number | null>(null);
+  /** Catálogo `Dim_Severidad` para traducir los ids que guarda el plan. */
+  readonly severidadesCatalogo = signal<SeveridadCatalogo[]>([]);
 
   ngOnInit(): void {
+    this.api.listarSeveridades().subscribe({
+      next: (items) => this.severidadesCatalogo.set(items),
+      error: () => this.severidadesCatalogo.set([]),
+    });
     const idRaw = this.route.snapshot.paramMap.get('idplan');
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
@@ -85,12 +96,15 @@ export class PlanDetallePage implements OnInit {
         return limites;
       }
     }
-    return [
-      `${limites.unidades_max} unidades`,
-      `${limites.usuarios_max} usuarios`,
-      `${limites.api_calls_mes} API/mes`,
-      `${limites.api_calls_minuto} API/min`,
-    ].join(' · ');
+    // Ver nota en `catalogo-planes.page.ts`: las claves ausentes se omiten en
+    // vez de renderizarse como `undefined`.
+    const partes = [
+      limites.unidades_max == null ? null : `${limites.unidades_max} unidades`,
+      limites.usuarios_max == null ? null : `${limites.usuarios_max} usuarios`,
+      limites.api_calls_mes == null ? null : `${limites.api_calls_mes} API/mes`,
+      limites.api_calls_minuto == null ? null : `${limites.api_calls_minuto} API/min`,
+    ].filter((p): p is string => p !== null);
+    return partes.length ? partes.join(' · ') : 'Sin límites';
   }
 
   severidadesTexto(severidades?: SeveridadPlan[] | string): string {
@@ -102,6 +116,12 @@ export class PlanDetallePage implements OnInit {
         return 'Sin configurar';
       }
     }
-    return severidades.length ? severidades.join(' · ') : 'Sin configurar';
+    const nombres = new Map(
+      this.severidadesCatalogo().map((s) => [s.idseveridad, s.severidad]),
+    );
+    const etiquetas = severidades
+      .map((id) => nombres.get(Number(id)))
+      .filter((n): n is string => Boolean(n));
+    return etiquetas.length ? etiquetas.join(' · ') : 'Sin configurar';
   }
 }

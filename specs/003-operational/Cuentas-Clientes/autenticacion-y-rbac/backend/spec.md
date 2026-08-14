@@ -143,6 +143,27 @@ El sistema debe permitir a un usuario recuperar su contraseña:
 6. En el siguiente inicio de sesión (CU-O01), el sistema detecta `estadocredencial = 'Cambio contraseña'` y fuerza el cambio de contraseña antes de continuar.
 7. No existe tabla de tokens de recuperación independiente: la propia `Dim_Credencial` hace las veces de estado del proceso.
 
+### RF-AUT-006b: Definir la contraseña definitiva (CU-O04)
+
+Añadido 2026-08-11. RF-AUT-006 describía cómo se genera la temporal y cómo el login
+fuerza el cambio, pero **no definía el paso que lo completa**, y ese paso no existía en el
+sistema: quien entraba con una credencial temporal era redirigido a la pantalla de
+recuperación, que solo sabía enviarle otra temporal. La cuenta quedaba inutilizable —
+afectaba a todo usuario nacido por invitación, autorregistro, entrada directa o alta de
+unidad con correo.
+
+El sistema debe permitir al usuario **autenticado** definir su contraseña definitiva:
+
+1. El usuario envía su contraseña vigente y la nueva.
+2. El sistema verifica la vigente contra `Dim_Credencial.contrasena`. Se exige aunque la
+   sesión ya esté autenticada: sin ella, un token robado bastaría para apropiarse de la
+   cuenta.
+3. Rechaza una contraseña nueva de menos de 8 caracteres, o igual a la vigente.
+4. Sobrescribe el hash y marca `Dim_Credencial.estadocredencial = 'Activo'`.
+5. Registra el evento en auditoría, distinguiendo si la credencial era temporal.
+6. Tras el cambio se cierra la sesión abierta con la credencial temporal, para que el
+   usuario entre ya con la definitiva.
+
 ### RF-AUT-007: Revocar sesión activa (CU-O05)
 
 El sistema debe permitir al Administrador revocar una sesión activa de un usuario:

@@ -228,3 +228,83 @@ class TestJob:
         # Assert — el job corre sin errores y devuelve el resumen
         assert "avisadas" in resultado
         assert "expiradas" in resultado
+
+
+class _NotificadorEspia:
+    """Doble del notificador: lo que se comprueba es que ALGUIEN se entera.
+
+    Los avisos existian y estaban probados en aislamiento —llamando al
+    notificador a mano—, pero ningun codigo de produccion los invocaba: la
+    suite pasaba con el defecto dentro (B42).
+    """
+
+    def __init__(self):
+        self.previos: list[dict] = []
+        self.vencidos: list[dict] = []
+
+    def notificar_proximo_vencimiento(self, *, partner, nombre_credencial, dias_restantes):
+        self.previos.append(
+            {
+                "gmail": partner["contacto_tecnico_gmail"],
+                "nombre": nombre_credencial,
+                "dias": dias_restantes,
+            }
+        )
+        return 1
+
+    def notificar_vencimiento(self, *, partner, nombre_credencial):
+        self.vencidos.append(
+            {"gmail": partner["contacto_tecnico_gmail"], "nombre": nombre_credencial}
+        )
+        return 1
+
+
+class TestElPartnerSeEntera:
+    """El SRS: "El sistema avisa antes del vencimiento y de nuevo al producirse"."""
+
+    def test_al_vencer_avisa_al_contacto_tecnico(self, mock_pinot, mock_kafka):
+        # Arrange
+        _partner()
+        _credencial(40, expira=AHORA - UN_DIA)
+        espia = _NotificadorEspia()
+
+        # Act
+        ExpiracionCredencialService(notificacion=espia).procesar_vencidas(AHORA)
+
+        # Assert
+        assert espia.vencidos == [{"gmail": "ana@demo.com", "nombre": "cred-40"}]
+
+    def test_antes_de_vencer_avisa_diciendo_cuantos_dias_quedan(self, mock_pinot, mock_kafka):
+        # Arrange — sin los dias, el aviso no permite planificar la rotacion
+        _partner()
+        _credencial(41, expira=AHORA + 3 * UN_DIA)
+        espia = _NotificadorEspia()
+
+        # Act
+        ExpiracionCredencialService(notificacion=espia).avisar_proximas_a_vencer(AHORA)
+
+        # Assert
+        assert espia.previos == [{"gmail": "ana@demo.com", "nombre": "cred-41", "dias": 3}]
+
+    def test_un_buzon_caido_no_deja_credenciales_vencidas_operativas(
+        self, mock_pinot, mock_kafka
+    ):
+        """La expiracion es un control de seguridad: si el aviso falla, la
+        credencial tiene que quedar desactivada igual."""
+        # Arrange
+        _partner()
+        _credencial(42, expira=AHORA - UN_DIA)
+
+        class _Roto:
+            def notificar_vencimiento(self, **_):
+                raise RuntimeError("smtp caido")
+
+        # Act
+        resultado = ExpiracionCredencialService(notificacion=_Roto()).procesar_vencidas(AHORA)
+
+        # Assert
+        assert resultado["total"] == 1
+        vigente = next(
+            c for c in PINOT_STORE["Dim_CredencialAPI"] if c["idcredencial"] == 42
+        )
+        assert vigente["activo"] is False

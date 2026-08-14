@@ -58,17 +58,37 @@
       </article>
     </div>
 
+    @if (detalle()!.plan_programado_nombre) {
+      <p
+        class="m-0 rounded-[10px] border border-border-default bg-bg-surface p-5 text-sm shadow-sm"
+        role="status"
+      >
+        Tu cambio al plan <strong>{{ detalle()!.plan_programado_nombre }}</strong> ya está
+        aprobado y se aplicará el
+        <strong>{{ detalle()!.fecha_fin | date: 'mediumDate' }}</strong
+        >, al terminar el ciclo que ya pagaste. Hasta esa fecha conservas tu plan actual sin
+        cambios.
+      </p>
+    }
+
     <div class="flex flex-wrap items-center gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
       <a
         routerLink="/suscripciones/metodos-pago"
         class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
         >Métodos de pago</a
       >
-      <a
-        routerLink="/suscripciones/cambio-plan"
-        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
-        >Cambiar plan</a
-      >
+      <!--
+        El SRS §3.3.1 no admite cambiar de plan sobre una suscripción suspendida o
+        cancelada, y el backend responde 409. Ofrecer el botón igualmente llevaba al
+        cliente a una pantalla donde su única acción siempre falla.
+      -->
+      @if (detalle()!.estado === 'Activa') {
+        <a
+          routerLink="/suscripciones/cambio-plan"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent-primary bg-transparent px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+          >Cambiar plan</a
+        >
+      }
       @if (detalle()!.estado === 'Suspendida') {
         <button
           type="button"

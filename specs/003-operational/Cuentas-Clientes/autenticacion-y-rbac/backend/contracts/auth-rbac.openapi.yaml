@@ -99,6 +99,44 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /auth/password-change:
+    post:
+      tags: [Auth]
+      summary: Definir la contraseña definitiva (CU-O04, RF-AUT-006b)
+      description: >
+        Cierra el flujo de contraseña temporal. Requiere sesión y la contraseña vigente:
+        sin ella un token robado bastaría para apropiarse de la cuenta. Al completarse,
+        `Dim_Credencial.estadocredencial` pasa a `Activo`.
+      operationId: passwordChange
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password_actual, password_nueva]
+              properties:
+                password_actual: { type: string }
+                password_nueva: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      idusuario: { type: integer }
+                      estadocredencial: { type: string, example: Activo }
+                      message: { type: string }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
 components:
   securitySchemes:
@@ -168,6 +206,27 @@ components:
         profile:
           $ref: '#/components/schemas/Profile'
         requiresPasswordChange:
+          type: boolean
+        cuenta:
+          $ref: '#/components/schemas/CuentaSesion'
+
+    CuentaSesion:
+      type: object
+      nullable: true
+      description: >
+        Cuenta de la que el usuario es administrador local, si la hay. Añadido 2026-08-11
+        para poder llevarlo a su incorporación pendiente (SRS §3.2.2): sin este dato el
+        asistente solo era alcanzable escribiendo la URL. Es `null` para los usuarios
+        internos de TSI, que no pertenecen a ninguna cuenta cliente.
+      required: [idcliente, estadoOnboarding, onboardingPendiente]
+      properties:
+        idcliente:
+          type: integer
+        estadoOnboarding:
+          type: string
+          nullable: true
+          example: Pendiente
+        onboardingPendiente:
           type: boolean
 
     LoginSuccessResponse:

@@ -67,6 +67,15 @@ Desde detalle accidente, Operador abre galería/enriquecimiento con `?mode=view`
 - **FR-UI-017**: ≤4 acciones primarias visibles por pantalla enriquecimiento; controles ≥44×44 px; validación inline — RNF-EVI-010.
 - **FR-UI-018**: Guards `evidencia-gallery`, `unidad-emergencia-disponibilidad`, `administrador-flota` en rutas lazy — RN-EVI-012/015/016.
 - **FR-UI-019**: Flujo navegación Técnico: Lista accidentes → Detalle → «Ver galería» / «Completar en sitio» — `nav-links.ts` + `accidentesLecturaGuard`.
+- **FR-UI-020**: **Flujo de navegación de la Unidad, distinto del Técnico.** La unidad **no**
+  puede abrir el detalle del accidente (`accidentesLecturaGuard` admite solo Operador,
+  Técnico y Administrador), así que su acceso a la galería va por *Mi seguimiento* → enlace
+  **«Evidencia del caso»** del despacho en curso. Que el rol tenga permiso sobre la galería
+  no basta: sin ese enlace la pantalla solo era alcanzable escribiendo la URL, y la unidad
+  —el actor que el SRS §3.6.3 pone en el sitio— no podía adjuntar nada.
+- **FR-UI-021**: El enlace de vuelta de la galería **depende del rol**: Operador/Técnico/
+  Administrador vuelven al detalle del accidente; la Unidad vuelve a *Mi seguimiento*.
+  Mandar a todos al detalle dejaba a la unidad en «Acceso denegado», sin vuelta atrás.
 
 ## Out of Scope
 

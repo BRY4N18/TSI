@@ -50,6 +50,21 @@ export class MetodosPagoPage implements OnInit {
   numero = '';
   fechaexpiracion = '';
 
+  /**
+   * `fechaexpiracion` viaja como epoch en milisegundos porque la columna de
+   * Pinot es LONG. Mostrarlo crudo dejaba un número de 13 dígitos en pantalla,
+   * así que se devuelve al formato MM/AAAA con el que el usuario lo escribió.
+   */
+  expiracion(valor: string | number | null | undefined): string {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    const ms = Number(valor);
+    if (!Number.isFinite(ms) || ms <= 0) return '—';
+    const fecha = new Date(ms);
+    if (Number.isNaN(fecha.getTime())) return '—';
+    const mes = String(fecha.getUTCMonth() + 1).padStart(2, '0');
+    return `${mes}/${fecha.getUTCFullYear()}`;
+  }
+
   badgeOk(): string {
     return billingBadge('ok');
   }

@@ -2,6 +2,9 @@ import pytest
 
 from apps.seguimiento.services.cerrar_caso_service import CerrarCasoService
 from apps.seguimiento.services.expediente_service import ExpedienteService
+from apps.seguimiento.services.finalizar_atencion_unidad_service import (
+    FinalizarAtencionUnidadService,
+)
 from apps.seguimiento.services.registrar_llegada_service import RegistrarLlegadaService
 
 
@@ -17,6 +20,10 @@ class TestExpedienteService:
         # Arrange
         iddespacho = despacho_confirmado_unidad["iddespacho"]
         RegistrarLlegadaService().registrar(iddespacho=iddespacho, idunidademergencia=1, idusuario=6)
+        # SRS 3.6.4: el caso no cierra hasta que la unidad se retira.
+        FinalizarAtencionUnidadService().finalizar(
+            iddespacho=iddespacho, idunidademergencia=1, idusuario=6
+        )
         CerrarCasoService().cerrar(
             idaccidente=accidente_activo,
             idusuario=2,
@@ -46,6 +53,10 @@ class TestExpedienteService:
         # Arrange
         iddespacho = despacho_confirmado_unidad["iddespacho"]
         RegistrarLlegadaService().registrar(iddespacho=iddespacho, idunidademergencia=1, idusuario=6)
+        # SRS 3.6.4: el caso no cierra hasta que la unidad se retira.
+        FinalizarAtencionUnidadService().finalizar(
+            iddespacho=iddespacho, idunidademergencia=1, idusuario=6
+        )
         CerrarCasoService().cerrar(
             idaccidente=accidente_activo,
             idusuario=2,

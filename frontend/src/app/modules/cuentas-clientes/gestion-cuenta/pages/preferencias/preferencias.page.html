@@ -7,7 +7,7 @@
   </a>
 
   <h1 class="m-0 text-2xl font-bold text-text-primary">Preferencias operativas</h1>
-  <p class="m-0 text-sm text-text-secondary">Cliente #{{ idcliente }}</p>
+  <p class="m-0 text-sm text-text-secondary">{{ razonSocial || 'Cuenta de cliente' }}</p>
 
   @if (mensaje) {
     <p class="m-0 text-sm text-accent-primary">{{ mensaje }}</p>
@@ -17,16 +17,12 @@
   }
 
   @if (preferencias) {
-    <form class="grid max-w-md gap-3 rounded-lg border border-border-default bg-bg-surface p-4" (ngSubmit)="guardar()">
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Teléfono SMS
-        <input class="tsi-input" [(ngModel)]="preferencias.telefono_sms" name="telefono_sms" />
-      </label>
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Canales de notificación
-        <input class="tsi-input" [(ngModel)]="preferencias.canales_notificacion" name="canales" />
-      </label>
-      <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Guardar</button>
-    </form>
+    <div class="max-w-2xl rounded-lg border border-border-default bg-bg-surface p-6">
+      <app-preferencias-operativas-form
+        [valor]="prefsForm"
+        submitLabel="Guardar"
+        (guardar)="guardar($event)"
+      />
+    </div>
   }
 </div>

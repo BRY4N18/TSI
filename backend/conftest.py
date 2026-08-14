@@ -133,6 +133,34 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "fecha_actualizacion": "2026-01-01T00:00:00+00:00",
         },
     ],
+    # Catálogo canónico de severidades. Los planes guardan estos ids desde la
+    # migración del 2026-08-11; antes había una escala paralela de nombres.
+    "Dim_Severidad": [
+        {
+            "idseveridad": 1,
+            "severidad": "Leve",
+            "descripcion": "Daños materiales menores, sin heridos",
+            "activo": True,
+        },
+        {
+            "idseveridad": 2,
+            "severidad": "Moderado",
+            "descripcion": "Heridos leves o daños relevantes; requiere atención",
+            "activo": True,
+        },
+        {
+            "idseveridad": 3,
+            "severidad": "Grave",
+            "descripcion": "Heridos de consideración; prioridad alta de despacho",
+            "activo": True,
+        },
+        {
+            "idseveridad": 4,
+            "severidad": "Fatal",
+            "descripcion": "Víctimas mortales; máxima prioridad",
+            "activo": True,
+        },
+    ],
     "Dim_Rol": [
         {
             "idrol": 1,
@@ -451,7 +479,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "limites": '{"unidades_max": 5, "usuarios_max": 3, "api_calls_mes": 1000, "api_calls_minuto": 30}',
 "precio_excedente_llamada": 0.06,
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": '["Baja"]',
+            "severidades_desbloqueadas": "[1]",
             "carga_lote_habilitada": False,
             "activo": True,
             "precio": 49.0,
@@ -464,7 +492,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "limites": '{"unidades_max": 25, "usuarios_max": 10, "api_calls_mes": 10000, "api_calls_minuto": 120}',
 "precio_excedente_llamada": 0.02,
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": '["Baja", "Media"]',
+            "severidades_desbloqueadas": "[1, 2]",
             "carga_lote_habilitada": True,
             "activo": True,
             "precio": 149.0,
@@ -477,7 +505,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "limites": '{"unidades_max": 100, "usuarios_max": 50, "api_calls_mes": 100000, "api_calls_minuto": 600}',
 "precio_excedente_llamada": 0.005,
             "periodicidad": "Anual",
-            "severidades_desbloqueadas": '["Baja", "Media", "Alta"]',
+            "severidades_desbloqueadas": "[1, 2, 3, 4]",
             "carga_lote_habilitada": True,
             "activo": True,
             "precio": 399.0,
@@ -490,7 +518,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "limites": '{"unidades_max": 1, "usuarios_max": 1, "api_calls_mes": 10, "api_calls_minuto": 5}',
 "precio_excedente_llamada": 0.5,
             "periodicidad": "Mensual",
-            "severidades_desbloqueadas": '["Baja"]',
+            "severidades_desbloqueadas": "[1]",
             "carga_lote_habilitada": False,
             "activo": False,
             "precio": 9.0,
@@ -510,7 +538,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "precio": 49.0,
             "periodicidad": "Mensual",
             "nivel": "Básico",
-            "severidades_desbloqueadas": '["Baja"]',
+            "severidades_desbloqueadas": "[1]",
             "carga_lote_habilitada": True,
             "fecha_inicio": 1704067200000,
             "fecha_fin": 1735689600000,
@@ -1009,10 +1037,11 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
             return [{"count": len(rows)}]
         limit = int(params.get("limit", len(rows)))
         return rows[:limit]
-    if "JOIN DIM_USUARIO_ROL" in sql_upper and "GERENTE" in str(params.get("role", "")).upper():
-        wanted = next((r["idrol"] for r in PINOT_STORE["Dim_Rol"] if r.get("rol") == params["role"]), None)
-        ids = {r["idusuario"] for r in PINOT_STORE["Dim_Usuario_Rol"] if r["idrol"] == wanted}
-        return [{"idusuario": u["idusuario"]} for u in PINOT_STORE["Dim_Usuarios"] if u["idusuario"] in ids and u.get("activo")]
+    # Nota: aquí vivía una rama que resolvía un `JOIN Dim_Usuario_Rol` de la
+    # asignación automática de prospectos. Pinot no admite JOIN entre tablas y
+    # ese doble hacía pasar la suite mientras el endpoint fallaba con 500 contra
+    # Pinot real. El servicio ahora consulta en dos pasos y esas consultas se
+    # resuelven en las ramas genéricas de Dim_Rol / Dim_Usuario_Rol / Dim_Usuarios.
     if "MAX(IDUSUARIO)" in sql_upper:
         ids = [u["idusuario"] for u in PINOT_STORE["Dim_Usuarios"]]
         return [{"max_id": max(ids) if ids else 0}]
@@ -1410,6 +1439,28 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
         ]
 
     # --- Role/permission lookups (no JOIN, two sequential queries) ---
+    if "FROM DIM_USUARIO_ROL" in sql_upper and "MAX(IDUSUARIOROL)" in sql_upper:
+        # `Dim_Usuario_Rol` es upsert por `idusuariorol`: sin esta clave las
+        # asignaciones se pisaban entre sí (ver RoleRepository.assign_role_to_user).
+        ids = [
+            int(ur.get("idusuariorol") or 0)
+            for ur in PINOT_STORE["Dim_Usuario_Rol"]
+        ]
+        return [{"max_id": max(ids) if ids else 0}]
+
+    if (
+        "FROM DIM_USUARIO_ROL" in sql_upper
+        and "WHERE IDUSUARIO" in sql_upper
+        and "IDROL =" in sql_upper
+    ):
+        uid = params.get("idusuario")
+        rid = params.get("idrol")
+        return [
+            dict(ur)
+            for ur in PINOT_STORE["Dim_Usuario_Rol"]
+            if ur.get("idusuario") == uid and ur.get("idrol") == rid
+        ]
+
     if "FROM DIM_USUARIO_ROL" in sql_upper and "WHERE IDROL" in sql_upper:
         rid = params.get("idrol")
         return [
@@ -1421,6 +1472,10 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "FROM DIM_USUARIO_ROL" in sql_upper and "WHERE IDUSUARIO" in sql_upper:
         uid = params.get("idusuario")
         return [{"idrol": ur["idrol"]} for ur in PINOT_STORE["Dim_Usuario_Rol"] if ur["idusuario"] == uid]
+
+    if "FROM DIM_SEVERIDAD" in sql_upper:
+        filas = [s for s in PINOT_STORE["Dim_Severidad"] if s.get("activo")]
+        return sorted(filas, key=lambda s: s["idseveridad"])
 
     if "FROM DIM_ROL" in sql_upper and "IDROL IN" in sql_upper:
         role_ids = params.get("role_ids") or []
@@ -1446,6 +1501,13 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "FROM DIM_USUARIOS" in sql_upper and "WHERE GMAIL" in sql_upper:
         gmail = params.get("gmail")
         return [u for u in PINOT_STORE["Dim_Usuarios"] if u["gmail"] == gmail]
+
+    if "FROM DIM_USUARIOS" in sql_upper and "IDUSUARIO IN" in sql_upper:
+        ids = set(params.get("ids") or [])
+        rows = [u for u in PINOT_STORE["Dim_Usuarios"] if u["idusuario"] in ids]
+        if "ACTIVO = TRUE" in sql_upper:
+            rows = [u for u in rows if u.get("activo")]
+        return [{"idusuario": u["idusuario"]} for u in rows]
 
     if "FROM DIM_USUARIOS" in sql_upper and "WHERE IDUSUARIO" in sql_upper:
         uid = params.get("idusuario")
@@ -2066,9 +2128,25 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
 
     if "FROM DIM_NOTAACCIDENTE" in sql_upper:
         aid = params.get("idaccidente")
-        if "WHERE IDACCIDENTE" in sql_upper:
-            return [n for n in PINOT_STORE["Dim_NotaAccidente"] if n["idaccidente"] == aid]
-        return list(PINOT_STORE["Dim_NotaAccidente"])
+        filas = [n for n in PINOT_STORE["Dim_NotaAccidente"] if n["idaccidente"] == aid] \
+            if "WHERE IDACCIDENTE" in sql_upper else list(PINOT_STORE["Dim_NotaAccidente"])
+        # Última alerta cuyo texto contiene un marcador (guarda anti-repetición
+        # del aviso de señal GPS perdida): el doble tiene que soportar el LIKE
+        # y el ORDER BY, o la prueba no vería la diferencia.
+        if "TIPO = 'ALERTA'" in sql_upper and "LIKE" not in sql_upper:
+            filas = [n for n in filas if n.get("tipo") == "alerta"]
+            filas.sort(key=lambda n: n.get("fechahora", 0), reverse=True)
+            return filas
+        if "TIPO = 'ALERTA'" in sql_upper and "LIKE" in sql_upper:
+            patron = str(params.get("patron", "%")).strip("%")
+            filas = [
+                n
+                for n in filas
+                if n.get("tipo") == "alerta" and patron in str(n.get("nota", ""))
+            ]
+            filas.sort(key=lambda n: n.get("fechahora", 0), reverse=True)
+            return filas[:1]
+        return filas
 
     if "FROM FACT_HISTORIALESTADOUNIDAD" in sql_upper:
         uid = params.get("idunidademergencia")
@@ -2101,9 +2179,14 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     if "FROM DIM_UNIDADEMERGENCIA" in sql_upper:
         if "WHERE PLACA" in sql_upper:
             placa = params.get("placa")
+            # El filtro por `activo` se aplica SOLO si la consulta lo pide. Antes se
+            # aplicaba siempre, así que `find_by_placa` —que busca la placa en
+            # cualquier estado para impedir duplicarla contra una unidad de baja—
+            # recibía del doble solo las activas y la prueba no veía nada.
+            solo_activas = "ACTIVO = TRUE" in sql_upper
             return [
                 u for u in PINOT_STORE["Dim_UnidadEmergencia"]
-                if u.get("placa") == placa and u.get("activo")
+                if u.get("placa") == placa and (u.get("activo") or not solo_activas)
             ]
         if "WHERE IDCLIENTE" in sql_upper:
             cid = params.get("idcliente")
@@ -2281,7 +2364,12 @@ def mock_kafka():
     published: list[dict] = []
 
     def _publish(self, topic, payload):
-        published.append({"topic": topic, "payload": payload})
+        # Copia, no referencia: el productor real serializa a JSON dentro de
+        # publish(), así que lo que viaja por Kafka es el estado del dict en
+        # ese instante. Guardar la referencia dejaba ver a las pruebas campos
+        # que el emisor añade *después* de publicar y que ningún consumidor
+        # recibe jamás (B27: `append_estado` añade "estado" al volver).
+        published.append({"topic": topic, "payload": dict(payload)})
         # Mirror writes into Pinot store for read-after-write in tests
         if topic.endswith("Fact_Session_topic") or topic == "Fact_Session_topic":
             sessions = PINOT_STORE["Fact_Session"]

@@ -7,7 +7,7 @@
   </a>
 
   <h1 class="m-0 text-2xl font-bold text-text-primary">Transferir administración</h1>
-  <p class="m-0 text-sm text-text-secondary">Cliente #{{ idcliente }}</p>
+  <p class="m-0 text-sm text-text-secondary">{{ razonSocial || 'Cuenta de cliente' }}</p>
 
   @if (mensaje) {
     <p class="m-0 text-sm text-accent-primary">{{ mensaje }}</p>

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
 
 from core.pinot.client import PinotClient
+from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
 
 
@@ -29,7 +29,7 @@ class BajaUnidadRepository:
         )
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = ahora_ms()
         payload = {
             "idbajaunidad": self._next_id(),
             "idunidademergencia": data["idunidademergencia"],

@@ -110,7 +110,14 @@
                     <p class="m-0 mt-1.5 flex items-center gap-1.5 text-xs text-text-secondary">
                       <app-tabler-icon name="info-circle" [size]="14" />
                       {{ t.tipo_incidencia || t.tipo || 'Sin categoría' }}
-                      @if (t.sla_status) {
+                      @if (t.sla_status === 'sin compromiso') {
+                        <!-- Se destaca a proposito: sin este aviso el ticket
+                             parece uno normal y nadie repara en que no hay
+                             ningun plazo vigilandolo. -->
+                        <span class="font-medium text-alert-warning" data-testid="sla-sin-compromiso">
+                          · sin compromiso de tiempo
+                        </span>
+                      } @else if (t.sla_status) {
                         <span>· SLA {{ t.sla_status }}</span>
                       }
                     </p>
@@ -193,7 +200,10 @@
                         class="rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm"
                       >
                         <div class="mb-1 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-                          <span class="font-medium text-text-primary">{{ h.tipo_accion }}</span>
+                          <span class="font-medium text-text-primary">{{ etiqueta(h.tipo_accion) }}</span>
+                          @if (esDelSistema(h)) {
+                            <span class="tsi-badge tsi-badge-neutral" data-testid="autor-sistema">Sistema</span>
+                          }
                           @if (h.es_nota_interna) {
                             <span class="tsi-badge tsi-badge-warning">Nota interna</span>
                           }

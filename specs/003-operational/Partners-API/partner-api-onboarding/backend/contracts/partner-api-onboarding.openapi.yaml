@@ -292,10 +292,13 @@ paths:
       tags: [Credenciales]
       summary: Aprobar o rechazar la promoción a producción (CU-O49 / RF-PON-008)
       description: >
-        Exclusivo del Administrador. Al aprobar se emite la credencial de producción
-        (segunda y última respuesta con `client_secret`) y la de pruebas SIGUE ACTIVA
-        (RN-PON-008). Al rechazar, `motivo` es obligatorio y el partner vuelve a
-        «Pruebas activo», no a «Registrado», sin tope de reintentos (RN-PON-007).
+        Exclusivo del Administrador. Al aprobar, el partner queda habilitado para
+        producción, pero la credencial **no se emite aquí**: la emite el propio
+        partner desde su portal (BE-DELTA-02), que es quien custodia el secreto;
+        devolvérselo al Administrador lo obligaría a transmitirlo por un canal
+        inseguro (RN-PON-005). La de pruebas SIGUE ACTIVA (RN-PON-008). Al
+        rechazar, `motivo` es obligatorio y el partner vuelve a «Pruebas activo»,
+        no a «Registrado», sin tope de reintentos (RN-PON-007).
       operationId: resolverPromocionProduccion
       security: [{ bearerAuth: [] }]
       parameters:
@@ -590,14 +593,12 @@ components:
             motivo:
               type: string
               description: Presente solo en el rechazo
-            credencial:
-              allOf:
-                - $ref: '#/components/schemas/Credencial'
-                - type: object
-                  properties:
-                    client_secret:
-                      type: string
-                      description: Solo al aprobar, y solo esta vez
+            credencial_pendiente_de_emision:
+              type: string
+              description: >
+                Solo al aprobar: nombre que el partner pidió para su credencial
+                productiva. Es un dato informativo — esta respuesta NUNCA lleva
+                `client_secret` (BE-DELTA-02).
 
     ContratoIntegracionResponse:
       type: object

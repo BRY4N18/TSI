@@ -36,7 +36,12 @@ class EstadoAccidenteDespachoRepository:
         self, *, idaccidente: str, idusuario: int
     ) -> dict[str, Any] | None:
         current = self.estado.get_current_estado(idaccidente)
-        if current == ESTADO_ASIGNADO:
+        # "Si es el **primer** despacho confirmado del caso, este pasa a
+        # asignado" (SRS §3.6.2). Al sumar una unidad de apoyo a un caso que ya
+        # se está atendiendo, su confirmación hacía retroceder el caso de
+        # EN_ATENCIÓN a ASIGNADO: el expediente decía que nadie había llegado
+        # cuando la primera unidad llevaba horas en el sitio.
+        if current not in (ESTADO_REPORTADO, ESTADO_BUSCANDO_UNIDAD, None):
             return None
         return self.estado.append_estado(
             idaccidente=idaccidente,

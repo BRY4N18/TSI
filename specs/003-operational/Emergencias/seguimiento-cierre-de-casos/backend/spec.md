@@ -14,7 +14,7 @@ Dar visibilidad y trazabilidad completa al ciclo de vida del caso de emergencia 
 ### Session 2026-07-09
 
 - Q: ¿Cómo se determina si un caso cerrado pertenece a las zonas geográficas de interés del Cliente (RF-SEG-006)? → A: Por condado (`Dim_Condado`): el cliente selecciona condados en onboarding (`Dim_Preferencias_Cliente.zonas_geograficas`); un caso es visible si `Fact_Accidente.idcalle` → `Dim_Calle` → `Dim_Ciudad` → `Dim_Condado` coincide con uno de esos condados.
-- Q: ¿Quién se registra como `idusuario` en los retiros auto-generados al ejecutar O80 con despachos pendientes (RF-SEG-003 paso 2)? → A: El usuario que ejecutó el cierre (operador de central o usuario de la unidad móvil), en cada `Fact_HistorialDespachoUnidad` (Retirado) auto-generado.
+- Q: ~~¿Quién se registra como `idusuario` en los retiros auto-generados al ejecutar O80 con despachos pendientes (RF-SEG-003 paso 2)?~~ **Obsoleta desde 2026-08-12: ya no hay retiros auto-generados.** El cierre se rechaza si queda alguna unidad sin retirar (ver RF-SEG-003 paso 2 y RF-SEG-012).
 - Q: ¿Qué datos son obligatorios al cancelar un caso O72 vs. cierre normal O80 (RF-SEG-004 / RF-SEG-010)? → A: Solo motivo obligatorio en `Dim_NotaAccidente` más `horafin`/`duracionminutos`; sin campos de RF-SEG-004 (resultado, calificación, conteos finales).
 - Q: ¿Qué coordenadas GPS se conservan tras la depuración a 90 días (RNF-SEG-004)? → A: Por evento de despacho (`iddespacho`): primer GPS tras `fechahoradespacho` (origen), GPS más cercano a `fechahorallegada` (llegada), último GPS antes de `fechahoraretiro` (cierre).
 - Q: ¿Qué mecanismo entrega las actualizaciones del mapa en tiempo real al Operador (RF-SEG-007)? → A: SSE (`text/event-stream`) mediante endpoint dedicado de seguimiento que emite eventos GPS, ETA y cambios de estado, alineado con `despacho-inteligente`.
@@ -85,8 +85,8 @@ Ambos metodos coexisten: la geovalla sirve como respaldo automatico; la confirma
 
 El Operador de emergencias debe poder cerrar el caso cuando la atencion ha finalizado (corrección 2026-08-08: exclusivo del Operador, la Unidad no cierra casos):
 
-1. **Validacion previa:** el sistema verifica que TODOS los `Fact_Despacho` asociados al `idaccidente` tengan `fechahoraretiro` no nulo (equivalente a que su ultimo estado en `Fact_HistorialDespachoUnidad` sea Retirado).
-2. Si faltan despachos por retirar: para cada despacho pendiente, el sistema establece `Fact_Despacho.fechahoraretiro=now` e inserta `Fact_HistorialDespachoUnidad` con `idestadodespacho` = **Retirado** y `idusuario` = quien ejecutó el cierre (operador de central o usuario de la unidad móvil).
+1. **Validacion previa:** el sistema verifica que TODOS los `Fact_Despacho` asociados al `idaccidente` tengan `fechahoraretiro` no nulo (equivalente a que su ultimo estado en `Fact_HistorialDespachoUnidad` sea Retirado o Abortado).
+2. **Si falta alguno por retirar, el cierre se rechaza (409)** indicando cuántas unidades siguen sin retirarse *(corrección 2026-08-12, decisión del responsable)*. El SRS §3.6.4 declara que "un caso solo pasa a cerrado cuando **todas** las unidades despachadas se han retirado. No existe el cierre parcial": retirarlas automáticamente al cerrar vaciaba la regla de contenido y, además, registraba como **finalización normal** lo que el SRS quiere distinguir del **retiro forzado desde central**. Las dos vías legítimas para completar el conjunto son RF-SEG-012 (la unidad finaliza su parte) y CU-O81 (el Operador fuerza el retiro, que sí queda marcado `retiro_forzado = true`).
 3. El sistema actualiza `Fact_Accidente.horafin` y calcula `duracionminutos` (diferencia entre cierre y hora de inicio).
 4. El sistema registra automaticamente los siguientes tiempos metricos:
    - Tiempo de respuesta: diferencia entre `fechahoradespacho` y el registro inicial.
@@ -182,6 +182,42 @@ El Operador de emergencias debe poder forzar el cierre de un despacho especifico
 4. El sistema reevalua la condicion de CU-O80:
    - Si con este cierre se completan todos los despachos del caso: el caso pasa a **CERRADO** (mismo flujo que O80).
    - Si quedan otras unidades activas: el caso permanece en **EN_ATENCION**.
+
+### RF-SEG-013: Un aviso por interrupcion de senal, no uno por ciclo
+
+*(Corrección 2026-08-12.)* El job O69 corre cada 30 s. Debe emitir **un solo aviso por
+interrupción**: si ya existe una alerta del mismo despacho **posterior a la última posición
+conocida**, esa interrupción ya está avisada y el ciclo no repite la nota. Cuando la unidad
+reaparece (posición nueva) y vuelve a quedarse muda, sí corresponde un aviso nuevo.
+
+Sin esta guarda, una unidad fuera de cobertura media hora generaba sesenta notas idénticas en
+`Dim_NotaAccidente`, que es el mismo expediente que consulta el Cliente (RF-SEG-006).
+
+### RF-SEG-014: La constancia de señal perdida es visible durante el caso
+
+*(Corrección 2026-08-12.)* Las alertas del caso (`tipo = 'alerta'`) se exponen en el estado de
+monitoreo del despacho, **mientras el caso está abierto**. Antes solo las leía el expediente,
+que exige el caso `CERRADO`: la constancia existía en la base y era invisible justo durante la
+emergencia. El SRS §3.6.4 exige que la pérdida de señal "deja constancia **visible para el
+operador**".
+
+### RF-SEG-012: La unidad finaliza su parte de la atencion
+
+*(Nuevo el 2026-08-12; decisión del responsable, lectura literal del SRS §3.6.4.)*
+
+Es la **vía normal** por la que un despacho llega a `Retirado`. Antes no existía: la unidad
+solo podía registrar llegada (CU-O70) o abortar la misión (CU-O71), de modo que la única
+forma de retirar a alguien era el retiro forzado —que el SRS reserva para "cuando un técnico
+olvida cerrar su parte"— o el auto-retiro del cierre, ya eliminado (RF-SEG-003).
+
+1. La Unidad ejecuta `POST /api/v1/mi-seguimiento/despachos/{iddespacho}/finalizar` sobre un
+   despacho **propio** cuyo último estado sea `Confirmado` o `En_sitio`.
+2. El sistema registra el retiro con `retiro_forzado = false` — es una finalización normal,
+   explícitamente distinta del retiro forzado de RF-SEG-011.
+3. La unidad vuelve a su disponibilidad previa (`Activa`, o `Fuera de servicio` si ese era su
+   estado antes del despacho, RN-SEG-003).
+4. **No cierra el caso**: el cierre es del Operador y lleva su informe final (RF-SEG-004). La
+   respuesta indica cuántas unidades siguen sin retirarse y si el caso ya puede cerrarse.
 
 ## 5. Requisitos no funcionales
 

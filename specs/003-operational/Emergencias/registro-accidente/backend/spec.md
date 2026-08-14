@@ -189,7 +189,13 @@ Al fusionar, el sistema debe:
 4. El caso padre no se modifica; conserva su flujo normal.
 5. El duplicado queda con trazabilidad completa vía `idaccidenteorigen`.
 
-La fusión solo procede si ambos casos están en estado BORRADOR o REPORTADO (ninguno ha sido despachado aún).
+**Estados admitidos** *(corregido el 2026-08-13)*:
+
+- El **duplicado** debe estar en BORRADOR o REPORTADO —sin despacho—, porque §3.6.1 del SRS cubre "los caminos que terminan **antes** de que exista cualquier despacho".
+- El **padre** puede estar además en BUSCANDO_UNIDAD, ASIGNADO o EN_ATENCIÓN: "continúa su flujo normal sin alteración". Solo se rechaza si está CERRADO, DESCARTADO o FUSIONADO. Exigirle BORRADOR/REPORTADO al padre —como se hacía— bloqueaba la fusión en el caso normal, que es el duplicado llegando cuando el caso real ya se está despachando.
+- **Un caso no puede fusionarse consigo mismo.** Con un único candidato, la sugerencia de padre coincide con el caso similar; sin esta guarda el accidente real quedaba apuntándose a sí mismo, desactivado y en FUSIONADO.
+
+**El duplicado tiene que existir.** El 409 de detección rechaza el alta, así que al confirmar la fusión el reporte nuevo se **registra forzando la advertencia** y se fusiona ese caso. Antes se fusionaba el caso preexistente y el segundo aviso se perdía sin dejar rastro, en contra del "no se borra: queda con trazabilidad completa" del SRS.
 
 ### RF-REG-010: Confirmar y reportar desde BORRADOR
 

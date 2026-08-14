@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
+import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { SeguimientoApiService } from '../../../seguimiento/services/seguimiento-api.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -22,7 +27,14 @@ const SYNC_LABEL: Record<SyncStatus, string> = {
 @Component({
   selector: 'app-monitoreo-despacho',
   standalone: true,
-  imports: [RouterLink, TablerIconComponent, ListLoadingSkeletonComponent, ListErrorStateComponent],
+  imports: [
+    RouterLink,
+    FormsModule,
+    DatePipe,
+    TablerIconComponent,
+    ListLoadingSkeletonComponent,
+    ListErrorStateComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './monitoreo-despacho.page.html',
 })
@@ -41,6 +53,132 @@ export class MonitoreoDespachoPage implements OnInit {
 
   readonly estado_ = estadoInfo;
   readonly intentoTono = estadoDespachoTono;
+
+  // --- Cierre del caso (SRS §3.6.4) ---
+  private readonly seguimiento = inject(SeguimientoApiService);
+  private readonly notifications = inject(NotificationService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
+
+  readonly cerrando = signal(false);
+  readonly cancelando = signal(false);
+  readonly forzando = signal<number | null>(null);
+  readonly cierreError = signal<string | null>(null);
+  resultadoAtencion = '';
+  observacionesFinales = '';
+
+  /** Estados en los que el caso está vivo y puede cerrarse o cancelarse. */
+  puedeCerrarse(estadoCaso: string): boolean {
+    return ['ASIGNADO', 'EN_ATENCIÓN', 'BUSCANDO_UNIDAD', 'REPORTADO'].includes(estadoCaso);
+  }
+
+  /** Solo tiene sentido forzar el retiro de quien sigue en el caso. */
+  esRetirable(estadoDespacho: string): boolean {
+    return ['Confirmado', 'En_sitio', 'En_transito'].includes(estadoDespacho);
+  }
+
+  async forzarRetiro(iddespacho: number, unidad: string): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Forzar retiro',
+      message: `Vas a retirar a ${unidad} desde central. Quedará registrado como retiro forzado, no como una finalización normal.`,
+      tone: 'danger',
+      confirmLabel: 'Forzar retiro',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.forzando.set(iddespacho);
+    this.cierreError.set(null);
+    this.seguimiento.forzarRetiro(iddespacho).subscribe({
+      next: (res) => {
+        this.forzando.set(null);
+        this.notifications.toast(
+          res.data.caso_cerrado
+            ? 'Unidad retirada. Con ella se completó el caso, que queda cerrado.'
+            : 'Unidad retirada. El caso sigue abierto con el resto de unidades.',
+          'success',
+        );
+        this.cargar();
+      },
+      error: (err) => {
+        this.forzando.set(null);
+        this.cierreError.set(this.detalle(err) ?? 'No se pudo forzar el retiro.');
+      },
+    });
+  }
+
+  async cerrarCaso(): Promise<void> {
+    if (!this.resultadoAtencion.trim()) {
+      this.cierreError.set('Indica el resultado de la atención para cerrar el caso.');
+      return;
+    }
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Cerrar caso',
+      message: '¿Cerrar el caso? Se registrará la hora de finalización y su duración total.',
+      confirmLabel: 'Cerrar caso',
+      cancelLabel: 'Volver',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.cerrando.set(true);
+    this.cierreError.set(null);
+    this.seguimiento
+      .cerrarCaso(this.idaccidente, {
+        resultado_atencion: this.resultadoAtencion.trim(),
+        observaciones_finales: this.observacionesFinales.trim() || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.cerrando.set(false);
+          this.notifications.toast(
+            `Caso cerrado. Duración total: ${res.data.duracionminutos} min.`,
+            'success',
+          );
+          this.cargar();
+        },
+        error: (err) => {
+          this.cerrando.set(false);
+          this.cierreError.set(this.detalle(err) ?? 'No se pudo cerrar el caso.');
+        },
+      });
+  }
+
+  async cancelarCaso(): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Cancelar caso',
+      message:
+        'Se retirarán las unidades despachadas y el caso se cerrará por vía corta, como falsa alarma detectada tarde.',
+      tone: 'danger',
+      confirmLabel: 'Cancelar caso',
+      cancelLabel: 'Volver',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.cancelando.set(true);
+    this.cierreError.set(null);
+    this.seguimiento
+      .cancelarCaso(this.idaccidente, { motivo: 'Falsa alarma detectada tras el despacho' })
+      .subscribe({
+        next: () => {
+          this.cancelando.set(false);
+          this.notifications.toast('Caso cancelado y unidades liberadas.', 'success');
+          this.cargar();
+        },
+        error: (err) => {
+          this.cancelando.set(false);
+          this.cierreError.set(this.detalle(err) ?? 'No se pudo cancelar el caso.');
+        },
+      });
+  }
+
+  /** El backend explica en `detail` por qué no se puede cerrar todavía. */
+  private detalle(err: unknown): string | null {
+    const cuerpo = (err as { error?: { detail?: unknown } } | undefined)?.error;
+    const detalle = cuerpo?.detail;
+    return typeof detalle === 'string' && detalle.trim() ? detalle : null;
+  }
 
   ngOnInit(): void {
     this.idaccidente = this.route.snapshot.paramMap.get('idaccidente') ?? '';

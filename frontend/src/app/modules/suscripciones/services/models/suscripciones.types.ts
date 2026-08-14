@@ -14,10 +14,25 @@ export interface PaginationMetaFields {
 export type EstadoSuscripcion = 'Activa' | 'Suspendida' | 'Cancelada';
 export type NivelPlan = 'Básico' | 'Profesional' | 'Empresarial';
 export type PeriodicidadPlan = 'Mensual' | 'Anual';
-export type SeveridadPlan = 'Baja' | 'Media' | 'Alta';
+/**
+ * Severidad atendible por un plan: el `idseveridad` de `Dim_Severidad`.
+ * Hasta 2026-08-11 era una escala paralela de nombres ('Baja'|'Media'|'Alta')
+ * que no correspondía a ninguna fila del catálogo real.
+ */
+export type SeveridadPlan = number;
+
+/** Fila del catálogo `Dim_Severidad` que alimenta el selector del formulario. */
+export interface SeveridadCatalogo {
+  idseveridad: number;
+  severidad: string;
+  descripcion?: string | null;
+}
 export type TipoMetodoPago = 'tarjeta' | 'transferencia' | 'paypal';
 export type EstadoSolicitudCambioPlan = 'Pendiente' | 'Aprobada' | 'Rechazada';
-export type EstadoPagoFactura = 'Pendiente' | 'Pagada' | 'Fallida';
+// 'En disputa' faltaba: el backend ya podia dejar la factura en ese estado
+// (RF-APM-014) y el frontend no lo conocia, asi que se pintaba como estado
+// desconocido y nada explicaba por que el cobro se habia detenido.
+export type EstadoPagoFactura = 'Pendiente' | 'Pagada' | 'Fallida' | 'En disputa';
 
 export interface AltaSuscripcionRequest {
   idplan: number;
@@ -46,6 +61,11 @@ export interface SuscripcionDetalle extends Suscripcion {
   acceso_permitido?: boolean;
   plan_nombre?: string;
   nivel?: NivelPlan;
+  /**
+   * Reducción de plan ya aprobada que aplica al cierre del ciclo (decisión #27).
+   * Ausente si no hay ningún cambio programado.
+   */
+  plan_programado_nombre?: string | null;
 }
 
 export type SuscripcionEnvelope = ApiEnvelope<Suscripcion>;
@@ -65,7 +85,8 @@ export interface MetodoPago {
   idcliente?: number;
   tipo?: string;
   ultimosdigitos?: string;
-  fechaexpiracion?: string | null;
+  /** Epoch en milisegundos: la columna de Pinot es LONG, no texto `MM/AA`. */
+  fechaexpiracion?: number | string | null;
   activo?: boolean;
 }
 

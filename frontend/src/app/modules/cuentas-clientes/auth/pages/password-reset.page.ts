@@ -3,8 +3,20 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { AuthApiService } from '../services/auth-api.service';
 import { PasswordResetService } from '../services/password-reset.service';
 
+/**
+ * Dos flujos en una pantalla (FR-UI-007):
+ *
+ * - **Recuperación** (sin sesión): pide el correo y envía una contraseña temporal.
+ * - **Cambio obligatorio** (`?forced=true`, con sesión): pide la contraseña
+ *   temporal recibida y la definitiva.
+ *
+ * El segundo flujo no existía: quien entraba con una credencial temporal
+ * aterrizaba aquí y solo podía pedirse **otra** temporal, así que no había forma
+ * de terminar de activar la cuenta.
+ */
 @Component({
   selector: 'app-password-reset-page',
   standalone: true,
@@ -22,41 +34,84 @@ import { PasswordResetService } from '../services/password-reset.service';
 
         @if (forcedChange()) {
           <p class="m-0 text-sm text-text-secondary">
-            Debes solicitar una contraseña temporal y actualizarla antes de continuar.
+            Tu contraseña es temporal. Define una definitiva para continuar.
           </p>
+
+          <form class="grid gap-2" [formGroup]="changeForm" (ngSubmit)="onChange()" novalidate>
+            <label for="actual" class="text-sm font-semibold">Contraseña temporal</label>
+            <input
+              id="actual"
+              type="password"
+              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              formControlName="passwordActual"
+              autocomplete="current-password"
+            />
+
+            <label for="nueva" class="text-sm font-semibold">Contraseña nueva</label>
+            <input
+              id="nueva"
+              type="password"
+              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              formControlName="passwordNueva"
+              autocomplete="new-password"
+            />
+            <p class="m-0 text-xs text-text-secondary">Mínimo 8 caracteres.</p>
+
+            <label for="repetir" class="text-sm font-semibold">Repetir contraseña nueva</label>
+            <input
+              id="repetir"
+              type="password"
+              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              formControlName="passwordRepetida"
+              autocomplete="new-password"
+            />
+
+            @if (errorMessage()) {
+              <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
+            }
+
+            <button
+              type="submit"
+              data-testid="btn-cambiar-password"
+              class="mt-2 rounded-md bg-accent-primary p-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="changeForm.invalid || loading()"
+            >
+              {{ loading() ? 'Guardando…' : 'Guardar contraseña' }}
+            </button>
+          </form>
         } @else {
           <p class="m-0 text-sm text-text-secondary">
             Ingresa tu correo registrado. Recibirás una contraseña temporal por email.
           </p>
+
+          <form class="grid gap-2" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+            <label for="gmail" class="text-sm font-semibold">Correo electrónico</label>
+            <input
+              id="gmail"
+              type="email"
+              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              formControlName="gmail"
+              autocomplete="username"
+              [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
+            />
+
+            @if (errorMessage()) {
+              <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
+            }
+
+            @if (successMessage()) {
+              <p class="m-0 text-sm text-alert-success" role="status">{{ successMessage() }}</p>
+            }
+
+            <button
+              type="submit"
+              class="mt-2 rounded-md bg-accent-primary p-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="form.invalid || loading()"
+            >
+              {{ loading() ? 'Enviando…' : 'Enviar contraseña temporal' }}
+            </button>
+          </form>
         }
-
-        <form class="grid gap-2" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-          <label for="gmail" class="text-sm font-semibold">Correo electrónico</label>
-          <input
-            id="gmail"
-            type="email"
-            class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-            formControlName="gmail"
-            autocomplete="username"
-            [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
-          />
-
-          @if (errorMessage()) {
-            <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
-          }
-
-          @if (successMessage()) {
-            <p class="m-0 text-sm text-alert-success" role="status">{{ successMessage() }}</p>
-          }
-
-          <button
-            type="submit"
-            class="mt-2 rounded-md bg-accent-primary p-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="form.invalid || loading()"
-          >
-            {{ loading() ? 'Enviando…' : 'Enviar contraseña temporal' }}
-          </button>
-        </form>
 
         <a
           class="text-sm text-accent-primary no-underline hover:underline"
@@ -69,6 +124,7 @@ import { PasswordResetService } from '../services/password-reset.service';
 })
 export class PasswordResetPage implements OnInit {
   private readonly passwordResetService = inject(PasswordResetService);
+  private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
@@ -80,6 +136,12 @@ export class PasswordResetPage implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     gmail: ['', [Validators.required, Validators.email]],
+  });
+
+  readonly changeForm = this.fb.nonNullable.group({
+    passwordActual: ['', [Validators.required]],
+    passwordNueva: ['', [Validators.required, Validators.minLength(8)]],
+    passwordRepetida: ['', [Validators.required]],
   });
 
   ngOnInit(): void {
@@ -109,6 +171,40 @@ export class PasswordResetPage implements OnInit {
         },
         error: () => {
           this.errorMessage.set('No fue posible procesar la solicitud. Verifica tu correo.');
+        },
+      });
+  }
+
+  onChange(): void {
+    if (this.changeForm.invalid || this.loading()) {
+      return;
+    }
+
+    const { passwordActual, passwordNueva, passwordRepetida } = this.changeForm.getRawValue();
+    if (passwordNueva !== passwordRepetida) {
+      this.errorMessage.set('Las contraseñas nuevas no coinciden.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set(null);
+
+    this.passwordResetService
+      .changePassword({ password_actual: passwordActual, password_nueva: passwordNueva })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => {
+          // La sesión se abrió con la credencial temporal: se cierra para que el
+          // usuario entre ya con la definitiva y el estado quede limpio.
+          this.authApi.clearSession();
+          void this.router.navigate(['/cuentas-clientes/auth/login'], {
+            queryParams: { password: 'changed' },
+          });
+        },
+        error: (err) => {
+          this.errorMessage.set(
+            err?.error?.detail ?? 'No fue posible actualizar la contraseña.',
+          );
         },
       });
   }

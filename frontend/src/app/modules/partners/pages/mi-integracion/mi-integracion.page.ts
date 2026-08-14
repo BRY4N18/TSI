@@ -1,13 +1,16 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+
+import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { LIST_PAGE_SHELL_CLASS } from '../../../../shared/ui/list-states/list-table.styles';
 import { ENTORNOS, presentacionEntorno } from '../../entorno.constants';
-import { presentacionDe } from '../../estado-partner.constants';
+import { ESTADO_SUSPENDIDO, presentacionDe } from '../../estado-partner.constants';
 import {
   PartnerApiService,
   nuevaClaveIdempotencia,
@@ -21,6 +24,7 @@ import {
 import type {
   CredencialItem,
   Entorno,
+  EstadoAcceso,
   PartnerDetalle,
 } from '../../services/models/partner.types';
 import { ESTADO_CREDENCIAL_EMITIDA } from '../secreto-emitido/secreto-emitido.page';
@@ -57,6 +61,7 @@ const TIMEOUT_ACCION_MS = 15_000;
     TablerIconComponent,
     ListErrorStateComponent,
     ListLoadingSkeletonComponent,
+    DatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -85,6 +90,60 @@ const TIMEOUT_ACCION_MS = 15_000;
             {{ presentacion(p.estado).siguiente }}
           </p>
         </div>
+
+        <!-- RN-PAC-016: el partner suspendido conserva el acceso de lectura, y
+             esta es justo la pantalla donde entiende POR QUÉ se le cortó y qué
+             tiene que hacer. Decirle solo "contacta al administrador" lo deja
+             sin la información que el backend ya tiene. -->
+        @if (acceso(); as a) {
+          @if (!a.activo) {
+            <div
+              class="mt-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-6"
+              data-testid="panel-suspension"
+            >
+              <h2 class="m-0 mb-2 flex items-center gap-2 text-lg font-semibold text-alert-critical">
+                <app-tabler-icon name="ban" [size]="18" />
+                Por qué está suspendido tu acceso
+              </h2>
+              <p class="m-0 text-sm text-text-primary" data-testid="motivo-suspension">
+                {{ a.motivo_suspension || 'Sin motivo registrado.' }}
+              </p>
+              @if (a.fecha_suspension) {
+                <p class="m-0 mt-1 text-sm text-text-secondary">
+                  <!-- Fecha legible, no el ISO crudo del backend (F4/F6). -->
+                  Suspendido desde {{ a.fecha_suspension | date: 'dd/MM/yyyy HH:mm' }}.
+                </p>
+              }
+              @if (a.en_mora) {
+                <p class="m-0 mt-1 text-sm text-text-secondary" data-testid="dias-mora">
+                  Llevas {{ a.dias_mora }} día(s) de mora. Regularizar el pago es lo que permite
+                  volver a operar; la reactivación la confirma un administrador.
+                </p>
+              }
+              <p class="m-0 mt-3 text-sm text-text-secondary">
+                Tus credenciales están desactivadas mientras dure la suspensión. Puedes seguir
+                consultando esta pantalla y tu consumo.
+              </p>
+              @if (a.historial.length) {
+                <details class="mt-3 text-sm">
+                  <summary class="cursor-pointer text-text-secondary">
+                    Historial de acceso ({{ a.historial.length }})
+                  </summary>
+                  <ul class="mt-2 grid gap-1">
+                    @for (h of a.historial; track h.fecha) {
+                      <li class="text-text-secondary">
+                        {{ h.fecha | date: 'dd/MM/yyyy HH:mm' }} — {{ h.tipo_cambio }}
+                        @if (h.motivo) {
+                          · {{ h.motivo }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                </details>
+              }
+            </div>
+          }
+        }
 
         <div class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
@@ -158,6 +217,23 @@ const TIMEOUT_ACCION_MS = 15_000;
                         <span class="text-text-secondary" [attr.data-testid]="'vigencia-' + c.idcredencial">
                           {{ vigencia(c) }}
                         </span>
+                        <!-- SRS §3.4.3: la revocación es autoservicio porque es
+                             la reacción a un incidente de seguridad; "esperar
+                             autorización sería el peor comportamiento posible".
+                             El endpoint existía y ninguna pantalla lo llamaba. -->
+                        <button
+                          type="button"
+                          [attr.data-testid]="'btn-revocar-' + c.idcredencial"
+                          class="ml-auto rounded-md border border-alert-critical px-3 py-1.5 text-xs font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-50"
+                          [disabled]="revocando() === c.idcredencial"
+                          (click)="revocar(c)"
+                        >
+                          @if (revocando() === c.idcredencial) {
+                            Revocando…
+                          } @else {
+                            Revocar
+                          }
+                        </button>
                       }
                     </li>
                   }
@@ -241,11 +317,16 @@ const TIMEOUT_ACCION_MS = 15_000;
 export class MiIntegracionPage implements OnInit {
   private readonly api = inject(PartnerApiService);
   private readonly router = inject(Router);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly fb = inject(FormBuilder);
 
   readonly partner = signal<PartnerDetalle | null>(null);
   readonly cargando = signal(true);
   readonly emitiendo = signal(false);
+  /** idcredencial en curso de revocación, o null. */
+  readonly revocando = signal<number | null>(null);
+  /** Detalle de acceso; solo se carga si el partner está suspendido (RN-PAC-016). */
+  readonly acceso = signal<EstadoAcceso | null>(null);
   readonly solicitando = signal(false);
   readonly errorCarga = signal<string | null>(null);
   readonly errorAccion = signal<string | null>(null);
@@ -335,6 +416,16 @@ export class MiIntegracionPage implements OnInit {
       next: (res) => {
         this.partner.set(res.data);
         this.cargando.set(false);
+        // Solo se pide cuando hace falta explicar una suspensión: en el resto
+        // de estados no aporta nada y sería una llamada de más.
+        if (res.data.estado === ESTADO_SUSPENDIDO) {
+          this.api.estadoAcceso(res.data.idpartner).subscribe({
+            next: (estado) => this.acceso.set(estado.data),
+            // Si falla, la pantalla sigue siendo útil: el badge ya dice que
+            // está suspendido; solo se pierde el detalle del motivo.
+            error: () => this.acceso.set(null),
+          });
+        }
       },
       error: (err) => {
         const code = String((err as { error?: { code?: string } })?.error?.code ?? '');
@@ -353,6 +444,51 @@ export class MiIntegracionPage implements OnInit {
       return;
     }
     this.ejecutarEmision(this.form.getRawValue().nombre_credencial.trim(), entorno);
+  }
+
+  /**
+   * SRS §3.4.3 — revocación de autoservicio con reemplazo inmediato. La
+   * credencial comprometida se corta y el partner recibe otra del mismo entorno
+   * y nombre; las demás siguen operando sin interrupción.
+   */
+  async revocar(c: CredencialItem): Promise<void> {
+    const confirmado = await this.confirmDialog.confirm({
+      title: 'Revocar credencial',
+      message: `Se invalidará «${c.nombre_credencial}» de inmediato y recibirás una de reemplazo con el mismo nombre. Tus otras credenciales seguirán funcionando.`,
+      tone: 'danger',
+      confirmLabel: 'Revocar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmado) {
+      return;
+    }
+    this.revocando.set(c.idcredencial);
+    this.errorAccion.set(null);
+    this.api
+      .revocarCredencial(c.idcredencial, 'Revocada por el partner', nuevaClaveIdempotencia())
+      .subscribe({
+        next: (res) => {
+          this.revocando.set(null);
+          // El secreto del reemplazo viaja una sola vez: se entrega en la misma
+          // pantalla que usa la emisión, no se pierde en un toast.
+          void this.router.navigate(['/partners/portal/credencial-emitida'], {
+            state: { [ESTADO_CREDENCIAL_EMITIDA]: res.data.reemplazo },
+          });
+        },
+        error: (err) => {
+          this.revocando.set(null);
+          this.errorAccion.set(
+            this.detalleError(err) ?? 'No se pudo revocar la credencial.',
+          );
+        },
+      });
+  }
+
+  /** Detalle accionable que devuelve el backend, si lo hay. */
+  private detalleError(err: unknown): string | null {
+    const cuerpo = (err as { error?: { detail?: unknown } } | undefined)?.error;
+    const detalle = cuerpo?.detail;
+    return typeof detalle === 'string' && detalle.trim() ? detalle : null;
   }
 
   /** Regenerar reutiliza el flujo de emisión: mismo nombre, credencial nueva. */
