@@ -1,10 +1,15 @@
 /**
  * Cómo se dice en pantalla el alcance real de una respuesta.
  *
- * `meta.acotado_a` existe para que **un resultado vacío no sea ambiguo**: sin
- * él, un cliente no puede distinguir «no hubo accidentes graves» de «no hubo
- * accidentes graves *en mis zonas*». Si la tabla lo ignora, vuelve exactamente
- * la ambigüedad que costó construirlo en backend.
+ * Son **dos avisos distintos**, y conviene no confundirlos:
+ *
+ * * `meta.acotado_a` responde **a quién** pertenece lo que se ve. Sin él, un
+ *   resultado vacío es ambiguo: «no hubo accidentes graves» y «no hubo
+ *   accidentes graves *en mis zonas*» se leen igual.
+ * * `meta.alcance` responde **qué describe el listado**, cuando su nombre podría
+ *   leerse como otra cosa. Lo emite un solo listado, y su omisión sería peor que
+ *   la del anterior: llevaría a decidir cobertura sobre unidades que no pueden
+ *   acudir.
  *
  * Contrato: `specs/002-tactico/contrato-informes-simples-frontend.md` §2.1.
  */
@@ -40,7 +45,25 @@ const AVISOS: Record<Exclude<AcotadoA, 'todos'>, AvisoAlcance> = {
 };
 
 /**
- * Devuelve el aviso, o `null` cuando no hay nada que advertir.
+ * Qué describe un listado cuyo nombre podría leerse como otra cosa.
+ *
+ * ⚠️ **`composicion_de_flota` es el caso de mayor consecuencia de la serie.**
+ * `dado_de_alta` significa que la unidad **existe**, no que pueda acudir: su
+ * disponibilidad operativa —Activa, Ocupada, En Misión, Fuera de servicio— vive
+ * en el histórico y **no está en ese listado**.
+ *
+ * Quien lo leyera como cobertura decidiría sobre unidades fuera de servicio,
+ * ocupadas o ya en camino a otro accidente. El backend lo declara justo para que
+ * la pantalla lo diga; perderlo aquí devolvería el riesgo entero.
+ */
+const ALCANCES: Record<string, string> = {
+  composicion_de_flota:
+    'Este listado describe qué unidades existen, no cuáles están disponibles ahora. ' +
+    'Una unidad dada de alta puede estar ocupada, en misión o fuera de servicio.',
+};
+
+/**
+ * Devuelve el aviso de titularidad, o `null` cuando no hay nada que advertir.
  *
  * `todos` **no produce aviso**: es el caso normal, y un cartel permanente
  * diciendo «ves todo» sería ruido que enseñaría a ignorar la franja donde a
@@ -51,4 +74,18 @@ export function avisoDeAlcance(acotado?: AcotadoA): AvisoAlcance | null {
     return null;
   }
   return AVISOS[acotado] ?? null;
+}
+
+/**
+ * Devuelve la advertencia sobre **qué describe** el listado, si la declara.
+ *
+ * Un valor desconocido devuelve `null` en vez de pintarse crudo: `meta.alcance`
+ * es un identificador, no un texto para el usuario, y mostrarlo tal cual daría
+ * una advertencia ilegible justo donde hace falta que se entienda.
+ */
+export function advertenciaDeContenido(alcance?: string): string | null {
+  if (!alcance) {
+    return null;
+  }
+  return ALCANCES[alcance] ?? null;
 }

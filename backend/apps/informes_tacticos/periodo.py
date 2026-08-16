@@ -39,6 +39,39 @@ class Periodo:
         }
 
 
+#: Ventana por defecto de los informes compuestos, en días.
+DIAS_POR_DEFECTO = 30
+
+
+def parse_periodo_con_defecto(query_params, *, hoy: date | None = None) -> Periodo:
+    """Como `parse_periodo`, pero el rango es **opcional**: por defecto, 30 días.
+
+    Los 16 listados simples exigen el rango porque quien los consulta viene de un
+    filtro. Los compuestos se abren desde un panel y tienen que mostrar algo, así
+    que traen una ventana por defecto.
+
+    ⚠️ **Los 30 días incluyen hoy**, así que el rango es `[hoy-29, hoy]` y no
+    `[hoy-30, hoy]`. Restar 30 daría 31 días contando ambos extremos: el error
+    clásico de poste y valla. No falla ni se ve —el informe sale, con un día de
+    más—, pero basta para que dos períodos «de 30 días» consecutivos compartan
+    una jornada y las sumas no cuadren con el total.
+
+    Si el rango viene dado, se valida igual que en los listados simples: un rango
+    inválido es un error, nunca un silencioso vuelta-al-defecto.
+    """
+    desde = query_params.get("desde")
+    hasta = query_params.get("hasta")
+
+    if not desde and not hasta:
+        fin = hoy or datetime.now(timezone.utc).date()
+        inicio = fin - timedelta(days=DIAS_POR_DEFECTO - 1)
+        query_params = dict(query_params)
+        query_params["desde"] = inicio.isoformat()
+        query_params["hasta"] = fin.isoformat()
+
+    return parse_periodo(query_params)
+
+
 def parse_periodo(query_params) -> Periodo:
     """Construye un Periodo desde los query params `desde`/`hasta`/`granularidad`.
 

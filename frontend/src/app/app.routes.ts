@@ -104,6 +104,34 @@ export const routes: Routes = [
           ).then((m) => m.SOPORTE_CLIENTE_INFORMES_ROUTES),
       },
       {
+        path: 'ventas-crm/informes',
+        loadChildren: () =>
+          import('./modules/ventas-crm/informes/ventas-crm-informes.routes').then(
+            (m) => m.VENTAS_CRM_INFORMES_ROUTES,
+          ),
+      },
+      {
+        path: 'suscripciones/informes',
+        loadChildren: () =>
+          import('./modules/suscripciones/informes/suscripciones-informes.routes').then(
+            (m) => m.SUSCRIPCIONES_INFORMES_ROUTES,
+          ),
+      },
+      {
+        path: 'red-operativa/informes',
+        loadChildren: () =>
+          import('./modules/red-operativa/informes/red-operativa-informes.routes').then(
+            (m) => m.RED_OPERATIVA_INFORMES_ROUTES,
+          ),
+      },
+      {
+        path: 'emergencias/informes-simples',
+        loadChildren: () =>
+          import(
+            './modules/emergencias/informes/emergencias-informes-simples.routes'
+          ).then((m) => m.EMERGENCIAS_INFORMES_SIMPLES_ROUTES),
+      },
+      {
         path: 'emergencias',
         loadChildren: () =>
           import('./modules/emergencias/emergencias.routes').then((m) => m.EMERGENCIAS_ROUTES),

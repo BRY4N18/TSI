@@ -38,9 +38,9 @@ departamentos, y por eso está dicha aquí arriba.
 
 **Purpose**: comprobar los dos prerrequisitos y crear el sitio de las consultas.
 
-- [ ] T001 Verificar que el modelo analítico está cargado y que `dim_unidad` y `hecho_estado_unidad` tienen datos, ejecutando `docker exec -w /opt/airflow tactico-airflow-scheduler python -m pytest dags/tests -q`
-- [ ] T002 Verificar que **las fases 1 y 2 de Emergencias están implementadas**: existen `dags/lib/consultas/__init__.py` (cargador) y `backend/core/repositories/informes_tacticos/modelo_repository.py`. Sin ellas este módulo no tiene sobre qué apoyarse
-- [ ] T003 Crear `dags/lib/consultas/red_operativa/` con un `README.md` que remita a `contracts/catalogo-consultas.md` y recoja **la regla propia del departamento**: ninguna consulta une con un catálogo de estados de unidad
+- [X] T001 Verificar que el modelo analítico está cargado y que `dim_unidad` y `hecho_estado_unidad` tienen datos, ejecutando `docker exec -w /opt/airflow tactico-airflow-scheduler python -m pytest dags/tests -q`
+- [X] T002 Verificar que **las fases 1 y 2 de Emergencias están implementadas**: existen `dags/lib/consultas/__init__.py` (cargador) y `backend/core/repositories/informes_tacticos/modelo_repository.py`. Sin ellas este módulo no tiene sobre qué apoyarse
+- [X] T003 Crear `dags/lib/consultas/red_operativa/` con un `README.md` que remita a `contracts/catalogo-consultas.md` y recoja **la regla propia del departamento**: ninguna consulta une con un catálogo de estados de unidad
 
 ---
 
@@ -53,25 +53,82 @@ dentro de una, las otras dos dependerían de ella y dejarían de ser independien
 
 ### La dimensión de región, versionada
 
-- [ ] T004 Crear `dim_region` en `dags/lib/ddl.py` según `data-model.md` §2.1, con `estado_ciclo_vida` y `estado_geo` como **columnas distintas**. El origen las confunde: su tabla llamada `Dim_RegionOperativaEstadoRegion` guarda geografía, no ciclo de vida
-- [ ] T005 Implementar `dags/lib/dimensiones/dim_region.py` **reutilizando `versionado.py` sin modificarlo**, con `estado_ciclo_vida` como único atributo versionado (research D1)
-- [ ] T006 Verificar que las versiones iniciales de región llevan `inicio_es_real = 0`: el estado se conoce, pero no desde cuándo
-- [ ] T007 Añadir `dim_region` al flujo de dimensiones existente en `dags/lib/dimensiones_tasks.py` y su fila desconocida en `dags/lib/dimensiones/desconocido.py`. **No se crea un flujo propio**: un flujo por dimensión reintroduciría el problema del flujo por informe
-- [ ] T008 [P] Prueba del versionado de región en `dags/tests/test_dim_region.py`: un cambio de estado abre versión nueva y cierra la anterior; recargar sin cambios **no escribe nada**; la primera versión abre por la izquierda
+- [X] T004 Crear `dim_region` en `dags/lib/ddl.py` según `data-model.md` §2.1, con `estado_ciclo_vida` y `estado_geo` como **columnas distintas**. El origen las confunde: su tabla llamada `Dim_RegionOperativaEstadoRegion` guarda geografía, no ciclo de vida
+- [X] T005 Implementar `dags/lib/dimensiones/dim_region.py` **reutilizando `versionado.py` sin modificarlo**, con `estado_ciclo_vida` como único atributo versionado (research D1)
+- [X] T006 Verificar que las versiones iniciales de región llevan `inicio_es_real = 0`: el estado se conoce, pero no desde cuándo
+- [X] T007 Añadir `dim_region` al flujo de dimensiones existente en `dags/lib/dimensiones_tasks.py` y su fila desconocida en `dags/lib/dimensiones/desconocido.py`. **No se crea un flujo propio**: un flujo por dimensión reintroduciría el problema del flujo por informe
+- [X] T008 [P] Prueba del versionado de región en `dags/tests/test_dim_region.py`: un cambio de estado abre versión nueva y cierra la anterior; recargar sin cambios **no escribe nada**; la primera versión abre por la izquierda
 
 ### El servicio, las vistas y los permisos
 
-- [ ] T009 Implementar `backend/apps/informes_tacticos/services/red_operativa_compuestos_service.py`, enlazando nombre de informe → consulta del catálogo → respuesta, sobre el `modelo_repository` ya existente
-- [ ] T010 Implementar `backend/apps/informes_tacticos/views/red_operativa_compuestos_views.py` reutilizando `views/base.py` y `envelope.py`
-- [ ] T011 ⚠️ Aplicar la **autoridad repartida** en `backend/apps/informes_tacticos/permissions.py`, con `AUTORIDAD_RED_OPERATIVA_CRECIMIENTO` y `AUTORIDAD_RED_OPERATIVA_VALIDACION` de `backend/core/auth/roles_tacticos.py`: cada director accede **a su materia y no a la del otro** (FR-025)
-- [ ] T012 Implementar en `backend/apps/informes_tacticos/envelope.py` el campo `medida_exacta_desde` de la meta, para los informes que dependen del versionado de región (FR-034)
+
+> **Fases 1 y 2 arrancadas el 2026-08-16.** `dim_region` creada, cargada y versionada; `dags/` en
+> **428 verdes**.
+>
+> **Las dos trampas del departamento, confirmadas contra el origen antes de escribir nada:**
+>
+> 1. **El catalogo de estados de unidad esta incompleto.** `Dim_EstadoUnidadEmergencia` tiene tres
+>    filas —`Activa`, `Ocupada`, `Fuera de servicio`— y el historico usa cuatro: aparece tambien
+>    `En Mision`. De **45 transiciones, 6 son `En Mision`**: un `INNER JOIN` con el catalogo devolveria
+>    39 y no fallaria. Es el 13 % que la spec anticipaba, medido.
+> 2. **El origen confunde dos nociones de «estado» de region.**
+>    `Dim_RegionOperativa.estadoregion` vale `Produccion` —el ciclo de vida— y
+>    `Dim_EstadoRegion.estadoregion` vale «Ciudad de Mexico» —geografia—, con el mismo nombre de
+>    columna. `Dim_RegionOperativaEstadoRegion`, que el catalogo citaba como fuente del ciclo de vida,
+>    relaciona con **la segunda**. Se comprobo fila a fila.
+>
+> **`versionado.py` se reutilizo sin tocarlo**, como pedia T005. Hizo falta llamar a
+> `decidir_version` directamente en vez de a `versionar_lote`, porque el segundo no propaga `campo_sk`
+> y esta dimension necesita `sk_region`: es el mismo bucle con un argumento de mas, y es preferible a
+> modificar un modulo que sostiene la atribucion historica de tres hechos ya cargados.
+>
+> **`dim_region` entra en el flujo de dimensiones existente**, no en uno propio (T007). Un flujo por
+> dimension es el mismo error que un flujo por informe.
+>
+> **Tres pruebas transversales señalaron la dimension nueva**, que es exactamente su trabajo: la de
+> filas desconocidas, la del catalogo de tablas y la de crecimiento aditivo. Esta ultima se acoto en
+> vez de ampliarse: afirma que **un hecho nuevo** no necesita dimensiones nuevas, y meterle las que
+> aporta otro departamento la habria convertido en otra afirmacion distinta.
+
+- [X] T009 Implementar `backend/apps/informes_tacticos/services/red_operativa_compuestos_service.py`, enlazando nombre de informe → consulta del catálogo → respuesta, sobre el `modelo_repository` ya existente
+- [X] T010 Implementar `backend/apps/informes_tacticos/views/red_operativa_compuestos_views.py` reutilizando `views/base.py` y `envelope.py`
+- [X] T011 ⚠️ Aplicar la **autoridad repartida** en `backend/apps/informes_tacticos/permissions.py`, con `AUTORIDAD_RED_OPERATIVA_CRECIMIENTO` y `AUTORIDAD_RED_OPERATIVA_VALIDACION` de `backend/core/auth/roles_tacticos.py`: cada director accede **a su materia y no a la del otro** (FR-025)
+- [X] T012 Implementar en `backend/apps/informes_tacticos/envelope.py` el campo `medida_exacta_desde` de la meta, para los informes que dependen del versionado de región (FR-034)
 
 ### Las pruebas de las reglas que no avisan
+
+
+> **T009-T012 y T016 hechos el 2026-08-16.** `apps/informes_tacticos` en **199 verdes**.
+>
+> **La autoridad repartida se decide por la materia del informe, declarada en el servicio.** Cada
+> informe dice de que habla; el permiso mira eso. Ponerlo en la vista lo habria convertido en una
+> propiedad de como se sirve, y no lo es.
+>
+> El error natural aqui es admitir a las dos autoridades del departamento y quedarse tranquilo: eso
+> daria a cada director acceso a la materia del otro **sin ningun sintoma**. Por eso las pruebas que
+> importan son las de que **cada uno se queda fuera de la ajena**, y esas van por HTTP —terminan en
+> 403 antes de tocar ninguna consulta—.
+>
+> **Solo dos informes son de validacion**: la tasa de aprobacion al primer intento y los motivos de
+> rechazo. Lo demas es crecimiento, **incluida la retirada**: decidir que un mercado se cierra es una
+> decision de crecimiento, no un criterio de validacion. «Regiones en riesgo» suena a validacion
+> —habla de regiones— y no lo es; la distincion se equivoca sola, asi que hay una prueba que la fija.
+>
+> **Un informe sin materia declarada no lo ve nadie.** La alternativa —una materia por defecto— dejaria
+> accesible un informe nuevo a quien no le corresponde, en silencio.
+>
+> **Las pruebas de «si entra» preguntan a la clase de permiso, no por HTTP**, y esta explicado en el
+> fichero: las consultas del catalogo son de las fases siguientes, asi que hoy un GET concedido
+> termina en un error de consulta inexistente y la respuesta no distingue «entro» de «no entro».
+>
+> **`medida_exacta_desde` (T012) se resuelve consultando el modelo**, no con una constante: es el
+> instante en que empezo a haber versiones reales, y cambia si el almacen se recarga. Una constante
+> quedaria desfasada en silencio, que es el fallo que ese campo existe para evitar.
 
 - [ ] T013 ⚠️ **Prueba de que ninguna consulta une con un catálogo de estados de unidad**, en `dags/tests/test_catalogo_red_operativa.py`, sobre el **texto** de las consultas. Unir es lo correcto en un modelo bien formado y aquí **pierde 6 de 45 transiciones sin que nada falle** (research D2)
 - [ ] T014 [P] Prueba de la regla de versión final en el mismo fichero: obligatoria en `dim_region`, `dim_unidad`, `dim_geografia` y `hecho_despacho`; **prohibida** en los tres hechos de transacción
 - [ ] T015 [P] Prueba de exclusión de dato sensible en `dags/tests/test_red_operativa_sin_sensibles.py`: ninguna consulta nombra coordenadas, contacto de proveedor ni **identidad del validador** (FR-021)
-- [ ] T016 [P] Prueba de la autoridad repartida en `backend/apps/informes_tacticos/tests/api/test_permisos_red_operativa.py`: el Director de Expansión **no** accede a los informes de validación, y el Director Tecnológico **no** a los de crecimiento de flota
+- [X] T016 [P] Prueba de la autoridad repartida en `backend/apps/informes_tacticos/tests/api/test_permisos_red_operativa.py`: el Director de Expansión **no** accede a los informes de validación, y el Director Tecnológico **no** a los de crecimiento de flota
 
 **Checkpoint**: sustrato listo — las tres user stories pueden abordarse en cualquier orden.
 

@@ -22,14 +22,18 @@ cada una a su manera, y la primera que se despistara abriría el hueco. Es exact
 | `shared/ui/icon/` — iconos Tabler | ✅ Existe |
 | Paginación por cursor | ⚠️ Resuelta **a mano** en `lista-accidentes` (pila de cursores). No es compartida. |
 | Barra de filtros | ⚠️ Reescrita en cada página |
-| `meta.acotado_a` en pantalla | ❌ **No existe.** Ningún componente lo muestra. |
-| Manejo del `400` de filtro/límite | ❌ **No existe** como patrón |
+| `meta.acotado_a` en pantalla | ❌ **No existía.** Lo añade este contrato. |
+| `meta.alcance` en pantalla | ❌ **No existía.** Lo añade este contrato (§2.4). |
+| Manejo del `400` de filtro/límite | ❌ **No existía** como patrón |
 
-Lo que este contrato añade es lo de las tres últimas filas.
+Lo que este contrato añade es lo de las cuatro últimas filas.
+
+> **Estado al 2026-08-15:** implementado y verificado en navegador en los siete departamentos. Los
+> tres valores de `acotado_a` y la advertencia de `alcance` se comprobaron contra el backend real.
 
 ---
 
-## 2. Las tres cosas que el backend garantiza y la pantalla puede tirar a la basura
+## 2. Las cuatro cosas que el backend garantiza y la pantalla puede tirar a la basura
 
 Son las que justifican que exista este documento. Si el frontend las pierde, buena parte del trabajo
 de backend deja de tener efecto — y **sin que nada falle**, que es lo que las hace peligrosas.
@@ -83,6 +87,26 @@ cursores ya visitados. Es lo que `lista-accidentes` ya hace a mano y lo que la c
 > Inventar un contador —«mostrando 1–50 de muchos»— o paginar con números obligaría a contar filas,
 > que es justo lo que la paginación keyset evita para no repetir ni saltar registros con ingesta
 > continua.
+
+### 2.4 `meta.alcance` advierte de una lectura equivocada, y se muestra siempre
+
+Distinto de `acotado_a`, y conviene no confundirlos:
+
+| | Responde | Cuándo se muestra |
+|---|---|---|
+| `acotado_a` | **a quién** pertenece lo que se ve | cuando es distinto de `todos` |
+| `alcance` | **qué describe** el listado | **siempre que venga**, con filas o sin ellas |
+
+Lo emite **un solo listado**: la composición de flota de Red Operativa. `dado_de_alta` significa que
+la unidad **existe**, no que pueda acudir — su disponibilidad operativa vive en el histórico y no
+está en ese listado. Quien lo leyera como cobertura decidiría sobre unidades fuera de servicio,
+ocupadas o ya en camino a otro accidente.
+
+Se muestra también con la lista vacía porque advierte de **una lectura equivocada del listado**, no
+de un recorte de los datos: no depende de que haya filas.
+
+**Un valor desconocido no se pinta crudo.** `meta.alcance` es un identificador, no un texto para el
+usuario; mostrarlo tal cual daría una advertencia ilegible justo donde hace falta que se entienda.
 
 ---
 

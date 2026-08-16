@@ -195,6 +195,60 @@ export const NAV_LINKS: NavLink[] = [
     group: 'Administración',
   },
   {
+    label: 'Informes comerciales',
+    description: 'Prospectos, reasignaciones, demos y notificaciones',
+    // Los gerentes entran y el backend los acota a su cartera; `reasignaciones`
+    // lo cierra su propio guard y el índice ni se lo ofrece.
+    path: '/ventas-crm/informes',
+    roles: ['Administrador', 'DirectorMarketing', 'GerenteVentas', 'GerenteCuentasPublicas'],
+    icon: 'chart-bar',
+    group: 'Ventas CRM',
+  },
+  {
+    label: 'Informes de suscripciones',
+    description: 'Suscripciones, facturas, cambios de plan y métodos de pago',
+    // Cliente y Proveedor entran: ven **su** cuenta, y ahí es donde más importa
+    // que vean su propia deuda.
+    path: '/suscripciones/informes',
+    roles: [
+      'Administrador',
+      'DirectorEstrategia',
+      'DirectorFinanciero',
+      'Cliente',
+      'Proveedor',
+    ],
+    icon: 'chart-bar',
+    group: 'Suscripciones',
+  },
+  {
+    label: 'Informes de red',
+    description: 'Flota, bajas, regiones y validaciones',
+    path: '/red-operativa/informes',
+    roles: [
+      'Administrador',
+      'DirectorExpansion',
+      'DirectorTecnologico',
+      'Cliente',
+      'Proveedor',
+    ],
+    icon: 'chart-bar',
+    group: 'Red operativa',
+  },
+  {
+    label: 'Informes de casos',
+    description: 'Casos, despachos, evidencia y cierres',
+    // El Cliente entra: ve los casos **cerrados de sus zonas contratadas**, y el
+    // aviso de alcance de la respuesta se lo dice. Los otros cuatro los filtra
+    // el índice y los cierra el guard interno.
+    //
+    // ⚠️ `PartnerIntegracion` **no está**: su acceso a estos datos tiene su
+    // propio camino, con su alcance y su auditoría.
+    path: '/emergencias/informes-simples',
+    roles: ['Operador', 'Tecnico', 'Administrador', 'DirectorOperaciones', 'Cliente'],
+    icon: 'chart-bar',
+    group: 'Emergencias',
+  },
+  {
     label: 'Informes de soporte',
     description: 'Cola de tickets y escalados del período',
     // El Cliente entra: ve **sus** tickets, y el aviso de alcance de la

@@ -19,10 +19,23 @@ from lib.clickhouse_http_client import execute_clickhouse
 
 DAG_ID = "mantenimiento_bd"
 
+# ⚠️ **Repuntado al modelo el 2026-08-15** (decisión #20, opción B). Las tres
+# tablas por informe se retiraron con sus flujos, y `OPTIMIZE TABLE ... FINAL`
+# sobre una tabla inexistente falla el DAG entero.
+#
+# En el modelo esta operación importa **más** que antes: sus hechos son
+# `ReplacingMergeTree(version)`, y la fusión de versiones es justo lo que
+# `OPTIMIZE FINAL` fuerza. Sin ella, `FINAL` en cada consulta paga el coste.
 TABLAS_GESTIONADAS = [
-    "perdida_senal_gps",
-    "indice_calidad_historico",
-    "rendimiento_por_proveedor",
+    "dim_tiempo",
+    "dim_geografia",
+    "dim_severidad",
+    "dim_origen_despacho",
+    "dim_unidad",
+    "hecho_accidente",
+    "hecho_despacho",
+    "hecho_estado_unidad",
+    "hecho_ping_unidad",
     "etl_demo_principal",
 ]
 

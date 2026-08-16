@@ -371,7 +371,15 @@ coincidentes**.
 - [X] T045 [P] Escribir la consulta equivalente de **índice de calidad** sobre el modelo en `dags/lib/consultas/indice_calidad.sql`. **Corregir de paso el defecto de completitud**: la condición debe comparar contra los centinelas del origen, no contra nulidad
 - [X] T046 [P] Escribir la consulta equivalente de **rendimiento por proveedor** sobre el modelo en `dags/lib/consultas/rendimiento_proveedor.sql`, **usando la atribución histórica** — es el informe cuyo defecto justificó el modelo
 - [X] T047 ⚠️ **Comparar las tres consultas con las cifras anotadas en T005** y documentar cualquier diferencia. **El rendimiento por proveedor diferirá a propósito**: la cifra vieja usa el proveedor actual y la nueva el histórico. Esa diferencia **es el arreglo**, no un error — hay que verificarla y explicarla, no eliminarla
-- [ ] T048 ⛔ **BLOQUEADO** — Retirar `dags/etl/indice_calidad_dag.py`, `dags/etl/perdida_senal_dag.py` y `dags/etl/rendimiento_proveedor_dag.py`, y sus tres definiciones de tabla de `dags/lib/ddl.py`, **solo tras T047**
+- [X] T048 ✅ **Desbloqueada y ejecutada el 2026-08-15**, al resolverse la decisión #20 por la
+      **opción B**: se retiran los tres flujos, sus tres definiciones de tabla, sus tareas y su
+      lógica; y también `dag_backfill`, que existía solo para reprocesarlas.
+
+      Se retiraron además los tres endpoints y las tres tarjetas del frontend, que era lo que la
+      decisión #20 tenía que resolver antes.
+
+      ⚠️ **Las tablas de ClickHouse no se borraron**: ya no se refrescan ni se recrean, pero sus filas
+      siguen ahí. Destruir datos no es reversible y queda como `DROP TABLE` manual.
 - [X] T049 Retirar la spec del módulo `specs/002-tactico/Emergencias/informes-tacticos-compuestos/`, o marcarla como sustituida, según lo acordado
 
 ### Resultado (2026-08-14): fase 6 — verificada, **retirada bloqueada a propósito**

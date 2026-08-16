@@ -14,13 +14,10 @@ import {
   DistribucionSeveridadItem,
   DistribucionZonaItem,
   ImpactoHumanoItem,
-  IndiceCalidadItem,
-  PerdidaSenalItem,
   PeriodoParams,
   RankingUbicacionItem,
   RatioDemandaCapacidadItem,
   RechazoTimeoutItem,
-  RendimientoProveedorItem,
   TiempoAsignadoCerradoItem,
   TiempoReportadoConfirmado,
   TiempoRespuestaSeveridadItem,
@@ -168,24 +165,6 @@ export class InformesTacticosApiService {
   }
 
   // --- Compuestos (3, batch — solo rol Administrador) ---
-  perdidaSenal(p: PeriodoParams): Observable<ApiEnvelopeCompuesto<PerdidaSenalItem[]>> {
-    return this.http.get<ApiEnvelopeCompuesto<PerdidaSenalItem[]>>(
-      `${this.base}/compuestos/perdida-senal`,
-      { params: toQuery(p) },
-    );
-  }
 
-  indiceCalidad(p: PeriodoParams): Observable<ApiEnvelopeCompuesto<IndiceCalidadItem[]>> {
-    return this.http.get<ApiEnvelopeCompuesto<IndiceCalidadItem[]>>(
-      `${this.base}/compuestos/indice-calidad`,
-      { params: toQuery(p) },
-    );
-  }
 
-  rendimientoProveedor(p: PeriodoParams): Observable<ApiEnvelopeCompuesto<RendimientoProveedorItem[]>> {
-    return this.http.get<ApiEnvelopeCompuesto<RendimientoProveedorItem[]>>(
-      `${this.base}/compuestos/rendimiento-proveedor`,
-      { params: toQuery(p) },
-    );
-  }
 }

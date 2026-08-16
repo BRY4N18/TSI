@@ -15,7 +15,14 @@ from datetime import datetime, timedelta, timezone
 
 from lib.clickhouse_http_client import insert_rows, query_clickhouse
 from lib.ddl import ensure_modelo_analitico
-from lib.dimensiones import dim_geografia, dim_origen_despacho, dim_severidad, dim_tiempo, dim_unidad
+from lib.dimensiones import (
+    dim_geografia,
+    dim_origen_despacho,
+    dim_region,
+    dim_severidad,
+    dim_tiempo,
+    dim_unidad,
+)
 from lib.dimensiones.desconocido import FILAS_DESCONOCIDAS
 from lib.etl_modelo import cargar, guardar, ruta
 from lib.hechos.comun import a_datetime
@@ -29,7 +36,14 @@ FLUJO = "dimensiones"
 #: mostrar sus días vacíos como vacíos, no como ausentes.
 MARGEN_DIAS = 400
 
-DIMENSIONES = ("dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho", "dim_unidad")
+#: ⚠️ `dim_region` entra en **este** flujo y no en uno propio. Un flujo por
+#: dimensión es el mismo error que un flujo por informe: multiplica la plomería y
+#: garantiza que unas dimensiones se carguen sin las otras, con lo que un hecho
+#: puede acabar apuntando a una versión que todavía no existe.
+DIMENSIONES = (
+    "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
+    "dim_unidad", "dim_region",
+)
 
 
 def _prefijo(nombre: str) -> str:
@@ -50,6 +64,9 @@ def extract(ts: str, **_) -> None:
 
     guardar(dim_severidad.extraer(), ruta(ts, "extract", _prefijo("severidad")))
     guardar(dim_origen_despacho.extraer(), ruta(ts, "extract", _prefijo("origen")))
+
+    for nombre, filas in dim_region.extraer().items():
+        guardar(filas, ruta(ts, "extract", _prefijo(f"region_{nombre}")))
 
     unidades, clientes, condados, vigentes = dim_unidad.extraer()
     guardar(unidades, ruta(ts, "extract", _prefijo("unidades")))
@@ -106,6 +123,14 @@ def transform(ts: str, **_) -> None:
     if not leido("vigentes"):
         versiones.append(FILAS_DESCONOCIDAS["dim_unidad"](ahora))
     guardar(versiones, ruta(ts, "transform", _prefijo("dim_unidad")))
+
+    versiones_region = dim_region.construir(
+        leido("region_regiones"), leido("region_estados_geo"),
+        leido("region_relacion_geo"), leido("region_vigentes"), ahora,
+    )
+    if not leido("region_vigentes"):
+        versiones_region.append(FILAS_DESCONOCIDAS["dim_region"](ahora))
+    guardar(versiones_region, ruta(ts, "transform", _prefijo("dim_region")))
 
 
 def load(ts: str, **_) -> None:

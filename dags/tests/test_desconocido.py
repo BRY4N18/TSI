@@ -55,7 +55,7 @@ class TestResolucion:
 
 
 class TestFilasDesconocidas:
-    def test_las_cuatro_dimensiones_resolubles_tienen_su_fila(self):
+    def test_las_dimensiones_resolubles_tienen_su_fila(self):
         # dim_tiempo no aparece a propósito: se genera completa, no puede faltarle
         # una fila, y un hecho sin fecha no es un hecho
         assert set(FILAS_DESCONOCIDAS) == {
@@ -63,6 +63,9 @@ class TestFilasDesconocidas:
             "dim_severidad",
             "dim_origen_despacho",
             "dim_unidad",
+            # Red Operativa. `dim_tiempo` sigue sin aparecer: se genera
+            # completa, asi que no puede faltarle una fila.
+            "dim_region",
         }
 
     def test_todas_se_etiquetan_igual(self):

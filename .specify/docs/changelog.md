@@ -7,6 +7,860 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-16 — Emergencias compuestos: módulo terminado (T076 y T078)
+
+Alcance: recorrido del quickstart contra el stack, y
+`informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` actualizado.
+
+**Las 78 tareas del módulo están hechas.**
+
+### T076 — el quickstart, recorrido entero contra el stack levantado
+
+Las nueve comprobaciones del §2, sin fallos:
+
+| | Qué se comprobó | Resultado |
+|---|---|---|
+| 2.1 | Un informe no crea ninguna tabla | 13 tablas antes y después |
+| 2.2 | La completitud puede bajar del 100 % | Sobre datos reales da 1 con 4252 casos —correcto, no hay incompletos—; con el caso fabricado baja, y eso lo prueba T024 |
+| 2.3 | La capacidad es la del período | 17 unidades vigentes en cada mes, de las versiones que cubrían ese mes |
+| 2.5 | La pérdida de señal ve todo | **59 039 intervalos de 59 045 posiciones y 3 942 huecos** — el flujo viejo veía 10 000 y hallaba 714 |
+| 2.6 | Sin dato no es cero | Con `muestra_minima=500` la referencia viene `null`; un período vacío devuelve `data` vacío |
+| 2.7 | Los que conviven coinciden | 4252 y 4314 por ambos caminos en los cuatro contrastados |
+| 2.8 | Nada sensible sale | Los 13 endpoints publicados, también con la autoridad departamental |
+| 2.9 | Ningún caso se pierde | Las distribuciones suman 4252, el total del período |
+
+Los seis intervalos que faltan en 2.5 son las **primeras posiciones de cada unidad**, que no tienen
+anterior con el que medir. Su medida es ausente, no un hueco de cero segundos.
+
+### T078 — el catálogo de informes, actualizado
+
+24 de los 27 compuestos de Emergencias pasan a construidos, y los dos que estaban en rojo también:
+su defecto era del endpoint operativo y **el modelo lo corrige**. El endpoint viejo sigue en pie a
+propósito (T023), así que la nota del defecto se conserva y se completa en vez de borrarse.
+
+**El reparto, contado a mano**: 12 simples, **27 compuestos** y 1 fila que es configuración y no
+informe. No son los 12/26 que anticipaba el `tasks.md` ni los 14/25 del resumen: la fila de más es la
+desviación entre ETA estimado y llegada real, que el catálogo cuenta aparte y el módulo entrega como
+`desviacion-llegada`. Se registra el conteo medido en vez de repetir el previsto.
+
+### Lo que queda abierto, y no es poco
+
+Cuatro decisiones que este módulo destapó y no le corresponde resolver:
+
+* **#34** `rechazo-timeout-por-unidad` divide entre transiciones de estado y trunca su tabla.
+* **#35** `tiempo-asignado-cerrado` no devuelve siempre la misma cifra.
+* **#36** «retiro forzado» y «cierre forzado» difieren en un factor de 451.
+* **#37** la suite del backend no da lo mismo en el host que en el contenedor.
+
+Las tres primeras son informes **clasificados como correctos** que no lo son, y las tres las
+encontraron las pruebas de contraste — T028, T047 y T071—, que es exactamente para lo que existen.
+
+---
+
+## 2026-08-16 — T071 y fase 6 (parcial): tres pruebas transversales y tres defectos más
+
+Alcance: `backend/apps/informes_tacticos/tests/api/test_contraste_ot25.py` (nuevo), `dags/tests/`
+(tres ficheros nuevos), dos consultas de OT25 con su encabezado corregido, `decisiones-pendientes.md`
+(#35, #36, #37).
+
+### T071 estaba sin hacer, y encontró dos defectos más
+
+Se dio US3 por completa con T071 pendiente — el mismo despiste que con T046/T047. Y como las otras
+dos pruebas de contraste, es la que más encontró.
+
+**`tiempo-asignado-cerrado` no devuelve siempre la misma cifra** (decisión **#35**). Atribuye cada
+caso a una sola unidad con un diccionario por comprensión, así que para un caso con varios despachos
+gana **el último que devuelva Pinot** — y Pinot no garantiza orden sin `ORDER BY`. Son 441 casos de
+3651, el 12 %. No es que el modelo y el endpoint midan distinto: es que el endpoint no mide siempre lo
+mismo, y contrastarlo con una tolerancia sería contrastar contra un número que se mueve solo.
+
+**«Retiro forzado» y «cierre forzado» son dos cosas distintas con nombres casi iguales** (decisión
+**#36**), y la diferencia es de un **factor de 451**:
+
+| | Qué es | Cuántos |
+|---|---|---|
+| `Fact_Despacho.retiro_forzado` | Un indicador del despacho | **1** de 4314 |
+| «Cierre forzado» del informe | Transición a `Retirado` con `idusuario` poblado: retiro **manual** desde central, frente al automático por vencimiento | **451** de 3310 |
+
+Dos consultas mías usaban el primero creyendo medir el segundo, y una de ellas
+—`retiros-forzados-por-proveedor`— **está publicada como endpoint**. El modelo no puede reproducir hoy
+la definición del informe, y no por descuido: lo que distingue un retiro manual de uno automático es
+la presencia de `idusuario`, y la identidad está excluida del modelo por decisión constitucional. La
+salida natural es un **booleano derivado al cargar** —«el retiro fue manual»— que conserve el hecho
+sin la identidad; es un cambio de esquema pendiente. Mientras tanto las dos consultas lo declaran en
+su encabezado y la prueba no las compara.
+
+### Una prueba que codificaba mis suposiciones, no una regla
+
+La comprobación de que todo porcentaje lleva su numerador intentaba emparejarlos **por morfología**
+—`pct_descarte` con `descartados`, `pct_huecos` con `huecos`— y fallaba en siete informes de
+veintiséis: en español el plural del nombre no se deriva del singular del prefijo
+(`pct_retiro_forzado` frente a `retiros_forzados`).
+
+Una regla que no funciona se relaja hasta no comprobar nada. Se sustituyó por un **mapa declarado a
+mano**: un informe nuevo sin entrada falla, que es el defecto correcto, y sobra una entrada si su
+informe desaparece.
+
+### La prueba de latencia mide el escalón, no el rendimiento
+
+Va sobre **siete meses** de datos, y hay una segunda prueba que comprueba que ese rango abarca al
+menos tres particiones **con filas**: un informe sobre un día responde rápido siempre, aunque recorra
+la tabla entera, así que sin datos suficientes la prueba pasaría sin decir nada. El tope es generoso a
+propósito — detecta la consulta que perdió la poda de particiones, no la máquina cargada.
+
+### T075: la suite no da lo mismo según dónde se ejecute
+
+Decisión **#37**. En el host fallan 5 pruebas de JWT que en el contenedor pasan; en el contenedor
+fallan 8 recolecciones y ~13 pruebas que en el host pasan, por PyYAML y por los ficheros de la raíz
+que la imagen no monta. Y en los dos fallan las 5 de `test_pinot_client_limit`, que **pasan aisladas**
+—contaminación preexistente—.
+
+Hoy la respuesta a «está la suite en verde» depende de dónde se pregunte, que es la peor situación
+posible: cada entorno da un verde que el otro desmiente. **Cualquier cifra de "N verdes" tiene que
+decir dónde se midió.**
+
+### Verificación
+
+`dags/`: **416 verdes, 31 saltadas** (en el contenedor de Airflow).
+`apps/informes_tacticos`: **144 verdes** en el contenedor; en el host, 5 rojas por lo anterior.
+
+### Lo que queda de la fase 6
+
+T076 (recorrer el quickstart contra el stack) y T078 (actualizar el estado de los 26 informes en
+`TSI-Informes-Tacticos-Requeridos-por-OT.md` y corregir allí el reparto simples/compuestos de
+Emergencias).
+
+---
+
+## 2026-08-16 — US3 completa: las diez consultas de OT24 y OT25 y sus ocho endpoints
+
+Alcance: `dags/lib/consultas/emergencias/` (10 consultas), `dags/tests/` (cuatro ficheros nuevos),
+`backend/apps/informes_tacticos/services/emergencias_compuestos_service.py` (catálogo, publicados y un
+parámetro de lista), `dags/tests/test_catalogo_consultas.py`.
+
+Con esto el catálogo tiene **26 consultas** y el módulo publica **13 endpoints**, que es exactamente
+lo que decía su alcance: construye 10, migra 3 y vigila 13.
+
+### Tres errores encontrados al ejecutar, no al revisar
+
+**«Sin cerrar» decía 4251 donde había 616.** La versión obvia de la distribución de resultados agrupa
+por `coalesce(resultado_atencion, 'Sin cerrar')`, y hoy hay 3636 casos con hora de cierre y **uno** con
+resultado registrado. El informe habría dicho que casi nada se ha terminado cuando lo que pasa es que
+casi nada se documenta al terminar: dos problemas con dos responsables distintos, y confundirlos manda
+a mirar el sitio equivocado. El grupo se decide ahora con `hora_cierre`, y hay un tercer valor
+—«Cerrado sin resultado registrado»— que antes no existía.
+
+**`roundDown` no admite un array de parámetro.** Falla con `ILLEGAL_COLUMN`, un error que habla de
+columnas y no de constantes. Se sustituyó por `arrayLast`, que sí opera sobre un array calculado y
+devuelve `0` cuando ningún corte encaja — un cero que significa «más nuevo que el primer corte», no
+«cero días».
+
+**Los cortes se ordenan antes de usarlos.** `arrayLast` recorre en orden, así que una lista
+desordenada como `30,1,7` mandaría cada caso al tramo equivocado **sin fallar**. Se ordena en el
+backend, con el resto de la validación.
+
+### El patrón de dato sensible, otra vez, y el arreglo definitivo
+
+`notas`, `solo_nota` y `categoria_nota` dispararon el patrón `%nota%` sobre el texto de las consultas.
+La comprobación miraba **el SQL entero como cadena**, así que no podía distinguir la columna con el
+texto de una nota de un recuento de notas.
+
+Ahora extrae **identificadores** y los juzga uno a uno, con una lista de permitidos explícita y una
+prueba que comprueba que cada permitido tiene forma de recuento o de categoría. Y descarta los
+literales antes de extraer: `tipo = 'nota'` compara contra un valor, no nombra una columna — leerlo
+como columna hacía fallar una consulta que no toca ningún texto. Verificado por mutación: añadir
+`idusuario` a una consulta sigue haciéndola fallar.
+
+### Decisiones que las consultas registran
+
+**La cobertura parte de los casos, no de las evidencias.** Con un `JOIN` desde las evidencias, un caso
+sin ninguna no aparecería en ninguna fila y la cobertura saldría del 100 % siempre: el informe diría
+que todo está documentado justamente porque no ve lo que falta. Los cuatro grupos —solo foto, solo
+nota, ambas, ninguna— son excluyentes y suman el total.
+
+**Los pendientes no son latencia cero.** Si lo fueran, cuanto peor funcionara la sincronización mejor
+saldría la latencia, porque cada evidencia atascada bajaría la mediana. Se publican al lado. Y la
+latencia se desglosa por tipo porque **todas las notas son pendientes** —su fuente no tiene columna de
+sincronización— y sin el desglose esa cifra escondería por completo la de las fotos.
+
+**El volumen se entrega por unidad y no por persona** (FR-034), aunque el catálogo lo pedía por
+técnico y el dato está disponible. La prueba lo comprueba en dos sitios: que ninguna respuesta trae
+una columna de persona, y que **la tabla tampoco la guarda** — una consulta que no pide el dato lo
+deja fuera hoy; una tabla que no lo tiene lo deja fuera siempre.
+
+**La cartera excluye descartados y fusionados.** No están abiertos aunque no tengan cierre: se decidió
+sobre ellos, y arrastrarlos inflaría el atraso con trabajo ya resuelto. Los 255 casos abiertos son
+exactamente los 616 sin cerrar menos los 220 descartados y los 141 fusionados.
+
+**El denominador de los retiros forzados son los despachos confirmados.** Un retiro solo puede ocurrir
+donde hubo aceptación; dividir entre todos los intentos favorecería al proveedor que más rechaza.
+
+### Verificación
+
+`dags/`: **314 verdes**. `apps/informes_tacticos`: **139 verdes**. Los ocho endpoints comprobados por
+HTTP contra el stack, con `400` y su explicación para una lista de tramos inválida o vacía, y `404`
+para los informes que se vigilan y no se publican.
+
+⚠️ Las cifras de OT24 y OT25 son casi todas cero o nulas, y **es correcto**: el origen tiene 3 fotos,
+51 notas, 3 implicados, 3 elementos de clima, 1 escalada y 1 cierre con resultado. Por eso las pruebas
+van con datos sintéticos — con los reales, una consulta rota y una fuente vacía se ven exactamente
+igual.
+
+---
+
+## 2026-08-16 — US3: modelo ampliado y poblado (evidencia, enriquecimiento y cierre)
+
+Alcance: `dags/lib/ddl.py` (ocho columnas y una tabla), `dags/lib/hechos/hecho_accidente.py` (seis
+fuentes nuevas), `dags/lib/hechos/hecho_evidencia.py` y `dags/lib/hecho_evidencia_tasks.py` (nuevos),
+`dags/etl/dag_hecho_evidencia.py` (nuevo), `dags/lib/hecho_accidente_tasks.py`, `dags/tests/` (tres
+ficheros nuevos, tres ampliados).
+
+Quinto hecho del modelo. Cargado hoy: 51 notas, 3 implicados, 3 elementos de clima, 1 escalada, 1
+resultado de atención y **0 calificaciones**; `hecho_evidencia` con 54 filas (3 fotos, 51 notas).
+
+### Un fallo que ocurrió de verdad y no falló nada
+
+Se añadieron las seis fuentes nuevas a `extraer()` y se olvidó añadirlas a `FUENTES` en el módulo de
+tareas, que es lo que `transform` vuelve a cargar del disco. El `datos.get(nombre, [])` de `construir`
+las sustituyó por listas vacías y **todos los recuentos salieron a cero**.
+
+Cero es un valor legítimo en esas columnas —cero notas es una medición—, así que el resultado era
+**indistinguible de un origen sin datos**: el modelo publicó `0` notas donde el origen tenía 51, sin
+un solo error, sin un aviso, y con una explicación perfectamente plausible a mano («las fuentes están
+casi vacías, ya lo decía research D8»). Se descubrió comparando con el origen a mano.
+
+La prueba que lo caza compara la tupla del flujo con las claves que devuelve `extraer()`. Es barata y
+no existía porque nadie había añadido una fuente desde que se escribió el flujo.
+
+### El cero que sí es ausencia, y el que no
+
+Las ocho columnas nuevas se reparten en dos bloques con reglas **opuestas**, y aplicar la de un bloque
+al otro rompe el informe en el sentido que peor se detecta:
+
+| | Regla | Qué pasa si se invierte |
+|---|---|---|
+| Recuentos (`num_*`) | `0` cuando el caso existe y no tiene ninguno | Un caso sin notas desaparece del recuento en vez de contar como no documentado |
+| `calificacion`, `resultado_atencion`, `severidad_inicial` | **Ausente** cuando no se registró | Un caso sin calificar se convierte en el peor caso del mes |
+
+El caso ambiguo está vivo en el origen: la única fila de `Fact_CierreAccidente` trae
+`calificacion = 0` con `resultado_atencion = "Cierre automático tras retiro forzado"`. Nadie la
+calificó. La regla —`0` no está en la escala— no se inventó aquí: **ya la aplica el listado operativo
+de cierres**, y se repite en la carga porque los DAG y el backend son procesos distintos que no pueden
+compartir la constante.
+
+### La unidad de la evidencia se deriva, porque el origen no la trae
+
+Ni `Dim_EvidenciaFoto` ni `Dim_NotaAccidente` tienen unidad: traen `idusuario`, excluido por la
+decisión D6. La evidencia se atribuye al **primer despacho que llegó** — no al confirmado, por dos
+razones: `Fact_Despacho` no guarda la hora de confirmación, y además haber confirmado no es haber ido.
+
+Hoy resuelve 23 de 54. Las otras 31 caen en la **unidad desconocida** porque sus casos no tuvieron
+ninguna llegada, y se quedan en el informe en vez de descartarse: descartarlas bajaría el volumen de
+evidencia sin que nada indicara que faltan filas.
+
+### Lo que no se fabrica
+
+`Dim_NotaAccidente` **no tiene columna de sincronización**. La latencia de las notas es genuinamente
+desconocida, así que va ausente: ni cero, que diría que fue instantánea, ni la fecha de carga, que
+diría que tardó justo lo que llevamos mirándola. Y las tres fotos vienen con `sincronizado = true` y
+`fecha_sincronizacion = null` — el indicador dice que llegó y la fecha dice cuándo; que falte la
+segunda no desmiente la primera, solo impide medir. Ninguna de las 54 evidencias tiene latencia
+medible hoy, y eso es lo que dirá el informe.
+
+### Dos trampas del andamiaje
+
+**`CREATE TABLE IF NOT EXISTS` no migra nada.** En una instalación nueva la tabla nace con las ocho
+columnas; en la existente el `CREATE` no hace nada y las columnas no aparecen. El DDL parecería
+correcto y el almacén estaría incompleto, sin error hasta que una consulta pidiera una columna
+inexistente. Se añadió `ensure_columnas_nuevas_hecho_accidente()`.
+
+**`num_notas` disparó el patrón `%nota%`** de la prueba de dato sensible. Se declaró la excepción con
+su razón —contar no es leer: saber que un caso tiene tres notas no revela ninguna— más una prueba que
+comprueba el **tipo** de cada excepción, para que meter `observaciones` en esa lista no funcione. El
+patrón sigue siendo amplio a propósito.
+
+### Verificación
+
+`dags/`: **234 verdes**. `apps/informes_tacticos`: **137 verdes**. **SC-010 verificado**: ampliar el
+modelo con un hecho y ocho columnas no movió ninguna cifra de US1 ni de US2.
+
+### Lo que queda de US3
+
+Las diez consultas de OT24 y OT25 (T055 en adelante) y sus pruebas.
+
+---
+
+## 2026-08-16 — Emergencias compuestos: cierre real de US2 y arranque de US3
+
+### Primero, una corrección: la fase 4 no estaba cerrada
+
+Se dio por completa con T046 y T047 sin hacer. Ambas eran de US2, y T047 —la prueba de contraste— es
+justo la que más encontró de todo el módulo.
+
+### T047 encontró tres cosas, y una era un error propio
+
+**1. Mi consulta medía otro intervalo.** `ot22_tiempo_respuesta_por_severidad` usaba
+`segundos_transito`, que es *confirmación → llegada*, mientras el endpoint mide *despacho → llegada*.
+Quedaban fuera los ~18 s que la unidad tarda en aceptar. La consulta daba 450,62 s donde el endpoint
+daba 468,94.
+
+**2. Sumar dos columnas ya truncadas mete un sesgo de +1 s.** El arreglo obvio era
+`segundos_respuesta + segundos_transito`, y da 467,95 frente a 468,95 reales: las dos vienen
+truncadas a segundos y cada una pierde medio segundo de media. El sesgo es **constante y del mismo
+signo**, así que sobrevive a cualquier promedio y a cualquier comparación entre períodos — no se
+delata como ruido, parece precisión. Se calcula con **una sola resta**.
+
+**3. `rechazo-timeout-por-unidad` está mal, y estaba clasificado como correcto** → decisión pendiente
+**#34**. Dos defectos independientes:
+
+| | Qué pasa |
+|---|---|
+| Denominador | Son **transiciones de estado**, no intentos de despacho. Un despacho bien atendido genera cinco filas de historial y uno rechazado dos: **cuanto mejor trabaja una unidad, más baja parece su tasa de rechazo** |
+| Truncamiento | 19 528 filas, tope por defecto de 10 000, el **48,8 %** analizado |
+
+Medido en `LOTE-A2`: el endpoint publica **0,0769** (1 de 13 transiciones) donde la tasa real es
+**0,2** (1 rechazo de 5 despachos). Un factor de 2,6. Sobre este informe se decide qué proveedor
+sigue.
+
+La prueba **declara la discrepancia y falla si algún día desaparece** —eso significaría que la
+decisión se resolvió—, en vez de compararlos con una tolerancia amplia: una tolerancia capaz de tapar
+un factor de 2,6 no detectaría nada.
+
+### Una exclusión declarada, no disimulada
+
+`tiempo-reportado-a-confirmado` queda **fuera del contraste numérico**. Los dos caminos miden los
+mismos 3638 casos y arrancan el cronómetro en instantes distintos: el endpoint en el estado
+`REPORTADO` del historial, el modelo en el momento del accidente. Da 72,66 s y 79,02 s, y **las dos
+son correctas** para lo que cada una mide. El modelo no guarda hoy el instante de `REPORTADO`, y
+añadirlo es un cambio de esquema ajeno a esta historia.
+
+Se comprobó antes de concluirlo que **no** era el truncamiento de Pinot: la consulta filtra por tipo
+de estado y deja 7679 filas, por debajo del tope.
+
+### T046 — el pasado no se reescribe
+
+Cambiar el proveedor de una unidad en la dimensión no mueve las cifras de un período ya cerrado.
+`hecho_despacho` guarda el proveedor **del momento del despacho**, así que quien hereda las unidades
+de otro no hereda sus rechazos.
+
+### Arranque de US3: el modelo ampliado
+
+Ocho columnas nuevas en `hecho_accidente` y la tabla `hecho_evidencia`.
+
+⚠️ **`CREATE TABLE IF NOT EXISTS` no migra nada.** En una instalación nueva la tabla nace con las ocho
+columnas; en la que ya existe, el `CREATE` no hace nada y las columnas **no aparecen** — el DDL
+parecería correcto y el almacén estaría incompleto, sin ningún error hasta que una consulta pidiera
+una columna inexistente. Se añadió `ensure_columnas_nuevas_hecho_accidente()` con
+`ALTER … ADD COLUMN IF NOT EXISTS`, y las 4252 filas anteriores quedan en `NULL`, que es lo correcto:
+nadie midió cuántas notas tenía un caso cargado antes de que la métrica existiera.
+
+**SC-010 verificado**: ampliar el modelo no alteró ninguna cifra de US1 ni de US2 — las pruebas de
+contraste siguen en verde contra los endpoints operativos.
+
+**Un falso positivo instructivo**: `num_notas` disparó el patrón `%nota%` de la prueba de dato
+sensible. El patrón es deliberadamente amplio y debe seguir cazando `observaciones` y cualquier
+columna de texto futura; lo que no debe cazar es un **recuento**. Se declaró la excepción una a una y
+con su razón —contar no es leer: saber que un caso tiene tres notas no revela ninguna—, más una
+prueba que comprueba el **tipo** de cada excepción, para que meter `observaciones` en esa lista para
+acallar un fallo no funcione.
+
+### Verificación
+
+`dags/`: **201 verdes**. `apps/informes_tacticos`: **137 verdes**.
+
+### Lo que queda de US3
+
+T049/T050 (poblar las ocho métricas), T052/T053 (cargador y flujo de `hecho_evidencia`) y las diez
+consultas con sus pruebas.
+
+⚠️ **Un obstáculo encontrado y no resuelto**: `hecho_evidencia` necesita `sk_unidad` por atribución
+histórica, y **ninguna de las dos fuentes trae unidad** — `Dim_EvidenciaFoto` y `Dim_NotaAccidente`
+solo traen `idusuario`, que está excluido por la decisión D6. Habrá que derivar la unidad del despacho
+confirmado del caso. Y `Dim_NotaAccidente` **no tiene `fecha_sincronizacion`** en absoluto, así que la
+latencia de las notas es genuinamente ausente: no se puede fabricar.
+
+---
+
+## 2026-08-16 — Emergencias compuestos: fase 4 (US2), despacho y seguimiento
+
+Alcance: `dags/lib/consultas/emergencias/` (10 consultas nuevas), `dags/tests/` (5 ficheros nuevos,
+`almacen.py` ampliado con despachos y posiciones), `backend/apps/informes_tacticos/` (servicio con
+parámetros por informe, vista con notas, 4 endpoints publicados).
+
+**Cuatro endpoints nuevos**: ratio demanda/capacidad y pérdida de señal (migrados, corrigen defectos),
+primer intento y desviación de llegada (nuevos). Seis consultas más se añaden **sin publicar
+endpoint**: existen solo para contrastar los informes que ya funcionan.
+
+### El defecto de CU-T08: el histórico se reescribe solo
+
+El endpoint anterior cuenta la flota con `activo = true`, es decir **la de hoy**. Aplicado a un
+período pasado responde a una pregunta que nadie hizo: «¿cuántos casos hubo entonces por cada unidad
+que tenemos ahora?».
+
+El síntoma es el peor de su clase: el informe de marzo consultado en marzo y el **mismo** informe de
+marzo consultado en agosto dan cifras distintas, sin que en marzo haya pasado nada. Nada falla, nada
+avisa, y las dos cifras son plausibles.
+
+La consulta nueva saca la capacidad de las **versiones de unidad cuya vigencia solapa el mes medido**.
+`valido_hasta IS NULL` se trata como «sigue vigente» y no como «caducó» —confundirlo dejaría fuera
+justamente a las unidades activas— y se cuentan unidades y no versiones, porque una unidad que cambió
+de nombre a mitad de mes sigue siendo una unidad.
+
+T041 lo comprueba dando de baja una unidad **después** del mes medido: ese mes no puede moverse. Con
+`es_vigente = 1` la prueba falla, verificado por mutación.
+
+### La cuarta comprobación de T043 no comprobaba lo que decía
+
+«Los despachos sin llegada quedan fuera de la referencia» resultó no ser falsable: `median()` ignora
+los nulos por sí solo, así que colarlos en la ventana no desplaza nada. Al mutar la consulta la prueba
+seguía verde.
+
+El daño real estaba en otro sitio: en **`llegadas_comparables`**, el número que decide si hay muestra
+suficiente. Veinte rechazos y dos llegadas darían una muestra de veintidós, se superaría el mínimo, y
+se publicaría como norma la mediana de **dos** llegadas. No es una referencia desplazada: es una
+referencia que no debería existir, presentada como sólida. La prueba se reescribió sobre ese punto.
+
+Las otras tres —mediana y no promedio, ventana anterior, muestra insuficiente ⇒ ausente y no cero— sí
+fallaban al mutar desde el principio.
+
+### Un fallo de ClickHouse cuyo mensaje apunta a otra parte
+
+En `ot23_desviacion_llegada`, la columna interna **no puede llamarse igual que el alias de salida**.
+Si coinciden, el nombre dentro de `medianIf(segundos_referencia, …)` se resuelve al propio alias —que
+ya es una agregación— y falla con `ILLEGAL_AGGREGATION`, un error que habla de agregaciones anidadas y
+no menciona el alias por ninguna parte.
+
+Antes de dar con ello se probaron subconsultas en vez de `WITH`, un nivel extra de `SELECT` y el
+analizador nuevo. Ninguno era la causa, y el nivel extra llegó a quedarse en el fichero pareciendo la
+solución; se retiró al comprobar que sin él la consulta funciona igual. Se descartó a propósito la
+otra salida que también funcionaba —un `LIMIT` grande en la subconsulta—: meter un tope de filas en
+una consulta de informe es exactamente el defecto que este mismo módulo corrige en la pérdida de
+señal.
+
+### Distinciones que los informes anteriores borraban
+
+**Rechazado no es vencido.** Un rechazo tiene una persona y un motivo detrás, y la conversación es
+sobre criterios de aceptación; un vencimiento significa que nadie contestó, y la conversación es sobre
+turnos y sobre el aparato. El informe anterior los sumaba en un «no atendidos» que no dice qué
+arreglar — y que además hace parecer ausente a una unidad con muchos rechazos y ningún vencimiento,
+que es la que siempre responde.
+
+**`en_curso` no es un fracaso.** Es un despacho sin desenlace. Contarlo como perdido convierte cada
+consulta hecha a media tarde en un informe pesimista que mejora solo al día siguiente. Los cinco
+desenlaces se publican como cinco columnas y no agrupando por `resultado`: agrupando, un desenlace sin
+casos **desaparecería de la respuesta**, y un cero que falta se lee como un dato que no existe en vez
+de como lo que es.
+
+**`Escalado_zona` es un origen propio.** Repartirlo entre automático y manual borraría la única señal
+de que la cobertura local no daba abasto.
+
+### La pérdida de señal ya no puede truncarse
+
+La agregación ocurre en el servidor y devuelve una fila por proveedor, así que no hay nada que
+truncar. T042 comprueba que el denominador coincide con el origen sobre los datos reales —el flujo
+viejo habría dado 10 000— y que el origen supera esa cifra, porque si no la prueba no distinguiría un
+truncamiento de un período tranquilo.
+
+### Verificación
+
+`dags/`: **198 verdes**. `apps/informes_tacticos`: **127 verdes**. Los cuatro endpoints comprobados
+por HTTP contra el stack: `200` con la nota de FR-032 en la desviación, `400` con parámetros fuera de
+rango, `404` para los informes que se vigilan y no se publican.
+
+---
+
+## 2026-08-16 — Emergencias compuestos: fase 3 (US1) completa
+
+Alcance: `dags/tests/` (`almacen.py` ampliado, `test_ot21_distribuciones.py`,
+`test_ot21_descarte_fusion.py`, `test_ot21_ranking.py` nuevos),
+`dags/lib/consultas/emergencias/ot21_ranking_ubicaciones.sql`,
+`backend/apps/informes_tacticos/` (servicio, vista, urls, dos ficheros de prueba nuevos).
+
+### Un error de alcance corregido: seis publicados donde el contrato publica uno
+
+El registro exponía como endpoint los **seis** informes OT21. El contrato publica **uno**: solo la
+completitud se migra, porque el endpoint que la sirve hoy está mal. Los otros cinco ya los sirve
+`informes-tacticos-agregados` **correctamente**, y sus consultas existen aquí para **contrastarlos**.
+
+Publicarlos habría creado dos endpoints respondiendo lo mismo desde almacenes distintos. Mientras
+coincidan nadie lo nota; el día que difieran hay dos cifras verdaderas y ninguna forma de decidir cuál
+rige — que es exactamente la situación que la prueba de contraste existe para vigilar.
+
+Se separó **`CATALOGO`** (lo que se puede calcular) de **`PUBLICADOS`** (lo que se sirve), con una
+prueba parametrizada que comprueba que cada informe no publicado devuelve `404` por HTTP. La ruta
+perdió además el segmento `compuestos/` y el `meta` propio que se habían desviado del contrato: para
+quien consume esto es «el informe de Emergencias», y que por dentro salga del modelo analítico no es
+asunto de la URL.
+
+### Defecto encontrado por T027: el LEFT JOIN no rellena con nulo
+
+En ClickHouse un `LEFT JOIN` sin coincidencia rellena con el **valor por defecto del tipo**, no con
+`NULL`. Una calle que no está en el catálogo geográfico volvía como **cadena vacía**, y
+`coalesce(calle, 'Desconocido')` no disparaba porque `''` no es nulo.
+
+El síntoma es una fila del ranking con la calle en blanco: parece un fallo de maquetación y significa
+que la ubicación no se pudo resolver. Corregido con `nullIf(calle, '')`.
+
+Es la misma familia que el resto de los defectos de este módulo —ausencia confundida con vacío, con
+cero o con centinela— y otra vez no habría fallado nada: la consulta funciona, devuelve filas, y solo
+una de ellas queda muda.
+
+### La prueba de contraste compara invariantes, no filas
+
+Los dos caminos **agrupan por claves distintas a propósito**: el endpoint actual reparte por calle y
+las consultas del catálogo por condado, porque el informe se pidió por zona y una calle no es una
+zona. Comparar fila a fila habría medido esa diferencia de forma, no una de cálculo, y habría fallado
+siempre sin señalar nada.
+
+Se comparan los totales del período y los conteos por categoría — lo que ambos afirman sobre el mismo
+conjunto, y lo que un tablero suma. Verificado falsable alterando una consulta del catálogo.
+
+⚠️ **Limitación registrada**: `descarte-fusion` solo se puede contrastar **día a día**, porque el
+endpoint actual publica las tasas **sin su denominador** y sin él las tasas diarias no se recomponen
+en una del período —promediarlas daría un número distinto y plausible—. Es precisamente lo que el
+contrato nuevo prohíbe: «todo porcentaje viene con su denominador, para que la fracción sea
+comprobable». Este informe es la demostración de por qué esa regla está ahí.
+
+### La completitud queda excluida del contraste, y esa exclusión es la tesis
+
+Las demás pruebas exigen que las dos cifras **coincidan**; esta exige lo contrario. El endpoint actual
+devuelve `1.0` **todos los días de un año entero** —se comprobó contra el stack—, y eso no es calidad
+perfecta: es que la pregunta no se está haciendo.
+
+La prueba no comprueba que hoy difieran, porque hoy coinciden: no hay ningún caso incompleto, así que
+100 % es la respuesta correcta. Comprueba que el endpoint actual **no puede** dar otra cosa. Que la
+consulta nueva sí puede es lo que demuestra T024, fabricando el caso que los datos reales no traen.
+
+### Verificación
+
+`dags/`: **171 verdes**. `apps/informes_tacticos`: **120 verdes**. 27 pruebas nuevas en esta fase.
+Los ayudantes de casos de prueba se centralizaron en `dags/tests/almacen.py` para que un cambio en el
+esquema del hecho no haya que perseguirlo por cuatro ficheros — el que se olvidara seguiría pasando
+con datos que ya no existen.
+
+---
+
+## 2026-08-16 — Emergencias compuestos: catálogo de consultas y capa base (fases 1 y 2)
+
+Alcance: `dags/lib/consultas/` (cargador + 6 consultas OT21), `dags/tests/test_catalogo_consultas.py`
+(nuevo), `backend/core/clickhouse/client.py` (parámetros y ajustes),
+`backend/core/repositories/informes_tacticos/` (`modelo_repository.py`, `catalogo_consultas.py`,
+nuevos), `backend/apps/informes_tacticos/` (servicio, vista, permisos, período, urls, envelope),
+`backend/config/settings.py`, `docker/accidentes.yml`.
+
+### Un catálogo de consultas, no un repositorio por informe
+
+Un informe compuesto es ahora **un fichero SQL** en `dags/lib/consultas/emergencias/`, junto al
+modelo que consulta. El backend lo **lee**; el único escritor del almacén sigue siendo Airflow. Es lo
+contrario del diseño anterior, donde cada informe traía su repositorio con la consulta incrustada en
+Python y dos informes que medían lo mismo podían calcularlo distinto sin que nada lo delatara.
+
+El contenedor de Django monta `../dags/lib/consultas` en `/opt/consultas:ro` (`CONSULTAS_DIR`). Se
+montó en vez de copiarse: una copia habría divergido, que es el fallo que este módulo sustituye.
+
+### Las reglas del catálogo se comprueban sobre el texto, no sobre el resultado
+
+Seis reglas, todas ellas fallos que **la ejecución no delata**: sin `FINAL` sobre un hecho acumulado
+la consulta funciona y devuelve cifras infladas *solo a veces*; con una columna sensible funciona y
+publica el dato; sin `ORDER BY` funciona y devuelve las filas en orden arbitrario.
+
+Las seis se verificaron **falsables por mutación**. Dos hallazgos del proceso:
+
+* El `FINAL` obligatorio no se puede comprobar buscando la cadena `"hecho_accidente FINAL"`: el alias
+  va en medio (`hecho_accidente AS h FINAL`). La comprobación literal daba por incumplida una
+  consulta correcta, y aceptar «cualquier alias» habría dado por cumplida una que no lo lleva.
+* El `ORDER BY` se comprueba **anclado a principio de línea**. Buscarlo en cualquier parte daba por
+  ordenada una consulta cuyo único `ORDER BY` está dentro de una función de ventana — que no ordena
+  nada de lo que sale.
+
+### Dos defectos encontrados ejecutando contra ClickHouse de verdad
+
+**Los conteos llegaban como cadenas.** `count()` es `UInt64` y ClickHouse entrecomilla los enteros de
+64 bits en JSON por defecto: un conteo de 1664 llegaba como `"1664"`. No falla en ninguna parte —una
+pantalla pinta igual un número que su texto— y solo se nota cuando algo los **suma**, porque en
+JavaScript sumar dos cadenas las concatena: 1664 + 1527 daría `"16641527"` en vez de 3191. Se corrige
+con `output_format_json_quote_64bit_integers=0` en todas las consultas del catálogo, y la prueba que
+lo vigila va **contra ClickHouse real**: un cliente de mentira devuelve el tipo que decida quien
+escribe la prueba.
+
+**Una guardia que defendía de algo que no pasa.** Se escribió una traducción de `NaN`/`Inf` a nulo
+razonando que ClickHouse los emitiría literalmente en JSON. Se comprobó por la ruta real —HTTP desde
+el contenedor de Django— y **es falso**: `SELECT 1/0, 0/0, NULL` devuelve `{"inf":null,"nan":null,
+"nulo":null}`. La guardia se retiró en vez de dejarse con una justificación desmentida.
+
+### Lo que se retiró por ser resto del módulo anterior
+
+`InformesTacticosCompuestosPermission` e `informe_compuesto_response` habían quedado **sin ninguna
+referencia** tras la decisión #20, y codificaban el diseño viejo: el rol `Administrador` como único
+acceso, y un `meta.materializado` que existía porque cada informe tenía su tabla y su DAG. En el
+modelo esa distinción no existe —un período sin filas es un período sin datos— así que
+`materializado` habría sido siempre `True`: un campo que no informa de nada pero que el frontend
+seguiría mirando para decidir si pinta.
+
+### Detalles de la capa base
+
+* **Solo lectura impuesta por el servidor**, no por disciplina: `readonly=1` en toda consulta, más una
+  prueba de que ningún fichero del catálogo contiene `INSERT`/`ALTER`/`DROP`/`TRUNCATE`/`CREATE`/
+  `OPTIMIZE`. Las dos hacen falta: el ajuste protege de lo que se añada mañana, la prueba de lo que ya
+  está escrito.
+* **El rango viaja como parámetro con tipo** (`{desde:Date}` → `param_desde`), ligado por el servidor.
+  Con interpolación, un valor que contenga SQL **es** SQL.
+* **Período por defecto de 30 días**, `[hoy-29, hoy]` y no `[hoy-30, hoy]`: restar 30 daría 31 días
+  contando ambos extremos. No falla ni se ve, pero dos períodos «de 30 días» consecutivos
+  compartirían una jornada y las sumas no cuadrarían.
+* **Una vista parametrizada**, no 26 clases. El nombre del informe llega por la URL pero se busca en
+  un **registro explícito**; nunca se convierte en una ruta de fichero, que haría de la URL una forma
+  de leer el disco.
+* **Permisos**: Director de Operaciones (autoridad del departamento, sin acotamiento por titularidad)
+  y Administrador (con el suyo). El `Operador` ve los listados simples y **no** estos: un listado es
+  su trabajo del día, un compuesto es una lectura de gestión sobre el trabajo de todos. La exención de
+  acotamiento **no** alcanza al dato sensible, que sigue excluido para todos los cargos.
+
+### Verificación
+
+`dags/`: **12 verdes** (catálogo), las seis reglas confirmadas falsables por mutación.
+Backend: **3612 verdes y 5 rojas** en la suite completa; **90 verdes** en `apps/informes_tacticos`,
+incluidas 11 del repositorio; tres mutaciones (interpolar el rango, quitar `readonly`, rellenar nulos
+con cero) confirmadas como detectadas.
+
+⚠️ **Las 5 rojas son preexistentes y no de este cambio**: todas en
+`tests/regression/test_pinot_client_limit.py`, que **pasa aislado** y falla dentro de la suite
+completa — contaminación por orden entre pruebas. Se comprobó corriendo la suite **sin** el fichero
+nuevo de este módulo: fallan las mismas 5. Queda anotado como defecto aparte.
+
+También hay **8 errores de recolección y 13 rojas al correr la suite dentro del contenedor** que no
+aparecen en el host: la imagen del backend no lleva PyYAML ni los ficheros de la raíz del repositorio
+(`database/esquemas.json`), que esas pruebas necesitan. Es un hueco del entorno del contenedor, no del
+código; la suite de referencia sigue siendo la del host.
+Endpoint por HTTP contra el stack levantado: `200` para Director de Operaciones y Administrador,
+`403` para Operador y Cliente, `401` sin credencial, `404` con nombre fuera del registro (enumerando
+los publicados), `400` con `top` fuera de rango.
+
+### T024: la prueba que demuestra que el defecto quedó corregido
+
+`dags/tests/test_ot21_completitud.py` (6 pruebas). Escribe casos incompletos en la partición `209912`
+—muy posterior a cualquier dato real— y la descarta al terminar; se verificó que las 4252 filas reales
+quedan intactas.
+
+**Por qué hacía falta fabricar el caso.** Con los datos de hoy el endpoint defectuoso **acierta por
+casualidad**: no hay ningún caso al que le falte severidad o condado, así que la respuesta correcta
+*es* 100 %. Comparar las dos cifras no demuestra nada porque coinciden. El defecto está latente, y la
+única forma de exhibirlo es construir el caso que lo destapa.
+
+Se cubren los dos campos críticos por separado, el caso al que le faltan los dos (cuenta una vez, no
+dos), el 100 % legítimo —una consulta que devolviera siempre menos de 1 pasaría las demás pruebas y
+estaría igual de rota, dando una alarma permanente que nadie tardaría en ignorar— y el período vacío,
+que da **nulo y no cero**.
+
+**Una prueba no prevista resultó necesaria**: que una calle no resoluble cuente como incompleto. La
+consulta juzga la ubicación por `condado` y no por `idcalle` —un caso puede traer una calle que no
+está en el catálogo geográfico—, pero en todos los demás casos del fichero los dos campos van juntos,
+así que una consulta que mirara `idcalle` pasaba igual. Era la única distinción que el encabezado del
+SQL declaraba y las pruebas no comprobaban.
+
+**Cuatro mutaciones confirmadas**: contar todo como completo (el defecto heredado), mirar `idcalle` en
+vez de `condado`, ignorar la severidad, y devolver `0` en vez de nulo con denominador cero.
+
+### El defecto de los enteros de 64 bits estaba también en el cliente de los DAGs
+
+Lo destapó T024: los conteos llegaban como `"2"` en vez de `2`. Se corrigió igual que en el backend.
+Que los dos clientes coincidan no es cosmético — la prueba de contraste (T028) compara la cifra del
+endpoint con la de la consulta, y `"2" != 2` la haría fallar por una diferencia de **serialización**
+en vez de una de cálculo, que es la clase de ruido que enseña a desconfiar de la prueba y no del dato.
+
+`query_clickhouse` acepta además parámetros con tipo, para poder ejecutar las consultas del catálogo
+**tal como se publican**: si hubiera que interpolarlas para correrlas, la prueba estaría comprobando
+una consulta distinta de la que sirve el endpoint.
+
+---
+
+## 2026-08-15 — Decisión #20 resuelta: retirados los tres informes compuestos del diseño anterior
+
+Alcance: `backend/apps/informes_tacticos/` (3 vistas, 3 rutas, 1 servicio, 3 repositorios y 4
+ficheros de prueba **retirados**), `frontend/.../emergencias/` (3 tarjetas, 3 métodos y 3 tipos
+retirados), `dags/` (3 DAGs, 3 módulos de tareas, 3 de pruebas, `dag_backfill` y 3 definiciones de
+tabla retirados; 2 DAGs transversales **repuntados al modelo**),
+`decisiones-pendientes.md` (#20 cerrada), `modelo-analitico/tasks.md` (T048 desbloqueada).
+
+**Se eligió la opción B**: los endpoints se retiran junto con el módulo ya marcado como sustituido, y
+esos informes se rehacen cuando se especifiquen los compuestos sobre el modelo.
+
+### Por qué no era limpieza
+
+Los tres endpoints estaban **vivos y pintados en los workpanels**, y el modelo analítico ya había
+demostrado (T047) que dos de los tres publicaban cifras truncadas:
+
+| Informe | Publicaba | Real | Veía |
+|---|---|---|---|
+| Pérdida de señal | 714 huecos | **3 942** | **16,9 %** |
+| Rendimiento — rechazos | 344 | **661** | **51 %** |
+
+No calculaban distinto: **dos consultas viejas no llevaban `LIMIT` explícito**, recibían el tope por
+defecto de 10 000 filas y truncaban en silencio. Corriendo la lógica vieja sobre datos completos
+salían exactamente las cifras del modelo.
+
+Retirarlos deja tres huecos declarados en las pantallas; dejarlos habría seguido publicando números
+equivocados sin ningún aviso.
+
+### Lo que se repuntó en vez de borrarse
+
+`dag_validacion_calidad` y `dag_mantenimiento_bd` apuntaban a las tres tablas retiradas. Borrarlos
+habría quitado la única validación de calidad del almacén; dejarlos apuntando a tablas inexistentes
+habría sido **peor todavía**: un DAG de calidad que valida lo que ya no está **no falla, informa de
+que todo va bien**.
+
+Ahora vigilan y optimizan los **cuatro hechos del modelo**. Y en el modelo `OPTIMIZE FINAL` importa
+más que antes: sus hechos son `ReplacingMergeTree(version)`, y esa operación es la que fusiona las
+versiones que si no habría que resolver con `FINAL` en cada consulta.
+
+`dag_backfill` sí se retiró entero: existía **solo** para reprocesar esas tres tablas, y en el modelo
+reprocesar es volver a correr el DAG.
+
+### Lo que NO se hizo, y es deliberado
+
+⚠️ **Las tres tablas de ClickHouse no se borraron.** Ya no se refrescan ni se recrean —su DDL se
+retiró—, pero sus filas siguen ahí. Destruir datos no es reversible y no formaba parte de la
+decisión: queda como un `DROP TABLE` manual cuando se quiera.
+
+La prueba de la tesis del modelo (`test_informe_sin_flujo_propio`) las sigue restando del conjunto de
+tablas presentes, con el comentario de por qué.
+
+### Verificación
+
+Backend: **3590 verdes** (14 menos: las pruebas de lo retirado). Frontend: **847 verdes**.
+`dags/`: **137 verdes** en el contenedor de Airflow, sin errores de importación — es lo que comprueba
+que ningún DAG quedó referenciando lo que ya no existe.
+
+---
+
+## 2026-08-15 — Frontend de Ventas, Suscripciones y Red Operativa: la serie completa, y dos defectos más
+
+Alcance: `frontend/src/app/modules/{ventas-crm,suscripciones,red-operativa}/informes/`
+(3 catálogos, 7 guards, 6 páginas, 3 rutas), `shared/informes/` (**`meta.alcance` añadido**),
+`app.routes.ts`, `nav-links.ts`, 5 ficheros de prueba (44 nuevas),
+`contrato-informes-simples-frontend.md` (§2.4),
+y en backend: `informes_nutricion_repository.py`, su doble de pruebas, su fixture y una prueba nueva.
+
+**Con esto los 32 listados tácticos tienen pantalla.** Los tres departamentos restantes no traían
+ejes ni exclusiones nuevas, así que fueron trabajo de catálogo y guards — salvo por dos cosas que sí
+aparecieron.
+
+### `meta.alcance` no llegaba a la pantalla, y este era el departamento donde importa
+
+La capa compartida leía `meta.alcance` del envelope y **no lo mostraba**. Lo emite un solo listado —la
+composición de flota— y por la razón de más consecuencia de la serie: `dado_de_alta` significa que la
+unidad **existe**, no que pueda acudir.
+
+Perderlo devolvía el riesgo entero que el backend declaró para evitarlo: quien leyera el listado como
+cobertura decidiría sobre unidades fuera de servicio, ocupadas o ya en camino a otro accidente.
+
+Añadido al componente con dos reglas propias, ahora en el contrato (§2.4):
+
+* **se muestra siempre que venga**, también con la lista vacía — advierte de una lectura equivocada
+  del listado, no de un recorte de los datos;
+* **un valor desconocido no se pinta crudo**: es un identificador, no un texto para el usuario.
+
+### Un `500` en producción: el centinela que ordenaba después de los dígitos
+
+`demos-activas` devolvía **`500`** contra el stack real.
+
+`Dim_Prospecto.demo_expiracion` es texto con formatos mixtos —la decisión #29—, así que la consulta
+filtra por **prefijo** `YYYY-MM-DD`, que es lo único seguro. Pero el valor centinela es la cadena
+`'null'`, y comparando texto **`'null' >= '2026-08-16'` es cierto**: cualquier letra ordena después de
+cualquier dígito. La fila colada llegaba sin fecha utilizable y reventaba al componer el cursor de la
+página siguiente.
+
+Es la **regla 1 de Pinot** del contrato común incumplida —«NULL no existe: se comparan centinelas»— en
+el sitio menos evidente: un filtro de rango sobre texto.
+
+**Ninguna prueba lo detectó porque el fixture sembraba `None`**, no la cadena `'null'` que Pinot
+devuelve. Es la tercera vez en esta serie que un doble inventado esconde un defecto real, y las tres
+lo destapó el recorrido en navegador.
+
+Corregido en el repositorio, en el doble de `conftest.py` —que tampoco reproducía el centinela— y en
+el fixture, más tres pruebas nuevas.
+
+### Las distinciones que los guards protegen
+
+Cada departamento parte sus listados en más de un guard, y ninguno por simetría:
+
+* **Ventas:** `reasignaciones` es supervisión pura — el reparto de cartera es decisión de jefatura,
+  no herramienta del gerente cuya cartera se reparte.
+* **Suscripciones:** dos autoridades distintas. El catálogo y los precios son de **Estrategia**; el
+  resultado económico, de **Finanzas**. Un guard único daría a cada director el área del otro.
+* **Red Operativa:** tres grupos. Una región **no pertenece a ninguna empresa de flota**, así que los
+  proveedores quedan fuera aunque sí vean su flota; y las validaciones son solo del Tecnológico,
+  porque el detalle de por qué se rechaza una región no le sirve a quien decide dónde crecer.
+
+En los tres, el índice ofrece **solo** lo que el guard permite: un enlace que el guard rechaza no es
+una fuga, pero sí una interfaz que promete lo que no cumple.
+
+### Verificación
+
+Frontend: **847 verdes** (803 previas + 44 nuevas). Backend: **3605 verdes**. Los 12 endpoints
+responden `200` contra el stack reconstruido, y la advertencia de flota se comprobó en pantalla.
+
+---
+
+## 2026-08-15 — Frontend de Emergencias: cerrado el tercer valor de `acotado_a`, y un defecto que solo se vio en pantalla
+
+Alcance: `specs/002-tactico/Emergencias/informes-tacticos-simples/frontend/` (spec, tasks),
+`frontend/src/app/modules/emergencias/informes/` (catálogo, 2 guards, 2 páginas, rutas),
+`app.routes.ts`, `nav-links.ts`, 3 ficheros de prueba (44 pruebas),
+y en backend: `informes_casos_service.py`, su fixture, su prueba y el contrato OpenAPI.
+
+**Con este módulo los tres valores de `acotado_a` están validados de punta a punta**: `todos`
+(Cuentas y Clientes), `propios` (Soporte) y ahora `zonas_contratadas`.
+
+### Lo verificado en navegador, con dos roles sobre los mismos datos
+
+| | |
+|---|---|
+| Rol **Operador** → `todos` | 50 filas de varios condados, **sin aviso** |
+| Rol **Cliente** → `zonas_contratadas` | 3 filas de **un solo condado**, con su aviso propio |
+| El aviso | **no** dice que los accidentes sean del cliente: son hechos de terceros ocurridos donde contrató cobertura |
+| Situación impuesta | `meta.filtros.situacion = cerrado` — la emergencia en curso no es información del cliente |
+| Coordenadas | **ninguna**, ni en la respuesta ni en pantalla |
+| Columna «Estado» | **ninguna**: `activo`, `hora_fin` y `duplicado_de` van por separado |
+| Guard | el Cliente queda fuera de despachos, evidencia y cierres |
+
+### El defecto: `hora_fin` salía como `1786625595899`
+
+`Fact_Accidente.horafin` es una columna `STRING`, pero **guarda epoch-ms escrito como texto** — lo
+escriben `cerrar_caso_service` y `cancelar_caso_service` con el reloj del sistema. El backend la
+devolvía **verbatim** mientras normalizaba a ISO todas las demás marcas de tiempo de la API. En
+pantalla eso es un número ilegible que además no se puede ordenar ni comparar como fecha.
+
+**Ni las pruebas de backend ni las de frontend lo detectaron, porque el fixture lo inventaba.** Yo
+había sembrado `horafin="09:30"`, un formato que no existe en producción, y la prueba pasaba
+comparando contra un dato falso. Peor: sobre esa invención llegué a «corregir» el contrato quitándole
+el `format: date-time`, que en realidad era correcto.
+
+Corregido en los cuatro sitios: el servicio normaliza a ISO tolerando que el valor no sea numérico,
+el fixture usa epoch-ms como los escritores reales, la prueba afirma el **formato** en vez de un
+literal inventado, y el contrato explica que la columna de origen es `STRING` y por qué.
+
+> **Lección, y es la segunda vez que aparece.** Un fixture inventado no es una prueba: es una
+> afirmación sobre datos que nadie produce. El recorrido en navegador lo destapó, igual que destapó
+> `controlClass` en el piloto. Las dos veces, lo que falló primero fue una suposición mía sobre la
+> forma del dato — no el código que la consumía.
+
+### La exclusión constitucional, protegida donde se rompería
+
+Hay una prueba que recorre **el catálogo de columnas y filtros** buscando coordenadas e identidad de
+implicados. No es redundante con la del backend: el catálogo del frontend es justo el sitio donde
+alguien añadiría una columna «para el mapa», y ahí el backend no puede impedirlo.
+
+La spec declara además que **este módulo no dibuja mapas**, para que la pregunta «¿y si pedimos las
+coordenadas?» no se abra por el nombre del departamento.
+
+### Verificación
+
+Suite completa del frontend: **803 verdes** (759 previas + 44 nuevas). Backend: `apps/accidentes` y
+`apps/seguimiento`, 463 verdes tras la corrección.
+
+---
+
 ## 2026-08-15 — Frontend de Soporte al Cliente: `acotado_a` validado de punta a punta
 
 Alcance: `specs/002-tactico/Soporte-Cliente/informes-tacticos-simples/frontend/` (spec, tasks),

@@ -13,7 +13,6 @@ import {
   PeriodoParams,
   RatioDemandaCapacidadItem,
   RechazoTimeoutItem,
-  RendimientoProveedorItem,
   TiempoReportadoConfirmado,
   TiempoRespuestaSeveridadItem,
 } from '../../services/models/informes-tacticos.types';
@@ -68,7 +67,6 @@ export class WorkpanelDespachoPage {
 
   /** FR-UI-003: tarjeta compuesta (batch), visible solo para el rol Administrador (Supervisor). */
   readonly puedeVerCompuestos = this.authApi.hasRole('Administrador');
-  readonly rendimientoProveedor = newCompuestoState<RendimientoProveedorItem[]>();
 
   onPeriodoChange(periodo: PeriodoParams): void {
     this.periodo = periodo;
@@ -106,7 +104,6 @@ export class WorkpanelDespachoPage {
     this.cargar(this.cargaPorUnidad, this.api.cargaPorUnidad(this.periodo));
     this.cargar(this.ratioDemandaCapacidad, this.api.ratioDemandaCapacidad(this.periodo));
     if (this.puedeVerCompuestos) {
-      this.cargarCompuesto(this.rendimientoProveedor, this.api.rendimientoProveedor(this.periodo));
     }
   }
 

@@ -139,10 +139,31 @@ def _fila(cruda, severidades, tipos, lugares) -> dict[str, Any]:
         "fecha_accidente": a_iso(cruda.get("fechahoraaccidente")),
         # ── Los tres hechos, por separado y sin interpretar ──────────────────
         "activo": bool(cruda.get("activo")),
-        "hora_fin": _sin_centinela(cruda.get("horafin")),
+        # ⚠️ `horafin` es una columna **STRING que guarda epoch-ms**: la
+        # escriben `cerrar_caso_service` y `cancelar_caso_service` con el reloj
+        # del sistema. Devolverla verbatim entregaba `"1786625595899"`, que en
+        # pantalla es un número ilegible y no se puede ordenar ni comparar como
+        # fecha. Se normaliza como cualquier otra marca de tiempo de la API.
+        "hora_fin": _hora_fin(cruda.get("horafin")),
         "duracion_minutos": cruda.get("duracionminutos"),
         "duplicado_de": _sin_centinela(cruda.get("idaccidenteorigen")),
     }
+
+
+def _hora_fin(valor: Any) -> str | None:
+    """Normaliza la hora de fin a ISO, tolerando que no sea numérica.
+
+    La columna es `STRING` y el esquema no impide que alguien escriba otra cosa.
+    Si no es un entero, se devuelve tal cual: inventar una fecha a partir de un
+    texto desconocido sería peor que mostrar lo que hay.
+    """
+    texto = _sin_centinela(valor)
+    if texto is None:
+        return None
+    try:
+        return a_iso(int(texto))
+    except (TypeError, ValueError):
+        return texto
 
 
 def _sin_centinela(valor: Any) -> str | None:

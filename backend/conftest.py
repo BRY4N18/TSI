@@ -805,12 +805,16 @@ def _informes_ventas_crm(sql_upper: str, params: dict) -> list[dict] | None:
 
     # ── L3 — Demos activas (prefiltro por prefijo de fecha) ──────────────────
     if "SELECT IDPROSPECTO, EMPRESA, NOMBRES, APELLIDOS, IDUSUARIO, DEMO_EXPIRACION" in sql_upper:
+        # ⚠️ La comparación es de TEXTO, igual que en Pinot: es exactamente lo
+        # que hace que el prefijo `YYYY-MM-DD` sea la única parte segura — y
+        # también lo que dejaba pasar el centinela `'null'`, porque cualquier
+        # letra ordena después de cualquier dígito. El doble lo reproduce ahora,
+        # incluido el `NOT IN` que lo excluye.
+        centinelas = set(params.get("sin_demo") or [])
         filas = [
             f for f in PINOT_STORE["Dim_Prospecto"]
-            # La comparación es de TEXTO, igual que en Pinot: es exactamente lo
-            # que hace que el prefijo `YYYY-MM-DD` sea la única parte segura.
-            if f.get("demo_expiracion")
-            and str(f["demo_expiracion"]) >= params["prefijo_hoy"]
+            if str(f.get("demo_expiracion") or "") not in centinelas
+            and str(f.get("demo_expiracion") or "") >= params["prefijo_hoy"]
         ]
         if "IDUSUARIO = %(TITULAR)S" in sql_upper:
             filas = [f for f in filas if f.get("idusuario") == params.get("titular")]

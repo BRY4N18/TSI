@@ -1,7 +1,7 @@
 """DAG: gate técnico de calidad del pipeline ETL `tactico`.
 
 Distinto del informe de negocio "índice de calidad histórico"
-(`dags/etl/indice_calidad_dag.py`, que mide calidad de los datos de
+(el índice de calidad, que mide la calidad de los datos de
 accidentes en sí): este DAG valida la SALUD DEL PROPIO PIPELINE ETL --
 paridad de conteo de filas entre Pinot (origen) y ClickHouse (destino) para
 el día recién procesado, y nulos en columnas clave de cada tabla de
@@ -30,22 +30,36 @@ from lib.pinot_http_client import query_pinot
 
 DAG_ID = "validacion_calidad_pipeline"
 
-# (tabla_clickhouse, columna_periodo, sql_conteo_pinot, columnas_clave_no_nulas_clickhouse)
+# (tabla_clickhouse, sql_conteo_pinot, columnas_clave_no_nulas_clickhouse)
+#
+# ⚠️ **Repuntado al modelo analítico el 2026-08-15** (decisión #20, opción B).
+# Antes vigilaba las tres tablas por informe del diseño anterior, que se
+# retiraron con sus flujos. Dejarlo apuntando a tablas inexistentes habría sido
+# lo peor de las tres salidas posibles: un DAG de calidad que valida lo que ya no
+# está **no falla, informa de que todo va bien**.
+#
+# Lo que vigila ahora son los cuatro hechos del modelo, que es donde vive el
+# dato del que dependen todos los informes compuestos por venir.
 CHEQUEOS = [
     (
-        "perdida_senal_gps",
-        "SELECT COUNT(*) AS total FROM Dim_HistorialUbicacionUnidadEmergencia",
-        ["idunidademergencia", "periodo"],
-    ),
-    (
-        "indice_calidad_historico",
+        "hecho_accidente",
         "SELECT COUNT(*) AS total FROM Fact_Accidente",
-        ["periodo", "indice_consolidado"],
+        ["fecha", "idaccidente"],
     ),
     (
-        "rendimiento_por_proveedor",
+        "hecho_despacho",
         "SELECT COUNT(*) AS total FROM Fact_Despacho",
-        ["periodo", "idcliente"],
+        ["fecha", "iddespacho"],
+    ),
+    (
+        "hecho_estado_unidad",
+        "SELECT COUNT(*) AS total FROM Fact_HistorialDespachoUnidad",
+        ["fecha", "idunidademergencia"],
+    ),
+    (
+        "hecho_ping_unidad",
+        "SELECT COUNT(*) AS total FROM Dim_HistorialUbicacionUnidadEmergencia",
+        ["fecha", "idunidademergencia"],
     ),
 ]
 

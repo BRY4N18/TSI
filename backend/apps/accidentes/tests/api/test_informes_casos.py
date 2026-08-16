@@ -230,7 +230,10 @@ def test_los_tres_hechos_llegan_sin_interpretar(
 
     cerrado = por_caso[CASO_CERRADO]
     assert cerrado["activo"] is False
-    assert cerrado["hora_fin"] == "09:30"
+    # ⚠️ Se normaliza a ISO: la columna guarda epoch-ms como texto, y devolverlo
+    # verbatim entregaba un número ilegible que no se puede ordenar por fecha.
+    assert cerrado["hora_fin"].startswith("2026-08-")
+    assert "T" in cerrado["hora_fin"]
     assert cerrado["duplicado_de"] is None
 
     # ⚠️ `''` es el centinela de ausencia, no un valor. Una guarda por nulidad

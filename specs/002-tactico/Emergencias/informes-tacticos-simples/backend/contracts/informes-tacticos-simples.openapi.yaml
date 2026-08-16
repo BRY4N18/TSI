@@ -413,7 +413,21 @@ components:
         num_fallecidos: { type: integer, nullable: true }
         fecha_accidente: { type: string, format: date-time }
         activo: { type: boolean }
-        hora_fin: { type: string, format: date-time, nullable: true }
+        hora_fin:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            ⚠️ **La columna de origen es `STRING`, no una marca de tiempo del esquema.**
+            `Fact_Accidente.horafin` guarda **epoch-ms escrito como texto** —lo escriben
+            `cerrar_caso_service` y `cancelar_caso_service`—, y el backend lo **normaliza a ISO**
+            antes de devolverlo, como cualquier otra marca de tiempo de la API.
+
+            Devolverlo verbatim entregaba `"1786625595899"`: ilegible en pantalla e imposible de
+            ordenar o comparar como fecha. Se corrigió el 2026-08-15 al construir el frontend.
+
+            **Ausente significa que el caso no tiene hora de fin**, que es lo que distingue un cierre
+            de un descarte.
         duracion_minutos: { type: integer, nullable: true }
         duplicado_de:
           type: string

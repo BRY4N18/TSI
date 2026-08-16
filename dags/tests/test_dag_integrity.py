@@ -14,12 +14,16 @@ from airflow.models import DagBag  # noqa: E402
 
 DAGS_FOLDER = str(Path(__file__).resolve().parents[1])
 
+# ⚠️ Los tres DAGs por informe —`perdida_senal_gps`, `indice_calidad_historico`
+# y `rendimiento_por_proveedor`— y `backfill_manual` se retiraron el 2026-08-15
+# (decisión #20, opción B). El modelo analítico calcula lo mismo, y mejor: las
+# consultas viejas truncaban en silencio a 10 000 filas.
+#
+# `backfill_manual` existía solo para reprocesar esas tres tablas; en el modelo,
+# reprocesar es volver a correr el DAG, porque `ReplacingMergeTree(version)`
+# sustituye por versión.
 EXPECTED_DAG_IDS = {
-    "perdida_senal_gps",
-    "indice_calidad_historico",
-    "rendimiento_por_proveedor",
     "etl_principal",
-    "backfill_manual",
     "validacion_calidad_pipeline",
     "limpieza_staging",
     "mantenimiento_bd",
@@ -29,6 +33,7 @@ EXPECTED_DAG_IDS = {
     "modelo_hecho_despacho",
     "modelo_hecho_estado_unidad",
     "modelo_hecho_ping_unidad",
+    "modelo_hecho_evidencia",
 }
 
 

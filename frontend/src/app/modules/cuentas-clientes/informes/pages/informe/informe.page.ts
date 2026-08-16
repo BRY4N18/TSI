@@ -63,6 +63,7 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
         [cargando]="store.cargando()"
         [error]="store.error()"
         [acotadoA]="store.acotadoA()"
+        [alcance]="store.alcance()"
         [mensajeVacio]="definicion().mensajeVacio"
         [hayAnterior]="store.hayPaginaAnterior()"
         [haySiguiente]="store.hayPaginaSiguiente()"

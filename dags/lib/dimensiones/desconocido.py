@@ -120,6 +120,33 @@ def fila_desconocida_unidad(ahora: datetime) -> dict[str, Any]:
     }
 
 
+def fila_desconocida_region(ahora: datetime) -> dict[str, Any]:
+    """Versión desconocida de región.
+
+    La necesitan los hechos que apuntan a una región que no está en el catálogo:
+    sin ella, ese hecho se perdería al unir, y **perder un hecho es peor que no
+    saber a qué región pertenece**.
+
+    `estado_ciclo_vida` va a `Desconocido` y no a `Despublicada`: no saber en qué
+    estado está una región no es lo mismo que saber que está retirada, y esa
+    confusión sacaría regiones vivas de los informes de cobertura.
+    """
+    return {
+        "sk_region": SK_DESCONOCIDO,
+        "idregionoperativa": ID_DESCONOCIDO,
+        "nombre_region": ETIQUETA_DESCONOCIDA,
+        "estado_ciclo_vida": ETIQUETA_DESCONOCIDA,
+        "idestado_geo": None,
+        "estado_geo": None,
+        "pais": None,
+        "valido_desde": datetime(1970, 1, 1).strftime(FORMATO),
+        "valido_hasta": None,
+        "es_vigente": 1,
+        "inicio_es_real": 0,
+        "version": ahora.strftime(FORMATO),
+    }
+
+
 #: Tabla → constructor de su fila desconocida. `dim_tiempo` **no aparece**: se
 #: genera completa a partir de un rango de fechas, así que no puede faltarle una
 #: fila; un hecho sin fecha no es un hecho.
@@ -128,6 +155,7 @@ FILAS_DESCONOCIDAS = {
     "dim_severidad": fila_desconocida_severidad,
     "dim_origen_despacho": fila_desconocida_origen_despacho,
     "dim_unidad": fila_desconocida_unidad,
+    "dim_region": fila_desconocida_region,
 }
 
 

@@ -18,12 +18,31 @@ class ClickHouseClient:
         self.database = settings.CLICKHOUSE_DB
         self.auth = (settings.CLICKHOUSE_USER, settings.CLICKHOUSE_PASSWORD)
 
-    def query(self, sql: str) -> list[dict[str, Any]]:
-        """Ejecuta un SELECT de solo lectura y devuelve filas como lista de dicts."""
+    def query(
+        self,
+        sql: str,
+        params: dict[str, Any] | None = None,
+        settings: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Ejecuta un SELECT de solo lectura y devuelve filas como lista de dicts.
+
+        `params` son los **parámetros con tipo de ClickHouse**: la consulta
+        escribe `{desde:Date}` y aquí viaja como `param_desde`. El servidor los
+        liga; no se concatenan al SQL. Es la diferencia entre un valor y un
+        fragmento de consulta — con interpolación, un valor que contenga SQL
+        **es** SQL.
+
+        `settings` son ajustes de servidor para esta consulta (`readonly`,
+        `max_execution_time`).
+        """
         stripped = sql.strip().rstrip(";")
+        argumentos: dict[str, Any] = {"database": self.database}
+        argumentos.update(settings or {})
+        for nombre, valor in (params or {}).items():
+            argumentos[f"param_{nombre}"] = valor
         response = requests.post(
             self.url,
-            params={"database": self.database},
+            params=argumentos,
             data=f"{stripped} FORMAT JSONEachRow".encode("utf-8"),
             auth=self.auth,
             timeout=10,

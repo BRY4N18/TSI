@@ -24,7 +24,7 @@ import {
   input,
 } from '@angular/core';
 
-import { avisoDeAlcance } from './informes-alcance';
+import { advertenciaDeContenido, avisoDeAlcance } from './informes-alcance';
 import { ColumnaListado, ErrorListado, AcotadoA } from './informes-listado.types';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../ui/list-states/list-empty-state.component';
@@ -48,6 +48,22 @@ export const AUSENTE = '—';
   imports: [TablerIconComponent, ListEmptyStateComponent, ListLoadingSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (advertencia() !== null) {
+      <!--
+        ⚠️ Distinto del aviso de acotamiento: este dice **qué describe** el
+        listado, y se muestra SIEMPRE —también con la lista vacía— porque
+        advierte de una lectura equivocada, no de un recorte de datos.
+      -->
+      <p
+        class="mb-4 flex items-start gap-2 rounded-md border border-alert-warning bg-alert-warning-bg px-4 py-3 text-sm text-alert-warning"
+        data-testid="advertencia-contenido"
+        role="status"
+      >
+        <app-tabler-icon name="alert-triangle" [size]="16" />
+        <span>{{ advertencia() }}</span>
+      </p>
+    }
+
     @if (aviso() !== null) {
       <p
         class="mb-4 flex items-start gap-2 rounded-md border border-border-default bg-bg-surface px-4 py-3 text-sm text-text-secondary"
@@ -171,6 +187,8 @@ export class InformesListadoComponent<T extends Record<string, unknown>> {
   readonly cargando = input(false);
   readonly error = input<ErrorListado | null>(null);
   readonly acotadoA = input<AcotadoA | undefined>(undefined);
+  /** `meta.alcance`: qué describe el listado, cuando podría malinterpretarse. */
+  readonly alcance = input<string | undefined>(undefined);
   readonly mensajeVacio = input('No hay resultados.');
   readonly hayAnterior = input(false);
   readonly haySiguiente = input(false);
@@ -201,6 +219,12 @@ export class InformesListadoComponent<T extends Record<string, unknown>> {
     }
     return this.filas().length === 0 && !this.cargando() ? null : aviso.texto;
   });
+
+  /**
+   * Se muestra **siempre**, incluso sin filas: advierte de una lectura
+   * equivocada del listado, no de un recorte de los datos.
+   */
+  readonly advertencia = computed(() => advertenciaDeContenido(this.alcance()));
 
   readonly mensajeVacioEfectivo = computed(() => {
     const aviso = avisoDeAlcance(this.acotadoA());

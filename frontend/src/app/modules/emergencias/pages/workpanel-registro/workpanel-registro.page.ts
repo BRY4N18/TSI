@@ -12,7 +12,6 @@ import {
   DistribucionSeveridadItem,
   DistribucionZonaItem,
   ImpactoHumanoItem,
-  IndiceCalidadItem,
   PeriodoParams,
   RankingUbicacionItem,
   VolumenCasosItem,
@@ -81,7 +80,6 @@ export class WorkpanelRegistroPage {
 
   /** FR-UI-003: tarjeta compuesta (batch), visible solo para el rol Administrador (Supervisor). */
   readonly puedeVerCompuestos = this.authApi.hasRole('Administrador');
-  readonly indiceCalidad = newCompuestoState<IndiceCalidadItem[]>();
 
   serieVolumenCasos(): SerieItem[] {
     return (this.volumenCasos.data() ?? []).map((d) => ({ periodo: d.periodo, valor: d.total_casos }));
@@ -99,12 +97,6 @@ export class WorkpanelRegistroPage {
     }));
   }
 
-  serieIndiceCalidad(): SerieItem[] {
-    return (this.indiceCalidad.data() ?? []).map((d) => ({
-      periodo: d.periodo,
-      valor: d.indice_consolidado * 100,
-    }));
-  }
 
   onPeriodoChange(periodo: PeriodoParams): void {
     this.periodo = periodo;
@@ -123,7 +115,6 @@ export class WorkpanelRegistroPage {
     this.cargar(this.ranking, this.api.rankingUbicaciones(this.periodo));
     this.cargar(this.impactoHumano, this.api.impactoHumano(this.periodo));
     if (this.puedeVerCompuestos) {
-      this.cargarCompuesto(this.indiceCalidad, this.api.indiceCalidad(this.periodo));
     }
   }
 

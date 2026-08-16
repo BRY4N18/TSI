@@ -20,6 +20,15 @@ services:
       - "8000:8000"
     env_file:
       - ../backend/.env
+    volumes:
+      # El catálogo de consultas de los informes compuestos. Vive en `dags/`
+      # junto al modelo que consulta —esa es la decisión del plan— y Django lo
+      # **lee**, en solo lectura: el único escritor del almacén sigue siendo
+      # Airflow. Copiarlo al backend habría dejado dos copias divergiendo, que es
+      # justo el fallo que este módulo sustituye.
+      - ../dags/lib/consultas:/opt/consultas:ro
+    environment:
+      CONSULTAS_DIR: /opt/consultas
     depends_on:
       - osrm
     networks:

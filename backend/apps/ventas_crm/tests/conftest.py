@@ -181,6 +181,16 @@ def demos_formato_mixto(mock_pinot, gerentes_sembrados):
             # Sin fecha: no es una demo activa.
             _prospecto(8405, empresa="Demo SinFecha", idusuario=GERENTE_A,
                        expiracion=None),
+            # ⚠️ **El centinela real de Pinot**, que es la cadena `'null'` y no
+            # `None`. Comparando texto, `'null' >= '2026-08-11'` es **cierto**
+            # —cualquier letra ordena después de cualquier dígito—, así que el
+            # prefiltro por prefijo lo dejaba pasar y la fila reventaba al
+            # componer el cursor, devolviendo un `500` en vez del listado.
+            #
+            # Sembrar `None` no reproducía producción y por eso ninguna prueba
+            # lo vio.
+            _prospecto(8407, empresa="Demo Centinela", idusuario=GERENTE_A,
+                       expiracion="null"),
             # De otro gerente, para que el acotamiento tenga qué excluir.
             _prospecto(8406, empresa="Demo Ajena", idusuario=GERENTE_B,
                        expiracion=en_tres_dias.strftime("%Y-%m-%dT%H:%M:%SZ")),

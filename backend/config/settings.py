@@ -142,6 +142,14 @@ CLICKHOUSE_USER = os.environ.get("CLICKHOUSE_USER", "tactico")
 CLICKHOUSE_PASSWORD = os.environ.get("CLICKHOUSE_PASSWORD", "tactico")
 CLICKHOUSE_DB = os.environ.get("CLICKHOUSE_DB", "tsi_tactico")
 
+# Catálogo de consultas de los informes compuestos. Vive en `dags/lib/consultas`
+# —junto al modelo que consulta— y el contenedor lo monta en `/opt/consultas` en
+# solo lectura. El valor por defecto es la ruta del repositorio, que es la que
+# usan las pruebas y el arranque local sin Docker.
+CONSULTAS_DIR = os.environ.get(
+    "CONSULTAS_DIR", str(BASE_DIR.parent / "dags" / "lib" / "consultas")
+)
+
 # --- OSRM (ruteo por calles, self-hosted, ver infrastructure.md §6.1) ---
 OSRM_URL = os.environ.get("OSRM_URL", "http://localhost:5000")
 

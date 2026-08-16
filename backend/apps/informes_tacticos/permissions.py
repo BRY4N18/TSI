@@ -8,6 +8,12 @@ del alcance operativo actual), igual que `apps.accidentes.permissions`.
 
 from rest_framework.permissions import BasePermission
 
+from core.auth.roles_tacticos import (
+    AUTORIDAD_EMERGENCIAS,
+    AUTORIDAD_RED_OPERATIVA_CRECIMIENTO,
+    AUTORIDAD_RED_OPERATIVA_VALIDACION,
+)
+
 ROLE_OPERADOR = "Operador"
 ROLE_ADMIN = "Administrador"
 
@@ -25,17 +31,83 @@ class InformesTacticosLecturaPermission(BasePermission):
         return bool(roles & INFORMES_TACTICOS_ROLES)
 
 
-class InformesTacticosCompuestosPermission(BasePermission):
-    """Read access to informes tácticos compuestos: solo Administrador (FR-009).
+class EmergenciasCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Emergencias (FR-021, FR-023).
 
-    A diferencia de los 16 informes simples (Operador + Administrador), los 3
-    informes compuestos son indicadores de gestión — la spec pedía "Supervisor,
-    no Operador raso"; con los roles reales disponibles, `Administrador` es la
-    interpretación más fiel de esa restricción (research.md §5).
+    Dos cargos entran, por razones distintas:
+
+    * El **Director de Operaciones** es la autoridad del departamento. Entra sin
+      acotamiento por titularidad: ve el departamento entero, que es de lo que
+      responde.
+    * El **responsable operativo** —el `Administrador`— entra **con** su
+      acotamiento, el mismo que ya se le aplica en los listados simples.
+
+    Quien no es ninguno de los dos no entra. El `Operador` sí ve los listados
+    simples y **no** ve estos: un listado es su trabajo del día, y un informe
+    compuesto es una lectura de gestión sobre el trabajo de todos.
+
+    ⚠️ **La exención de acotamiento no alcanza al dato sensible.** Que el
+    Director de Operaciones vea el departamento entero no le da coordenadas,
+    identidad de personas ni texto libre interno: esas exclusiones son
+    constitucionales, valen para todos los cargos, y no se resuelven aquí sino
+    enumerando columnas en las consultas del catálogo. Esta clase decide **quién
+    entra**, nunca **qué se le muestra de más**.
     """
 
     def has_permission(self, request, view) -> bool:
         user = request.user
         if not user or not getattr(user, "is_authenticated", False):
             return False
-        return ROLE_ADMIN in getattr(user, "roles", [])
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_EMERGENCIAS) or ROLE_ADMIN in roles
+
+
+#: Materia → roles que la gobiernan. Ver `RedOperativaCompuestosPermission`.
+AUTORIDAD_POR_MATERIA = {
+    "crecimiento": AUTORIDAD_RED_OPERATIVA_CRECIMIENTO,
+    "validacion": AUTORIDAD_RED_OPERATIVA_VALIDACION,
+}
+
+
+class RedOperativaCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Red Operativa (FR-025, FR-026).
+
+    ⚠️ **La autoridad está repartida, y esto es lo que la reparte.**
+
+    Este departamento no tiene una jefatura única. El **Director de Expansión**
+    gobierna el crecimiento y la flota; el **Director Tecnológico**, los
+    criterios de validación de región. Cada uno entra **a su materia y no a la
+    del otro**, que es la parte fácil de olvidar: lo natural al escribir un
+    permiso es admitir a las dos autoridades del departamento y quedarse
+    tranquilo, y eso daría a cada director acceso a la materia del otro sin que
+    nada fallara ni nadie se quejara.
+
+    El **Administrador** entra a las dos, con su acotamiento: es el responsable
+    operativo, y su papel no está repartido.
+
+    Un informe **sin materia declarada no lo ve nadie**. Es deliberado: la
+    alternativa —una materia por defecto— dejaría accesible un informe nuevo a
+    quien no le corresponde, y en silencio.
+
+    ⚠️ **La exención no alcanza al dato sensible** (FR-026). Que un director vea
+    su materia entera no le da coordenadas, contacto de proveedor ni la identidad
+    de quien validó una región: esas exclusiones son constitucionales, valen para
+    todos los cargos, y se resuelven enumerando columnas en las consultas. Esta
+    clase decide **quién entra**, nunca **qué se le muestra de más**.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+
+        from apps.informes_tacticos.services.red_operativa_compuestos_service import (
+            RedOperativaCompuestosService,
+        )
+
+        materia = RedOperativaCompuestosService().materia_de(view.kwargs.get("informe", ""))
+        if materia is None:
+            return False
+
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_POR_MATERIA[materia]) or ROLE_ADMIN in roles

@@ -126,6 +126,12 @@ class TestElTercerHechoUsaLasMismasDimensiones:
                 "WHERE database = currentDatabase() AND name LIKE 'dim_%'"
             )
         }
+        # ⚠️ `dim_region` se excluye a proposito: la trajo **otro modulo**
+        # —Red Operativa— y no el tercer hecho. Lo que esta prueba afirma es que
+        # un hecho nuevo no necesita dimensiones nuevas; meter aqui las que
+        # aportan otros departamentos convertiria la afirmacion en otra distinta
+        # y la prueba dejaria de comprobar lo que dice su nombre.
+        dimensiones -= {"dim_region"}
         assert dimensiones == {
             "dim_tiempo", "dim_geografia", "dim_severidad",
             "dim_origen_despacho", "dim_unidad",

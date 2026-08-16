@@ -16,12 +16,29 @@ from lib.tipos_almacen import ajustar_tipos
 
 FLUJO = "hecho_accidente"
 
+#: Fuentes que `extraer()` devuelve y que `transform` vuelve a cargar.
+#:
+#: Anadir una fuente al modulo de logica y olvidarla aqui **no falla**: el
+#: `datos.get(nombre, [])` de `construir` la sustituye por una lista vacia, y
+#: todos los recuentos de esa fuente salen a CERO. Como cero es un valor
+#: legitimo en esas columnas -cero notas es una medicion-, el resultado es
+#: indistinguible de un origen sin datos. Paso exactamente eso al implementar las
+#: metricas de la US3, y solo se vio comparando con el origen.
+#:
+#: La prueba `test_hecho_accidente_fuentes` comprueba que esta tupla y las claves
+#: de `extraer()` son la misma cosa.
 FUENTES = (
     "accidentes",
     "estados",
     "despachos",
     "tipos",
     "evidencia",
+    "notas",
+    "conductores",
+    "implicados",
+    "clima",
+    "historial_severidad",
+    "cierres",
     "dim_severidad",
     "dim_geografia",
 )

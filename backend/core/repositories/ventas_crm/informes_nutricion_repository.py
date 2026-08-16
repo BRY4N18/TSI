@@ -45,6 +45,10 @@ CURSOR_DEMOS = Cursor(
 )
 ORDEN_DEMOS = ASC  # las que vencen antes, primero: es lo que hay que atender ya
 
+#: Centinelas de «este prospecto no tiene demo». `''` y la cadena literal
+#: `'null'`, que es lo que Pinot devuelve en una columna STRING sin valor.
+SIN_DEMO = ("", "null")
+
 CURSOR_NOTIFICACIONES = Cursor(
     CampoCursor("fechahoranotificacion"), CampoCursor("idnotificacion")
 )
@@ -79,8 +83,23 @@ class InformesNutricionRepository:
         Trae de mas —las que expiraron hoy mas temprano— y eso es deliberado:
         el paso siguiente las descarta con precision de segundo.
         """
-        condiciones = ["demo_expiracion >= %(prefijo_hoy)s"]
-        params: dict[str, Any] = {"prefijo_hoy": prefijo_hoy, "limit": limit + 1}
+        # ⚠️ **El centinela hay que excluirlo aparte.** `demo_expiracion` vale
+        # la cadena `'null'` cuando no hay demo, y comparando texto
+        # `'null' >= '2026-08-16'` es **cierto** —cualquier letra ordena despues
+        # de cualquier digito—, asi que el prefiltro por prefijo lo dejaba pasar.
+        #
+        # La fila colada llegaba sin fecha utilizable y reventaba al componer el
+        # cursor, con un `500` en vez de un listado. Es la regla 1 de Pinot del
+        # contrato comun: NULL no existe, se comparan centinelas.
+        condiciones = [
+            "demo_expiracion >= %(prefijo_hoy)s",
+            "demo_expiracion NOT IN %(sin_demo)s",
+        ]
+        params: dict[str, Any] = {
+            "prefijo_hoy": prefijo_hoy,
+            "sin_demo": list(SIN_DEMO),
+            "limit": limit + 1,
+        }
 
         if titular is not None:
             condiciones.append("idusuario = %(titular)s")

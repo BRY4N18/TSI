@@ -127,29 +127,6 @@
       </app-informe-card>
 
       @if (puedeVerCompuestos) {
-        <app-informe-card
-          title="Rendimiento por proveedor de unidades"
-          [batch]="true"
-          [ultimaCorrida]="rendimientoProveedor.ultimaCorrida()"
-          [loading]="rendimientoProveedor.loading()"
-          [error]="rendimientoProveedor.error()"
-          [noMaterializado]="!rendimientoProveedor.loading() && !rendimientoProveedor.error() && !rendimientoProveedor.materializado()"
-          [empty]="!rendimientoProveedor.loading() && !rendimientoProveedor.error() && rendimientoProveedor.materializado() && !rendimientoProveedor.data()?.length"
-          (retry)="cargarTodo()"
-        >
-          <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
-            @for (item of rendimientoProveedor.data(); track item.idcliente) {
-              <li class="flex flex-col text-text-secondary">
-                <span class="font-medium text-text-primary">{{ item.proveedor_nombre ?? 'Proveedor #' + item.idcliente }}</span>
-                <span
-                  >Rechazo: {{ item.pct_rechazo * 100 | number: '1.0-1' }}% · Llegada:
-                  {{ item.tiempo_llegada_promedio_seg | number: '1.0-0' }} s · Abortos:
-                  {{ item.pct_abortos * 100 | number: '1.0-1' }}% · Despachos: {{ item.total_despachos }}</span
-                >
-              </li>
-            }
-          </ul>
-        </app-informe-card>
       }
     </div>
   </section>

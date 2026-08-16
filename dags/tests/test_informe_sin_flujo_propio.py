@@ -25,10 +25,17 @@ from lib.clickhouse_http_client import query_clickhouse  # noqa: E402
 TABLAS_DEL_MODELO = {
     "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
     "dim_unidad", "hecho_accidente", "hecho_despacho", "hecho_estado_unidad",
-    "hecho_ping_unidad",
+    "hecho_ping_unidad", "hecho_evidencia",
+    "dim_region",
 }
 
-#: Las tres del diseño anterior, que conviven hasta la fase 6.
+#: Las tres del diseño anterior. Sus flujos y su DDL se retiraron el 2026-08-15
+#: (decisión #20, opción B), así que **ya no se refrescan ni se recrean**; las
+#: filas que quedan son datos residuales de la última corrida.
+#:
+#: No se borran desde aquí: destruir datos no es reversible, y la limpieza es una
+#: operación de base, no de una prueba. Se restan para que la tesis siga
+#: comprobándose mientras las filas sigan ahí.
 TABLAS_HEREDADAS = {"perdida_senal_gps", "indice_calidad_historico", "rendimiento_por_proveedor"}
 
 #: Informes reales del catálogo, cada uno una sola consulta.

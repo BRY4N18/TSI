@@ -184,6 +184,13 @@ def geografia_sembrada(mock_pinot):
     )
 
 
+#: ⚠️ `horafin` es una columna STRING que guarda **epoch-ms como texto**: lo
+#: escriben `cerrar_caso_service` y `cancelar_caso_service` con el reloj del
+#: sistema. Sembrar "09:30" era una invención que no existe en producción, y
+#: escondía que el backend devolvía el número sin formatear.
+HORA_FIN_CERRADO = str(AHORA_MS - 12 * 3_600_000)
+
+
 def _caso(idaccidente, *, idcalle, activo, horafin="", origen="",
           idseveridad=SEVERIDAD_ALTA, hace_dias=1):
     return {
@@ -220,7 +227,7 @@ def dos_condados(mock_pinot, geografia_sembrada):
         [
             # Cerrado: inactivo **con** hora de fin y sin caso origen.
             _caso(CASO_CERRADO, idcalle=CALLE_CONTRATADA, activo=False,
-                  horafin="09:30", hace_dias=1),
+                  horafin=HORA_FIN_CERRADO, hace_dias=1),
             # ⚠️ Descartado: inactivo **sin** hora de fin ni caso origen.
             _caso(CASO_DESCARTADO, idcalle=CALLE_CONTRATADA, activo=False,
                   hace_dias=2),
@@ -232,11 +239,11 @@ def dos_condados(mock_pinot, geografia_sembrada):
                   idseveridad=SEVERIDAD_LEVE, hace_dias=4),
             # Cerrado, pero en el condado ajeno.
             _caso(CASO_AJENO, idcalle=CALLE_AJENA, activo=False,
-                  horafin="11:00", hace_dias=5),
+                  horafin=HORA_FIN_CERRADO, hace_dias=5),
             # ⚠️ Sin ubicación resoluble: aparece con la ubicación ausente y
             # **no se omite**. Nunca podrá acotarse a ninguna zona.
             _caso(CASO_SIN_UBICACION, idcalle=0, activo=False,
-                  horafin="12:00", hace_dias=6),
+                  horafin=HORA_FIN_CERRADO, hace_dias=6),
         ]
     )
 

@@ -119,18 +119,6 @@
       </app-informe-card>
 
       @if (puedeVerCompuestos) {
-        <app-informe-card
-          title="Índice consolidado de calidad (evolución)"
-          [batch]="true"
-          [ultimaCorrida]="indiceCalidad.ultimaCorrida()"
-          [loading]="indiceCalidad.loading()"
-          [error]="indiceCalidad.error()"
-          [noMaterializado]="!indiceCalidad.loading() && !indiceCalidad.error() && !indiceCalidad.materializado()"
-          [empty]="!indiceCalidad.loading() && !indiceCalidad.error() && indiceCalidad.materializado() && !indiceCalidad.data()?.length"
-          (retry)="cargarTodo()"
-        >
-          <app-timeseries-chart [items]="serieIndiceCalidad()" sufijo="%" formato="1.0-1" />
-        </app-informe-card>
       }
     </div>
   </section>

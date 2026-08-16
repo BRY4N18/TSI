@@ -92,3 +92,53 @@ class TestPaginaCorta:
         cuerpo = api_client.get(f"{RUTA}?limit=5", **admin_auth_headers).json()
 
         assert cuerpo["meta"]["pagination"]["limit"] == 5
+
+
+@pytest.mark.django_db
+class TestElCentinelaDeLaColumnaDeTexto:
+    """El defecto que se vio al construir el frontend: un `500` en vez del listado.
+
+    `demo_expiracion` vale la cadena `'null'` cuando el prospecto no tiene demo.
+    Comparando texto —que es lo único seguro en esa columna— `'null'` ordena
+    **después** de cualquier dígito, así que `demo_expiracion >= '2026-08-11'`
+    lo dejaba pasar. La fila colada llegaba sin fecha utilizable y reventaba al
+    componer el cursor de la página siguiente.
+
+    Ninguna prueba lo detectó porque el fixture sembraba `None`, que no es lo que
+    Pinot devuelve.
+    """
+
+    def test_el_centinela_no_aparece_como_demo_activa(
+        self, api_client, admin_auth_headers, demos_formato_mixto, reloj_congelado
+    ):
+        respuesta = api_client.get(
+            "/api/v1/informes/ventas-crm/demos-activas?limit=500",
+            **admin_auth_headers,
+        )
+
+        assert respuesta.status_code == 200, respuesta.content
+        empresas = {f["empresa"] for f in respuesta.json()["data"]}
+        assert "Demo Centinela" not in empresas
+
+    def test_el_listado_responde_200_con_el_centinela_sembrado(
+        self, api_client, admin_auth_headers, demos_formato_mixto, reloj_congelado
+    ):
+        """Antes daba `500`: el cursor no se podía componer sobre esa fila."""
+        respuesta = api_client.get(
+            "/api/v1/informes/ventas-crm/demos-activas?limit=1",
+            **admin_auth_headers,
+        )
+
+        assert respuesta.status_code == 200, respuesta.content
+
+    def test_las_demos_reales_siguen_apareciendo(
+        self, api_client, admin_auth_headers, demos_formato_mixto, reloj_congelado
+    ):
+        """Excluir el centinela no debe llevarse por delante las demos buenas."""
+        respuesta = api_client.get(
+            "/api/v1/informes/ventas-crm/demos-activas?limit=500",
+            **admin_auth_headers,
+        )
+
+        empresas = {f["empresa"] for f in respuesta.json()["data"]}
+        assert {"Demo Zeta", "Demo Offset", "Demo SinZona"} <= empresas

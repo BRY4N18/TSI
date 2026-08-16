@@ -83,6 +83,45 @@ CONSULTA_TIPOS = f"SELECT idtiporeportado, tiporeportado FROM Dim_TipoReportado 
 CONSULTA_EVIDENCIA = f"SELECT idaccidente FROM Dim_EvidenciaFoto LIMIT {LIMITE}"
 
 #: Desde el modelo, no desde el origen: la copia debe salir de la dimensión.
+# -- Fuentes de las metricas de enriquecimiento y cierre (US3, contrato 4.bis) --
+#
+# Cinco de estas fuentes estan casi vacias: conductores con 0 filas, historial de
+# severidad y cierre con 1, clima e implicados con 3. Los recuentos saldran casi
+# todos a cero, y eso es correcto: cero notas es una medicion. Lo que no se puede
+# hacer es confundir ese cero legitimo con la ausencia de las filas cargadas
+# antes de que la metrica existiera.
+#
+# Se enumeran columnas y nunca `SELECT *`: `Fact_HistorialSeveridadAccidente`
+# trae `motivo` y `Fact_CierreAccidente` trae `observaciones_finales`, los dos
+# texto libre interno que NO entra al modelo. Y las dos traen `idusuario`,
+# excluido por la decision D6.
+#
+# Se filtra `activo` en las tres tablas que lo tienen: una nota borrada no
+# documenta nada, asi que no debe contar como documentacion presente.
+# Ojo con la analogia: `activo` aqui si significa una sola cosa -no borrado-, a
+# diferencia de `Fact_Accidente.activo`, que mezcla cerrado, descartado y
+# fusionado y por eso este mismo modulo no lo copia.
+CONSULTA_NOTAS = f"""
+    SELECT idaccidente FROM Dim_NotaAccidente WHERE activo = true LIMIT {LIMITE}
+"""
+CONSULTA_CONDUCTORES = f"SELECT idaccidente FROM Fact_Conductor_Accidente LIMIT {LIMITE}"
+CONSULTA_IMPLICADOS = f"""
+    SELECT idaccidente FROM Dim_Implicado WHERE activo = true LIMIT {LIMITE}
+"""
+CONSULTA_CLIMA = f"""
+    SELECT idaccidente FROM Dim_ElementoClimaticosAccidente WHERE activo = true LIMIT {LIMITE}
+"""
+CONSULTA_HISTORIAL_SEVERIDAD = f"""
+    SELECT idaccidente, idseveridadanterior, idseveridadnueva, fechahora
+    FROM Fact_HistorialSeveridadAccidente
+    LIMIT {LIMITE}
+"""
+CONSULTA_CIERRE = f"""
+    SELECT idaccidente, resultado_atencion, calificacion
+    FROM Fact_CierreAccidente
+    LIMIT {LIMITE}
+"""
+
 CONSULTA_DIM_SEVERIDAD = "SELECT idseveridad, severidad FROM dim_severidad FINAL"
 CONSULTA_DIM_GEOGRAFIA = "SELECT idcalle, ciudad, condado FROM dim_geografia FINAL"
 
@@ -97,6 +136,12 @@ def extraer(
         "despachos": consultar_origen(CONSULTA_DESPACHOS),
         "tipos": consultar_origen(CONSULTA_TIPOS),
         "evidencia": consultar_origen(CONSULTA_EVIDENCIA),
+        "notas": consultar_origen(CONSULTA_NOTAS),
+        "conductores": consultar_origen(CONSULTA_CONDUCTORES),
+        "implicados": consultar_origen(CONSULTA_IMPLICADOS),
+        "clima": consultar_origen(CONSULTA_CLIMA),
+        "historial_severidad": consultar_origen(CONSULTA_HISTORIAL_SEVERIDAD),
+        "cierres": consultar_origen(CONSULTA_CIERRE),
         "dim_severidad": consultar_modelo(CONSULTA_DIM_SEVERIDAD),
         "dim_geografia": consultar_modelo(CONSULTA_DIM_GEOGRAFIA),
     }
@@ -118,6 +163,68 @@ def _primer_instante(transiciones: Iterable[Mapping[str, Any]], estado: int) -> 
     return min(presentes) if presentes else None
 
 
+def _calificacion(valor: Any) -> int | None:
+    """Solo una calificacion positiva es una calificacion.
+
+    ADVERTENCIA: `0` no esta en la escala. Ni el ni el centinela negativo de un
+    `INT` ausente en Pinot significan una nota: los dos significan
+    "no se califico".
+
+    Importa porque el error se propaga hacia donde mas engana. En una escala,
+    cero es el peor valor posible, asi que un promedio que incluyera esos ceros
+    hundiria la media, y la conclusion -"la atencion es mala"- seria exactamente
+    la contraria de lo que dicen los datos.
+
+    No es una interpretacion de este modulo: es la regla que ya aplica el listado
+    operativo de cierres (`informes_cierres_service._calificacion`). Se repite
+    aqui porque los DAG y el backend son procesos distintos y no pueden compartir
+    la constante; si esa regla cambiara, hay que cambiar las dos.
+
+    El caso vivo hoy en el origen es justo el ambiguo: la unica fila de
+    `Fact_CierreAccidente` trae `calificacion = 0` y `resultado_atencion =
+    "Cierre automatico tras retiro forzado"`. Nadie la califico.
+    """
+    if valor is None:
+        return None
+    try:
+        entero = int(valor)
+    except (TypeError, ValueError):
+        return None
+    return entero if entero > 0 else None
+
+
+def _texto_o_none(valor: Any) -> str | None:
+    """Una cadena vacia no es un valor registrado."""
+    if valor is None:
+        return None
+    texto = str(valor).strip()
+    return texto or None
+
+
+def _severidad_inicial(
+    historial: list,
+    severidades: Mapping[Any, Mapping[str, Any]],
+    severidad_actual: str | None,
+) -> str | None:
+    """Con que gravedad ENTRO el caso.
+
+    Si hubo escaladas, es la severidad anterior de la primera. Si no las hubo, la
+    severidad no cambio nunca y la inicial ES la actual.
+
+    Se deriva en vez de dejarse ausente porque el informe de escaladas tiene que
+    distinguir "no cambio" de "no se sabe", y dejar ausentes los casos sin
+    historial -que son casi todos- juntaria las dos en una sola categoria. Cuando
+    el caso no tiene severidad, la inicial tambien es ausente: no se inventa
+    nada, se dice que no cambio.
+    """
+    if not historial:
+        return severidad_actual
+
+    ordenado = sorted(historial, key=lambda h: h.get("fechahora") or 0)
+    anterior = ordenado[0].get("idseveridadanterior")
+    return severidades.get(anterior, {}).get("severidad") or severidad_actual
+
+
 def _minimo(valores: Iterable[Any]) -> datetime | None:
     presentes = [v for v in valores if v is not None]
     return min(presentes) if presentes else None
@@ -133,6 +240,19 @@ def construir(datos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datetime)
     evidencias_por_caso = {
         caso: len(filas) for caso, filas in agrupar_por(datos.get("evidencia", []), "idaccidente").items()
     }
+    # Un recuento por caso para cada metrica. El `.get(caso, 0)` de mas abajo es
+    # lo que convierte "no aparece en la fuente" en CERO, que aqui es la lectura
+    # correcta: el caso existe y no tiene ninguna.
+    notas_por_caso = {c: len(f) for c, f in agrupar_por(datos.get("notas", []), "idaccidente").items()}
+    conductores_por_caso = {
+        c: len(f) for c, f in agrupar_por(datos.get("conductores", []), "idaccidente").items()
+    }
+    implicados_por_caso = {
+        c: len(f) for c, f in agrupar_por(datos.get("implicados", []), "idaccidente").items()
+    }
+    clima_por_caso = {c: len(f) for c, f in agrupar_por(datos.get("clima", []), "idaccidente").items()}
+    historial_por_caso = agrupar_por(datos.get("historial_severidad", []), "idaccidente")
+    cierres = indexar_por(datos.get("cierres", []), "idaccidente")
     marca = ahora.strftime(FORMATO)
 
     filas = []
@@ -184,6 +304,22 @@ def construir(datos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datetime)
                 # Cero es correcto aquí y no es un centinela: «no se subió
                 # ninguna evidencia» es una medición, no un dato que falte.
                 "num_evidencias": evidencias_por_caso.get(idaccidente, 0),
+                # Contrato 4.bis. Recuentos: cero es una medicion, no una ausencia.
+                "num_notas": notas_por_caso.get(idaccidente, 0),
+                "num_conductores": conductores_por_caso.get(idaccidente, 0),
+                "num_implicados": implicados_por_caso.get(idaccidente, 0),
+                "num_elementos_clima": clima_por_caso.get(idaccidente, 0),
+                "num_escaladas_severidad": len(historial_por_caso.get(idaccidente, [])),
+                "severidad_inicial": _severidad_inicial(
+                    historial_por_caso.get(idaccidente, []), severidades, sev.get("severidad")
+                ),
+                # Contrato 4.bis. Estos dos van AUSENTES cuando no se
+                # registraron: el caso puede no estar cerrado todavia, y un
+                # cierre sin resultado no es un resultado vacio.
+                "resultado_atencion": _texto_o_none(
+                    cierres.get(idaccidente, {}).get("resultado_atencion")
+                ),
+                "calificacion": _calificacion(cierres.get(idaccidente, {}).get("calificacion")),
                 "fue_descartado": 1 if _primer_instante(transiciones, ESTADO_DESCARTADO) else 0,
                 "es_duplicado": 1 if _primer_instante(transiciones, ESTADO_FUSIONADO) else 0,
                 "duplicado_de": acc.get("idaccidenteorigen"),

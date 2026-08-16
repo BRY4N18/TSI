@@ -9,7 +9,6 @@ import {
   ApiEnvelope,
   ApiEnvelopeCompuesto,
   CierresForzadosItem,
-  PerdidaSenalItem,
   PeriodoParams,
   TiempoAsignadoCerradoItem,
 } from '../../services/models/informes-tacticos.types';
@@ -59,7 +58,6 @@ export class WorkpanelSeguimientoPage {
 
   /** FR-UI-003: tarjeta compuesta (batch), visible solo para el rol Administrador (Supervisor). */
   readonly puedeVerCompuestos = this.authApi.hasRole('Administrador');
-  readonly perdidaSenal = newCompuestoState<PerdidaSenalItem[]>();
 
   serieCierresForzados(): SerieItem[] {
     return (this.cierresForzados.data() ?? []).map((d) => ({
@@ -81,7 +79,6 @@ export class WorkpanelSeguimientoPage {
     this.cargar(this.cierresForzados, this.api.cierresForzados(this.periodo));
     this.cargar(this.abortosPerdidas, this.api.abortosPerdidas(this.periodo));
     if (this.puedeVerCompuestos) {
-      this.cargarCompuesto(this.perdidaSenal, this.api.perdidaSenal(this.periodo));
     }
   }
 

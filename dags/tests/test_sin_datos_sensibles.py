@@ -34,7 +34,22 @@ TABLAS = (
     "hecho_despacho",
     "hecho_estado_unidad",
     "hecho_ping_unidad",
+    "hecho_evidencia",
 )
+
+#: Columnas que coinciden con un patrón prohibido y **no son** dato sensible.
+#:
+#: La excepción se declara una a una y con su razón, en vez de estrechar el
+#: patrón. `%nota%` tiene que seguir cazando `observaciones`, `nota_interna` y
+#: cualquier columna de texto que aparezca mañana; lo que no debe cazar es
+#: `num_notas`, que es **cuántas** notas tiene un caso y no dice ninguna.
+#:
+#: La diferencia entre las dos es exactamente la que este modelo defiende: contar
+#: no es leer. Saber que un caso tiene tres notas no revela nada de su contenido.
+EXCEPCIONES = {
+    ("hecho_accidente", "num_notas"),
+    ("hecho_evidencia", "categoria_nota"),
+}
 
 #: Fragmentos que delatan una columna excluida. Se busca por patrón y no por
 #: lista cerrada de nombres: lo que hay que impedir es que **aparezca** una
@@ -65,7 +80,34 @@ class TestEsquemaDelModelo:
             "SELECT table, name FROM system.columns "
             f"WHERE database = currentDatabase() AND table IN ({tablas}) AND ({condicion})"
         )
+        sobrantes = [
+            c for c in sobrantes if (c["table"], c["name"]) not in EXCEPCIONES
+        ]
         assert sobrantes == [], f"columnas sensibles en el modelo: {sobrantes}"
+
+    def test_las_excepciones_son_recuentos_o_categorias_y_no_texto(self):
+        """Una excepción mal puesta desactivaría el patrón para esa columna.
+
+        Se comprueba el **tipo**: un recuento es numérico, y una categoría es una
+        etiqueta de un conjunto cerrado, no texto libre. Si alguien añadiera aquí
+        `observaciones` para acallar el fallo, esta prueba lo vería — que es lo
+        que hace que la lista de excepciones sea segura.
+        """
+        tipos = {
+            (c["table"], c["name"]): c["type"]
+            for c in query_clickhouse(
+                "SELECT table, name, type FROM system.columns "
+                "WHERE database = currentDatabase()"
+            )
+        }
+        for clave in EXCEPCIONES:
+            tipo = tipos.get(clave)
+            if tipo is None:
+                continue
+            assert "Int" in tipo or clave[1].startswith("categoria_"), (
+                f"{clave} está exceptuada y es de tipo {tipo}: una excepción "
+                f"solo vale para recuentos y categorías cerradas"
+            )
 
     def test_ninguna_tabla_guarda_identidad_de_persona(self):
         # `idusuario` está en el origen de casi todas las tablas de hecho y NO se

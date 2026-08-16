@@ -1,10 +1,5 @@
 from django.urls import path
 
-from apps.informes_tacticos.views.compuestos_views import (
-    IndiceCalidadView,
-    PerdidaSenalView,
-    RendimientoProveedorView,
-)
 from apps.informes_tacticos.views.despacho_views import (
     AsignacionAutomaticaVsManualView,
     CargaPorUnidadView,
@@ -12,6 +7,12 @@ from apps.informes_tacticos.views.despacho_views import (
     RechazoTimeoutPorUnidadView,
     TiempoReportadoConfirmadoView,
     TiempoRespuestaPorSeveridadView,
+)
+from apps.informes_tacticos.views.emergencias_compuestos_views import (
+    EmergenciasCompuestoView,
+)
+from apps.informes_tacticos.views.red_operativa_compuestos_views import (
+    RedOperativaCompuestoView,
 )
 from apps.informes_tacticos.views.registro_views import (
     CompletitudCamposCriticosView,
@@ -109,19 +110,25 @@ urlpatterns = [
         AbortosPerdidasView.as_view(),
         name="informes-tacticos-seguimiento-abortos-perdidas",
     ),
+    # Informes compuestos de Emergencias, sobre el modelo analítico. Una sola
+    # ruta parametrizada: el conjunto publicado lo fija `PUBLICADOS` en el
+    # servicio, no esta lista, para que no haya dos sitios que puedan discrepar.
+    #
+    # La ruta no lleva un segmento `compuestos/` porque el contrato no lo lleva:
+    # para quien consume, esto es «el informe de Emergencias», y que por dentro
+    # salga del modelo analítico no es asunto de la URL.
     path(
-        "informes-tacticos/compuestos/perdida-senal",
-        PerdidaSenalView.as_view(),
-        name="informes-tacticos-compuestos-perdida-senal",
+        "informes-tacticos/emergencias/<str:informe>",
+        EmergenciasCompuestoView.as_view(),
+        name="informes-tacticos-emergencias-compuesto",
     ),
+    # Red Operativa. El nombre del informe va en la **ruta** y no en un
+    # parámetro de consulta porque el permiso depende de él: la autoridad de
+    # este departamento está repartida por materia, y un permiso no puede
+    # depender de algo que se lee después de concederlo.
     path(
-        "informes-tacticos/compuestos/indice-calidad",
-        IndiceCalidadView.as_view(),
-        name="informes-tacticos-compuestos-indice-calidad",
-    ),
-    path(
-        "informes-tacticos/compuestos/rendimiento-proveedor",
-        RendimientoProveedorView.as_view(),
-        name="informes-tacticos-compuestos-rendimiento-proveedor",
+        "informes-tacticos/red-operativa/<str:informe>",
+        RedOperativaCompuestoView.as_view(),
+        name="informes-tacticos-red-operativa-compuesto",
     ),
 ]

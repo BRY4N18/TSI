@@ -143,6 +143,58 @@ def ensure_dim_unidad() -> None:
     )
 
 
+def ensure_dim_region() -> None:
+    """Una fila por **version** de region operativa (Red Operativa, US1-US3).
+
+    Versionada por la misma razon que la unidad: un informe de hace tres meses
+    tiene que decir en que estado estaba la region entonces, no en cual esta hoy.
+
+    ADVERTENCIA: `estado_ciclo_vida` y `estado_geo` son cosas distintas, y el
+    origen las confunde
+    ---------------------------------------------------------------------------
+    * `estado_ciclo_vida` es `Definida`, `En validacion`, `Produccion` o
+      `Despublicada`. Vive en `Dim_RegionOperativa.estadoregion`.
+    * `estado_geo` es «Ciudad de Mexico». Vive en `Dim_EstadoRegion.estadoregion`,
+      pese al nombre.
+
+    La tabla del origen llamada `Dim_RegionOperativaEstadoRegion` relaciona la
+    region con **el segundo**, aunque el catalogo de informes la citaba como
+    fuente del primero. Se comprobo: `Dim_EstadoRegion` contiene «Ciudad de
+    Mexico», no un estado de ciclo de vida.
+
+    Nombrarlos distinto aqui es lo unico que impide repetir la confusion, y la
+    confusion no seria inocua: un informe de regiones publicadas que leyera la
+    geografia devolveria todas las regiones o ninguna, y las dos respuestas
+    parecen plausibles.
+
+    **Solo `estado_ciclo_vida` abre version.** La geografia de una region no
+    cambia; si cambiara, seria otra region.
+
+    `inicio_es_real = 0` en las versiones iniciales: el estado se conoce, pero no
+    desde cuando.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS dim_region (
+            sk_region         UInt64,
+            idregionoperativa Int32,
+            nombre_region     String,
+            estado_ciclo_vida String,
+            idestado_geo      Nullable(Int32),
+            estado_geo        Nullable(String),
+            pais              Nullable(String),
+
+            valido_desde      DateTime,
+            valido_hasta      Nullable(DateTime),
+            es_vigente        UInt8,
+            inicio_es_real    UInt8,
+            version           DateTime
+        ) ENGINE = ReplacingMergeTree(version)
+        ORDER BY (idregionoperativa, valido_desde)
+        """
+    )
+
+
 # ─────────────────────────────── Hechos ─────────────────────────────────
 
 
@@ -179,6 +231,29 @@ def ensure_hecho_accidente() -> None:
             duracion_minutos        Nullable(Int32),
             total_intentos_despacho Nullable(Int32),
             num_evidencias          Nullable(Int32),
+
+            -- §4.bis — métricas de enriquecimiento y cierre (US3).
+            --
+            -- ⚠️ Todas `Nullable`, y la nulidad significa cosas **opuestas** en
+            -- los dos bloques:
+            --
+            -- Los recuentos van a `0` cuando el caso existe y no tiene ninguno:
+            -- cero notas es una medición, no una ausencia. Solo van nulos en las
+            -- filas cargadas antes de que la métrica existiera, donde el `0`
+            -- afirmaría algo que nadie midió.
+            num_notas               Nullable(Int32),
+            num_conductores         Nullable(Int32),
+            num_implicados          Nullable(Int32),
+            num_elementos_clima     Nullable(Int32),
+            num_escaladas_severidad Nullable(Int32),
+
+            -- Estos tres van nulos cuando **no se registraron**. Una
+            -- calificación de `0` sería la peor nota posible, que es lo
+            -- contrario de «sin calificar» — y es la clase de confusión que
+            -- convierte un caso sin encuestar en el peor caso del mes.
+            severidad_inicial       Nullable(String),
+            resultado_atencion      Nullable(String),
+            calificacion            Nullable(Int32),
 
             fue_descartado          UInt8,
             es_duplicado            UInt8,
@@ -316,16 +391,104 @@ def ensure_hecho_estado_unidad() -> None:
 # ──────────────────────────── Orquestación ──────────────────────────────
 
 #: Las dimensiones, en el orden en que se crean. **Siempre antes que los hechos.**
+
+
+def ensure_hecho_evidencia() -> None:
+    """Hecho de **transacción**. Grano: una evidencia capturada.
+
+    Por qué un hecho y no unas métricas más del caso: tiene **dos instantes
+    propios** —capturada y sincronizada— y su grano no es el caso. Un caso puede
+    tener varias evidencias con latencias muy distintas, y contarlas en el caso
+    respondería «cuántas hubo» pero nunca «cuánto tardaron».
+
+    **Fotos y notas en la misma tabla** porque comparten grano, dimensiones y
+    preguntas. Separarlas obligaría a unir dos hechos para responder «cobertura
+    de foto **y** nota», que es justamente el informe #17.
+
+    ⚠️ **Sin `idusuario`**, aunque las dos fuentes lo traen (research D6). El
+    informe de volumen se entrega **por unidad**, no por persona: un ranking de
+    quién sube menos fotos es una herramienta de vigilancia laboral, y el
+    problema que se quiere ver —qué unidades documentan mal— se responde igual
+    sin nombrar a nadie.
+
+    ⚠️ **`fechahora_sincronia` ausente significa «aún no sincronizada»**, no
+    «sincronizada en la época cero». La latencia de esas evidencias es
+    **ausente**: ni cero, que diría que fue instantánea, ni infinita, que diría
+    que nunca llegará.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS hecho_evidencia (
+            idevidencia          Int32,
+            tipo                 String,
+            fecha                Date,
+            fechahora_captura    DateTime,
+            fechahora_sincronia  Nullable(DateTime),
+
+            idaccidente          String,
+            sk_unidad            UInt64,
+            idunidademergencia   Int32,
+            proveedor            String,
+            idseveridad          Nullable(Int32),
+            severidad            Nullable(String),
+            condado              Nullable(String),
+
+            segundos_hasta_sincronia Nullable(Int32),
+            categoria_nota       Nullable(String),
+
+            cargado_en           DateTime
+        ) ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(fecha)
+        ORDER BY (fecha, idunidademergencia, idevidencia)
+        """
+    )
+
+
+#: Columnas añadidas a `hecho_accidente` después de su creación (§4.bis).
+COLUMNAS_ANADIDAS_HECHO_ACCIDENTE = (
+    ("num_notas", "Nullable(Int32)"),
+    ("num_conductores", "Nullable(Int32)"),
+    ("num_implicados", "Nullable(Int32)"),
+    ("num_elementos_clima", "Nullable(Int32)"),
+    ("num_escaladas_severidad", "Nullable(Int32)"),
+    ("severidad_inicial", "Nullable(String)"),
+    ("resultado_atencion", "Nullable(String)"),
+    ("calificacion", "Nullable(Int32)"),
+)
+
+
+def ensure_columnas_nuevas_hecho_accidente() -> None:
+    """Añade a `hecho_accidente` las columnas que se sumaron después de crearla.
+
+    ⚠️ **Hace falta porque `CREATE TABLE IF NOT EXISTS` no migra nada.** En una
+    instalación nueva la tabla nace con las ocho columnas y todo cuadra; en la
+    que ya existe, el `CREATE` no hace nada —la tabla ya está— y las columnas
+    **no aparecen**. El DDL sería correcto y el almacén estaría incompleto, sin
+    ningún error por ninguna parte hasta que una consulta pidiera una columna
+    inexistente.
+
+    Las filas anteriores quedan con `NULL` en las columnas nuevas, que es lo
+    correcto: nadie midió cuántas notas tenía un caso cargado antes de que la
+    métrica existiera, y un `0` lo afirmaría.
+    """
+    for nombre, tipo in COLUMNAS_ANADIDAS_HECHO_ACCIDENTE:
+        execute_clickhouse(
+            f"ALTER TABLE hecho_accidente ADD COLUMN IF NOT EXISTS {nombre} {tipo}"
+        )
+
+
 DIMENSIONES = (
     ensure_dim_tiempo,
     ensure_dim_geografia,
     ensure_dim_severidad,
     ensure_dim_origen_despacho,
     ensure_dim_unidad,
+    ensure_dim_region,
 )
 
 HECHOS = (
     ensure_hecho_accidente,
+    ensure_hecho_evidencia,
     ensure_hecho_despacho,
     ensure_hecho_estado_unidad,
     ensure_hecho_ping_unidad,
@@ -336,62 +499,5 @@ def ensure_modelo_analitico() -> None:
     """Crea el modelo entero. Idempotente: repetirlo no altera nada."""
     for crear in DIMENSIONES + HECHOS:
         crear()
-
-
-# ──────────────── Diseño anterior — se retira en la fase 6 ───────────────
-#
-# ⚠️ No borrar todavía. Estas tres tablas siguen sirviendo sus informes hasta que
-# T047 verifique que el modelo devuelve las mismas cifras. Sus valores actuales
-# están anotados en quickstart.md §3.8 como referencia de esa comparación.
-
-
-def ensure_perdida_senal_table() -> None:
-    execute_clickhouse(
-        """
-        CREATE TABLE IF NOT EXISTS perdida_senal_gps (
-            periodo Date,
-            idunidademergencia Int32,
-            idaccidente String,
-            inicio_hueco DateTime,
-            fin_hueco DateTime,
-            duracion_seg Int32,
-            umbral_usado_seg Int32,
-            calculado_en DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY (periodo, idunidademergencia, inicio_hueco)
-        """
-    )
-
-
-def ensure_indice_calidad_table() -> None:
-    execute_clickhouse(
-        """
-        CREATE TABLE IF NOT EXISTS indice_calidad_historico (
-            periodo Date,
-            pct_completitud Float64,
-            pct_descarte Float64,
-            pct_fusion Float64,
-            pct_cobertura_evidencia Float64,
-            indice_consolidado Float64,
-            calculado_en DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY periodo
-        """
-    )
-
-
-def ensure_rendimiento_proveedor_table() -> None:
-    execute_clickhouse(
-        """
-        CREATE TABLE IF NOT EXISTS rendimiento_por_proveedor (
-            periodo Date,
-            idcliente Int32,
-            pct_rechazo Float64,
-            tiempo_llegada_promedio_seg Float64,
-            pct_abortos Float64,
-            total_despachos Int32,
-            calculado_en DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY (periodo, idcliente)
-        """
-    )
+    # Después de los `CREATE`, porque migra una tabla que aquellos dan por hecha.
+    ensure_columnas_nuevas_hecho_accidente()

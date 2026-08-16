@@ -34,12 +34,35 @@ def execute_clickhouse(sql: str) -> None:
         raise RuntimeError(f"ClickHouse execute failed ({response.status_code}): {response.text}")
 
 
-def query_clickhouse(sql: str) -> list[dict]:
-    """Ejecuta un SELECT y devuelve filas como lista de dicts (FORMAT JSONEachRow)."""
+def query_clickhouse(sql: str, params: dict | None = None) -> list[dict]:
+    """Ejecuta un SELECT y devuelve filas como lista de dicts (FORMAT JSONEachRow).
+
+    `params` son los **parámetros con tipo de ClickHouse**: la consulta escribe
+    `{desde:Date}` y aquí viaja como `param_desde`, ligado por el servidor. Es lo
+    que permite ejecutar las consultas del catálogo tal como están escritas, sin
+    reconstruirlas — si hubiera que interpolarlas para correrlas, la prueba
+    estaría comprobando una consulta distinta de la que se publica.
+    """
     stripped = sql.strip().rstrip(";")
+    argumentos = {
+        "database": CLICKHOUSE_DB,
+        # Sin esto, ClickHouse devuelve los enteros de 64 bits **entrecomillados**
+        # y `count()` es `UInt64`: un conteo de 2 llega como la cadena `"2"`.
+        # Entrecomilla por defecto para no perder precisión por encima de 2^53
+        # —real para identificadores, irrelevante para conteos—.
+        #
+        # El backend fija el mismo ajuste al leer el catálogo. Que los dos
+        # coincidan no es cosmético: la prueba de contraste compara la cifra del
+        # endpoint con la de la consulta, y `"2" != 2` la haría fallar por una
+        # diferencia de serialización en vez de por una de cálculo — que es
+        # justo la clase de ruido que hace desconfiar de la prueba y no del dato.
+        "output_format_json_quote_64bit_integers": "0",
+    }
+    for nombre, valor in (params or {}).items():
+        argumentos[f"param_{nombre}"] = valor
     response = requests.post(
         CLICKHOUSE_URL,
-        params={"database": CLICKHOUSE_DB},
+        params=argumentos,
         data=f"{stripped} FORMAT JSONEachRow".encode("utf-8"),
         auth=_AUTH,
         timeout=30,

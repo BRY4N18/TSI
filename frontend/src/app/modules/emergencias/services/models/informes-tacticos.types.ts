@@ -106,31 +106,5 @@ export interface ApiEnvelopeCompuesto<T> {
   };
 }
 
-export interface PerdidaSenalItem {
-  idunidademergencia: number;
-  unidad_nombre: string | null;
-  unidad_placa: string | null;
-  idaccidente: number;
-  inicio_hueco: string;
-  fin_hueco: string;
-  duracion_seg: number;
-  umbral_usado_seg: number;
-}
 
-export interface IndiceCalidadItem {
-  periodo: string;
-  pct_completitud: number;
-  pct_descarte: number;
-  pct_fusion: number;
-  pct_cobertura_evidencia: number;
-  indice_consolidado: number;
-}
 
-export interface RendimientoProveedorItem {
-  idcliente: number;
-  proveedor_nombre: string | null;
-  pct_rechazo: number;
-  tiempo_llegada_promedio_seg: number;
-  pct_abortos: number;
-  total_despachos: number;
-}
