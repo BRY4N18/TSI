@@ -1,109 +1,389 @@
 # Feature Specification: Informes Tácticos Simples de Emergencias (Backend)
 
-**Feature Branch**: `informes-tacticos-simples`
+**Feature Branch**: `informes-tacticos-simples-emergencias`
 
-**Created**: 2026-08-01
+**Created**: 2026-08-14
 
 **Status**: Draft
 
-**Input**: User description: "Informes tácticos simples de Emergencias — consulta directa a Pinot, sin ClickHouse/Airflow, para los 3 módulos operativos: Registro de Accidente, Despacho Inteligente y Seguimiento y Cierre de Casos. Basado en informestacticos/auditoria-esquemas-informes-v2.md (informes ya marcados ✅ Cubierto)."
+**Input**: User description: "Informes tácticos simples de Emergencias — listados llanos de solo lectura (backend) que satisfacen OT21, OT22, OT23, OT24 y OT25, bajo el contrato specs/002-tactico/contrato-informes-simples.md"
+
+---
+
+## Contexto
+
+Cinco listados llanos de solo lectura sobre el núcleo del sistema. Es el séptimo módulo de la serie,
+el que cubre más objetivos tácticos, y el único que introduce **un eje de acotamiento nuevo**: un
+cliente no ve «sus» expedientes por titularidad, sino **los de las zonas geográficas que tiene
+contratadas**.
+
+**Nota sobre el nombre.** Este departamento ya tenía un módulo llamado `informes-tacticos-simples`
+con los 19 informes **agregados**. Se renombró a `informes-tacticos-agregados` —que es lo que
+contiene— y este módulo ocupa el nombre que le corresponde. El código de aquel no se tocó.
+
+**Documentos que gobiernan esta spec:**
+
+- `specs/002-tactico/contrato-informes-simples.md` — contrato común. **No se repite aquí.**
+- `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` §7 — catálogo y trazabilidad.
+- Módulos previos: los seis anteriores. Se reutilizan y **no se vuelven a decidir**.
+- `specs/002-tactico/Emergencias/informes-tacticos-agregados/` — los 19 informes agregados, que
+  cubren OT21, OT22 y OT23 desde el lado de la agregación. **Estos listados no los duplican.**
+
+**Alcance:** solo backend.
+
+---
+
+## Nota de alcance: el estado de un caso no es una propiedad del caso
+
+Es la corrección de fondo del módulo, y la tercera vez que este patrón aparece en la serie.
+
+**Un caso queda inactivo por tres razones muy distintas:**
+
+| Razón | Significa |
+|---|---|
+| **Cerrado** | La emergencia se atendió y terminó — es el desenlace bueno |
+| **Descartado** | Falsa alarma: nunca hubo emergencia |
+| **Fusionado** | Es el mismo hecho que otro caso, que sigue vivo |
+
+**Y el registro del caso no guarda su estado.** El estado formal —reportado, buscando unidad,
+asignado, en atención, cerrado, descartado, fusionado— vive en el **histórico de estados**, y
+conocerlo exige quedarse con el último registro por caso.
+
+**Consecuencia sobre estos listados:**
+
+- El listado de casos expone **lo que sí es propiedad del caso**: si sigue activo, si tiene hora de
+  fin, y si apunta a otro caso como duplicado. Con eso se distinguen las tres situaciones sin
+  inventar nada.
+- **El estado formal es compuesto** y ya está cubierto por los informes agregados existentes.
+
+**Por qué importa.** Un listado de «casos inactivos» sin distinguir pondría en la misma línea
+**emergencias atendidas, falsas alarmas y duplicados**. Un recuento así presentaría el trabajo
+realizado y el ruido descartado como la misma cosa.
+
+### Y una consecuencia sobre el acotamiento por zona
+
+Filtrar los casos de las zonas contratadas por un cliente exige traducir esas zonas a la ubicación
+que el caso guarda, que es más fina que el condado. Hoy el módulo operativo lo resuelve **caso por
+caso mientras recorre**, lo que funciona pero no es un filtro.
+
+**Este listado exige resolver las zonas a un conjunto antes de consultar**, para que el filtrado
+ocurra en la base y no fila a fila. Si esa traducción resultara impracticable, el acotamiento por
+zona dejaría de ser simple — y con él, el acceso del cliente a este listado.
+
+### Resto de la consolidación
+
+| Filas del catálogo | Resolución |
+|---|---|
+| Listado de casos del período · Casos en borrador con advertencias · Casos abiertos sobre el umbral | **Un solo listado de casos con filtros** |
+| Despachos del período · Alertas de agotamiento de candidatas · Misiones en tránsito | **Un solo listado de despachos con filtros** |
+| Evidencia sin sincronizar · Casos sin evidencia · Notas de campo por tipo y unidad | **Dos listados** —fotografías y notas— porque son registros distintos |
+| Casos cerrados con resultado · Casos cerrados sin observaciones | **Un solo listado de cierres con filtros** |
+| Monitoreo de casos activos · Parámetros de asignación | Ya construidos |
+
+---
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Consultar informes de Registro de Accidente (Priority: P1)
+### User Story 1 - Consultar los casos con el alcance que a cada quien corresponde (Priority: P1)
 
-Como Operador o Supervisor de Emergencias, quiero consultar un conjunto de indicadores agregados sobre los accidentes registrados (volumen, severidad, zona, calidad del registro, ranking de ubicaciones, impacto humano), filtrables por período, para entender el volumen y la calidad del trabajo de registro sin tener que revisar caso por caso.
+Como Operador de Emergencias o Administrador, quiero consultar los accidentes filtrando por
+severidad, zona, origen del reporte o situación, para entender qué ha ocurrido sin abrir caso por
+caso. Como Cliente, quiero ver los casos cerrados de las zonas que tengo contratadas.
 
-**Why this priority**: Es el módulo con más informes ya viables (✅ Cubierto) y el que alimenta datos de mayor valor comercial (impacto humano, calidad del histórico) según la auditoría — el mejor punto de entrada para demostrar valor con el menor esfuerzo.
+**Why this priority**: Es el listado central del departamento y **el único donde el acotamiento por
+zona contratada tiene consecuencia**. Además es donde se materializa la distinción entre un caso
+atendido, una falsa alarma y un duplicado.
 
-**Independent Test**: Se puede solicitar cada uno de los 7 indicadores de este módulo de forma aislada (con un rango de período dado) y obtener una respuesta agregada correcta, sin necesidad de que los otros dos módulos existan todavía.
+**Independent Test**: Consultar el listado con cada filtro, con un rol interno y con un cliente, sin
+que existan los otros cuatro listados.
 
 **Acceptance Scenarios**:
 
-1. **Given** existen accidentes registrados en el período solicitado, **When** se solicita el volumen total de casos por período, **Then** el sistema devuelve el conteo agrupado por el período pedido (día/semana/mes).
-2. **Given** existen accidentes con distintos niveles de severidad, **When** se solicita la distribución por severidad, **Then** el sistema devuelve el conteo agrupado por cada nivel de severidad.
-3. **Given** existen accidentes en distintas zonas/regiones, **When** se solicita la distribución por zona, **Then** el sistema devuelve el conteo agrupado por el nivel geográfico solicitado (calle, ciudad, condado, estado).
-4. **Given** existen accidentes con y sin campos críticos completos, **When** se solicita el % de completitud, **Then** el sistema devuelve el porcentaje de registros con severidad y calle no nulos sobre el total del período.
-5. **Given** existen accidentes descartados y fusionados, **When** se solicita el % de descarte y fusión, **Then** el sistema devuelve ambos porcentajes sobre el total de reportes del período.
-6. **Given** existen accidentes concentrados en ciertas ubicaciones, **When** se solicita el ranking de ubicaciones, **Then** el sistema devuelve las ubicaciones ordenadas por frecuencia descendente, limitadas a un tope configurable.
-7. **Given** existen accidentes con datos de víctimas/heridos/fallecidos, **When** se solicita el impacto humano por región, **Then** el sistema devuelve la suma de cada campo agrupada por región y período.
+1. **Given** existen casos en varias zonas geográficas, **When** un Cliente consulta el listado,
+   **Then** obtiene **únicamente los de las zonas que tiene contratadas**.
+2. **Given** un Cliente sin zonas contratadas, **When** consulta el listado, **Then** obtiene un
+   resultado vacío, **no** el listado completo.
+3. **Given** un Cliente, **When** consulta el listado, **Then** obtiene **solo casos ya cerrados**:
+   la emergencia en curso es información operativa, no del cliente.
+4. **Given** un Operador de Emergencias, **When** consulta el listado, **Then** obtiene los casos de
+   **todas** las zonas, en cualquier situación.
+5. **Given** un caso cerrado, uno descartado por falsa alarma y uno fusionado como duplicado,
+   **When** se consulta el listado, **Then** **cada uno se distingue del otro**, y el fusionado
+   indica de qué caso es duplicado.
+6. **Given** casos de distinta severidad, **When** se filtra por severidad, **Then** solo aparecen
+   esos, con el **nombre** de la severidad y de la ubicación, no con identificadores.
+7. **Given** un caso detenido en borrador porque su registro levantó advertencias, **When** se
+   filtra por esa situación, **Then** aparece: es un caso que nadie confirmó ni descartó.
+8. **Given** un Partner de integración autenticado, **When** consulta el listado, **Then** el
+   sistema responde `403`: el acceso programático a los datos tiene su propio camino.
 
 ---
 
-### User Story 2 - Consultar informes de Despacho Inteligente (Priority: P1)
+### User Story 2 - Seguir los despachos y las misiones en curso (Priority: P2)
 
-Como Operador o Supervisor de Emergencias, quiero consultar indicadores sobre cómo se están despachando las unidades (automatización, tiempos de respuesta, rechazos, carga por unidad, relación entre demanda y capacidad por condado), para detectar cuellos de botella operativos antes de que degraden el servicio.
+Como Operador de Emergencias o Administrador, quiero ver los despachos producidos, con su origen,
+la unidad a la que fueron y en qué punto están, para entender cómo se está resolviendo la asignación
+y qué misiones siguen en camino.
 
-**Why this priority**: Junto con Registro, es el otro módulo con más informes viables; además incluye el informe "ratio demanda/capacidad por condado", que la auditoría señala como la métrica central del objetivo estratégico de "escalar sin degradar el servicio".
+**Why this priority**: Sostiene OT22 y OT23 y da visibilidad sobre el eslabón más crítico de la
+cadena. Va después de los casos porque depende de que existan.
 
-**Independent Test**: Se puede solicitar cada uno de los 6 indicadores de este módulo de forma aislada y obtener una respuesta agregada correcta, sin depender de que User Story 1 o 3 estén implementadas.
+**Independent Test**: Consultar el listado de forma aislada, con y sin rango de fechas, sin que
+existan los otros cuatro.
 
 **Acceptance Scenarios**:
 
-1. **Given** existen despachos con distinto origen (automático/manual/escalado), **When** se solicita el % de asignaciones por origen, **Then** el sistema devuelve el porcentaje agrupado por tipo de origen, con opción de cortar por condado.
-2. **Given** un accidente pasó de reportado a confirmado, **When** se solicita el tiempo promedio entre ambos estados, **Then** el sistema devuelve el promedio de la diferencia de tiempos del período.
-3. **Given** existen despachos con distinta severidad de accidente asociada, **When** se solicita la distribución del tiempo de respuesta por severidad, **Then** el sistema devuelve el tiempo agrupado por nivel de severidad (y opcionalmente por condado).
-4. **Given** existen despachos rechazados o con timeout, **When** se solicita el % de rechazo/timeout por unidad, **Then** el sistema devuelve el porcentaje agrupado por unidad para el período.
-5. **Given** existen despachos atendidos por distintas unidades, **When** se solicita la carga de despachos por unidad, **Then** el sistema devuelve el conteo agrupado por unidad para el período.
-6. **Given** existen accidentes y unidades activas en un condado, **When** se solicita el ratio demanda/capacidad, **Then** el sistema devuelve, por condado, el conteo de accidentes dividido entre el conteo de unidades activas.
+1. **Given** hubo despachos en el período, **When** se consulta el listado, **Then** cada uno muestra
+   el caso, la unidad, el **origen** del despacho, la hora de despacho, la de llegada si la hubo y
+   la de retiro si la hubo.
+2. **Given** despachos de distinto origen —automático, manual, escalado a zona vecina—, **When** se
+   filtra por origen, **Then** solo aparecen los de ese origen.
+3. **Given** una unidad despachada que aún no ha llegado, **When** se filtra por misiones en
+   tránsito, **Then** aparece: es un despacho sin hora de llegada ni de retiro.
+4. **Given** un retiro forzado desde la central, **When** aparece en el listado, **Then** se
+   distingue de un retiro normal.
+5. **Given** varios despachos sobre un mismo caso, **When** se consulta el listado, **Then**
+   aparecen **todos**, cada uno con su estado: un caso puede acumular intentos de varios orígenes.
+6. **Given** no se indica período, **When** se consulta el listado, **Then** el sistema devuelve el
+   histórico completo paginado.
 
 ---
 
-### User Story 3 - Consultar informes de Seguimiento y Cierre de Casos (Priority: P2)
+### User Story 3 - Revisar la evidencia levantada en campo (Priority: P3)
 
-Como Operador o Supervisor de Emergencias, quiero consultar indicadores sobre cómo se cierran los casos (tiempos hasta el cierre, cierres forzados, abortos/pérdidas de misión), para verificar que el ciclo completo del caso se está resolviendo dentro de lo esperado.
+Como Administrador, quiero ver qué fotografías y qué notas de campo se han registrado, y sobre todo
+**cuáles quedaron sin sincronizar**, para recuperar evidencia que se capturó y nunca llegó.
 
-**Why this priority**: Completa el ciclo de vida del caso (registro → despacho → cierre), pero tiene menos informes que los otros dos módulos y depende de datos que ya se generan en las etapas anteriores — es la prioridad más baja de las tres sin dejar de ser necesaria para el objetivo de los 3 workpanels.
+**Why this priority**: Es la única forma de detectar evidencia perdida, un hueco que la revisión
+anterior dejó anotado expresamente. Va en tercer lugar porque depende de que existan casos atendidos.
 
-**Independent Test**: Se puede solicitar cada uno de los 3 indicadores de este módulo de forma aislada y obtener una respuesta agregada correcta, sin depender de que User Story 1 o 2 estén implementadas.
+**Independent Test**: Consultar los dos listados de forma aislada, sin que existan los otros tres.
 
 **Acceptance Scenarios**:
 
-1. **Given** un caso pasó de asignado a cerrado, **When** se solicita el tiempo promedio entre ambos estados, **Then** el sistema devuelve el promedio agrupado por unidad, zona o período, según el corte solicitado.
-2. **Given** existen cierres forzados desde central y cierres normales, **When** se solicita el % de cierres forzados, **Then** el sistema devuelve el porcentaje sobre el total de cierres del período.
-3. **Given** existen despachos abortados o con pérdida de señal, **When** se solicita el % de abortos/pérdidas, **Then** el sistema devuelve el porcentaje sobre el total de despachos del período, agrupado por unidad.
+1. **Given** existe evidencia capturada sin conexión y aún sin sincronizar, **When** se filtra por
+   esa situación, **Then** aparece: es evidencia que se levantó y no llegó.
+2. **Given** una fotografía capturada sin conexión y sincronizada después, **When** aparece en el
+   listado, **Then** muestra **la hora en que se capturó**, no la hora en que se subió.
+3. **Given** una nota registrada en línea, **When** aparece en el listado, **Then** su hora de
+   captura y su hora de registro coinciden — el contraste que demuestra que la primera no se está
+   sustituyendo por la segunda.
+4. **Given** dos unidades atendiendo el mismo caso, **When** se consulta el listado, **Then** la
+   evidencia de cada una aparece atribuida a quien la levantó, sin mezclarse.
+5. **Given** notas de distinto tipo, **When** se filtra por tipo, **Then** solo aparecen las de ese
+   tipo.
+
+---
+
+### User Story 4 - Consultar cómo se cerraron los casos (Priority: P4)
+
+Como Administrador, quiero ver el resultado con el que se cerró cada caso y su calificación, y
+cuáles se cerraron sin dejar observaciones, para valorar la calidad del cierre.
+
+**Why this priority**: Completa OT25 y es la base de los análisis posteriores de calidad de
+atención, pero por sí solo es el de menor urgencia.
+
+**Independent Test**: Consultar el listado de forma aislada, sin que existan los otros cuatro.
+
+**Acceptance Scenarios**:
+
+1. **Given** casos cerrados con distinto resultado de atención, **When** se consulta el listado,
+   **Then** cada uno muestra el caso, el resultado, la calificación y las observaciones.
+2. **Given** un caso cerrado sin observaciones, **When** se filtra por esa situación, **Then**
+   aparece con las observaciones ausentes, no con una cadena vacía.
+3. **Given** un caso cerrado sin calificación, **When** aparece en el listado, **Then** la
+   calificación se presenta como ausente, **no como cero**: no calificar no es calificar mal.
 
 ---
 
 ### Edge Cases
 
-- ¿Qué pasa si el período solicitado no tiene ningún dato? → El indicador correspondiente devuelve cero/vacío explícito, no un error, y el workpanel lo muestra como "sin datos en este período" en vez de dejar la tarjeta en blanco.
-- ¿Qué pasa si se solicita un rango de período excesivamente amplio (ej. varios años)? → Cada consulta declara un `LIMIT` explícito (regla vinculante ya documentada en `infrastructure.md`); si el resultado agregado excede ese límite, el sistema indica que el rango debe acotarse, en vez de truncar el resultado en silencio.
-- ¿Qué pasa si el usuario no tiene permiso para ver informes de un condado/zona fuera de su alcance? → Queda fuera de esta spec definir un modelo de permisos por zona nuevo; se asume el mismo control de acceso por rol (Operador/Supervisor) ya vigente para el resto del sistema, sin recorte adicional por geografía en esta primera versión (ver Assumptions).
-- ¿Qué pasa si dos informes del mismo workpanel se solicitan simultáneamente? → Cada informe es un endpoint y una consulta independientes; no hay dependencia de orden entre ellos dentro de un mismo workpanel.
+- **Resultado vacío.** `200` con `data: []`, nunca `404`.
+- **Cliente sin zonas contratadas.** Resultado vacío, **nunca** el listado completo. De las dos
+  lecturas posibles de «sin zonas», es la única segura.
+- **Caso sin ubicación resoluble.** Aparece con la ubicación ausente. **No se omite**: un caso cuya
+  calle no resuelve es una anomalía que la supervisión necesita ver — y además nunca podrá acotarse
+  a ninguna zona.
+- **Caso fusionado.** Sigue apareciendo, marcado como duplicado y apuntando a su caso padre. **No se
+  borra**, que es lo que el sistema garantiza.
+- **Caso descartado.** Sigue apareciendo, distinguible de un cierre.
+- **Despacho sin llegada ni retiro.** Es una misión en tránsito, no un dato incompleto.
+- **Evidencia sincronizada.** Su hora de captura y su hora de registro **difieren**, y esa
+  diferencia es información, no un error.
+- **Calificación ausente.** Nunca se presenta como cero.
+- **Retraso de ingesta.** 5–15 segundos. Un caso recién cerrado puede seguir apareciendo abierto.
+  **No se compensa.**
+- **Límite excedido.** `limit` sobre el máximo responde `400`.
+
+---
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE exponer un endpoint de agregación por cada uno de los 16 informes descritos en las 3 historias de usuario (7 de Registro, 6 de Despacho, 3 de Seguimiento), cada uno con su propio contrato de entrada/salida.
-- **FR-002**: Cada endpoint DEBE aceptar un filtro de período (rango de fechas) como parámetro obligatorio, y filtros adicionales opcionales según el informe (zona/condado/unidad/severidad), documentados en su contrato.
-- **FR-003**: Cada endpoint DEBE calcular su resultado con una única consulta a Pinot que incluya `GROUP BY`, filtro y `LIMIT` explícitos — sin traer un conjunto sin acotar para recortarlo o agregarlo en Python.
-- **FR-004**: El sistema DEBE mantener a Pinot como fuente de solo lectura para estos informes — ningún endpoint de esta feature escribe en Pinot ni publica eventos en Kafka.
-- **FR-005**: El sistema DEBE devolver, para cada informe, una respuesta agregada estructurada (no filas crudas de detalle) lista para representarse como tarjeta o gráfica.
-- **FR-006**: El sistema DEBE responder con un resultado vacío explícito (no error) cuando el período solicitado no tiene datos.
-- **FR-007**: El acceso a estos endpoints DEBE quedar restringido a los roles Operador y Supervisor de Emergencias, siguiendo el mecanismo de autenticación/autorización ya vigente en el sistema (`Dim_Credencial`, RBAC existente) — sin introducir un mecanismo nuevo.
-- **FR-008**: El sistema DEBE registrar (log) cada solicitud a estos endpoints con el rol solicitante y el rango de período consultado, para trazabilidad de uso — sin registrar aquí el detalle de los resultados devueltos.
-- **FR-009**: Los 16 informes de esta spec DEBEN corresponder exactamente a los ya marcados ✅ Cubierto en `informestacticos/auditoria-esquemas-informes-v2.md` para los módulos Registro de Accidente, Despacho Inteligente y Seguimiento y Cierre de Casos — ningún informe nuevo fuera de esa lista se agrega sin actualizar primero la auditoría.
+#### Los cinco listados
+
+- **FR-001**: El sistema MUST ofrecer un listado de **casos** con la ubicación, la severidad, el
+  origen del reporte, el impacto humano registrado, la hora del accidente, si sigue activo, su hora
+  de fin si la tiene y el caso del que es duplicado si lo es. *(OT21/OT25, OP32, OP33)*
+- **FR-002**: El listado de casos MUST admitir filtros por **severidad, ubicación, origen del
+  reporte, situación —activo, cerrado, duplicado, descartado— y rango de fecha del accidente**,
+  combinables.
+
+  > ⚠️ **Corregido el 2026-08-15 al implementar: se retira «en borrador».** `BORRADOR` es un
+  > **estado formal** que vive en el histórico de estados, igual que `REPORTADO` o `ASIGNADO`, y
+  > `Fact_Accidente` no guarda ninguna columna que lo distinga. Un caso en borrador es
+  > `activo = true` sin hora de fin — **idéntico a cualquier otro caso en curso**.
+  >
+  > Implementarlo con esas dos condiciones devolvería **todos los casos activos** etiquetados como
+  > detenidos en borrador: la forma correcta con el contenido equivocado. Obtenerlo de verdad exige
+  > el último registro del histórico por caso, que es justo lo que **FR-008 prohíbe**. Los dos
+  > requisitos se contradicen, y se resuelve a favor de FR-008, que es el que protege la honestidad
+  > del dato.
+- **FR-003**: El sistema MUST ofrecer un listado de **despachos** con el caso, la unidad, el origen
+  del despacho, la hora de despacho, la de llegada, la de retiro y si el retiro fue forzado.
+  *(OT22/OT23, OP35, OP36, OP37, OP38)*
+- **FR-004**: El sistema MUST ofrecer un listado de **fotografías de evidencia** y otro de **notas de
+  campo**, ambos con el caso, quien las levantó, si están sincronizadas, **la hora de captura** y la
+  hora de registro. *(OT24, OP40, OP42)*
+- **FR-005**: El sistema MUST ofrecer un listado de **cierres de caso** con el resultado de la
+  atención, la calificación y las observaciones finales. *(OT25, OP45)*
+
+#### La distinción entre las tres formas de quedar inactivo
+
+- **FR-006**: El listado de casos MUST permitir distinguir un caso **cerrado**, uno **descartado por
+  falsa alarma** y uno **fusionado como duplicado**, a partir de lo que el propio caso registra.
+- **FR-007**: Un caso **fusionado** MUST indicar de qué caso es duplicado, y **MUST NOT** omitirse
+  del listado: el sistema garantiza que no se borra.
+- **FR-008**: El listado **MUST NOT** afirmar el estado formal del caso, que no es una propiedad
+  suya. Los estados formales se obtienen de los informes agregados existentes.
+
+#### Acotamiento por zona contratada
+
+- **FR-009**: Un **rol interno** —Operador de Emergencias, Administrador— MUST obtener los casos de
+  todas las zonas y en cualquier situación.
+- **FR-010**: Un **Cliente** MUST obtener únicamente los casos de **las zonas geográficas que tiene
+  contratadas**, y **solo los ya cerrados**.
+- **FR-011**: Un Cliente **sin zonas contratadas** MUST obtener un resultado vacío. **MUST NOT**
+  interpretarse la ausencia de zonas como acceso a todas.
+- **FR-012**: El acotamiento por zona MUST resolverse como **filtro sobre el conjunto de ubicaciones
+  contratadas**, no comprobando caso por caso mientras se recorre.
+- **FR-013**: Los listados de **despachos**, **evidencia** y **cierres** MUST estar restringidos a
+  roles internos.
+- **FR-014**: El alcance de un listado MUST NOT ser más amplio que el de la pantalla operativa del
+  mismo dato.
+
+#### Autoridad departamental
+
+> Asignación completa en [`../../../acceso-tactico.md`](../../../acceso-tactico.md), derivada del
+> §5.1 del SRS.
+
+- **FR-014a**: El **Director de Operaciones**, autoridad de Emergencias, MUST acceder a los cinco
+  listados sin acotamiento por zona ni por situación del caso.
+- **FR-014b**: ⚠️ La exención **MUST NOT** alcanzar a FR-015 ni FR-016: **las coordenadas del
+  accidente y la identidad de las personas implicadas siguen sin exponerse también para él**. Son
+  exclusiones constitucionales, no de acotamiento, y el cargo no las levanta.
+- **FR-014c**: De los cinco listados, **los de evidencia son bandeja de trabajo** pese a parecer
+  supervisión: la evidencia sin sincronizar hay que ir a recuperarla, y quien la recupera es el
+  Operador. **Cierres es supervisión**; casos y despachos sirven a ambas capas.
+
+#### Protección del dato sensible
+
+- **FR-015**: El listado de casos **MUST NOT** exponer las coordenadas geográficas del accidente. La
+  ubicación se expresa con el nombre de la calle, la ciudad y el condado.
+- **FR-016**: Los listados **MUST NOT** exponer la identidad de conductores, implicados ni víctimas.
+
+#### Naturaleza de los listados
+
+- **FR-017**: Cada listado MUST resolverse como consulta llana sobre **una sola tabla**.
+- **FR-018**: El sistema MUST devolver el **nombre** de la severidad, la ubicación, la unidad, el
+  origen del despacho y el autor, no sus identificadores internos. Se exceptúa el **número de caso**,
+  que es lenguaje de negocio.
+- **FR-019**: Los listados MUST ser de **solo lectura**.
+
+#### Filtros, orden y paginación
+
+- **FR-020**: Los listados de **casos**, **despachos** y **evidencia** son de hechos del período y
+  MUST aceptar rango de fechas **opcional**. El de **cierres** también.
+- **FR-021**: Cada listado MUST declarar un orden por defecto **determinista**, con desempate por
+  clave primaria.
+- **FR-022**: Un valor no reconocido en un filtro de enumeración MUST responder `400` nombrando los
+  válidos.
+- **FR-023**: Un `limit` superior al máximo MUST responder `400`. MUST NOT recortarse en silencio.
+
+#### Calidad del dato
+
+- **FR-024**: La **hora de captura** de una evidencia MUST devolverse tal como se registró en el
+  sitio. **MUST NOT** sustituirse por la hora de subida, que se devuelve aparte.
+- **FR-025**: Una **calificación ausente** MUST presentarse como ausente, **nunca como cero**.
+- **FR-026**: Un caso **sin ubicación resoluble** MUST aparecer con la ubicación ausente en lugar de
+  ser omitido.
 
 ### Key Entities
 
-- **Informe agregado**: Resultado de una consulta de agregación sobre una o más tablas Pinot (`Fact_Accidente`, `Fact_Despacho`, `Fact_HistorialDespachoUnidad`, `Fact_AccidenteTipoEstadoAccidente`, `Dim_UnidadEmergencia`, dimensiones geográficas), parametrizado por período y filtros opcionales. No se persiste — se calcula en cada solicitud.
-- **Workpanel**: Agrupación de varios informes agregados de un mismo módulo (Registro, Despacho o Seguimiento), consumida por el frontend en una sola pantalla. Se define formalmente en la capa `frontend/` de este módulo.
+- **Caso de accidente**: el hecho registrado, con su ubicación, severidad, origen del reporte,
+  impacto humano, horas de inicio y fin, y el caso del que es duplicado si lo es. Alimenta FR-001.
+- **Despacho**: cada intento de asignar una unidad a un caso, con su origen, sus horas y si el retiro
+  fue forzado. Alimenta FR-003.
+- **Fotografía de evidencia** y **nota de campo**: los registros levantados en el sitio, con su hora
+  de captura, su hora de registro y su estado de sincronización. Alimentan FR-004, FR-024.
+- **Cierre de caso**: el desenlace de la atención, con resultado, calificación y observaciones.
+  Alimenta FR-005.
+- **Zona contratada**: el conjunto de ubicaciones que un cliente tiene habilitadas. Determina qué ve
+  (FR-010 a FR-012).
+
+---
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Un Operador o Supervisor puede obtener cualquiera de los 16 informes de este módulo en menos de 3 segundos, para un rango de período de hasta 90 días.
-- **SC-002**: El 100% de los 16 informes coinciden, en su fórmula de cálculo, con lo descrito en `informestacticos/auditoria-esquemas-informes-v2.md` para cada uno (sin desviación de criterio de agregación).
-- **SC-003**: El 100% de las consultas generadas por estos endpoints declaran `LIMIT` explícito, verificable por revisión de código/consulta antes de cada despliegue.
-- **SC-004**: Un Supervisor que use los 3 workpanels (una vez exista el frontend) puede identificar, sin ayuda externa, al menos un cuello de botella operativo (ej. una zona con alto volumen y baja capacidad) usando solo estos informes.
+- **SC-001**: Un Cliente obtiene **el 100 %** de los casos cerrados de sus zonas y **cero** de zonas
+  ajenas, verificable con casos en dos zonas distintas.
+- **SC-002**: Un Cliente sin zonas contratadas obtiene **cero** casos, no el listado completo.
+- **SC-003**: Un Cliente obtiene **cero** casos aún abiertos.
+- **SC-004**: **El 100 %** de los casos cerrados, descartados y fusionados es distinguible entre sí,
+  verificable con uno de cada clase.
+- **SC-005**: **En ninguna** respuesta aparecen coordenadas geográficas ni identidad de personas
+  implicadas.
+- **SC-006**: **El 100 %** de la evidencia capturada sin conexión conserva su hora de captura,
+  distinta de su hora de registro, verificable con evidencia sincronizada y evidencia en línea.
+- **SC-007**: Los cinco listados devuelven su primera página en **menos de 2 segundos**.
+- **SC-008**: Recorrer un listado por páginas devuelve **cada fila exactamente una vez**.
+- **SC-009**: Un listado sin resultados devuelve una respuesta vacía correcta, **nunca un error**.
+
+---
 
 ## Assumptions
 
-- El control de acceso de esta primera versión es por rol (Operador/Supervisor), no por zona/condado asignado — un recorte de datos por área de responsabilidad del usuario queda fuera de alcance hasta que exista un requisito explícito que lo pida.
-- El agrupamiento de "período" soporta al menos día, semana y mes; una granularidad más fina (hora) no se requiere para ningún informe de esta lista según la auditoría.
-- Los 16 informes elegidos ya están marcados ✅ Cubierto en la auditoría — no se requiere ningún cambio de esquema de Pinot para implementarlos.
-- El frontend consumirá estos endpoints vía los 3 workpanels definidos en la capa `frontend/` de este mismo módulo (uno por módulo operativo); esta spec de backend no define la disposición visual de las tarjetas/gráficas.
-- No se requiere ClickHouse ni Airflow para ningún informe de esta spec — toda la capa de infraestructura `002-tactico` es irrelevante para este módulo salvo como contexto de que existe una vía compuesta separada para lo que Pinot no puede resolver directo.
+- **El contrato común está vigente** y la capa transversal de los seis módulos previos se reutiliza.
+  Esta spec **no** vuelve a decidirla.
+- **El acotamiento por zona es un eje nuevo** y previsiblemente exigirá ampliar el resolutor
+  transversal. Es la primera vez desde Red Operativa que se prevé tocarlo, y por una razón legítima:
+  ninguno de los ejes anteriores acota por cobertura geográfica.
+- **Un cliente solo ve casos cerrados.** Es lo que el módulo operativo ya aplica en el expediente del
+  cliente, y el listado no puede ser más amplio que esa pantalla.
+- **Un caso fusionado o descartado no se borra.** Está verificado en el sistema real.
+- **La hora de captura y la de subida se guardan por separado.** Es la regla central del módulo de
+  evidencia, y está verificada.
+- **Los roles son los reales del sistema.** Operador de Emergencias, Administrador y Cliente existen
+  en `.specify/docs/actors.md`.
+- **Sin exportación.** La descarga en CSV o Excel queda fuera de alcance, y con más razón aquí por
+  tratarse de datos de siniestralidad.
+
+---
+
+## Fuera de alcance
+
+| Excluido | Por qué |
+|---|---|
+| **El estado formal de un caso** | ⚠️ **No es una propiedad del caso.** Vive en el histórico de estados y conocerlo exige el último registro por caso. Ya lo cubren los informes agregados existentes. |
+| Volumen de casos, distribución por severidad y zona, ranking de ubicaciones, impacto humano agregado | **Ya construidos** como informes agregados |
+| Asignación automática vs manual, tiempos de respuesta, carga por unidad, ratio demanda/capacidad | **Ya construidos** como informes agregados |
+| Tiempo de asignado a cerrado, cierres forzados, abortos y pérdidas | **Ya construidos** como informes agregados |
+| Cobertura de evidencia, latencia de sincronización, completitud del enriquecimiento | Son agregaciones → compuestos |
+| Envejecimiento de la cartera, distribución de resultados, retiros forzados por proveedor | Son agregaciones → compuestos |
+| Desviación entre tiempo estimado y llegada real | Es una agregación y cruza tablas → compuesto |
+| Monitoreo de casos activos, parámetros de asignación | Ya construidos |
+| **Coordenadas del accidente e identidad de implicados** | Dato sensible bajo control de acceso y auditoría propios; un listado táctico no los necesita |
+| Cualquier pantalla o tablero | El frontend se decide por separado. |

@@ -1,0 +1,497 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Cuentas y Clientes
+  version: 1.0.0
+  description: |
+    Ocho listados llanos de solo lectura sobre el departamento Cuentas y Clientes,
+    que satisfacen OT04, OT17 y OT18.
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    Dos tipos de listado:
+      * **Estado actual** — describen la situación de ahora. Rechazan `desde`/`hasta` con 400.
+      * **Hechos del período** — aceptan `desde`/`hasta` opcionales. Solo `transferencias-propiedad`.
+
+    Ningún endpoint devuelve identificadores internos como dato de presentación,
+    ni material sensible (`contrasena`, `token`).
+
+    ## Correcciones aplicadas el 2026-08-15 durante la implementación
+
+    Tres enumeraciones de este contrato **no coincidían con los valores reales
+    del sistema**. Se corrigen aquí porque validar contra ellas habría rechazado
+    con `400` filtros perfectamente válidos, o —peor— habría dejado listados
+    vacíos con `200`:
+
+      * `estado` de `cuentas-por-estado` declaraba `Suspendido` (no existe) y
+        `Baja` (se llama `Dado de baja`).
+      * `tipo` declaraba `[aseguradora, municipio, proveedor]`; los valores
+        reales son `Corporativo` y `Proveedor`. Deja de ser enumeración cerrada.
+      * Los filtros internos de `sesiones-activas` y `credenciales-temporales`
+        buscaban estados inexistentes (`Activa`, `Temporal`). Ver la corrección
+        detallada en `data-model.md`.
+
+    **Ningún nombre de campo de respuesta cambia.** Las correcciones son de
+    valores de filtro y de la columna que alimenta un campo, no de la forma.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT04 — Incorporación
+  - name: OT17 — Ciclo de vida de la cuenta
+  - name: OT18 — Acceso seguro por rol
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/cuentas-clientes/solicitudes-alta-pendientes:
+    get:
+      tags: [OT04 — Incorporación]
+      summary: Solicitudes de alta pendientes de aprobación
+      description: Bandeja de solicitudes esperando aprobación, con los días que llevan detenidas.
+      operationId: listarSolicitudesAltaPendientes
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: tipo
+          in: query
+          description: |
+            Igualdad exacta sobre `Dim_Cliente.tipo`. **No es una enumeración
+            cerrada**: los valores reales del sistema son `Corporativo` y
+            `Proveedor`, y no viven en ninguna tabla de catálogo. Validar contra
+            una lista fija rechazaría con 400 un filtro correcto.
+          schema: { type: string }
+        - name: dias_minimo
+          in: query
+          description: Solo solicitudes con al menos estos días de antigüedad.
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/SolicitudAltaPendiente' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/onboarding-incompleto:
+    get:
+      tags: [OT04 — Incorporación]
+      summary: Clientes con incorporación incompleta
+      description: |
+        Una fila por cada etapa de incorporación pendiente. No se infieren
+        etapas que aún no tienen registro.
+      operationId: listarOnboardingIncompleto
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: etapa
+          in: query
+          schema: { type: string }
+        - name: dias_minimo
+          in: query
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/EtapaOnboardingPendiente' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/cuentas-por-estado:
+    get:
+      tags: [OT17 — Ciclo de vida de la cuenta]
+      summary: Cuentas cliente por estado
+      description: |
+        Incluye las cuentas dadas de baja: la baja es lógica y la fila
+        conserva razón social e historial.
+      operationId: listarCuentasPorEstado
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: estado
+          in: query
+          description: |
+            Estados canónicos de `Dim_Cliente.estado`, definidos en
+            `core/repositories/cuentas_clientes/cliente_repository.py`. Un valor
+            fuera de la lista responde 400 nombrándolos.
+          schema:
+            type: string
+            enum: [Activo, Pendiente, Rechazado, Rechazado_Anulado, Dado de baja]
+        - name: tipo
+          in: query
+          description: |
+            Igualdad exacta sobre `Dim_Cliente.tipo`. **No es una enumeración
+            cerrada**: los valores reales del sistema son `Corporativo` y
+            `Proveedor`, y no viven en ninguna tabla de catálogo. Validar contra
+            una lista fija rechazaría con 400 un filtro correcto.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CuentaCliente' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/transferencias-propiedad:
+    get:
+      tags: [OT17 — Ciclo de vida de la cuenta]
+      summary: Transferencias de propiedad de cuenta
+      description: |
+        Único listado de hechos del período. `desde` y `hasta` son **opcionales**:
+        omitirlos devuelve el histórico completo paginado.
+      operationId: listarTransferenciasPropiedad
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: idcliente
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/TransferenciaPropiedad' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/usuarios-por-rol:
+    get:
+      tags: [OT18 — Acceso seguro por rol]
+      summary: Usuarios y sus roles asignados
+      description: |
+        Una fila por usuario, con la lista de roles que ejerce. Un usuario con dos
+        roles no produce dos filas. Un usuario **sin ningún rol sí aparece**, con
+        `roles: []` — es una anomalía que el Administrador necesita ver.
+      operationId: listarUsuariosPorRol
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: rol
+          in: query
+          schema: { type: string }
+        - name: activo
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/UsuarioConRoles' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/sesiones-activas:
+    get:
+      tags: [OT18 — Acceso seguro por rol]
+      summary: Sesiones actualmente abiertas
+      description: Solo sesiones abiertas. El token de sesión nunca se devuelve.
+      operationId: listarSesionesActivas
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: idusuario
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/SesionActiva' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/credenciales-temporales:
+    get:
+      tags: [OT18 — Acceso seguro por rol]
+      summary: Credenciales temporales pendientes de cambio obligatorio
+      description: La contraseña nunca se devuelve, ni en claro ni cifrada.
+      operationId: listarCredencialesTemporales
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CredencialTemporal' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/cuentas-clientes/accesos-tecnicos:
+    get:
+      tags: [OT18 — Acceso seguro por rol]
+      summary: Accesos técnicos de infraestructura y su mapeo a roles de negocio
+      description: |
+        Restringido al Director Tecnológico y al Administrador (CU-O08).
+        La contraseña de servidor nunca se devuelve.
+      operationId: listarAccesosTecnicos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AccesoTecnico' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      description: Cursor opaco de la página anterior. Omitir para la primera página.
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Filas por página. Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      description: |
+        Invierte el orden por defecto del listado. Ausente lo conserva; un valor
+        distinto de `asc`/`desc` responde 400 — interpretarlo como el defecto
+        devolvería el listado al revés de como el consumidor cree haberlo pedido.
+      schema: { type: string, enum: [asc, desc] }
+
+  responses:
+    PeticionInvalida:
+      description: |
+        Filtro inválido, `limit` sobre el máximo, o rango de fechas en un listado
+        de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            rangoNoAdmitido:
+              summary: Rango de fechas en un listado de estado actual
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+            limiteExcedido:
+              summary: limit por encima del máximo
+              value:
+                error: bad_request
+                detail: "El valor de 'limit' no puede superar 500."
+                code: "400"
+            filtroDesconocido:
+              summary: Valor no reconocido en una enumeración
+              value:
+                error: bad_request
+                detail: "estado 'Vigente' no es válido, use uno de: Activo, Baja, Pendiente, Suspendido."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: El rol del solicitante no tiene acceso a este listado.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor:
+          type: string
+          nullable: true
+          description: Cursor de la página siguiente; `null` si no hay más.
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              description: Filtros aplicados, ya normalizados.
+              additionalProperties: true
+
+    SolicitudAltaPendiente:
+      type: object
+      properties:
+        razon_social: { type: string }
+        tipo: { type: string }
+        fecha_solicitud: { type: string, format: date-time }
+        dias_transcurridos: { type: integer }
+
+    EtapaOnboardingPendiente:
+      type: object
+      properties:
+        razon_social: { type: string }
+        etapa: { type: string }
+        fecha_ultima_actualizacion: { type: string, format: date-time, nullable: true }
+        dias_detenido: { type: integer }
+
+    CuentaCliente:
+      type: object
+      properties:
+        razon_social: { type: string }
+        tipo: { type: string }
+        estado: { type: string }
+        estado_onboarding: { type: string, nullable: true }
+        fecha_inicio_contrato: { type: string, format: date, nullable: true }
+        propietario:
+          type: string
+          nullable: true
+          description: Nombre del administrador local; `null` si no resuelve a un usuario vivo.
+
+    TransferenciaPropiedad:
+      type: object
+      properties:
+        razon_social: { type: string }
+        propietario_anterior: { type: string, nullable: true }
+        propietario_nuevo: { type: string, nullable: true }
+        fecha: { type: string, format: date-time }
+
+    UsuarioConRoles:
+      type: object
+      properties:
+        nombre: { type: string }
+        gmail: { type: string, format: email }
+        activo: { type: boolean }
+        roles:
+          type: array
+          description: Vacío si el usuario no tiene ningún rol asignado.
+          items: { type: string }
+
+    SesionActiva:
+      type: object
+      properties:
+        usuario: { type: string }
+        navegador: { type: string, nullable: true }
+        fecha_inicio: { type: string, format: date-time }
+
+    CredencialTemporal:
+      type: object
+      properties:
+        usuario: { type: string }
+        gmail: { type: string, format: email }
+        fecha_solicitud_cambio: { type: string, format: date-time, nullable: true }
+
+    AccesoTecnico:
+      type: object
+      properties:
+        usuario: { type: string }
+        usuario_servidor: { type: string }
+        roles_servidor: { type: array, items: { type: string } }
+        roles_negocio: { type: array, items: { type: string } }

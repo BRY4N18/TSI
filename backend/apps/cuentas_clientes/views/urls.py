@@ -15,6 +15,20 @@ from apps.cuentas_clientes.views.cuenta_views import (
     TransferenciaPropiedadView,
     UsuariosElegiblesView,
 )
+from apps.cuentas_clientes.views.informes_acceso_views import (
+    AccesosTecnicosView,
+    CredencialesTemporalesView,
+    SesionesActivasView,
+    UsuariosPorRolView,
+)
+from apps.cuentas_clientes.views.informes_cuenta_views import (
+    CuentasPorEstadoView,
+    TransferenciasPropiedadView,
+)
+from apps.cuentas_clientes.views.informes_incorporacion_views import (
+    OnboardingIncompletoView,
+    SolicitudesAltaPendientesView,
+)
 from apps.cuentas_clientes.views.onboarding_views import (
     AnularRechazoProveedorView,
     AutorregistroProveedorView,
@@ -47,6 +61,55 @@ from apps.cuentas_clientes.views.user_role_views import (
 )
 
 urlpatterns = [
+    # ── Informes tácticos simples — OT18, acceso seguro por rol (US1) ────────
+    #
+    # Van **antes** que las rutas operativas de `cuentas-clientes/...` a
+    # propósito: `RegistrarCuentaView` cuelga de `cuentas-clientes` y las rutas
+    # paramétricas `<int:idcliente>` del mismo prefijo. Django resuelve por
+    # orden de declaración, así que un listado declarado después quedaría
+    # ensombrecido según se añadan rutas al prefijo vecino.
+    path(
+        "informes/cuentas-clientes/usuarios-por-rol",
+        UsuariosPorRolView.as_view(),
+        name="informes-cuentas-usuarios-por-rol",
+    ),
+    path(
+        "informes/cuentas-clientes/sesiones-activas",
+        SesionesActivasView.as_view(),
+        name="informes-cuentas-sesiones-activas",
+    ),
+    path(
+        "informes/cuentas-clientes/credenciales-temporales",
+        CredencialesTemporalesView.as_view(),
+        name="informes-cuentas-credenciales-temporales",
+    ),
+    path(
+        "informes/cuentas-clientes/accesos-tecnicos",
+        AccesosTecnicosView.as_view(),
+        name="informes-cuentas-accesos-tecnicos",
+    ),
+    # ── Informes tácticos simples — OT04, incorporación (US2) ───────────────
+    path(
+        "informes/cuentas-clientes/solicitudes-alta-pendientes",
+        SolicitudesAltaPendientesView.as_view(),
+        name="informes-cuentas-solicitudes-alta-pendientes",
+    ),
+    path(
+        "informes/cuentas-clientes/onboarding-incompleto",
+        OnboardingIncompletoView.as_view(),
+        name="informes-cuentas-onboarding-incompleto",
+    ),
+    # ── Informes tácticos simples — OT17, ciclo de vida de la cuenta (US3) ──
+    path(
+        "informes/cuentas-clientes/cuentas-por-estado",
+        CuentasPorEstadoView.as_view(),
+        name="informes-cuentas-cuentas-por-estado",
+    ),
+    path(
+        "informes/cuentas-clientes/transferencias-propiedad",
+        TransferenciasPropiedadView.as_view(),
+        name="informes-cuentas-transferencias-propiedad",
+    ),
     # Auth (US1 + US4)
     path("auth/login", LoginView.as_view(), name="auth-login"),
     path("auth/logout", LogoutView.as_view(), name="auth-logout"),

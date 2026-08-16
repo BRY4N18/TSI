@@ -156,6 +156,12 @@ KAFKA_TOPICS = {
     "server_user_role": "Dim_UsuariosServidorRolesServidor_topic",
     "server_role_mapping": "Dim_RolesServidorRoles_topic",
     "cliente": "Dim_Cliente_topic",
+    # La tabla y su topic estaban declarados en `database/tablas.json` desde el
+    # principio; lo que faltaba era esta entrada, sin la cual ningun repositorio
+    # podia publicar. Su ausencia dejaba a `Dim_Usuario_Cliente` vacia, y con
+    # ella la pertenencia a una cuenta se resolvia de hecho por
+    # `admin_local_id`: **una sola persona por organizacion** (decision #23).
+    "usuario_cliente": "Dim_Usuario_Cliente_topic",
     "preferencias_cliente": "Dim_Preferencias_Cliente_topic",
     "onboarding": "Fact_Onboarding_topic",
     "accidente": "Fact_Accidente_topic",

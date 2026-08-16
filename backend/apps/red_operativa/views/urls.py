@@ -2,6 +2,12 @@
 
 from django.urls import path
 
+from apps.red_operativa.views.informes_baja_views import BajasUnidadView
+from apps.red_operativa.views.informes_flota_views import FlotaView
+from apps.red_operativa.views.informes_region_views import (
+    RegionesView,
+    ValidacionesRegionView,
+)
 from apps.red_operativa.views.region_views import (
     RegionDespublicacionAutomaticaView,
     RegionDetalleView,
@@ -21,6 +27,24 @@ from apps.red_operativa.views.unidad_views import (
 )
 
 urlpatterns = [
+    # ── Informes tácticos simples ───────────────────────────────────────────
+    # Antes que las rutas operativas: Django resuelve por orden de declaración.
+    path("informes/red-operativa/flota", FlotaView.as_view(), name="informes-red-flota"),
+    path(
+        "informes/red-operativa/bajas-unidad",
+        BajasUnidadView.as_view(),
+        name="informes-red-bajas-unidad",
+    ),
+    path(
+        "informes/red-operativa/regiones",
+        RegionesView.as_view(),
+        name="informes-red-regiones",
+    ),
+    path(
+        "informes/red-operativa/validaciones-region",
+        ValidacionesRegionView.as_view(),
+        name="informes-red-validaciones-region",
+    ),
     path(
         "red-operativa/regiones",
         RegionListView.as_view(),

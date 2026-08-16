@@ -185,6 +185,44 @@ export const NAV_LINKS: NavLink[] = [
     group: 'Administración',
   },
   {
+    label: 'Informes de cuentas',
+    description: 'Listados tácticos de cuentas, incorporación, usuarios y accesos',
+    path: '/cuentas-clientes/informes',
+    // El Director Tecnológico ve el índice porque desde ahí llega a accesos
+    // técnicos, el único que le corresponde; el índice le oculta los otros siete.
+    roles: ['Administrador', 'DirectorTecnologico'],
+    icon: 'chart-bar',
+    group: 'Administración',
+  },
+  {
+    label: 'Informes de soporte',
+    description: 'Cola de tickets y escalados del período',
+    // El Cliente entra: ve **sus** tickets, y el aviso de alcance de la
+    // respuesta se lo dice. Los escalados los filtra el índice y los cierra su
+    // propio guard.
+    //
+    // ⚠️ `PartnerIntegracion` **no está aquí**, y no es un descuido: FR-UI-033
+    // dice que la consola de Partners y su portal no se fusionan, y que ningún
+    // rol descubre la existencia del otro departamento. Darle una entrada en el
+    // grupo «Soporte» rompería esa regla.
+    //
+    // El backend **sí** le permite el listado —puede abrir una disputa de
+    // facturación, y ve solo sus tickets—, así que la ruta le responde si llega
+    // a ella. Lo que no tiene es un enlace. Queda anotado como decisión de
+    // producto, no resuelto por conveniencia.
+    path: '/soporte-cliente/informes',
+    roles: [
+      'Soporte',
+      'Administrador',
+      'DesarrolladorAPIs',
+      'DirectorTecnologico',
+      'GerenteExitoCliente',
+      'Cliente',
+    ],
+    icon: 'chart-bar',
+    group: 'Soporte',
+  },
+  {
     label: 'Solicitudes de cliente',
     description: 'Aprobar, rechazar o anular autorregistros',
     path: '/cuentas-clientes/incorporacion-clientes/solicitudes',

@@ -64,6 +64,33 @@ ROLES_DEMO = {
     # area tecnica solo gestiona credenciales. Tampoco es `DesarrolladorAPIs`
     # (idrol 5), que es el equipo de TSI que registra partners, no quien consume.
     15: ("PartnerIntegracion", "Area tecnica de un cliente integrador: credenciales y consumo propio (CU-O49)"),
+    # Faltaba en el catalogo pese a estar referenciado por codigo de produccion en
+    # cuatro sitios de `apps/ventas_crm` — entre ellos la asignacion automatica,
+    # que enruta los prospectos del sector publico a este rol. Sin la fila en
+    # Dim_Rol ningun usuario podia tenerlo, asi que esos prospectos se quedaban
+    # sin ejecutivo candidato. Anadido 2026-08-14 al completar el catalogo.
+    16: ("GerenteCuentasPublicas", "Gerente de cuentas publicas: municipios, convenios y licitaciones"),
+    # ── Autoridades departamentales (capa tactica) ───────────────────────────
+    # Anadidas 2026-08-14. Son los destinatarios de los informes tacticos, segun
+    # el §5.1 del SRS. La asignacion de que informe ve cada una vive en
+    # `specs/002-tactico/acceso-tactico.md`.
+    #
+    # Acceden a los informes de su departamento SIN el acotamiento por
+    # titularidad que aplica al responsable operativo — su funcion es supervisar
+    # y no tienen pantalla operativa que espejar. Esa exencion NO alcanza al dato
+    # sensible: coordenadas, identidad de personas, secretos de autenticacion y
+    # medios de cobro siguen excluidos de todo informe para todos los roles.
+    #
+    # `DirectorTecnologico` (6) y `DirectorEstrategia` (14) ya existian y suman
+    # autoridad tactica sin cambiar su papel operativo previo.
+    17: ("DirectorMarketing", "Autoridad de Ventas y CRM: criterios del embudo y captacion digital"),
+    18: ("DirectorFinanciero", "Autoridad de Suscripciones: facturacion, cobro y mora"),
+    19: ("DirectorExpansion", "Autoridad de Red Operativa: crecimiento, flota y regiones"),
+    20: ("DirectorOperaciones", "Autoridad de Emergencias: casos, despachos, evidencia y cierres"),
+    # No confundir con SupervisorSoporte (10), que es el destinatario operativo de
+    # un escalado automatico, no la autoridad del departamento. Conviven.
+    21: ("GerenteExitoCliente", "Autoridad de Soporte al Cliente: criterios de atencion y cumplimiento"),
+    22: ("DirectorDatos", "Autoridad de Analitica e Inteligencia: calidad del dato y modelo predictivo"),
 }
 
 # idrol 11 fue un "Operador" duplicado del 4. Se conserva la constante para poder

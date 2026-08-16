@@ -1,3 +1,42 @@
+# Módulo: Informes Tácticos Compuestos — ⚠️ SUSTITUIDO
+
+> ## Estado: **sustituido por `specs/002-tactico/modelo-analitico/`** (2026-08-14)
+>
+> **No implementar nada nuevo desde aquí.** El diseño de este módulo —una tabla y un flujo por
+> informe— es el que el modelo analítico existe para reemplazar. Con ~105 informes compuestos por
+> delante, ese patrón son ~105 tablas y ~105 flujos, cada uno con su propia forma de calcular lo
+> mismo y su propia oportunidad de discrepar.
+>
+> ### Qué se verificó antes de declararlo sustituido (T047)
+>
+> Las tres consultas equivalentes sobre el modelo están en `dags/lib/consultas/`. Comparadas con las
+> cifras que estas tres tablas devuelven:
+>
+> | Informe | Tabla propia | Desde el modelo | Veredicto |
+> |---|---|---|---|
+> | Pérdida de señal | 714 huecos | **3 942** | La tabla analizaba el **16,9 %** de las posiciones |
+> | Índice de calidad | índice 0.7296 | 0.7289 | Coincide salvo la cobertura de evidencia |
+> | Rendimiento por proveedor | llegada 669.44 s | **669.44 s** | Idéntico; rechazos y abortos, corregidos |
+>
+> ⚠️ **Las diferencias son defectos de estos tres flujos, no de la migración.** Dos de sus consultas
+> a Pinot **no llevan `LIMIT` explícito**, así que el cliente les aplica el suyo de 10 000 filas y
+> truncan en silencio: 10 000 de 59 045 posiciones y 10 000 de 19 528 transiciones. Corriendo **su
+> propia lógica sobre los datos completos** salen 3 942 huecos, 661 rechazos y 331 abortos — que es
+> exactamente lo que devuelve el modelo.
+>
+> ### Lo que falta para retirarlo del todo
+>
+> Las tres tablas y sus tres flujos **siguen vivos**, porque tres repositorios del backend los leen:
+> `backend/core/repositories/informes_tacticos/{perdida_senal,indice_calidad,rendimiento_proveedor}_repository.py`.
+> Retirarlos sin repuntar esos repositorios dejaría los endpoints sirviendo datos congelados **sin
+> error visible**, que es peor que cualquiera de los dos extremos.
+>
+> Secuencia pendiente, en este orden: repuntar los tres repositorios al modelo (o retirar sus
+> endpoints), luego retirar los tres DAGs y sus definiciones de tabla. Registrado como T048 del
+> módulo sustituto.
+
+---
+
 # Módulo: Informes Tácticos Compuestos
 
 **Ubicación:** `specs/002-tactico/Emergencias/informes-tacticos-compuestos/`

@@ -24,6 +24,11 @@ EXPECTED_DAG_IDS = {
     "limpieza_staging",
     "mantenimiento_bd",
     "system_health",
+    "modelo_dimensiones",
+    "modelo_hecho_accidente",
+    "modelo_hecho_despacho",
+    "modelo_hecho_estado_unidad",
+    "modelo_hecho_ping_unidad",
 }
 
 

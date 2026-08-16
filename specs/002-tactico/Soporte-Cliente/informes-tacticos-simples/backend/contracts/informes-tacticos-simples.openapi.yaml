@@ -1,0 +1,310 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Soporte al Cliente
+  version: 1.0.0
+  description: |
+    Dos listados llanos de solo lectura sobre la atención al cliente (OT19, OT20).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    **Acotamiento por ausencia de rol de atención.** Quien tiene algún rol de atención
+    —Agente de Soporte, Administrador— ve todos los tickets. Quien no lo tiene —Cliente o
+    Partner de integración— ve solo los de su cuenta. **La regla se decide por lo que no
+    se tiene**: decidirla por "ser Cliente" dejaría al Partner viendo tickets ajenos.
+    Un usuario con roles de ambos tipos NO queda acotado.
+
+    **Ningún endpoint devuelve el texto de los mensajes registrados en las acciones.**
+    Ese texto puede contener notas internas dirigidas al equipo de atención; un listado
+    táctico responde qué pasó, cuándo y quién lo hizo.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT19 — Cola de tickets
+  - name: OT20 — Vigilancia y escalado
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/soporte-cliente/tickets:
+    get:
+      tags: [OT19 — Cola de tickets]
+      summary: Tickets con su estado y situación de compromiso
+      description: |
+        Un solo listado que responde las cuatro preguntas que el catálogo planteaba por
+        separado: sin clasificar, sin compromiso de tiempo, cola por agente, y ligados a
+        una factura en disputa.
+
+        **`sin compromiso` es el estado que nadie vigila.** Es un ticket clasificado cuya
+        cuenta no resuelve un plan, así que no se le pudo asignar plazo y el vigilante lo
+        descarta. Es el único estado en que un ticket puede quedarse indefinidamente sin
+        que ningún proceso lo mire, y por eso hay que poder listarlo.
+
+        Un ticket **sin clasificar** aparece sin plazo y sin situación de compromiso: no
+        se le atribuye ninguna.
+      operationId: listarTickets
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: estado
+          in: query
+          description: |
+            Estados del ticket. El backend los valida contra las constantes del dominio, así que
+            un valor fuera de esta lista responde `400` nombrando los válidos. Se declaran aquí
+            para que el frontend pueda ofrecer solo los correctos y el `400` no llegue a producirse.
+          schema:
+            type: string
+            enum:
+              [
+                Abierto,
+                Pendiente_de_clasificacion,
+                En_progreso,
+                Escalado,
+                Resuelto,
+                Cerrado,
+                Reabierto,
+              ]
+        - name: situacion_compromiso
+          in: query
+          description: |
+            `sin compromiso` lista los tickets que ningún vigilante revisa.
+            `cumplido` lo escribe el sistema al resolver dentro de plazo: es el quinto
+            valor del dominio, y sin él sería imposible listar los resueltos a tiempo.
+          schema:
+            type: string
+            enum: [en curso, en riesgo, incumplido, sin compromiso, cumplido]
+        - name: prioridad
+          in: query
+          schema: { type: string }
+        - name: tipo_incidencia
+          in: query
+          schema: { type: string }
+        - name: agente
+          in: query
+          description: |
+            Solo quien tiene rol de atención puede filtrar por agente.
+          schema: { type: integer }
+        - name: con_factura
+          in: query
+          description: Solo los tickets vinculados a una factura.
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Ticket' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/soporte-cliente/escalados:
+    get:
+      tags: [OT20 — Vigilancia y escalado]
+      summary: Escalados, distinguiendo el humano del automático
+      description: |
+        Listado de hechos del período: `desde` y `hasta` son opcionales.
+
+        **Incluye exactamente dos de los once tipos de acción registrados**: el escalado
+        manual y el automático por incumplimiento de plazo. Quedan fuera los avisos de
+        plazo próximo —que no cambian agente ni nivel— y los cierres automáticos, que son
+        acción del sistema pero cierran en vez de derivar. Incluirlos inflaría el recuento
+        de escalados con acciones que no cambiaron nada.
+
+        **Un escalado automático se identifica como acción del sistema, no atribuido a
+        ninguna persona.** El supervisor que lo recibe es destinatario, no autor.
+
+        **No devuelve el texto de los mensajes.** Restringido a roles de atención: el
+        escalado es proceso interno del equipo.
+      operationId: listarEscalados
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: tipo_escalado
+          in: query
+          schema: { type: string, enum: [manual, automatico] }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Escalado' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+    Cuenta:
+      name: cuenta
+      in: query
+      description: |
+        Solo quien tiene rol de atención puede indicar una cuenta. Un reportador que
+        indique otra distinta de la suya recibe 403.
+      schema: { type: integer }
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango de fechas en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            situacionInvalida:
+              value:
+                error: bad_request
+                detail: "situacion_compromiso 'vencido' no es válido, use uno de: cumplido, en curso, en riesgo, incumplido, sin compromiso."
+                code: "400"
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: |
+        Rol sin acceso, un reportador pidiendo otra cuenta, o un reportador accediendo al
+        listado de escalados. No se devuelve ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            escaladosNoDisponible:
+              value:
+                error: forbidden
+                detail: "El listado de escalados está reservado al equipo de atención."
+                code: "403"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [propios, todos]
+              description: |
+                `propios` si el resultado está limitado a la cuenta del solicitante.
+                Sin este campo, un resultado vacío sería ambiguo.
+
+    Ticket:
+      type: object
+      description: |
+        No incluye la descripción del reporte: es el cuerpo del ticket y no aporta a una
+        vista de cola.
+      properties:
+        numero_ticket: { type: integer }
+        cuenta: { type: string }
+        asunto: { type: string }
+        estado: { type: string }
+        prioridad: { type: string, nullable: true }
+        tipo_incidencia: { type: string, nullable: true }
+        servicio: { type: string, nullable: true }
+        agente_asignado:
+          type: string
+          nullable: true
+          description: Ausente si el ticket aún no ha sido tomado. La fila no se omite.
+        situacion_compromiso:
+          type: string
+          nullable: true
+          enum: [en curso, en riesgo, incumplido, sin compromiso, cumplido]
+          description: |
+            Ausente en los tickets **sin clasificar**, que no tienen plazo asignado.
+            `sin compromiso` es distinto: el ticket sí está clasificado, pero no se le
+            pudo asignar plazo, y ningún vigilante lo revisa.
+        factura_vinculada: { type: string, nullable: true }
+        fecha_registro: { type: string, format: date-time }
+
+    Escalado:
+      type: object
+      description: |
+        No incluye el texto del mensaje asociado a la acción.
+      properties:
+        numero_ticket: { type: integer }
+        cuenta: { type: string }
+        tipo_escalado: { type: string, enum: [manual, automatico] }
+        estado_anterior: { type: string, nullable: true }
+        estado_nuevo: { type: string, nullable: true }
+        autor:
+          type: string
+          nullable: true
+          description: |
+            Nombre de la persona que escaló. **Ausente en los escalados automáticos**, que
+            se identifican como acción del sistema — el supervisor que los recibe es
+            destinatario, no autor.
+        fecha: { type: string, format: date-time }

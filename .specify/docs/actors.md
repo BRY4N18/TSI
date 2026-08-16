@@ -26,24 +26,46 @@
 | Director de Estrategia          | Gestiona el catálogo de planes de suscripción (crear, editar, desactivar `Dim_Plan`: nombre, precio, límites, nivel, activo). Rol JWT canónico: `DirectorEstrategia`. Pricing dinámico por región queda fuera de v1 (ver RF-SUSF-001). |
 | Sistema (actor automatizado)    | Ejecuta procesos automáticos: asignación de despacho, facturación, renovaciones, validaciones, re-entrenamiento de modelos.        |
 
-## Actores tácticos/estratégicos (fuera de alcance — no incluidos en los 89 CU operativos)
+## Autoridades departamentales (capa táctica — **implementadas**) 🆕
+
+> **Actualizado 2026-08-14.** Estos actores **dejan de estar fuera de alcance**: los informes
+> tácticos de `specs/002-tactico/` los tienen como destinatarios. La asignación exacta de qué informe
+> ve cada uno vive en [`specs/002-tactico/acceso-tactico.md`](../../specs/002-tactico/acceso-tactico.md).
+>
+> **Autoridad de esta tabla: el §5.1 del SRS** (`informestacticos/TSI-SRS-Especificacion-de-Requisitos.md`),
+> que es la fuente decidida ante discrepancias.
+
+| Actor | Rol JWT canónico | Autoridad del departamento | Descripción |
+| --- | --- | --- | --- |
+| Director de Marketing        | `DirectorMarketing`   | **Ventas y CRM** | Fija los criterios del embudo comercial y la captación digital. Supervisa carteras de todos los ejecutivos, sin acotamiento. |
+| Director de Estrategia       | `DirectorEstrategia`  | **Suscripciones** *(catálogo y precios)* | Decide qué planes existen y a qué precio. Ya existía como actor operativo; suma la autoridad sobre composición de cartera y movimientos de plan. |
+| Director Financiero          | `DirectorFinanciero`  | **Suscripciones** *(resultado económico)* | Responde por la facturación, el cobro y la mora. |
+| Director Tecnológico         | `DirectorTecnologico` | **Partners y API** · **Red Operativa** *(validación de regiones)* · **Cuentas** *(solo capa de accesos técnicos)* | ⚠️ En Cuentas y Clientes su alcance es **únicamente** la capa de accesos técnicos, no el departamento (§5.1). |
+| Director de Expansión        | `DirectorExpansion`   | **Red Operativa** *(crecimiento)* | Decide dónde crecer; supervisa flota y bajas. |
+| Director de Operaciones      | `DirectorOperaciones` | **Emergencias** | Supervisa casos, despachos, evidencia y cierres. Sujeto a las mismas exclusiones de dato sensible que cualquier otro rol. |
+| Gerente de Éxito del Cliente | `GerenteExitoCliente` | **Soporte al Cliente** | Fija los criterios de atención y supervisa el cumplimiento de compromisos. **No es** `SupervisorSoporte`, que es el destinatario operativo de un escalado automático. |
+| Director de Datos            | `DirectorDatos`       | **Analítica e Inteligencia** | Se aplicará cuando ese módulo se especifique. |
+
+> **Cuentas y Clientes no tiene autoridad de negocio.** El §5.1 solo le asigna el Director
+> Tecnológico, con alcance limitado a accesos técnicos. Sus informes de altas, incorporación, ciclo
+> de vida y sesiones quedan bajo el Administrador, que es a la vez su responsable operativo.
+> Anotado en `decisiones-pendientes.md`.
+
+---
+
+## Actores estratégicos (fuera de alcance — no incluidos en los 89 CU operativos)
 
 | Actor                        | Descripción                                                                                                       |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Gerente                      | Consulta resultados estratégicos, rentabilidad, indicadores, y toma decisiones de largo plazo.                    |
-| Director Tecnológico         | Define arquitectura técnica, gestiona infraestructura cloud, modelos de precios de API y SLA de uptime.           |
-| Director de Operaciones      | Supervisa operaciones diarias de despacho, mide eficiencia operativa y gestiona turnos de soporte.                |
-| Director de Datos            | Diseña la estrategia de datos, modelos predictivos, dashboards de inteligencia y calidad de datos.                |
-| Director de Expansión        | Diseña el playbook de implementación para nuevas ciudades/regiones y gestiona el proceso de expansión.            |
 | Director de Producto         | Mide el Time-to-Market de nuevas funcionalidades y gestiona el roadmap de producto.                               |
-| Director Financiero          | Gestiona presupuesto, costos de infraestructura e inversión en I+D.                                               |
 | Director de RRHH             | Capacita personal, gestiona rotación de personal clave y fortalece la cultura organizacional.                     |
-| Director de Marketing        | Planea y ejecuta campañas de marketing B2B, genera contenido de generación de leads y gestiona presencia digital. |
-| Gerente de Éxito del Cliente | Gestiona satisfacción, retención y reuniones de revisión de negocio (QBR) con clientes clave.                     |
 | Legal                        | Crea plantillas de contrato para integraciones API y gestiona aspectos legales.                                   |
-| Director Comercial 🆕         | Dirige la estrategia del pipeline comercial y la conversión de prospectos a cliente; supervisa el desempeño del embudo de Ventas y CRM (Pre-venta) y el aprovechamiento comercial de las señales de intención captadas en la demo interactiva. |
 
-> Nota: si en el futuro se decide implementar specs tácticos o estratégicos, estos actores pasarían a la sección de "operativos" y los specs correspondientes deberían añadirse al `module-map.md`.
+> **`Director Comercial` retirado (2026-08-14).** Lo introdujo una spec de Ventas y CRM como
+> autoridad de ese departamento, pero el §5.1 del SRS asigna esa autoridad al **Director de
+> Marketing**. Ante la discrepancia se decidió que manda el SRS, así que el rol correcto es
+> `DirectorMarketing` y `Director Comercial` deja de existir.
 
 ---
 
@@ -63,7 +85,12 @@
 | Nivel | Actor |
 |---|---|
 | Operativo | Cliente (aseguradora/municipio) |
-| Táctico | Gerente de Éxito del Cliente |
+| Operativo | Administrador *(responsable operativo del departamento, §5.1)* |
+| Táctico | Director Tecnológico — ⚠️ **solo la capa de accesos técnicos**, no el departamento |
+
+> **Corregido 2026-08-14.** Decía «Gerente de Éxito del Cliente»; el §5.1 del SRS asigna a este
+> departamento el Director Tecnológico con alcance limitado. El Gerente de Éxito del Cliente es la
+> autoridad de **Soporte al Cliente**, no de este.
 
 ### Gestión de Red Operativa
 | Nivel | Actor |
@@ -89,7 +116,11 @@
 |---|---|
 | Operativo | Gerente de Ventas |
 | Operativo | Gerente de Cuentas Públicas |
-| Táctico | Director Comercial 🆕 |
+| Táctico | **Director de Marketing** |
+
+> **Corregido 2026-08-14.** Decía «Director Comercial», rol que este documento introdujo por su
+> cuenta. El §5.1 del SRS asigna la autoridad de Ventas y CRM al **Director de Marketing**, y ante la
+> discrepancia se decidió que manda el SRS.
 
 ### Transversales (no atados a un solo departamento)
 | Nivel | Actor | Por qué es transversal |

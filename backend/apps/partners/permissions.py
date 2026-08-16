@@ -105,3 +105,55 @@ def verificar_propiedad(
     idcliente_token = (lookup or ClienteLookupService()).resolve_idcliente(int(idusuario))
     if idcliente_token is None or int(partner.get("idcliente", -1)) != int(idcliente_token):
         raise PropiedadPartnerError("El partner no pertenece al cliente autenticado")
+
+
+# ── Informes tacticos ────────────────────────────────────────────────────────
+#
+# Quien accede a los cinco listados, segun `acceso-tactico.md` §5. Aqui la
+# autoridad departamental es unica —el **Director Tecnologico**, en los cinco—,
+# a diferencia de Suscripciones y Red Operativa donde esta repartida.
+#
+# **No se reescribe el acotamiento.** `verificar_propiedad` ya resuelve la cuenta
+# del solicitante con el mismo servicio que usa Soporte, exime a los gestores y
+# **lanza en vez de devolver un booleano** — un `if not verificar(...)` olvidado
+# seria un fallo silencioso de autorizacion. Los listados lo reutilizan tal cual.
+
+#: Gestores: operan sobre cualquier partner.
+ROLES_GESTORES = frozenset({ROL_ADMINISTRADOR, ROL_DESARROLLADOR_APIS})
+
+#: Partners, credenciales y bitacora: gestores **y** el propio partner.
+ROLES_INFORMES_ACCESO = frozenset(ROLES_GESTORES | {ROL_PARTNER_INTEGRACION})
+
+#: Versiones del contrato y alcance de datos: **solo gestores** (FR-013).
+#: El alcance de datos describe lo que cada CLIENTE tiene contratado, y las
+#: versiones gobiernan el ciclo de vida del contrato: son materia de quien
+#: administra la plataforma, no de quien la consume.
+ROLES_INFORMES_CONTRATO = frozenset(ROLES_GESTORES)
+
+
+class _RolesInformesPermission(BasePermission):
+    """Base que falla cerrado: sin usuario, sin autenticar o sin rol, no pasa.
+
+    Conceder aqui **no** implica ver todos los partners: el acotamiento lo
+    resuelve `verificar_propiedad`, y a un partner lo fuerza al suyo.
+    """
+
+    roles_permitidos: frozenset[str] = frozenset()
+
+    def has_permission(self, request, view) -> bool:
+        user = getattr(request, "user", None)
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        return bool(set(getattr(user, "roles", []) or []) & self.roles_permitidos)
+
+
+class InformesAccesoPermission(_RolesInformesPermission):
+    """Partners, credenciales y cambios de acceso: gestores y partner."""
+
+    roles_permitidos = ROLES_INFORMES_ACCESO
+
+
+class InformesContratoPermission(_RolesInformesPermission):
+    """Versiones del contrato y alcance de datos: solo gestores (FR-013)."""
+
+    roles_permitidos = ROLES_INFORMES_CONTRATO

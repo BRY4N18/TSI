@@ -220,7 +220,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "token": "session-token-1",
             "refresh_token": "refresh-token-1",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         },
@@ -230,7 +230,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "token": "session-token-3",
             "refresh_token": "refresh-token-3",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         },
@@ -240,7 +240,7 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
             "token": "session-token-4",
             "refresh_token": "refresh-token-4",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         },
@@ -278,6 +278,11 @@ _INITIAL_PINOT_STORE: dict[str, list[dict]] = {
         {"idusuario": 4, "idcliente": 1, "activo": True},
     ],
     "Fact_Onboarding": [],
+    # Declarada en `database/esquemas.json` y **sin ningún escritor**: el flujo
+    # de transferencia de propiedad solo deja rastro en la bitácora de auditoría
+    # (`AuditService.log_transferencia`). Se declara vacía porque la tabla
+    # existe; que nadie la alimente está anotado en `decisiones-pendientes.md`.
+    "Fact_HistorialTransferenciaPropiedad": [],
     "Dim_UsuariosServidor": [],
     "Dim_RolesServidor": [],
     "Dim_UsuariosServidorRolesServidor": [],
@@ -726,10 +731,1296 @@ def _day_key_to_epoch_ms(day_key: str) -> int:
     return int(dt.timestamp() * 1000)
 
 
+def _informe_keyset(filas: list[dict], sql_upper: str, params: dict, campos: list[str]) -> list[dict]:
+    """Aplica cursor keyset, ORDER BY y LIMIT como lo haría Pinot.
+
+    Se reproduce de verdad —y no con un recorte aproximado— porque la paginación
+    de los listados tácticos ES lo que estas pruebas verifican (SC-005). Un doble
+    que devolviera las primeras N filas sin honrar el cursor dejaría pasar
+    exactamente el defecto que se está buscando: filas repetidas o saltadas entre
+    páginas.
+    """
+    descendente = " DESC" in sql_upper
+
+    if "%(CURSOR_0)S" in sql_upper:
+        arranque = [params[f"cursor_{i}"] for i in range(len(campos))]
+
+        def despues_del_cursor(fila: dict) -> bool:
+            for i, campo in enumerate(campos):
+                valor, tope = fila.get(campo), arranque[i]
+                if valor != tope:
+                    return valor < tope if descendente else valor > tope
+            return False  # la fila del propio cursor no se repite
+
+        filas = [f for f in filas if despues_del_cursor(f)]
+
+    filas = sorted(filas, key=lambda f: tuple(f.get(c) for c in campos), reverse=descendente)
+    return [dict(f) for f in filas[: params.get("limit", len(filas))]]
+
+
+def _informes_ventas_crm(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Ventas y CRM.
+
+    Misma razón que en Cuentas y Clientes para ir antes que las ramas genéricas:
+    `FROM DIM_PROSPECTO` captura por `IDUSUARIO =` y devolvería la fila entera,
+    con `gmail` y `telefono` incluidos — es decir, escondería justo el defecto
+    que research D4 prohíbe.
+    """
+    # ── L1 — Cartera de prospectos ───────────────────────────────────────────
+    if "SELECT IDPROSPECTO, EMPRESA, NOMBRES, APELLIDOS, CARGO" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Prospecto"])
+        if "IDUSUARIO = %(TITULAR)S" in sql_upper:
+            filas = [f for f in filas if f.get("idusuario") == params.get("titular")]
+        if "COMO_NOS_CONOCIO = %(CANAL)S" in sql_upper:
+            filas = [f for f in filas if f.get("como_nos_conocio") == params.get("canal")]
+        if "TIPO_ORGANIZACION = %(TIPO_ORGANIZACION)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("tipo_organizacion") == params.get("tipo_organizacion")
+            ]
+        if "ETAPA_ACTUAL = %(ETAPA)S" in sql_upper:
+            filas = [f for f in filas if f.get("etapa_actual") == params.get("etapa")]
+        if "ACTIVO = TRUE" in sql_upper:
+            filas = [f for f in filas if f.get("activo") is True]
+        if "MOTIVO_INACTIVIDAD = %(MOTIVO)S" in sql_upper:
+            filas = [
+                f for f in filas if f.get("motivo_inactividad") == params.get("motivo")
+            ]
+        filas = _informe_keyset(filas, sql_upper, params, ["idprospecto"])
+        # Se recortan las columnas que la consulta enumera. Sin esto, `gmail` y
+        # `telefono` llegarían a la respuesta en las pruebas y la fuga solo
+        # aparecería contra Pinot real.
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idprospecto", "empresa", "nombres", "apellidos", "cargo",
+                    "tipo_organizacion", "como_nos_conocio", "etapa_actual",
+                    "idusuario", "activo", "motivo_inactividad", "valor_estimado",
+                    "fecha_registro",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L3 — Demos activas (prefiltro por prefijo de fecha) ──────────────────
+    if "SELECT IDPROSPECTO, EMPRESA, NOMBRES, APELLIDOS, IDUSUARIO, DEMO_EXPIRACION" in sql_upper:
+        filas = [
+            f for f in PINOT_STORE["Dim_Prospecto"]
+            # La comparación es de TEXTO, igual que en Pinot: es exactamente lo
+            # que hace que el prefijo `YYYY-MM-DD` sea la única parte segura.
+            if f.get("demo_expiracion")
+            and str(f["demo_expiracion"]) >= params["prefijo_hoy"]
+        ]
+        if "IDUSUARIO = %(TITULAR)S" in sql_upper:
+            filas = [f for f in filas if f.get("idusuario") == params.get("titular")]
+        filas = _informe_keyset(filas, sql_upper, params, ["demo_expiracion", "idprospecto"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idprospecto", "empresa", "nombres", "apellidos",
+                    "idusuario", "demo_expiracion",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L4 — Notificaciones enviadas (sin `estado_envio`) ────────────────────
+    if "SELECT IDNOTIFICACION, ID_PROSPECTO, IDUSUARIOGERENTENOTIFICADO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_NotificacionVentas"])
+        if "IDUSUARIOGERENTENOTIFICADO = %(TITULAR)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("idusuariogerentenotificado") == params.get("titular")
+            ]
+        if "FECHAHORANOTIFICACION >= %(DESDE_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoranotificacion") or 0) >= params["desde_ms"]
+            ]
+        if "FECHAHORANOTIFICACION <= %(HASTA_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoranotificacion") or 0) <= params["hasta_ms"]
+            ]
+        if "REGLADISPARADA = %(REGLA)S" in sql_upper:
+            filas = [f for f in filas if f.get("regladisparada") == params.get("regla")]
+        if "CANAL = %(CANAL)S" in sql_upper:
+            filas = [f for f in filas if f.get("canal") == params.get("canal")]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahoranotificacion", "idnotificacion"]
+        )
+        # `estado_envio` se recorta aquí: sin esto llegaría a la respuesta en las
+        # pruebas y solo se notaría contra Pinot real.
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idnotificacion", "id_prospecto", "idusuariogerentenotificado",
+                    "regladisparada", "canal", "fechahoranotificacion",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L2 — Reasignaciones de cartera ───────────────────────────────────────
+    if "SELECT IDASIGNACION, IDPROSPECTO, IDUSUARIOGERENTEANTERIOR" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Asignacion"])
+        if "FECHAHORAASIGNACION >= %(DESDE_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoraasignacion") or 0) >= params["desde_ms"]
+            ]
+        if "FECHAHORAASIGNACION <= %(HASTA_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoraasignacion") or 0) <= params["hasta_ms"]
+            ]
+        if "IDPROSPECTO = %(IDPROSPECTO)S" in sql_upper:
+            filas = [f for f in filas if f.get("idprospecto") == params.get("idprospecto")]
+        if "TIPOASIGNACION = %(TIPO_ASIGNACION)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("tipoasignacion") == params.get("tipo_asignacion")
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahoraasignacion", "idasignacion"]
+        )
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idasignacion", "idprospecto", "idusuariogerenteanterior",
+                    "idusuariogerenteactual", "tipoasignacion", "motivo",
+                    "fechahoraasignacion",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDASIGNACION, TIPOASIGNACION FROM FACT_ASIGNACION" in sql_upper:
+        return [
+            {"idasignacion": f.get("idasignacion"), "tipoasignacion": f.get("tipoasignacion")}
+            for f in PINOT_STORE["Fact_Asignacion"]
+        ]
+
+    if "SELECT IDPROSPECTO, EMPRESA FROM DIM_PROSPECTO" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idprospecto": f["idprospecto"], "empresa": f.get("empresa")}
+            for f in PINOT_STORE["Dim_Prospecto"]
+            if f["idprospecto"] in permitidos
+        ]
+
+    if "SELECT ID_PROSPECTO, MOTIVO_PERDIDA, FECHA_TRANSICION FROM FACT_PIPELINE" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        filas = [
+            f for f in PINOT_STORE["Fact_Pipeline"]
+            if f.get("id_prospecto") in permitidos
+            and f.get("etapa_nueva") == params.get("etapa")
+        ]
+        filas.sort(key=lambda f: f.get("fecha_transicion") or 0, reverse=True)
+        return [
+            {k: f.get(k) for k in ("id_prospecto", "motivo_perdida", "fecha_transicion")}
+            for f in filas
+        ]
+
+    return None
+
+
+def _informes_partners(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Partners y API.
+
+    Antes que las ramas genéricas: `FROM DIM_CREDENCIALAPI` devolvería la fila
+    entera con `client_secret_hash` incluido — es decir, escondería la fuga que
+    research D3 prohíbe.
+    """
+    # ── L1 — Partners ────────────────────────────────────────────────────────
+    if "SELECT IDPARTNER, IDCLIENTE, NOMBREPARTNER, PLANAPI" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Partner"])
+        if "IDCLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("cuenta")]
+        if "PLANAPI = %(PLAN)S" in sql_upper:
+            filas = [f for f in filas if f.get("planapi") == params.get("plan")]
+        if "ACTIVO = %(ACTIVO)S" in sql_upper:
+            filas = [f for f in filas if bool(f.get("activo")) is params.get("activo")]
+        if "PLANAPI <> %(SIN_PLAN)S" in sql_upper:
+            filas = [f for f in filas if (f.get("planapi") or "") != params["sin_plan"]]
+        elif "PLANAPI = %(SIN_PLAN)S" in sql_upper:
+            filas = [f for f in filas if (f.get("planapi") or "") == params["sin_plan"]]
+        filas = _informe_keyset(filas, sql_upper, params, ["idpartner"])
+        from core.repositories.partners.informes_acceso_repository import (
+            COLUMNAS_PARTNER,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_PARTNER} for f in filas]
+
+    # ── L2 — Credenciales (sin `client_secret_hash`) ─────────────────────────
+    if "SELECT IDCREDENCIAL, IDPARTNER, IDCLIENTE, ENTORNO, ACTIVO" in sql_upper:
+        filas = list(PINOT_STORE["Dim_CredencialAPI"])
+        if "IDCLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("cuenta")]
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            filas = [f for f in filas if f.get("idpartner") == params.get("idpartner")]
+        if "ENTORNO = %(ENTORNO)S" in sql_upper:
+            filas = [f for f in filas if f.get("entorno") == params.get("entorno")]
+        if "ACTIVO = %(ACTIVA)S" in sql_upper:
+            filas = [f for f in filas if bool(f.get("activo")) is params.get("activa")]
+        if "FECHA_EXPIRACION <= %(CADUCA_ANTES_DE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_expiracion") or 0) <= params["caduca_antes_de"]
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fecha_expiracion", "idcredencial"]
+        )
+        # El secreto se recorta aquí. Sin esto llegaría a la respuesta en las
+        # pruebas y la fuga solo aparecería contra Pinot real.
+        from core.repositories.partners.informes_acceso_repository import (
+            COLUMNAS_CREDENCIAL,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_CREDENCIAL} for f in filas]
+
+    if "SELECT IDPARTNER, ENTORNO, ACTIVO FROM DIM_CREDENCIALAPI" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idpartner", "entorno", "activo")}
+            for f in PINOT_STORE["Dim_CredencialAPI"]
+            if f.get("idpartner") in permitidos
+        ]
+
+    if "SELECT IDCREDENCIAL, NOMBRE_CREDENCIAL FROM DIM_CREDENCIALAPI" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idcredencial", "nombre_credencial")}
+            for f in PINOT_STORE["Dim_CredencialAPI"]
+            if f.get("idcredencial") in permitidos
+        ]
+
+    if "SELECT IDPARTNER, TIPO_CAMBIO, FECHA_CAMBIO FROM FACT_HISTORIALACCESOPARTNER" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        tipos = set(params.get("tipos") or [])
+        return [
+            {k: f.get(k) for k in ("idpartner", "tipo_cambio", "fecha_cambio")}
+            for f in PINOT_STORE["Fact_HistorialAccesoPartner"]
+            if f.get("idpartner") in permitidos and f.get("tipo_cambio") in tipos
+        ]
+
+    if "SELECT IDPARTNER, NOMBREPARTNER FROM DIM_PARTNER" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idpartner": f["idpartner"], "nombrepartner": f.get("nombrepartner")}
+            for f in PINOT_STORE["Dim_Partner"]
+            if f["idpartner"] in permitidos
+        ]
+
+    if "SELECT IDPARTNER, IDCLIENTE FROM DIM_PARTNER" in sql_upper:
+        return [
+            {"idpartner": f["idpartner"], "idcliente": f.get("idcliente")}
+            for f in PINOT_STORE["Dim_Partner"]
+            if f.get("idcliente") == params.get("idcliente")
+        ]
+
+    # ── L3 — Cambios de acceso ───────────────────────────────────────────────
+    if "SELECT IDHISTORIAL, IDPARTNER, IDCREDENCIAL, TIPO_CAMBIO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_HistorialAccesoPartner"])
+        if "IDPARTNER IN %(IDPARTNERS)S" in sql_upper:
+            permitidos = set(params.get("idpartners") or [])
+            filas = [f for f in filas if f.get("idpartner") in permitidos]
+        if "IDPARTNER = %(IDPARTNER)S" in sql_upper:
+            filas = [f for f in filas if f.get("idpartner") == params.get("idpartner")]
+        if "TIPO_CAMBIO = %(TIPO_CAMBIO)S" in sql_upper:
+            filas = [f for f in filas if f.get("tipo_cambio") == params.get("tipo_cambio")]
+        if "FECHA_CAMBIO >= %(DESDE_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fecha_cambio") or 0) >= params["desde_ms"]]
+        if "FECHA_CAMBIO <= %(HASTA_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fecha_cambio") or 0) <= params["hasta_ms"]]
+        filas = _informe_keyset(filas, sql_upper, params, ["fecha_cambio", "idhistorial"])
+        from core.repositories.partners.informes_bitacora_repository import (
+            COLUMNAS_BITACORA,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_BITACORA} for f in filas]
+
+    # ── L4 — Versiones del contrato ──────────────────────────────────────────
+    if "SELECT IDVERSION, ID_SERVICIO, VERSION, ESTADO" in sql_upper:
+        filas = list(PINOT_STORE["Dim_VersionContratoAPI"])
+        if "ESTADO = %(ESTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado") == params.get("estado")]
+        if "ID_SERVICIO = %(ID_SERVICIO)S" in sql_upper:
+            filas = [f for f in filas if f.get("id_servicio") == params.get("id_servicio")]
+        filas = _informe_keyset(filas, sql_upper, params, ["fecha_publicacion", "idversion"])
+        from core.repositories.partners.informes_contrato_repository import (
+            COLUMNAS_VERSION,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_VERSION} for f in filas]
+
+    # ── L5 — Alcance de datos ────────────────────────────────────────────────
+    if "SELECT ID_PREFERENCIA, ID_CLIENTE, FRECUENCIA_REPORTES" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Preferencias_Cliente"])
+        if "ID_CLIENTE = %(ID_CLIENTE)S" in sql_upper:
+            filas = [f for f in filas if f.get("id_cliente") == params.get("id_cliente")]
+        if "FRECUENCIA_REPORTES = %(FRECUENCIA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("frecuencia_reportes") == params.get("frecuencia")
+            ]
+        filas = _informe_keyset(filas, sql_upper, params, ["id_preferencia"])
+        from core.repositories.partners.informes_contrato_repository import (
+            COLUMNAS_ALCANCE,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_ALCANCE} for f in filas]
+
+    if "SELECT ID_SERVICIO, NOMBRE FROM DIM_SERVICIO" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"id_servicio": f["id_servicio"], "nombre": f.get("nombre")}
+            for f in PINOT_STORE["Dim_Servicio"]
+            if f["id_servicio"] in permitidos
+        ]
+
+    return None
+
+
+def _informes_red_operativa(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Red Operativa.
+
+    Antes que las ramas genéricas por la misma razón de siempre: `FROM
+    DIM_UNIDADEMERGENCIA` devolvería la fila entera, con `latitud`, `longitud` y
+    `contactoproveedor` incluidos — es decir, escondería la fuga que research D6
+    prohíbe.
+    """
+    # ── L1 — Composición de la flota ─────────────────────────────────────────
+    if "SELECT IDUNIDADEMERGENCIA, IDCLIENTE, PLACA, UNIDADEMERGENCIA" in sql_upper:
+        filas = list(PINOT_STORE["Dim_UnidadEmergencia"])
+        if "IDCLIENTE = %(PROVEEDOR)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("proveedor")]
+        if "IDCONDADO = %(IDCONDADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcondado") == params.get("idcondado")]
+        if "TIPOUNIDADEMERGENCIA = %(TIPO_UNIDAD)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("tipounidademergencia") == params.get("tipo_unidad")
+            ]
+        if "ACTIVO = %(DADO_DE_ALTA)S" in sql_upper:
+            filas = [
+                f for f in filas if bool(f.get("activo")) is params.get("dado_de_alta")
+            ]
+        filas = _informe_keyset(filas, sql_upper, params, ["idunidademergencia"])
+        # Se recortan las columnas enumeradas. Sin esto, `latitud`, `longitud` y
+        # `contactoproveedor` llegarían a la respuesta en las pruebas y la fuga
+        # solo aparecería contra Pinot real.
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idunidademergencia", "idcliente", "placa", "unidademergencia",
+                    "tipounidademergencia", "capacidad", "idcondado",
+                    "zonacobertura", "tipopropiedad", "activo",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDUNIDADEMERGENCIA, TIPOUNIDADEMERGENCIA FROM DIM_UNIDADEMERGENCIA" in sql_upper:
+        return [
+            {
+                "idunidademergencia": f.get("idunidademergencia"),
+                "tipounidademergencia": f.get("tipounidademergencia"),
+            }
+            for f in PINOT_STORE["Dim_UnidadEmergencia"]
+        ]
+
+    if "SELECT IDUNIDADEMERGENCIA, IDCLIENTE FROM DIM_UNIDADEMERGENCIA" in sql_upper:
+        return [
+            {"idunidademergencia": f["idunidademergencia"], "idcliente": f.get("idcliente")}
+            for f in PINOT_STORE["Dim_UnidadEmergencia"]
+            if f.get("idcliente") == params.get("idcliente")
+        ]
+
+    if "SELECT IDUNIDADEMERGENCIA, PLACA, IDCLIENTE FROM DIM_UNIDADEMERGENCIA" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idunidademergencia", "placa", "idcliente")}
+            for f in PINOT_STORE["Dim_UnidadEmergencia"]
+            if f["idunidademergencia"] in permitidos
+        ]
+
+    if "SELECT IDCONDADO, CONDADO, IDESTADO FROM DIM_CONDADO WHERE IDCONDADO IN" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idcondado", "condado", "idestado")}
+            for f in PINOT_STORE["Dim_Condado"]
+            if f["idcondado"] in permitidos
+        ]
+
+    if "SELECT IDESTADO, ESTADO FROM DIM_ESTADO" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idestado": f["idestado"], "estado": f.get("estado")}
+            for f in PINOT_STORE["Dim_Estado"]
+            if f["idestado"] in permitidos
+        ]
+
+    # ── L2 — Bajas de unidad ─────────────────────────────────────────────────
+    if "SELECT IDBAJAUNIDAD, IDUNIDADEMERGENCIA, IDUSUARIO, IDACCIDENTE" in sql_upper:
+        filas = list(PINOT_STORE["Fact_BajaUnidad"])
+        if "IDUNIDADEMERGENCIA IN %(IDUNIDADES)S" in sql_upper:
+            permitidos = set(params.get("idunidades") or [])
+            filas = [f for f in filas if f.get("idunidademergencia") in permitidos]
+        if "TIPOBAJA = %(TIPO_BAJA)S" in sql_upper:
+            filas = [f for f in filas if f.get("tipobaja") == params.get("tipo_baja")]
+        if "FECHAHORA >= %(DESDE_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) >= params["desde_ms"]]
+        if "FECHAHORA <= %(HASTA_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) <= params["hasta_ms"]]
+        filas = _informe_keyset(filas, sql_upper, params, ["fechahora", "idbajaunidad"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idbajaunidad", "idunidademergencia", "idusuario", "idaccidente",
+                    "motivo", "tipobaja", "fechahora",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L3 — Regiones operativas ─────────────────────────────────────────────
+    if "SELECT IDREGIONOPERATIVA, IDESTADO, NOMBREREGION, ESTADOREGION" in sql_upper:
+        filas = list(PINOT_STORE["Dim_RegionOperativa"])
+        if "ESTADOREGION = %(ESTADO_REGION)S" in sql_upper:
+            filas = [
+                f for f in filas if f.get("estadoregion") == params.get("estado_region")
+            ]
+        if "FECHA_ACTUALIZACION <= %(SIN_CAMBIO_DESDE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_actualizacion") or 0) <= params["sin_cambio_desde"]
+            ]
+        filas = _informe_keyset(filas, sql_upper, params, ["idregionoperativa"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idregionoperativa", "idestado", "nombreregion", "estadoregion",
+                    "activo", "fecha_actualizacion",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDREGIONOPERATIVA, NOMBREREGION FROM DIM_REGIONOPERATIVA" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idregionoperativa": f["idregionoperativa"], "nombreregion": f.get("nombreregion")}
+            for f in PINOT_STORE["Dim_RegionOperativa"]
+            if f["idregionoperativa"] in permitidos
+        ]
+
+    # ── L4 — Intentos de validación ──────────────────────────────────────────
+    if "SELECT IDVALIDACIONREGION, IDREGIONOPERATIVA, IDUSUARIO, RESULTADO" in sql_upper:
+        filas = list(PINOT_STORE["Dim_ValidacionRegion"])
+        if "IDREGIONOPERATIVA = %(IDREGION)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("idregionoperativa") == params.get("idregion")
+            ]
+        if "RESULTADO = %(RESULTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("resultado") == params.get("resultado")]
+        if "FECHAHORA >= %(DESDE_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) >= params["desde_ms"]]
+        if "FECHAHORA <= %(HASTA_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) <= params["hasta_ms"]]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahora", "idvalidacionregion"]
+        )
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idvalidacionregion", "idregionoperativa", "idusuario",
+                    "resultado", "motivo", "fechahora",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDVALIDACIONREGION, RESULTADO FROM DIM_VALIDACIONREGION" in sql_upper:
+        return [
+            {"idvalidacionregion": f.get("idvalidacionregion"), "resultado": f.get("resultado")}
+            for f in PINOT_STORE["Dim_ValidacionRegion"]
+        ]
+
+    return None
+
+
+def _informes_suscripciones(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Suscripciones y Facturación.
+
+    Va antes que las ramas genéricas por la misma razón que los otros dos
+    módulos: `FROM DIM_METODOPAGO` devolvería la fila entera, con `tokenpasarela`
+    incluido — es decir, escondería la fuga que research D4 prohíbe.
+    """
+    # ── L1 — Suscripciones ───────────────────────────────────────────────────
+    if "SELECT ID_SUSCRIPCION, IDCLIENTE, IDPLAN, IDPLAN_PROGRAMADO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Suscripcion"])
+        if "IDCLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("cuenta")]
+        if "ESTADO = %(ESTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado") == params.get("estado")]
+        if "IDPLAN = %(IDPLAN)S" in sql_upper:
+            filas = [f for f in filas if f.get("idplan") == params.get("idplan")]
+        if "IDPLAN_PROGRAMADO > %(SIN_CAMBIO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if int(f.get("idplan_programado") or 0) > params["sin_cambio"]
+            ]
+        if "IDPLAN_PROGRAMADO <= %(SIN_CAMBIO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if int(f.get("idplan_programado") or 0) <= params["sin_cambio"]
+            ]
+        if "FECHA_FIN <= %(VENCE_ANTES_DE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_fin") or 0) <= params["vence_antes_de"]
+            ]
+        if "FECHACANCELACION >= %(CANCELADA_DESDE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechacancelacion") or 0) >= params["cancelada_desde"]
+            ]
+        if "FECHACANCELACION <= %(CANCELADA_HASTA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("fechacancelacion") is not None
+                and f["fechacancelacion"] <= params["cancelada_hasta"]
+            ]
+        filas = _informe_keyset(filas, sql_upper, params, ["id_suscripcion"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "id_suscripcion", "idcliente", "idplan", "idplan_programado",
+                    "estado", "nivel", "precio", "periodicidad",
+                    "renovacionautomatica", "motivocancelacion", "fecha_inicio",
+                    "fecha_fin", "fechacancelacion",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L2 — Facturas ────────────────────────────────────────────────────────
+    if "SELECT ID_FACTURA, ID_CLIENTE, NUMERO_FACTURA" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Factura"])
+        if "ID_CLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("id_cliente") == params.get("cuenta")]
+        if "ESTADO_PAGO = %(ESTADO_PAGO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado_pago") == params.get("estado_pago")]
+        if "FECHA_EMISION >= %(DESDE_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fecha_emision") or 0) >= params["desde_ms"]]
+        if "FECHA_EMISION <= %(HASTA_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fecha_emision") or 0) <= params["hasta_ms"]]
+        if "FECHA_VENCIMIENTO < %(VENCIDAS_ANTES_DE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_vencimiento") or 0) < params["vencidas_antes_de"]
+            ]
+        if "ESTADO_PAGO IN %(ESTADOS_MORA)S" in sql_upper:
+            permitidos = set(params.get("estados_mora") or [])
+            filas = [f for f in filas if f.get("estado_pago") in permitidos]
+        filas = _informe_keyset(filas, sql_upper, params, ["fecha_emision", "id_factura"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "id_factura", "id_cliente", "numero_factura", "periodo", "tipo",
+                    "es_nota_credito", "estado_pago", "reintentos", "monto_base",
+                    "impuestos", "monto_total", "fecha_emision", "fecha_vencimiento",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L4 — Métodos de pago vigentes (sin `tokenpasarela`) ──────────────────
+    if "SELECT IDMETODOPAGO, IDCLIENTE, TIPO, ULTIMOSDIGITOS" in sql_upper:
+        filas = [f for f in PINOT_STORE["Dim_MetodoPago"] if f.get("activo")]
+        if "IDCLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("cuenta")]
+        if "FECHAEXPIRACION <= %(CADUCA_ANTES_DE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechaexpiracion") or 0) <= params["caduca_antes_de"]
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechaexpiracion", "idmetodopago"]
+        )
+        # `tokenpasarela` se recorta aquí. Sin esto llegaría a la respuesta en
+        # las pruebas y la fuga solo aparecería contra Pinot real — que es
+        # exactamente lo que la prueba de research D4 existe para impedir.
+        return [
+            {
+                k: f.get(k)
+                for k in ("idmetodopago", "idcliente", "tipo", "ultimosdigitos",
+                          "fechaexpiracion")
+            }
+            for f in filas
+        ]
+
+    # ── L3 — Solicitudes de cambio de plan ───────────────────────────────────
+    if "SELECT IDSOLICITUD, IDCLIENTE, IDPLANACTUAL, IDPLANSOLICITADO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Solicitud_Cambio_Plan"])
+        if "IDCLIENTE = %(CUENTA)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("cuenta")]
+        if "ESTADO = %(ESTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado") == params.get("estado")]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fecha_solicitud", "idsolicitud"]
+        )
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idsolicitud", "idcliente", "idplanactual", "idplansolicitado",
+                    "estado", "motivo", "idadminaprobador", "motivo_rechazo",
+                    "fecha_solicitud", "fecha_resolucion",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDPLAN, NOMBRE FROM DIM_PLAN" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idplan": f["idplan"], "nombre": f.get("nombre")}
+            for f in PINOT_STORE["Dim_Plan"]
+            if f["idplan"] in permitidos
+        ]
+
+    return None
+
+
+def _informes_cuentas_clientes(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Cuentas y Clientes.
+
+    Va **antes** que las ramas genéricas de `Dim_Usuarios`, `Dim_Cliente` y
+    compañía: aquellas despachan por `WHERE ...` y capturarían estas consultas
+    devolviendo otra cosa. El despacho aquí es por la **lista de columnas
+    enumerada**, que es única por listado — y que existe porque research D7
+    prohíbe `SELECT *` sobre las tablas con material sensible.
+
+    Devuelve `None` si la consulta no es de este módulo, para que el enrutador
+    siga probando el resto de ramas.
+    """
+    # ── L1 — Solicitudes de alta pendientes ──────────────────────────────────
+    if "SELECT IDCLIENTE, RAZON_SOCIAL, TIPO, FECHA_CREACION FROM DIM_CLIENTE" in sql_upper:
+        filas = [
+            f for f in PINOT_STORE["Dim_Cliente"]
+            if f.get("estado") == params.get("estado")
+        ]
+        if "TIPO = %(TIPO)S" in sql_upper:
+            filas = [f for f in filas if f.get("tipo") == params.get("tipo")]
+        if "FECHA_CREACION <= %(CREADAS_ANTES_DE)S" in sql_upper:
+            corte = params["creadas_antes_de"]
+            filas = [f for f in filas if (f.get("fecha_creacion") or 0) <= corte]
+        filas = _informe_keyset(filas, sql_upper, params, ["fecha_creacion", "idcliente"])
+        return [
+            {k: f.get(k) for k in ("idcliente", "razon_social", "tipo", "fecha_creacion")}
+            for f in filas
+        ]
+
+    # ── L2 — Incorporación incompleta ────────────────────────────────────────
+    if "SELECT ID_ONBOARDING, ID_CLIENTE, ETAPA, FECHA_ACTUALIZACION FROM FACT_ONBOARDING" in sql_upper:
+        filas = [f for f in PINOT_STORE["Fact_Onboarding"] if not f.get("completado")]
+        if "ETAPA = %(ETAPA)S" in sql_upper:
+            filas = [f for f in filas if f.get("etapa") == params.get("etapa")]
+        if "FECHA_ACTUALIZACION <= %(DETENIDAS_ANTES_DE)S" in sql_upper:
+            corte = params["detenidas_antes_de"]
+            filas = [f for f in filas if (f.get("fecha_actualizacion") or 0) <= corte]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fecha_actualizacion", "id_onboarding"]
+        )
+        return [
+            {k: f.get(k) for k in ("id_onboarding", "id_cliente", "etapa", "fecha_actualizacion")}
+            for f in filas
+        ]
+
+    if "SELECT ID_ONBOARDING, ETAPA FROM FACT_ONBOARDING" in sql_upper:
+        return [
+            {"id_onboarding": f.get("id_onboarding"), "etapa": f.get("etapa")}
+            for f in PINOT_STORE["Fact_Onboarding"]
+        ]
+
+    if "SELECT IDCLIENTE, RAZON_SOCIAL FROM DIM_CLIENTE" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idcliente": f["idcliente"], "razon_social": f.get("razon_social")}
+            for f in PINOT_STORE["Dim_Cliente"]
+            if f["idcliente"] in permitidos
+        ]
+
+    # ── L3 — Cuentas por estado ──────────────────────────────────────────────
+    if "SELECT IDCLIENTE, RAZON_SOCIAL, TIPO, ESTADO, ESTADO_ONBOARDING" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Cliente"])
+        if "ESTADO = %(ESTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado") == params.get("estado")]
+        if "TIPO = %(TIPO)S" in sql_upper:
+            filas = [f for f in filas if f.get("tipo") == params.get("tipo")]
+        filas = _informe_keyset(filas, sql_upper, params, ["idcliente"])
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idcliente",
+                    "razon_social",
+                    "tipo",
+                    "estado",
+                    "estado_onboarding",
+                    "fecha_inicio_contrato",
+                    "admin_local_id",
+                )
+            }
+            for f in filas
+        ]
+
+    # ── L4 — Transferencias de propiedad ─────────────────────────────────────
+    if "FROM FACT_HISTORIALTRANSFERENCIAPROPIEDAD" in sql_upper and "IDUSUARIOANTERIOR" in sql_upper:
+        filas = list(PINOT_STORE["Fact_HistorialTransferenciaPropiedad"])
+        if "FECHAHORA >= %(DESDE_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) >= params["desde_ms"]]
+        if "FECHAHORA <= %(HASTA_MS)S" in sql_upper:
+            filas = [f for f in filas if (f.get("fechahora") or 0) <= params["hasta_ms"]]
+        if "IDCLIENTE = %(IDCLIENTE)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("idcliente")]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahora", "idhistorialtransferencia"]
+        )
+        return [
+            {
+                k: f.get(k)
+                for k in (
+                    "idhistorialtransferencia",
+                    "idcliente",
+                    "idusuarioanterior",
+                    "idusuarionuevo",
+                    "fechahora",
+                )
+            }
+            for f in filas
+        ]
+
+    if "SELECT IDUSUARIO, NOMBRES, APELLIDOS FROM DIM_USUARIOS" in sql_upper:
+        ids = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idusuario", "nombres", "apellidos")}
+            for f in PINOT_STORE["Dim_Usuarios"]
+            if f["idusuario"] in ids
+        ]
+
+    # ── L5 — Usuarios y sus roles ────────────────────────────────────────────
+    if "SELECT IDUSUARIO, NOMBRES, APELLIDOS, GMAIL, ACTIVO FROM DIM_USUARIOS" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Usuarios"])
+        if "ACTIVO = %(ACTIVO)S" in sql_upper:
+            filas = [f for f in filas if bool(f.get("activo")) is params.get("activo")]
+        if "IDUSUARIO IN %(IDUSUARIOS)S" in sql_upper:
+            permitidos = set(params.get("idusuarios") or [])
+            filas = [f for f in filas if f["idusuario"] in permitidos]
+        return _informe_keyset(filas, sql_upper, params, ["idusuario"])
+
+    if "SELECT IDUSUARIO, NOMBRES, APELLIDOS, GMAIL FROM DIM_USUARIOS" in sql_upper:
+        ids = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idusuario", "nombres", "apellidos", "gmail")}
+            for f in PINOT_STORE["Dim_Usuarios"]
+            if f["idusuario"] in ids
+        ]
+
+    if "SELECT IDUSUARIO, IDROL FROM DIM_USUARIO_ROL" in sql_upper:
+        filas = [f for f in PINOT_STORE["Dim_Usuario_Rol"] if f.get("activo", True)]
+        if "IDUSUARIO IN %(IDUSUARIOS)S" in sql_upper:
+            permitidos = set(params.get("idusuarios") or [])
+            filas = [f for f in filas if f["idusuario"] in permitidos]
+        if "IDROL IN %(IDROLES)S" in sql_upper:
+            permitidos = set(params.get("idroles") or [])
+            filas = [f for f in filas if f["idrol"] in permitidos]
+        return [{"idusuario": f["idusuario"], "idrol": f["idrol"]} for f in filas]
+
+    if "SELECT IDROL FROM DIM_ROL WHERE ROL = %(ROL)S" in sql_upper:
+        return [
+            {"idrol": r["idrol"]}
+            for r in PINOT_STORE["Dim_Rol"]
+            if r.get("rol") == params.get("rol") and r.get("activo")
+        ]
+
+    if "SELECT IDROL, ROL FROM DIM_ROL" in sql_upper:
+        filas = list(PINOT_STORE["Dim_Rol"])
+        if "IDROL IN %(IDROLES)S" in sql_upper:
+            permitidos = set(params.get("idroles") or [])
+            filas = [f for f in filas if f["idrol"] in permitidos]
+        if "ACTIVO = TRUE" in sql_upper:
+            filas = [f for f in filas if f.get("activo")]
+        return [{"idrol": f["idrol"], "rol": f.get("rol")} for f in filas]
+
+    # ── L6 — Sesiones abiertas (sin `token`) ─────────────────────────────────
+    if "SELECT IDSESSION, IDUSUARIO, NAVEGADOR, FECHAHORAINICIOSESION FROM FACT_SESSION" in sql_upper:
+        filas = [
+            f for f in PINOT_STORE["Fact_Session"]
+            if f.get("estadosession") == params.get("estado")
+        ]
+        if "IDUSUARIO = %(IDUSUARIO)S" in sql_upper:
+            filas = [f for f in filas if f["idusuario"] == params.get("idusuario")]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahorainiciosesion", "idsession"]
+        )
+        # El doble guarda la fila entera; la consulta real solo trae 4 columnas.
+        # Recortarlas aquí es lo que hace que la prueba de research D7 signifique
+        # algo: sin esto, `token` llegaría a la respuesta en las pruebas y el
+        # fallo solo aparecería contra Pinot real.
+        return [
+            {k: f.get(k) for k in ("idsession", "idusuario", "navegador", "fechahorainiciosesion")}
+            for f in filas
+        ]
+
+    # ── L7 — Credenciales temporales (sin `contrasena`) ──────────────────────
+    if "SELECT IDCREDENCIAL, IDUSUARIO, FECHA_ACTUALIZACION FROM DIM_CREDENCIAL" in sql_upper:
+        filas = [
+            f for f in PINOT_STORE["Dim_Credencial"]
+            if f.get("estadocredencial") == params.get("estado")
+        ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fecha_actualizacion", "idcredencial"]
+        )
+        return [
+            {k: f.get(k) for k in ("idcredencial", "idusuario", "fecha_actualizacion")}
+            for f in filas
+        ]
+
+    # ── L8 — Accesos técnicos (sin `contrasena` de servidor) ─────────────────
+    if "SELECT IDUSUARIOSERVIDOR, IDUSUARIO, USUARIO FROM DIM_USUARIOSSERVIDOR" in sql_upper:
+        filas = [f for f in PINOT_STORE["Dim_UsuariosServidor"] if f.get("activo")]
+        filas = _informe_keyset(filas, sql_upper, params, ["idusuarioservidor"])
+        return [
+            {k: f.get(k) for k in ("idusuarioservidor", "idusuario", "usuario")}
+            for f in filas
+        ]
+
+    if "SELECT IDUSUARIOSERVIDOR, IDROLSERVIDOR FROM DIM_USUARIOSSERVIDORROLESSERVIDOR" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idusuarioservidor": f["idusuarioservidor"], "idrolservidor": f["idrolservidor"]}
+            for f in PINOT_STORE["Dim_UsuariosServidorRolesServidor"]
+            if f["idusuarioservidor"] in permitidos and f.get("activo", True)
+        ]
+
+    if "SELECT IDROLSERVIDOR, ROLSERVIDOR FROM DIM_ROLESSERVIDOR" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idrolservidor": f["idrolservidor"], "rolservidor": f.get("rolservidor")}
+            for f in PINOT_STORE["Dim_RolesServidor"]
+            if f["idrolservidor"] in permitidos
+        ]
+
+    if "SELECT IDROLSERVIDOR, IDROL FROM DIM_ROLESSERVIDORROLES" in sql_upper:
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"idrolservidor": f["idrolservidor"], "idrol": f["idrol"]}
+            for f in PINOT_STORE["Dim_RolesServidorRoles"]
+            if f["idrolservidor"] in permitidos and f.get("activo", True)
+        ]
+
+    return None
+
+
+def _informes_soporte(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tácticos de Soporte al Cliente.
+
+    Antes que las ramas genéricas: `FROM FACT_HISTORIAL_TICKET` devolvería la
+    fila entera, con `mensaje` y `es_nota_interna` incluidos — es decir,
+    escondería en las pruebas la fuga de notas internas que research D4 prohíbe.
+    """
+    # ── L1 — Tickets (sin `descripcion`) ─────────────────────────────────────
+    if "SELECT ID_RECLAMO, IDCLIENTE, ASUNTO, ESTADO, PRIORIDAD" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Reclamo"])
+        if "IDCLIENTE = %(IDCLIENTE)S" in sql_upper:
+            filas = [f for f in filas if f.get("idcliente") == params.get("idcliente")]
+        if "ESTADO = %(ESTADO)S" in sql_upper:
+            filas = [f for f in filas if f.get("estado") == params.get("estado")]
+        if "SLA_STATUS = %(SLA_STATUS)S" in sql_upper:
+            filas = [f for f in filas if f.get("sla_status") == params.get("sla_status")]
+        if "PRIORIDAD = %(PRIORIDAD)S" in sql_upper:
+            filas = [f for f in filas if f.get("prioridad") == params.get("prioridad")]
+        if "TIPO_INCIDENCIA = %(TIPO_INCIDENCIA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("tipo_incidencia") == params.get("tipo_incidencia")
+            ]
+        if "ID_AGENTE_ASIGNADO = %(AGENTE)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("id_agente_asignado") == params.get("agente")
+            ]
+        if "IDFACTURA NOT IN %(SIN_FACTURA)S" in sql_upper:
+            centinelas = set(params.get("sin_factura") or [])
+            filas = [f for f in filas if str(f.get("idfactura") or "") not in centinelas]
+        elif "IDFACTURA IN %(SIN_FACTURA)S" in sql_upper:
+            centinelas = set(params.get("sin_factura") or [])
+            filas = [f for f in filas if str(f.get("idfactura") or "") in centinelas]
+        filas = _informe_keyset(filas, sql_upper, params, ["fechahora", "id_reclamo"])
+        from core.repositories.soporte.informes_tickets_repository import (
+            COLUMNAS_TICKET,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_TICKET} for f in filas]
+
+    # ── L2 — Escalados (sin `mensaje` ni `es_nota_interna`) ──────────────────
+    if "SELECT ID_HISTORIAL, ID_RECLAMO, TIPO_ACCION, IDUSUARIO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Historial_Ticket"])
+        if "TIPO_ACCION = %(TIPO_ACCION)S" in sql_upper:
+            filas = [
+                f for f in filas if f.get("tipo_accion") == params.get("tipo_accion")
+            ]
+        elif "TIPO_ACCION IN %(TIPOS)S" in sql_upper:
+            admitidos = set(params.get("tipos") or [])
+            filas = [f for f in filas if f.get("tipo_accion") in admitidos]
+        if "ID_RECLAMO IN %(ID_RECLAMOS)S" in sql_upper:
+            admitidos = set(params.get("id_reclamos") or [])
+            filas = [f for f in filas if f.get("id_reclamo") in admitidos]
+        if "FECHA_ACCION >= %(DESDE_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_accion") or 0) >= params["desde_ms"]
+            ]
+        if "FECHA_ACCION <= %(HASTA_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fecha_accion") or 0) <= params["hasta_ms"]
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fecha_accion", "id_historial"]
+        )
+        # El texto se recorta aquí. Sin esto llegaría a la respuesta en las
+        # pruebas y la fuga solo aparecería contra Pinot real.
+        from core.repositories.soporte.informes_escalados_repository import (
+            COLUMNAS_ESCALADO,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_ESCALADO} for f in filas]
+
+    if "SELECT ID_RECLAMO, IDCLIENTE FROM FACT_RECLAMO" in sql_upper:
+        if "IDCLIENTE = %(IDCLIENTE)S" in sql_upper:
+            return [
+                {"id_reclamo": f["id_reclamo"], "idcliente": f.get("idcliente")}
+                for f in PINOT_STORE["Fact_Reclamo"]
+                if f.get("idcliente") == params.get("idcliente")
+            ]
+        permitidos = set(params.get("ids") or [])
+        return [
+            {"id_reclamo": f["id_reclamo"], "idcliente": f.get("idcliente")}
+            for f in PINOT_STORE["Fact_Reclamo"]
+            if f.get("id_reclamo") in permitidos
+        ]
+
+    return None
+
+
+def _informes_emergencias(sql_upper: str, params: dict) -> list[dict] | None:
+    """Consultas de los listados tacticos de Emergencias.
+
+    Antes que las ramas genericas: `FROM FACT_ACCIDENTE` devolveria la fila
+    entera, con `latitudinicio` y `longitudinicio` incluidos - es decir,
+    esconderia en las pruebas la fuga de coordenadas que research D4 prohibe.
+    """
+    # -- L1 - Casos (sin coordenadas) -----------------------------------------
+    if "SELECT IDACCIDENTE, IDSEVERIDAD, IDCALLE, IDTIPOREPORTADO" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Accidente"])
+        if "IDCALLE IN %(IDCALLES)S" in sql_upper:
+            admitidas = set(params.get("idcalles") or [])
+            filas = [f for f in filas if f.get("idcalle") in admitidas]
+        if "IDSEVERIDAD = %(IDSEVERIDAD)S" in sql_upper:
+            filas = [
+                f for f in filas if f.get("idseveridad") == params.get("idseveridad")
+            ]
+        if "IDTIPOREPORTADO = %(IDTIPOREPORTADO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("idtiporeportado") == params.get("idtiporeportado")
+            ]
+        if "ACTIVO = TRUE" in sql_upper:
+            filas = [f for f in filas if bool(f.get("activo"))]
+        if "ACTIVO = FALSE" in sql_upper:
+            filas = [f for f in filas if not bool(f.get("activo"))]
+        centinelas = set(params.get("sin_valor") or [])
+        if "HORAFIN NOT IN %(SIN_VALOR)S" in sql_upper:
+            filas = [f for f in filas if str(f.get("horafin") or "") not in centinelas]
+        elif "HORAFIN IN %(SIN_VALOR)S" in sql_upper:
+            filas = [f for f in filas if str(f.get("horafin") or "") in centinelas]
+        if "IDACCIDENTEORIGEN NOT IN %(SIN_VALOR)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if str(f.get("idaccidenteorigen") or "") not in centinelas
+            ]
+        elif "IDACCIDENTEORIGEN IN %(SIN_VALOR)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if str(f.get("idaccidenteorigen") or "") in centinelas
+            ]
+        if "FECHAHORAACCIDENTE >= %(DESDE_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoraaccidente") or 0) >= params["desde_ms"]
+            ]
+        if "FECHAHORAACCIDENTE <= %(HASTA_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoraaccidente") or 0) <= params["hasta_ms"]
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahoraaccidente", "idaccidente"]
+        )
+        # Las coordenadas se recortan aqui. Sin esto llegarian a la respuesta en
+        # las pruebas y la fuga solo apareceria contra Pinot real.
+        from core.repositories.accidentes.informes_casos_repository import (
+            COLUMNAS_CASO,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_CASO} for f in filas]
+
+    # -- L2 - Despachos -------------------------------------------------------
+    if "SELECT IDDESPACHO, IDACCIDENTE, IDUNIDADEMERGENCIA" in sql_upper:
+        filas = list(PINOT_STORE["Fact_Despacho"])
+        if "IDORIGENDESPACHO = %(IDORIGENDESPACHO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("idorigendespacho") == params.get("idorigendespacho")
+            ]
+        if "IDUNIDADEMERGENCIA = %(IDUNIDADEMERGENCIA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("idunidademergencia") == params.get("idunidademergencia")
+            ]
+        if "IDACCIDENTE = %(IDACCIDENTE)S" in sql_upper:
+            filas = [
+                f for f in filas if f.get("idaccidente") == params.get("idaccidente")
+            ]
+        sin_hora = params.get("sin_hora", 0)
+        if "FECHAHORALLEGADA = %(SIN_HORA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoradespacho") or 0) > sin_hora
+                and (f.get("fechahorallegada") or 0) == sin_hora
+                and (f.get("fechahoraretiro") or 0) == sin_hora
+            ]
+        elif "FECHAHORALLEGADA > %(SIN_HORA)S OR FECHAHORARETIRO > %(SIN_HORA)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahorallegada") or 0) > sin_hora
+                or (f.get("fechahoraretiro") or 0) > sin_hora
+            ]
+        if "FECHAHORADESPACHO >= %(DESDE_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoradespacho") or 0) >= params["desde_ms"]
+            ]
+        if "FECHAHORADESPACHO <= %(HASTA_MS)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if (f.get("fechahoradespacho") or 0) <= params["hasta_ms"]
+            ]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahoradespacho", "iddespacho"]
+        )
+        from core.repositories.seguimiento.informes_despachos_repository import (
+            COLUMNAS_DESPACHO,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_DESPACHO} for f in filas]
+
+    # -- L3 / L4 - Evidencia --------------------------------------------------
+    if "SELECT IDEVIDENCIAFOTO, IDACCIDENTE, IDUSUARIO" in sql_upper:
+        filas = _filtrar_evidencia(PINOT_STORE["Dim_EvidenciaFoto"], sql_upper, params)
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahora", "idevidenciafoto"]
+        )
+        from core.repositories.accidentes.informes_evidencia_repository import (
+            COLUMNAS_FOTO,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_FOTO} for f in filas]
+
+    if "SELECT IDNOTAACCIDENTES, IDACCIDENTE, IDUSUARIO" in sql_upper:
+        filas = _filtrar_evidencia(PINOT_STORE["Dim_NotaAccidente"], sql_upper, params)
+        if "TIPO = %(TIPO)S" in sql_upper:
+            filas = [f for f in filas if f.get("tipo") == params.get("tipo")]
+        filas = _informe_keyset(
+            filas, sql_upper, params, ["fechahora", "idnotaaccidentes"]
+        )
+        from core.repositories.accidentes.informes_evidencia_repository import (
+            COLUMNAS_NOTA,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_NOTA} for f in filas]
+
+    # -- L5 - Cierres ---------------------------------------------------------
+    if "SELECT IDACCIDENTE, RESULTADO_ATENCION, OBSERVACIONES_FINALES" in sql_upper:
+        filas = list(PINOT_STORE["Fact_CierreAccidente"])
+        if "RESULTADO_ATENCION = %(RESULTADO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if f.get("resultado_atencion") == params.get("resultado")
+            ]
+        centinelas = set(params.get("sin_texto") or [])
+        if "OBSERVACIONES_FINALES NOT IN %(SIN_TEXTO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if str(f.get("observaciones_finales") or "") not in centinelas
+            ]
+        elif "OBSERVACIONES_FINALES IN %(SIN_TEXTO)S" in sql_upper:
+            filas = [
+                f for f in filas
+                if str(f.get("observaciones_finales") or "") in centinelas
+            ]
+        if "CALIFICACION > 0" in sql_upper:
+            filas = [f for f in filas if (f.get("calificacion") or 0) > 0]
+        elif "CALIFICACION <= 0" in sql_upper:
+            filas = [f for f in filas if (f.get("calificacion") or 0) <= 0]
+        filas = _informe_keyset(filas, sql_upper, params, ["idaccidente"])
+        from core.repositories.accidentes.informes_cierres_repository import (
+            COLUMNAS_CIERRE,
+        )
+
+        return [{k: f.get(k) for k in COLUMNAS_CIERRE} for f in filas]
+
+    # -- Catalogos geograficos por lote ---------------------------------------
+    #
+    # ⚠️ Cada rama exige TAMBIEN su clausula WHERE. Los informes agregados
+    # consultan `Dim_Calle` y `Dim_Ciudad` con **la misma lista de columnas** y
+    # distinto filtro: dispatchar solo por las columnas capturaba sus consultas
+    # y les devolvia filas filtradas por la columna equivocada — es decir, un
+    # fallo silencioso en 19 informes que ya estaban construidos.
+    if "SELECT IDCIUDAD, IDCONDADO FROM DIM_CIUDAD WHERE IDCONDADO IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {"idciudad": f["idciudad"], "idcondado": f.get("idcondado")}
+            for f in PINOT_STORE["Dim_Ciudad"]
+            if f.get("idcondado") in admitidos and f.get("activo", True)
+        ]
+
+    if "SELECT IDCALLE, IDCIUDAD FROM DIM_CALLE WHERE IDCIUDAD IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {"idcalle": f["idcalle"], "idciudad": f.get("idciudad")}
+            for f in PINOT_STORE["Dim_Calle"]
+            if f.get("idciudad") in admitidos and f.get("activo", True)
+        ]
+
+    if "SELECT IDCALLE, CALLE, IDCIUDAD FROM DIM_CALLE WHERE IDCALLE IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idcalle", "calle", "idciudad")}
+            for f in PINOT_STORE["Dim_Calle"]
+            if f.get("idcalle") in admitidos
+        ]
+
+    if "SELECT IDCIUDAD, CIUDAD, IDCONDADO FROM DIM_CIUDAD WHERE IDCIUDAD IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idciudad", "ciudad", "idcondado")}
+            for f in PINOT_STORE["Dim_Ciudad"]
+            if f.get("idciudad") in admitidos
+        ]
+
+    if "SELECT IDCONDADO, CONDADO, IDESTADO FROM DIM_CONDADO" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idcondado", "condado", "idestado")}
+            for f in PINOT_STORE["Dim_Condado"]
+            if f.get("idcondado") in admitidos
+        ]
+
+    if "SELECT IDSEVERIDAD, SEVERIDAD FROM DIM_SEVERIDAD WHERE IDSEVERIDAD IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {"idseveridad": f["idseveridad"], "severidad": f.get("severidad")}
+            for f in PINOT_STORE["Dim_Severidad"]
+            if f.get("idseveridad") in admitidos
+        ]
+
+    if "SELECT IDTIPOREPORTADO, TIPOREPORTADO FROM DIM_TIPOREPORTADO WHERE IDTIPOREPORTADO IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idtiporeportado", "tiporeportado")}
+            for f in PINOT_STORE["Dim_TipoReportado"]
+            if f.get("idtiporeportado") in admitidos
+        ]
+
+    if "SELECT IDUNIDADEMERGENCIA, UNIDADEMERGENCIA FROM DIM_UNIDADEMERGENCIA WHERE IDUNIDADEMERGENCIA IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idunidademergencia", "unidademergencia")}
+            for f in PINOT_STORE["Dim_UnidadEmergencia"]
+            if f.get("idunidademergencia") in admitidos
+        ]
+
+    if "SELECT IDORIGENDESPACHO, ORIGENDESPACHO FROM DIM_ORIGENDESPACHO WHERE IDORIGENDESPACHO IN" in sql_upper:
+        admitidos = set(params.get("ids") or [])
+        return [
+            {k: f.get(k) for k in ("idorigendespacho", "origendespacho")}
+            for f in PINOT_STORE["Dim_OrigenDespacho"]
+            if f.get("idorigendespacho") in admitidos
+        ]
+
+    if "SELECT ID_CLIENTE, ZONAS_GEOGRAFICAS FROM DIM_PREFERENCIAS_CLIENTE" in sql_upper:
+        return [
+            {"id_cliente": f["id_cliente"],
+             "zonas_geograficas": f.get("zonas_geograficas")}
+            for f in PINOT_STORE["Dim_Preferencias_Cliente"]
+            if f.get("id_cliente") == params.get("id_cliente")
+        ]
+
+    return None
+
+
+def _filtrar_evidencia(tabla, sql_upper: str, params: dict) -> list[dict]:
+    filas = list(tabla)
+    if "SINCRONIZADO = %(SINCRONIZADO)S" in sql_upper:
+        filas = [
+            f for f in filas
+            if bool(f.get("sincronizado")) is params.get("sincronizado")
+        ]
+    if "IDACCIDENTE = %(IDACCIDENTE)S" in sql_upper:
+        filas = [f for f in filas if f.get("idaccidente") == params.get("idaccidente")]
+    if "IDUSUARIO = %(IDUSUARIO)S" in sql_upper:
+        filas = [f for f in filas if f.get("idusuario") == params.get("idusuario")]
+    if "FECHAHORA >= %(DESDE_MS)S" in sql_upper:
+        filas = [f for f in filas if (f.get("fechahora") or 0) >= params["desde_ms"]]
+    if "FECHAHORA <= %(HASTA_MS)S" in sql_upper:
+        filas = [f for f in filas if (f.get("fechahora") or 0) <= params["hasta_ms"]]
+    return filas
+
+
 def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     """Route SQL queries to in-memory store."""
     params = params or {}
     sql_upper = sql.upper().replace("\n", " ").strip()
+
+    # --- Listados tácticos: deben preceder a las ramas genéricas por tabla ---
+    for _resolver_informe in (
+        _informes_cuentas_clientes,
+        _informes_ventas_crm,
+        _informes_suscripciones,
+        _informes_red_operativa,
+        _informes_partners,
+        _informes_soporte,
+        _informes_emergencias,
+    ):
+        informe = _resolver_informe(sql_upper, params)
+        if informe is not None:
+            return informe
 
     # --- MAX id queries (must precede generic id lookups) ---
     if "MAX(IDPROSPECTO)" in sql_upper:
@@ -2944,7 +4235,7 @@ def operator_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-2",
             "refresh_token": "refresh-token-2",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -2969,7 +4260,7 @@ def unidad_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-6",
             "refresh_token": "refresh-token-6",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -2988,7 +4279,7 @@ def tecnico_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-7",
             "refresh_token": "refresh-token-7",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3021,7 +4312,7 @@ def despacho_service_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-8",
             "refresh_token": "refresh-token-8",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3346,7 +4637,7 @@ def mock_cuenta_pendiente_onboarding(mock_pinot, mock_kafka):
             "token": "session-token-5",
             "refresh_token": "refresh-token-5",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3482,7 +4773,7 @@ def director_tecnologico_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-9",
             "refresh_token": "refresh-token-9",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3514,7 +4805,7 @@ def agente_soporte_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-10",
             "refresh_token": "refresh-token-10",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3533,7 +4824,7 @@ def desarrollador_apis_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-11",
             "refresh_token": "refresh-token-11",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }
@@ -3594,7 +4885,7 @@ def director_estrategia_billing_auth_headers(mock_pinot, mock_kafka):
             "token": "session-token-12",
             "refresh_token": "refresh-token-12",
             "navegador": "pytest",
-            "fechahorainiciosesion": "2026-07-09T00:00:00+00:00",
+            "fechahorainiciosesion": 1783555200000,
             "fechahoracierresesion": None,
             "estadosession": "Inicio sesion",
         }

@@ -70,7 +70,15 @@ El módulo `ml/` opera fuera del ciclo HTTP. Los modelos entrenados se consumen 
 - Mantiene la auditoría limpia: cada acción queda ligada al rol específico con el que se ejecutó (`Fact_Session`, `idusuario` en las tablas de hecho correspondientes), sin ambigüedad de "¿esto lo hizo como director o como operador?".
 - Es consistente con la regla de sidebar por rol de `design-system.md` (sección 5): cada rol mantiene su propio sidebar; con multi-rol, el comportamiento del sidebar (fusión vs. selector explícito) depende de si los roles pertenecen al mismo departamento o a departamentos distintos — detalle de interfaz definido en `design-system.md`, no en este documento.
 
-**Alcance actual:** la mayoría de actores tácticos/estratégicos (Director de Operaciones, Director Comercial, etc.) siguen fuera de los CU operativos implementados (ver `actors.md`). **Excepción incorporada (2026-07-30):** **Director de Estrategia** es actor **operativo** con rol JWT `DirectorEstrategia` y ejecuta RF-SUSF-001 (catálogo `Dim_Plan`) en Suscripciones-Facturación; no implica herencia de permisos de Administrador ni de otros roles (sigue el mecanismo multi-fila `Dim_Usuario_Rol` de esta sección). El resto de tácticos permanece fuera de alcance hasta que se incorporen formalmente a `Dim_Rol`.
+**Alcance actual (actualizado 2026-08-14):** las **autoridades departamentales** dejan de estar fuera de alcance. Los informes tácticos de `specs/002-tactico/` las tienen como destinatarias, y su asignación exacta vive en [`specs/002-tactico/acceso-tactico.md`](../../../specs/002-tactico/acceso-tactico.md), derivada del §5.1 del SRS.
+
+**Roles que se incorporan a `Dim_Rol`:** `DirectorMarketing`, `DirectorFinanciero`, `DirectorExpansion`, `DirectorOperaciones`, `GerenteExitoCliente` y `DirectorDatos`. Se suman a `DirectorEstrategia` y `DirectorTecnologico`, que ya existían.
+
+**`Director Comercial` queda retirado**: lo introdujo `actors.md` por su cuenta como autoridad de Ventas y CRM, pero el §5.1 asigna esa autoridad al Director de Marketing, y ante la discrepancia se decidió que manda el SRS.
+
+**Incorporación previa (2026-07-30), que se mantiene:** **Director de Estrategia** es actor **operativo** con rol JWT `DirectorEstrategia` y ejecuta RF-SUSF-001 (catálogo `Dim_Plan`) en Suscripciones-Facturación. Ahora suma además la **autoridad táctica** sobre composición de cartera y movimientos de plan. Ninguno de los dos papeles implica herencia de permisos de Administrador ni de otros roles: sigue el mecanismo multi-fila `Dim_Usuario_Rol` de esta sección.
+
+**Los actores estratégicos** —Gerente, Director de Producto, Director de RRHH, Legal— permanecen fuera de alcance.
 
 
 

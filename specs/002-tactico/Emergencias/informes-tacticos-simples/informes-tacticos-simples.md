@@ -1,33 +1,86 @@
-# Módulo: Informes Tácticos Simples
+# Informes Tácticos Simples — Emergencias
 
-**Ubicación:** `specs/002-tactico/Emergencias/informes-tacticos-simples/`
-**Feature paraguas:** `002-tactico` (ver también `specs/002-tactico/infraestructura/` — infraestructura ClickHouse+Airflow, hermana de este módulo)
-**Departamento:** Emergencias
-**Base:** `informestacticos/auditoria-esquemas-informes-v2.md` (informes ✅ Cubiertos, consulta directa a Pinot)
+**Departamento:** 6. Emergencias
+**Objetivos tácticos cubiertos:** OT21 (registro limpio y sin duplicados), OT22 (asignar y despachar),
+OT23 (acompañar la misión), OT24 (documentar la verdad del sitio), OT25 (cerrar de forma trazable)
+**Creado:** 2026-08-14
 
-Índice global del módulo (no es una spec Speckit). La feature activa de Speckit es **una capa** (`backend` o `frontend`), apuntada por `.specify/feature.json`.
+Cinco listados llanos de solo lectura sobre el núcleo del sistema. Séptimo módulo de la serie, el que
+cubre más objetivos tácticos, y el único que introduce **un eje de acotamiento nuevo**.
 
-**Estado (2026-08-02):** **backend y frontend completos y verificados contra el sistema real.** Backend: 16 endpoints (93 tests del módulo, suite completa del backend: 1007 passed). Frontend: módulo `modules/emergencias/` con 3 workpanels (Registro/Despacho/Seguimiento), `ng build` sin errores, recorrido real en navegador confirmando las 16 tarjetas con datos reales de Pinot.
+## Sobre el nombre de este módulo
+
+Este departamento ya tenía una carpeta `informes-tacticos-simples` con los **19 informes agregados**.
+Se renombró a [`informes-tacticos-agregados`](../informes-tacticos-agregados/informes-tacticos-agregados.md)
+—que es lo que contiene— y este módulo ocupa el nombre que le corresponde.
+
+**El código de aquel módulo no se tocó**: sigue en producción. Lo que cambió fue la carpeta de su
+spec y sus referencias internas. El renombrado corrige de paso el error de nomenclatura que originó
+toda esta revisión: aquellos informes se llamaban «simples» porque no usan ClickHouse, no porque no
+agreguen.
 
 ## Capas
 
-| Capa | Ruta Speckit | Autoridad | Artefactos |
-|------|--------------|-----------|------------|
-| **Backend** | [`backend/`](./backend/) | Consultas SQL a Pinot, endpoints de agregación, RF/RN/CA | `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, `contracts/*.openapi.yaml`, `quickstart.md` |
-| **Frontend** | [`frontend/`](./frontend/) | 3 workpanels (Registro, Despacho, Seguimiento) — tarjetas/gráficas de informe | `spec.md`, `plan.md`, `tasks.md`, `contracts/*.ui-contract.md`, `quickstart.md` |
+| Capa | Estado | Ruta |
+|---|---|---|
+| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
+| frontend | **Aplazado deliberadamente** | — |
 
-## Orden de trabajo
+## Los cinco listados
 
-1. Especificar e implementar **backend** primero (endpoints de agregación sobre Pinot, uno por informe).
-2. Luego **frontend**, con `Depends-on: ../backend` — los 3 workpanels consumen esos endpoints, sin redefinir cálculos.
-3. Cambiar `.specify/feature.json` → `…/informes-tacticos-simples/backend` o `…/frontend` según la capa en curso.
+| # | Listado | OT | Tipo de filtro | Acotado por |
+|---|---|:--:|---|---|
+| 1 | Casos con ubicación, severidad, impacto y situación | OT21, OT25 | Período opcional | **Zona contratada** |
+| 2 | Despachos con su origen, unidad y momento | OT22, OT23 | Período opcional | — (roles internos) |
+| 3 | Fotografías de evidencia | OT24 | Período opcional | — (roles internos) |
+| 4 | Notas de campo | OT24 | Período opcional | — (roles internos) |
+| 5 | Cierres con resultado y calificación | OT25 | Período opcional | — (roles internos) |
 
-## Dependencias de módulo
+## El cuarto eje de acotamiento
 
-- Requiere (solo lectura, sin cambios): `registro-accidente`, `despacho-inteligente`, `seguimiento-cierre-de-casos` (mismas tablas Pinot que ya pueblan esos módulos)
-- No depende de `002-tactico` (ClickHouse/Airflow) — este módulo es 100% Pinot directo
-- Hermano de: la futura spec de "Informes Tácticos Compuestos" (ClickHouse + Airflow), que sí depende de `002-tactico`
+Los seis módulos anteriores acotaban por **titularidad**: quién es dueño del registro. Aquí no. Un
+cliente ve **los casos cerrados de las zonas geográficas que tiene contratadas**, sea quien sea quien
+los registró.
 
-## Convención de nombres
+Y trae dos exigencias propias:
 
-El archivo de índice del módulo se llama **igual que la carpeta del módulo** (`informes-tacticos-simples.md`), no `README.md`.
+- **Sin zonas contratadas, resultado vacío** — nunca el listado completo. De las dos lecturas
+  posibles de «sin zonas», es la única segura.
+- **Solo casos cerrados** — la emergencia en curso es información operativa, no del cliente.
+
+## La corrección de fondo: el estado de un caso no es una propiedad del caso
+
+Tercera vez que el patrón aparece, tras la disponibilidad de una unidad y el motivo de una credencial.
+
+Un caso queda inactivo por **tres razones muy distintas**:
+
+| Razón | Significa |
+|---|---|
+| **Cerrado** | La emergencia se atendió y terminó |
+| **Descartado** | Falsa alarma: nunca hubo emergencia |
+| **Fusionado** | Es el mismo hecho que otro caso, que sigue vivo |
+
+**El estado formal vive en el histórico de estados**, no en el caso. El listado expone lo que sí es
+propiedad del caso —si sigue activo, si tiene hora de fin, de qué caso es duplicado— y con eso las
+tres situaciones se distinguen sin inventar nada. El estado formal es compuesto, y ya lo cubren los
+informes agregados.
+
+> Un listado de «casos inactivos» sin distinguir pondría en la misma línea **emergencias atendidas,
+> falsas alarmas y duplicados**: presentaría el trabajo realizado y el ruido descartado como la misma
+> cosa.
+
+## Doce filas del catálogo → cinco listados
+
+- **Tres filas son el mismo listado de casos** — del período, en borrador, y abiertos sobre umbral.
+- **Tres son el mismo listado de despachos** — del período, alertas de agotamiento, y misiones en
+  tránsito.
+- **Tres se resuelven en dos listados de evidencia** — fotografías y notas son registros distintos.
+- **Dos son el mismo listado de cierres** — con resultado, y sin observaciones.
+- **Dos ya están construidas** — monitoreo de casos activos y parámetros de asignación.
+
+## Documentos que lo gobiernan
+
+- [`specs/002-tactico/contrato-informes-simples.md`](../../contrato-informes-simples.md)
+- `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` §7
+- [`../informes-tacticos-agregados/`](../informes-tacticos-agregados/informes-tacticos-agregados.md) —
+  los 19 agregados, que **estos listados no duplican**

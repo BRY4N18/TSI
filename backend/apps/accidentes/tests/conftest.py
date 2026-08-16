@@ -57,3 +57,8 @@ def seed_accidente(mock_pinot, mock_kafka):
         return idaccidente
 
     return _seed
+
+
+# Fixtures de los informes tácticos. Viven en su propio módulo para no mezclar
+# la siembra de los listados con la del módulo operativo, que es anterior.
+from apps.accidentes.tests.informes_fixtures import *  # noqa: F401,F403,E402

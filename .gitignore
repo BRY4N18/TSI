@@ -68,3 +68,7 @@ frontend/chrome/
 
 # Note: `specs/`, `.specify/` and `docker/` ARE tracked.
 # OSRM map binaries stay out via `docker/osrm/.gitignore` (data/*).
+
+# Notas de trabajo locales (no se versionan)
+/decisiones-pendientes.md
+/REVISION-SRS-ESTADO.md

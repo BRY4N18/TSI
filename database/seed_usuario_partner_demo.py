@@ -15,8 +15,19 @@ Que crea
   - `Dim_Cliente`       republica el cliente 920001 con `admin_local_id = 9001`
 
 El vinculo usuario->cliente se hace por `admin_local_id` y no por
-`Dim_Usuario_Cliente` porque esa tabla no tiene topic de Kafka, y
-`ClienteLookupService.resolve_idcliente()` ya contempla ese camino.
+`Dim_Usuario_Cliente`, y `ClienteLookupService.resolve_idcliente()` ya contempla
+ese camino.
+
+El motivo NO es que esa tabla carezca de topic de Kafka: lo tiene declarado
+(`Dim_Usuario_Cliente_topic`, ver `database/tablas.json`). El motivo real es que
+**ningun codigo de produccion publica en el** — las unicas escrituras estan en
+las pruebas—, asi que sembrar por ahi dejaria el vinculo invisible para todo lo
+demas. La conclusion practica se mantiene; la justificacion anterior era falsa.
+
+Consecuencia, anotada en `decisiones-pendientes.md` #23: hoy la pertenencia a una
+cuenta se resuelve de hecho por administrador local en TODOS los departamentos,
+asi que de una organizacion con cinco usuarios solo uno consulta los listados
+acotados a su cuenta.
 
 Idempotente: si el usuario ya existe, no vuelve a publicarlo.
 

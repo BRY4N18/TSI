@@ -118,3 +118,62 @@ def es_solo_reportador(roles) -> bool:
     tener ningun rol de atencion".
     """
     return bool(roles) and set(roles) <= ROLES_REPORTADORES
+
+
+# ── Informes tácticos simples (OT19, OT20) ───────────────────────────────────
+#
+# ⚠️ El acotamiento NO se declara aquí, sino en el resolutor transversal. Este
+# permiso solo abre la puerta; quién ve qué lo decide `resolver_organizacion`.
+
+from core.auth.roles_tacticos import ROL_GERENTE_EXITO_CLIENTE  # noqa: E402
+
+#: Quien ATIENDE tickets. Tener **alguno** de estos saca del acotamiento.
+#:
+#: `GerenteExitoCliente` es la autoridad del departamento (acceso-tactico §5).
+#: **No es `SupervisorSoporte`**: ese es el destinatario operativo de un escalado
+#: automático, no la autoridad. Conviven y sus permisos son independientes.
+ROLES_ATENCION = frozenset(
+    {
+        ROL_SOPORTE,
+        ROL_ADMINISTRADOR,
+        ROL_DESARROLLADOR_APIS,
+        ROL_DIRECTOR_TECNOLOGICO,
+        ROL_GERENTE_EXITO_CLIENTE,
+    }
+)
+
+#: Tickets: atienden y reportan. Escalados: **solo atienden** (FR-008).
+ROLES_INFORMES_TICKETS = frozenset(ROLES_ATENCION | ROLES_REPORTADORES)
+ROLES_INFORMES_ESCALADOS = frozenset(ROLES_ATENCION)
+
+
+class _RolesInformesPermission(BasePermission):
+    """Base que falla cerrado: sin usuario, sin autenticar o sin rol, no pasa."""
+
+    roles_permitidos: frozenset = frozenset()
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        return bool(self.roles_permitidos & set(getattr(user, "roles", []) or []))
+
+
+class InformesTicketsPermission(_RolesInformesPermission):
+    """Cola de tickets: la ve quien atiende y quien reporta.
+
+    Conceder aquí **no** implica ver todos los tickets: un reportador entra y
+    queda acotado a su cuenta. Son dos comprobaciones distintas y sucesivas.
+    """
+
+    roles_permitidos = ROLES_INFORMES_TICKETS
+
+
+class InformesEscaladosPermission(_RolesInformesPermission):
+    """Escalados: **solo roles de atención** (FR-008).
+
+    Un escalado es proceso interno del equipo de soporte, no información que el
+    reportador necesite sobre su propio ticket.
+    """
+
+    roles_permitidos = ROLES_INFORMES_ESCALADOS

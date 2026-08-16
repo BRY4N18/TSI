@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Red Operativa
+  version: 1.0.0
+  description: |
+    Cuatro listados llanos de solo lectura sobre la flota y las regiones operativas
+    (OT11, OT12, OT13).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    **⚠️ Existir no es estar disponible.** El listado de flota informa de qué unidades
+    tiene cada proveedor, dónde y de qué tipo. **No informa de cuáles pueden atender un
+    accidente ahora mismo.** El estado operativo de una unidad —Activa, Ocupada, En
+    Misión, Fuera de servicio— no es una propiedad de la unidad: solo se conoce leyendo
+    su histórico de estados, y obtenerlo para un listado exige una consulta por unidad.
+    La cobertura disponible por región es un informe compuesto (CU-T08).
+
+    **Acotamiento**: un proveedor ve solo sus unidades; el Administrador ve todas. Los
+    listados de regiones no se acotan: una región no pertenece a ningún proveedor.
+
+    **Ningún endpoint devuelve la posición geográfica de una unidad** ni el contacto del
+    proveedor.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT12 — Flota
+  - name: OT11/OT13 — Regiones
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/red-operativa/flota:
+    get:
+      tags: [OT12 — Flota]
+      summary: Composición de la flota de unidades
+      description: |
+        Qué unidades existen, de quién son, dónde cubren y de qué tipo son.
+
+        **`dado_de_alta` significa que la unidad existe y no ha sido dada de baja. NO
+        significa que esté disponible para atender un accidente.** Una unidad dada de
+        alta puede estar fuera de servicio, ocupada o ya en camino a otro accidente.
+        `meta.alcance` lo declara explícitamente en cada respuesta.
+
+        No devuelve la posición de la unidad ni el contacto del proveedor.
+      operationId: listarFlota
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: proveedor
+          in: query
+          description: |
+            Identificador del proveedor. Solo el Administrador puede indicar uno;
+            una empresa proveedora que indique otro distinto del suyo recibe 403.
+          schema: { type: integer }
+        - name: condado
+          in: query
+          schema: { type: integer }
+        - name: tipo_unidad
+          in: query
+          schema: { type: string }
+        - name: dado_de_alta
+          in: query
+          description: Existencia de la unidad, no su disponibilidad operativa.
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/UnidadFlota' }
+                      meta:
+                        type: object
+                        properties:
+                          alcance:
+                            type: string
+                            enum: [composicion_de_flota]
+                            description: |
+                              Declara que el listado describe qué unidades existen, no
+                              cuáles pueden acudir. Presente en todas las respuestas de
+                              este endpoint.
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/red-operativa/bajas-unidad:
+    get:
+      tags: [OT12 — Flota]
+      summary: Bajas de unidad y su impacto
+      description: |
+        Listado de hechos del período: `desde` y `hasta` son opcionales.
+
+        **Una baja forzada no es una baja más.** Significa que la unidad estaba
+        atendiendo un caso y hubo que reasignarlo; el caso afectado se devuelve como
+        traza de impacto. Sumar ambos tipos convertiría un incidente operativo en una
+        estadística de rotación de flota.
+      operationId: listarBajasUnidad
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: tipo_baja
+          in: query
+          schema: { type: string, enum: [Normal, Forzada_con_reasignación] }
+        - name: proveedor
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/BajaUnidad' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/red-operativa/regiones:
+    get:
+      tags: [OT11/OT13 — Regiones]
+      summary: Regiones operativas y su estado
+      description: |
+        Incluye las regiones despublicadas: una región retirada sigue siendo información
+        de supervisión.
+
+        **`En_Alerta` es una región que OPERA con cobertura degradada**, candidata a
+        despublicarse pero todavía activa. Agruparla con `Despublicada` ocultaría
+        justamente la ventana en la que se puede actuar antes de dejar casos sin
+        continuidad.
+
+        Restringido a Administrador y Director Tecnológico: una región no pertenece a
+        ningún proveedor.
+      operationId: listarRegiones
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: estado_region
+          in: query
+          schema:
+            type: string
+            enum: [En_Validación, Producción, En_Alerta, Despublicada, Rechazada]
+        - name: detenida_mas_de_dias
+          in: query
+          description: Solo las que llevan ese tiempo sin cambiar de estado.
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/RegionOperativa' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/red-operativa/validaciones-region:
+    get:
+      tags: [OT11/OT13 — Regiones]
+      summary: Intentos de validación de región
+      description: |
+        Se conservan **todos** los intentos: dos rechazos seguidos producen dos entradas,
+        y el segundo no sustituye al primero. Es lo que permite entender por qué se
+        rechaza una región.
+      operationId: listarValidacionesRegion
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: idregionoperativa
+          in: query
+          schema: { type: integer }
+        - name: resultado
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ValidacionRegion' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango de fechas en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            estadoRegionInvalido:
+              value:
+                error: bad_request
+                detail: "estado_region 'Inactiva' no es válido, use uno de: Despublicada, En_Alerta, En_Validación, Producción, Rechazada."
+                code: "400"
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: |
+        Rol sin acceso, o una empresa proveedora pidiendo unidades de otro proveedor.
+        No se devuelve ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            flotaAjena:
+              value:
+                error: forbidden
+                detail: "No puede consultar las unidades de otro proveedor."
+                code: "403"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [propios, todos]
+            alcance:
+              type: string
+              enum: [composicion_de_flota]
+              description: |
+                ⚠️ Añadido el 2026-08-15 al implementar FR-008.
+
+                **Qué describe el listado**, para los casos en que su nombre podría leerse
+                como otra cosa. Solo lo declara `flota`: `dado_de_alta` significa que la
+                unidad **existe**, no que pueda acudir, y confundirlos llevaría a decidir
+                cobertura sobre unidades fuera de servicio, ocupadas o ya en camino a otro
+                accidente.
+
+                No es obligatorio en el resto: añadirlo a todos convertiría una advertencia
+                deliberada en ruido, y el consumidor dejaría de leerla.
+
+    UnidadFlota:
+      type: object
+      description: |
+        Composición de flota. **No incluye disponibilidad operativa**: ver la descripción
+        del endpoint.
+      properties:
+        placa: { type: string }
+        nombre_unidad: { type: string, nullable: true }
+        tipo_unidad: { type: string }
+        capacidad: { type: integer, nullable: true }
+        proveedor: { type: string }
+        condado:
+          type: string
+          nullable: true
+          description: |
+            Ausente si la unidad no tiene condado asignado. La fila **no se omite**: sin
+            condado la unidad no puede encontrarse como candidata en un despacho, y esa
+            es una anomalía que la supervisión necesita ver.
+        estado_geografico: { type: string, nullable: true }
+        zona_cobertura: { type: string, nullable: true }
+        tipo_propiedad: { type: string, nullable: true }
+        dado_de_alta:
+          type: boolean
+          description: |
+            La unidad existe y no ha sido dada de baja. **No es disponibilidad
+            operativa.**
+
+    BajaUnidad:
+      type: object
+      properties:
+        placa: { type: string }
+        proveedor: { type: string }
+        motivo: { type: string, nullable: true }
+        tipo_baja: { type: string, enum: [Normal, Forzada_con_reasignación] }
+        ejecutada_por: { type: string, nullable: true }
+        caso_afectado:
+          type: string
+          nullable: true
+          description: |
+            Número del caso que la unidad atendía al ser dada de baja. Presente solo en
+            las bajas forzadas; es la traza de impacto de la interrupción.
+        fecha: { type: string, format: date-time }
+
+    RegionOperativa:
+      type: object
+      properties:
+        nombre_region: { type: string }
+        estado_region:
+          type: string
+          enum: [En_Validación, Producción, En_Alerta, Despublicada, Rechazada]
+          description: |
+            `En_Alerta` **opera** con cobertura degradada; no es equivalente a
+            `Despublicada`.
+        estado_geografico: { type: string, nullable: true }
+        dias_sin_cambio: { type: integer }
+        fecha_actualizacion: { type: string, format: date-time }
+
+    ValidacionRegion:
+      type: object
+      properties:
+        region: { type: string }
+        resultado: { type: string }
+        motivo: { type: string, nullable: true }
+        ejecutada_por: { type: string, nullable: true }
+        fecha: { type: string, format: date-time }

@@ -1,0 +1,334 @@
+openapi: 3.0.3
+
+info:
+  title: Informes compuestos de Suscripciones y Facturación sobre el modelo analítico
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los 13 informes agregados de Suscripciones y Facturación
+    (OT05–OT07), entre ellos **cinco indicadores financieros del BSC** que hoy no tienen fuente.
+
+    **Ninguno existe hoy.**
+
+    ## Reglas transversales
+
+    - **Solo lectura.**
+    - ⚠️ **Sin medios de cobro**: ni token de pasarela, ni últimos dígitos, ni identificador fiscal.
+      Se informa **si hay método vigente y cuándo caduca**, nunca cuál.
+    - ⚠️ **Sin desglose por persona.** El catálogo pide el tiempo de resolución «por administrador»;
+      se entrega agregado.
+    - **El estado de una suscripción nunca sale de la columna de actividad** del sistema operativo,
+      que está en verdadero en suscripciones canceladas.
+    - **Las notas de crédito restan** de los ingresos.
+    - **En disputa no es impago.**
+    - **Sin dato ≠ cero.** Un precio no mensualizable, una solicitud pendiente o un denominador vacío
+      se devuelven `null`.
+
+    ## Autoridad repartida ⚠️
+
+    El §5.1 del SRS asigna **catálogo y precios al Director de Estrategia** y **facturación, cobro y
+    mora al Director Financiero**. Cada uno accede sin acotamiento **a su materia**.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT05 Catálogo
+  - name: OT06 Ciclo de cobro
+  - name: OT07 Movimientos
+
+paths:
+  /informes-tacticos/suscripciones/mrr:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: MRR del mes y su variación (BSC)
+      description: |
+        ⚠️ **Tres cosas que este endpoint hace y son fáciles de hacer mal:**
+
+        1. **Normaliza toda periodicidad a mensual** antes de sumar.
+        2. Usa el **precio de la suscripción**, no el de lista del plan: el catálogo tiene planes del
+           mismo nivel con precios muy distintos.
+        3. **Excluye las suscripciones sin periodicidad** y las cuenta en `sin_periodicidad`: no se
+           puede normalizar lo que no se sabe cada cuánto se cobra.
+
+        La variación se descompone en **nuevo, expansión, contracción y baja**, que suman el neto. Un
+        MRR plano puede esconder una fuga compensada por altas.
+
+        **Usa mes natural.** Un rango arbitrario se resuelve al mes que lo contiene, y `meta.mes`
+        declara cuál se aplicó.
+      parameters:
+        - name: mes
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+          description: Mes natural. Por defecto, el mes en curso.
+      responses:
+        '200':
+          description: MRR y su descomposición
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - mes: "2026-08"
+                    mrr: 347.00
+                    nuevo: 149.00
+                    expansion: 0.00
+                    contraccion: 0.00
+                    baja: -149.00
+                    variacion_neta: 0.00
+                    sin_periodicidad: 1
+                    moneda: "USD"
+                meta:
+                  mes: "2026-08"
+                  nota_periodo: "MRR se mide por mes natural; un rango arbitrario se resuelve al mes que lo contiene."
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/ingresos:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: Ingresos por período, plan y tipo de cliente (BSC)
+      description: |
+        ⚠️ **Las notas de crédito restan.** `notas_credito` se devuelve aparte para que se vea cuánto
+        se descontó del bruto.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/tasa-renovacion:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: Tasa de renovación (BSC)
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/cobro-primer-intento:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: Tasa de cobro al primer intento frente a tras reintentos
+      description: |
+        Ambas están pagadas: lo que las separa es **el esfuerzo**. Una factura cobrada tras tres
+        reintentos no es un éxito equivalente a una cobrada a la primera.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/efectividad-dunning:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: Efectividad del dunning, recuperación por escalón
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: escalones_dunning
+          in: query
+          schema: { type: string, default: "3,5" }
+          description: Escalones en días desde el vencimiento.
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/clientes-sin-metodo-pago:
+    get:
+      tags: [OT06 Ciclo de cobro]
+      summary: Clientes sin método de pago activo
+      description: |
+        ⚠️ Es una **diferencia de conjuntos**: el cliente que interesa es el que **no tiene ninguna
+        fila** en métodos de pago. Una unión ordinaria lo perdería, que es exactamente lo contrario
+        del propósito del informe.
+
+        Devuelve **si hay método y cuándo caduca**, nunca cuál.
+      parameters:
+        - name: dias_aviso_caducidad
+          in: query
+          schema: { type: integer, default: 30, minimum: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/movimientos-plan:
+    get:
+      tags: [OT07 Movimientos]
+      summary: Movimientos de plan con delta de ingreso (BSC)
+      description: |
+        ⚠️ Clasifica por **delta de precio**, no por nivel de plan: el catálogo tiene un plan de nivel
+        Empresarial más barato que uno Profesional, así que subir de nivel no siempre es subir de
+        precio.
+
+        Una solicitud **aprobada pero no aplicada** se distingue de una ya aplicada.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/nrr:
+    get:
+      tags: [OT07 Movimientos]
+      summary: Retención neta de ingresos (BSC)
+      description: |
+        ⚠️ Se calcula sobre la **cohorte de clientes existentes al inicio del mes** y **excluye a los
+        nuevos**: incluirlos convertiría el NRR en crecimiento bruto, que es otro indicador.
+
+        Devuelve sus componentes —expansión, contracción y baja— para que la cifra sea explicable.
+      parameters:
+        - name: mes
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/suspension-reactivacion:
+    get:
+      tags: [OT07 Movimientos]
+      summary: Tasa de suspensión y de reactivación por período
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/tiempo-resolucion-solicitudes:
+    get:
+      tags: [OT07 Movimientos]
+      summary: Tiempo medio de resolución de solicitudes de cambio
+      description: |
+        ⚠️ **Sin desglose por administrador**: es identidad de persona, y la exclusión no admite
+        excepciones — la misma decisión ya tomada con el técnico de campo y el validador de región.
+
+        Cuenta las **resueltas**, sea cual sea el sentido: una rechazada se resolvió. Las
+        **pendientes van aparte**, nunca como cero.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/suscripciones/distribucion-cartera:
+    get:
+      tags: [OT05 Catálogo]
+      summary: Distribución de la cartera por plan y nivel
+      description: |
+        Un plan de **precio cero** cuenta en el reparto de clientes y aporta **cero ingreso**, con
+        ambas cifras por separado: un plan demo no es ni un éxito ni una ausencia.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermisoEstrategia' }
+
+  /informes-tacticos/suscripciones/utilizacion-limites:
+    get:
+      tags: [OT05 Catálogo]
+      summary: Utilización de límites — unidades y usuarios
+      description: |
+        ⚠️ **No incluye llamadas API**, y no devuelve ningún campo de llamadas **ni vacío**. Esa
+        dimensión vive en el dominio de Partners y API, aún sin especificar: un `llamadas: null`
+        diría «este cliente no consume la API», que es una afirmación **distinta** de «todavía no lo
+        medimos».
+
+        `nota_dimension_pendiente` lo declara en texto.
+
+        Devuelve **lo usado y lo contratado**, no solo el porcentaje: 5 de 25 y 500 de 2 500 son
+        situaciones muy distintas.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Utilización por cliente y plan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - idcliente: 1
+                    plan: "Profesional"
+                    unidades_usadas: 18
+                    unidades_limite: 25
+                    usuarios_usados: 4
+                    usuarios_limite: 10
+                    nota_dimension_pendiente: "La utilización de llamadas API se incorporará al especificar Partners y API."
+                meta:
+                  periodo: { desde: "2026-08-01", hasta: "2026-08-31" }
+        '403': { $ref: '#/components/responses/SinPermisoEstrategia' }
+
+  /informes-tacticos/suscripciones/severidades-habilitadas-vs-usadas:
+    get:
+      tags: [OT05 Catálogo]
+      summary: Severidades habilitadas frente a severidades realmente atendidas
+      description: |
+        Cruza el catálogo de planes con los casos atendidos. Una severidad **habilitada y no usada**
+        es la señal de que un cliente paga por algo que no necesita.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermisoEstrategia' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      schema: { type: string, format: date }
+      description: Inicio del período, inclusive. Por defecto, hace 30 días.
+    Hasta:
+      name: hasta
+      in: query
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. Por defecto, hoy.
+
+  responses:
+    Informe:
+      description: Filas agregadas del informe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaInforme' }
+    SinPermiso:
+      description: |
+        El solicitante no es el **Director Financiero** ni tiene papel operativo en facturación.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermisoEstrategia:
+      description: |
+        Los informes de catálogo son materia del **Director de Estrategia**. ⚠️ El Director
+        Financiero **no** los cubre: la autoridad de este departamento está repartida.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío** si el período no tiene datos, distinto de «se facturó cero».
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            periodo:
+              type: object
+              properties:
+                desde: { type: string, format: date }
+                hasta: { type: string, format: date }
+            mes:
+              type: string
+              description: Mes natural aplicado, en los informes que lo exigen.
+            nota_periodo:
+              type: string
+            filtros:
+              type: object
+              additionalProperties: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            codigo: { type: string }
+            mensaje: { type: string }

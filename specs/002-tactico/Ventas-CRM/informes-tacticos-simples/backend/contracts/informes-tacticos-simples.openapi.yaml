@@ -1,0 +1,366 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Ventas y CRM
+  version: 1.0.0
+  description: |
+    Cuatro listados llanos de solo lectura sobre Ventas y CRM (OT01, OT02, OT03).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    **Acotamiento por titularidad** — lo que distingue a este módulo:
+      * **Administrador**: ve todos los registros; puede filtrar por un ejecutivo concreto.
+      * **Gerente de Ventas / Gerente de Cuentas Públicas**: sin indicar ejecutivo, obtiene
+        únicamente los suyos. Si pide expresamente los de otro, recibe **403** — nunca se
+        le sustituye en silencio por los propios.
+      * Cualquier otro rol: 403.
+
+    `meta.acotado_a` declara si el resultado está limitado a la titularidad del
+    solicitante, para que un resultado vacío no sea ambiguo.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT01/OT02 — Cartera y embudo
+  - name: OT02 — Movimiento de cartera
+  - name: OT03 — Nutrición
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/ventas-crm/prospectos:
+    get:
+      tags: [OT01/OT02 — Cartera y embudo]
+      summary: Cartera de prospectos
+      description: |
+        Un solo listado que responde las cuatro preguntas que el catálogo planteaba por
+        separado: por canal de origen, por tipo de organización, por etapa y ejecutivo, y
+        perdidos con su motivo. Se distinguen aplicando filtros.
+
+        **El filtro `estado` tiene tres valores, no dos.** Un prospecto inactivo puede
+        estarlo por haberse perdido o por **haberse convertido en cliente**. Filtrar por
+        inactividad mezclaría los éxitos con los fracasos.
+
+        No devuelve datos de contacto (correo, teléfono): el propósito es supervisar la
+        cartera, no contactar.
+      operationId: listarProspectos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: canal
+          in: query
+          description: Canal de origen por el que se captó el prospecto.
+          schema: { type: string }
+        - name: tipo_organizacion
+          in: query
+          schema: { type: string, enum: [aseguradora, municipio, proveedor] }
+        - name: etapa
+          in: query
+          schema: { type: string }
+        - name: ejecutivo
+          in: query
+          description: |
+            Identificador del ejecutivo. Un Gerente solo puede indicar el suyo;
+            indicar otro responde 403.
+          schema: { type: integer }
+        - name: estado
+          in: query
+          description: |
+            `activo` en curso · `perdido` oportunidad perdida ·
+            `convertido` ganado, ya es cliente.
+          schema: { type: string, enum: [activo, perdido, convertido] }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Prospecto' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/ventas-crm/reasignaciones:
+    get:
+      tags: [OT02 — Movimiento de cartera]
+      summary: Reasignaciones de prospecto
+      description: |
+        Listado de hechos del período: `desde` y `hasta` son opcionales y omitirlos
+        devuelve el histórico completo paginado.
+
+        La primera asignación de un prospecto no tiene responsable anterior; se presenta
+        como ausente.
+      operationId: listarReasignaciones
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: idprospecto
+          in: query
+          schema: { type: integer }
+        - name: tipo_asignacion
+          in: query
+          schema: { type: string, enum: [automatica, manual] }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Reasignacion' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/ventas-crm/demos-activas:
+    get:
+      tags: [OT03 — Nutrición]
+      summary: Demos vigentes con días restantes
+      description: |
+        Solo demos cuya expiración es futura. Una demo sin fecha de expiración no se
+        considera activa.
+
+        **Una página puede devolver menos filas que el `limit` pedido.** El filtro se
+        aplica en dos pasos —un prefiltro por día en la base y el ajuste exacto al
+        instante actual después—, así que algunas filas del prefiltro se descartan.
+        `meta.pagination.has_next` es la autoridad sobre si quedan más resultados; el
+        número de filas devueltas no lo es.
+      operationId: listarDemosActivas
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: ejecutivo
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado, posiblemente con menos filas que `limit`.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/DemoActiva' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/ventas-crm/notificaciones-enviadas:
+    get:
+      tags: [OT03 — Nutrición]
+      summary: Alertas de señal de interés enviadas
+      description: |
+        Acotado por **destinatario**: un Gerente ve las alertas de las que fue receptor.
+
+        No se devuelve el estado de envío: la columna existe en el modelo pero ningún
+        proceso la escribe, así que exponerla daría a entender que significa algo.
+      operationId: listarNotificacionesEnviadas
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: regla
+          in: query
+          schema: { type: string }
+        - name: canal
+          in: query
+          schema: { type: string, enum: [email, push, slack] }
+        - name: ejecutivo
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/NotificacionEnviada' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      description: Cursor opaco de la página anterior. Omitir para la primera página.
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Filas por página. Un valor mayor que el máximo responde 400.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango de fechas en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+            estadoInvalido:
+              value:
+                error: bad_request
+                detail: "estado 'inactivo' no es válido, use uno de: activo, convertido, perdido."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: |
+        Rol sin acceso, o un Gerente pidiendo registros de otro ejecutivo.
+        No se devuelve ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            titularidadAjena:
+              value:
+                error: forbidden
+                detail: "No puede consultar los prospectos de otro ejecutivo."
+                code: "403"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [propios, todos]
+              description: |
+                `propios` si el resultado está limitado a la titularidad del solicitante.
+                Sin este campo, un resultado vacío sería ambiguo.
+
+    Prospecto:
+      type: object
+      properties:
+        empresa: { type: string }
+        nombre_contacto: { type: string }
+        cargo: { type: string, nullable: true }
+        tipo_organizacion: { type: string, nullable: true }
+        canal_origen: { type: string, nullable: true }
+        etapa_actual: { type: string }
+        ejecutivo:
+          type: string
+          nullable: true
+          description: Nombre del ejecutivo asignado; ausente si el prospecto no tiene dueño.
+        estado: { type: string, enum: [activo, perdido, convertido] }
+        motivo_perdida:
+          type: string
+          nullable: true
+          description: Presente solo cuando el estado es `perdido`.
+        valor_estimado: { type: number, nullable: true }
+        fecha_registro: { type: string, format: date-time }
+
+    Reasignacion:
+      type: object
+      properties:
+        empresa: { type: string }
+        ejecutivo_anterior:
+          type: string
+          nullable: true
+          description: Ausente en la primera asignación del prospecto.
+        ejecutivo_nuevo: { type: string, nullable: true }
+        tipo_asignacion: { type: string }
+        motivo: { type: string, nullable: true }
+        fecha: { type: string, format: date-time }
+
+    DemoActiva:
+      type: object
+      properties:
+        empresa: { type: string }
+        nombre_contacto: { type: string }
+        ejecutivo: { type: string, nullable: true }
+        expiracion: { type: string, format: date-time }
+        dias_restantes: { type: integer }
+
+    NotificacionEnviada:
+      type: object
+      properties:
+        empresa: { type: string }
+        ejecutivo_notificado: { type: string, nullable: true }
+        regla_disparada: { type: string }
+        canal: { type: string }
+        fecha: { type: string, format: date-time }

@@ -7,6 +7,964 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-15 — Frontend de Soporte al Cliente: `acotado_a` validado de punta a punta
+
+Alcance: `specs/002-tactico/Soporte-Cliente/informes-tacticos-simples/frontend/` (spec, tasks),
+`frontend/src/app/modules/soporte-cliente/informes/` (catálogo, 2 guards, 2 páginas, rutas),
+`app.routes.ts`, `nav-links.ts`, 2 ficheros de prueba (18 pruebas),
+y en backend: el `enum` de `estado` en el contrato OpenAPI **y su prueba de conformidad**.
+
+**Se eligió este departamento para cerrar el hueco del piloto.** Cuentas y Clientes validó todo menos
+el aviso de alcance, porque sus ocho listados son globales. Aquí `tickets` devuelve `propios` a un
+reportador y `todos` a quien atiende, así que la garantía más delicada de la capa compartida se
+ejercita contra el backend real.
+
+### Lo verificado en navegador, con dos roles sobre los mismos datos
+
+| | |
+|---|---|
+| Rol **Soporte** → `todos` | 14 filas de varias cuentas, **sin aviso** |
+| Rol **Cliente** → `propios` | 12 filas de **una sola cuenta**, con el aviso |
+| **Estado vacío acotado** | «No hay tickets con esos criterios. **No hay resultados entre tus registros.**» |
+| **`403` real** | un Cliente sin cuenta resuelta ve el mensaje del backend, no una lista vacía |
+| Guard de escalados | el Cliente queda fuera; el índice ni se lo ofrece |
+
+El estado vacío es lo que más importa: es justo cuando no hay filas cuando «no hay» y «no hay de los
+tuyos» se leen igual, y es la ambigüedad que `acotado_a` existe para evitar. Ahora está cerrada en la
+pantalla, no solo en la respuesta.
+
+### Un hueco del contrato de backend, cerrado de paso
+
+El OpenAPI declaraba `estado` como **texto libre** y el backend **sí** lo valida contra las
+constantes del dominio. Sin el `enum` declarado, el frontend no podía ofrecer un desplegable sin
+copiar de un sitio que nadie comprueba — y un `400` evitable acabaría llegando al usuario. Añadido al
+contrato, con la prueba de conformidad extendida para que no pueda divergir. Es la tercera vez que
+este mismo patrón aparece en el departamento.
+
+### Una regla de navegación que no se rompió
+
+Añadir `PartnerIntegracion` al enlace del sidebar puso en rojo una prueba existente: **FR-UI-033** —la
+consola de Partners y su portal no se fusionan, y ningún rol descubre la existencia del otro
+departamento—. No se actualizó la prueba para que pasara: **se quitó el enlace**.
+
+El backend sí le permite el listado, así que la ruta le responde si llega a ella; lo que no tiene es
+un enlace. Queda anotado como decisión de producto en `tasks.md`, no resuelta por conveniencia.
+
+### Verificación
+
+Suite completa del frontend: **759 verdes** (741 previas + 18 nuevas). Backend: la prueba de
+conformidad del contrato de Soporte sigue verde con el `enum` nuevo.
+
+---
+
+## 2026-08-15 — Piloto de frontend: los 8 listados de Cuentas y Clientes, verificados en navegador
+
+Alcance: `specs/002-tactico/Cuentas-Clientes/informes-tacticos-simples/frontend/`
+(spec, plan, tasks — **nuevos**),
+`frontend/src/app/modules/cuentas-clientes/informes/` (**nuevo**: catálogo, 2 guards, 2 páginas,
+rutas), `frontend/src/app/shared/informes/` (**3 correcciones**),
+`app.routes.ts`, `nav-links.ts`, 3 ficheros de prueba (56 pruebas),
+`.claude/launch.json` y `frontend/proxy.local.conf.json`.
+
+**La hipótesis de la capa compartida se confirma.** Las ocho pantallas salen de **un catálogo de
+definiciones y una sola página parametrizada**: ninguna implementa tabla, paginación ni manejo de
+error. Añadir un listado es añadir una entrada al catálogo.
+
+### La capa compartida necesitó tres cambios, y eso es el resultado del piloto
+
+Se construyó antes que cualquier pantalla precisamente para descubrir esto. Los tres se corrigieron
+**en `shared/informes`**, no en una página:
+
+**1. Faltaba el formato `lista`.** Tres listados devuelven arreglos —`roles`, `roles_servidor`,
+`roles_negocio`— y se pintaban con las comas pegadas de `String(['a','b'])`. De paso quedó fijado que
+**un arreglo vacío es ausencia**: quien no tiene roles no tiene «cero roles», no los tiene.
+
+**2. `controlClass` no existía.** Importé la constante de estilo y nunca la asigné al componente.
+**Las 42 pruebas de Karma pasaron igual** —compila en JIT, con comprobación de plantillas más laxa— y
+lo encontró el compilador AOT al arrancar el servidor de desarrollo. Es la demostración concreta de
+por qué el recorrido en navegador no es opcional, y de por qué avisé al entregar la capa de que sus
+plantillas aún no estaban type-checkeadas.
+
+**3. El pipe de números fijaba el locale `'es'`**, que exige registrar sus datos; sin ellos **lanza al
+renderizar**, o sea que la tabla se cae al pintar un número. Ahora usa el `LOCALE_ID` de la
+aplicación.
+
+### Dos decisiones propias del piloto
+
+**Dos guards, no uno.** El backend declara Administrador en siete listados y Administrador o Director
+Tecnológico en `accesos-tecnicos`. Un guard único con la unión de roles le daría los siete al Director
+Tecnológico — la contradicción con el §5.1 del SRS que `acceso-tactico.md` marca con ⚠️. Hay una
+prueba por cada mitad, y se verificó en navegador.
+
+**El índice se genera del mismo catálogo** que las páginas y filtra por rol: al Director Tecnológico
+le ofrece **solo** el suyo. Ofrecerle enlaces que su guard rechaza no sería una fuga —el guard sigue
+cerrando— pero sí una interfaz que promete lo que no cumple.
+
+### El vacío que no es un defecto
+
+`transferencias-propiedad` devuelve cero filas **siempre**, porque nadie escribe
+`Fact_HistorialTransferenciaPropiedad` (decisión #28). Su estado vacío lo dice: *«la fuente de este
+informe aún no se alimenta… No es un fallo de la pantalla»*. Un «no hay transferencias» genérico
+habría hecho que alguien buscara el defecto en el código.
+
+### Verificado en navegador contra el stack real
+
+Requirió **reconstruir los contenedores**: el de Django corría una imagen anterior a *todos* los
+informes tácticos —decisión #26—, así que las 32 rutas respondían `404`. Reconstruidos `django` y
+`frontend`, se recorrieron las ocho pantallas:
+
+| Comprobación | Resultado |
+|---|---|
+| Las ocho con datos reales | ✅ |
+| **`400` real** (`dias_minimo=-5`) | ✅ muestra el `detail` del backend, **sin** «Reintentar» y **sin** tabla vacía |
+| Director Tecnológico en los siete | ✅ redirigido a `access-denied` |
+| Director Tecnológico en accesos técnicos | ✅ entra |
+| Índice filtrado por rol | ✅ le ofrece solo el suyo |
+| Valores ausentes | ✅ guion, nunca `0` ni fecha de época |
+| Vacío de transferencias | ✅ explica la #28 |
+| Rango de fechas | ✅ solo en transferencias |
+| Recuento total | ✅ no aparece |
+
+### Lo que este piloto NO validó, y queda declarado
+
+**`meta.acotado_a`.** Ninguno de los ocho listados de este departamento acota —son de Administrador y
+globales—, así que la garantía más delicada de la capa **no se ejercitó de punta a punta**. La cubren
+las pruebas de componente, que no es lo mismo. Se cierra con el siguiente departamento acotado:
+Soporte (`propios`) o Emergencias (`zonas_contratadas`).
+
+### Verificación
+
+Suite completa del frontend: **741 verdes** (685 previas + 56 nuevas). Build de desarrollo limpio.
+
+---
+
+## 2026-08-15 — Capa compartida de frontend para los listados tácticos simples
+
+Alcance: `specs/002-tactico/contrato-informes-simples-frontend.md` (**nuevo**),
+`frontend/src/app/shared/informes/` (**nuevo**: tipos, servicio, store, dos componentes),
+3 ficheros de prueba (42 pruebas).
+
+**Ninguna página la usa todavía.** Es deliberado: se construye la capa antes del piloto, igual que
+`core/informes/` se construyó antes del piloto de backend. Los 32 endpoints comparten cursor,
+envelope, filtros y forma de error; hacerlos departamento por departamento habría producido siete
+tablas divergentes, y la primera que se despistara habría abierto el hueco.
+
+### Las tres cosas que la capa existe para no perder
+
+Son cosas que el backend garantiza y que **una pantalla puede tirar a la basura sin que nada falle**,
+que es lo que las hace peligrosas.
+
+**1. `meta.acotado_a` llega a la pantalla, y sobre todo al estado vacío.** El backend lo emite para
+que un resultado vacío no sea ambiguo: «no hubo accidentes graves» y «no hubo accidentes graves *en
+mis zonas*» se leen igual sin él. El componente lo muestra como aviso cuando hay filas y **lo
+incorpora al texto del estado vacío** cuando no las hay — que es justo cuando la ambigüedad muerde.
+
+Toma tres valores, no dos. `todos` **no produce aviso**: un cartel permanente diciendo «lo ves todo»
+sería ruido, y enseñaría a ignorar la franja donde a veces sí hay una advertencia real. Y
+`zonas_contratadas` tiene texto propio: los accidentes ocurridos en una zona contratada **no
+pertenecen al cliente**, así que un «tus accidentes» afirmaría algo falso sobre datos de
+siniestralidad ajenos. Hay una prueba que lo exige.
+
+**2. Un `400` se muestra como error legible, nunca como tabla vacía.** El backend rechaza en vez de
+recortar, y su `detail` nombra los valores válidos. Capturarlo para pintar una tabla vacía
+reintroduciría el fallo silencioso que la regla evita: el consumidor leería «no hay resultados» donde
+el sistema dijo «tu petición está mal». El `detail` viaja **tal cual**; sustituirlo por un «Ha
+ocurrido un error» tiraría justo la información con la que se puede corregir.
+
+Y un `400` **no ofrece «Reintentar»**: repetir lo mismo devuelve lo mismo. Un `403` tampoco es una
+lista vacía — no tener acceso es distinto de que no haya datos, y es la diferencia que el backend
+eligió a propósito frente a devolver `200` con `data: []`.
+
+**3. Un valor ausente se pinta ausente, nunca como cero.** El backend devuelve `null` de forma
+deliberada —una calificación sin poner no es la nota mínima, una hora de fin ausente no es 1970— y
+rellenarlo en el último paso desharía esa distinción. Hay dos pruebas emparejadas: `null` pinta un
+guion, y un `0` que el backend sí devolvió pinta `0`.
+
+### Lo que el cursor opaco impone al diseño
+
+No hay total de resultados ni números de página, y **no se pueden inventar**: contar filas es
+exactamente lo que la paginación keyset evita para no repetir ni perder registros con ingesta
+continua. La navegación es siguiente/anterior, con «anterior» resuelto guardando los cursores
+visitados — lo que `lista-accidentes` ya hacía a mano, ahora una sola vez y probado.
+
+Dos detalles que la prueba fijó:
+
+- **cambiar de filtros vuelve a la primera página.** Los cursores visitados pertenecen a la consulta
+  anterior; reutilizarlos pediría continuar un recorrido que ya no existe, y la respuesta sería
+  plausible y equivocada;
+- **un error borra el cursor de la página siguiente.** Pertenecía a una respuesta que no llegó, y
+  conservarlo dejaría avanzar sobre datos que no se leyeron.
+
+### Dos defectos propios, encontrados al ejecutar
+
+**Un comentario HTML con acentos graves dentro de una plantilla literal.** Cerraba la cadena y
+rompía el fichero entero. Lo detectó el compilador.
+
+**El pipe de números con locale fijo.** Fijar `'es'` exige registrar sus datos, y sin ellos el pipe
+**lanza al renderizar** — es decir, la tabla se cae al pintar un número. Ahora usa el `LOCALE_ID` que
+la aplicación tenga configurado.
+
+### Verificación
+
+`shared/informes`: 42 pruebas. Suite completa del frontend: **685 verdes**. Build de desarrollo
+limpio.
+
+⚠️ **Sin verificación en navegador**, y a propósito: ninguna página consume la capa todavía, así que
+no hay nada que renderizar. Esa comprobación corresponde al piloto.
+
+---
+
+## 2026-08-15 — Decisión #23 resuelta: la pertenencia a una cuenta ya se puede escribir
+
+Alcance: `config/settings.py` (una entrada), `core/repositories/cuentas_clientes/cuenta_usuario_repository.py`
+(`vincular`, `desvincular`), `apps/cuentas_clientes/services/user_management_service.py`
+(`idcliente` opcional en el alta), 1 fichero de prueba nuevo (10 pruebas),
+`decisiones-pendientes.md` (#23 cerrada).
+
+**Lo que faltaba era una línea.** `Dim_Usuario_Cliente` y su topic estaban declarados en
+`database/tablas.json` desde el principio; lo que no existía era la entrada en
+`settings.KAFKA_TOPICS`, sin la cual ningún repositorio podía publicar. No es que se olvidaran de
+llamar a un método: el método no existía porque no había dónde escribir.
+
+**La consecuencia que arrastraba era grande.** Los tres lectores de esa tabla —el expediente de
+cliente en Seguimiento, los tickets en Soporte y el resolutor de pertenencia de los listados
+tácticos— caían siempre en el respaldo por `admin_local_id`. De una organización con cinco usuarios,
+**uno solo** veía los datos de su cuenta; los otros cuatro recibían `403`. En backend eso era una
+nota; en pantalla se lee como una aplicación rota, y por eso se resolvió antes de empezar el
+frontend de los listados.
+
+**Decisión tomada:** cualquier usuario vinculado ve los datos de su organización.
+
+### Tres cosas que se conservaron a propósito
+
+**El respaldo por `admin_local_id` se queda.** Las cuentas creadas antes de este cambio no tienen
+filas de vínculo, y quitarlo dejaría sin acceso a sus administradores. Así **no hace falta migrar
+nada**: lo viejo sigue funcionando y lo nuevo suma.
+
+**El criterio estricto sigue siendo estricto.** Red Operativa y Suscripciones acotan por
+administrador local porque sus pantallas operativas lo hacen — dar de alta unidades y ver la
+facturación. Si el vínculo también los ampliara, este cambio habría abierto una puerta trasera en dos
+departamentos que no la pidieron. Hay una prueba que fija que `por_vinculo_a_cuenta` reconoce al
+empleado y `por_admin_local` **no**.
+
+**El `idcliente` del alta es opcional.** Los usuarios internos de TSI no pertenecen a ninguna
+organización, y exigirlo dejaría sin poder crearlos. Su ausencia no vincula a nada por defecto.
+
+### Y una que se decidió al escribirla
+
+**`desvincular` marca inactivo, no borra.** Las tres consultas filtran por `activo = true`, así que
+marcar basta para retirar el acceso. Borrar haría indistinguible «nunca perteneció» de «se le retiró
+el acceso», que es justo lo que alguien necesitará saber el día que pregunte por qué un usuario dejó
+de ver los datos de su cuenta.
+
+### Verificación
+
+Suite completa: **3601 verdes**, 2 saltadas por casos de uso retirados. Las 10 pruebas nuevas fijan
+el comportamiento y, sobre todo, **la consecuencia**: sin vínculo un empleado no resuelve ninguna
+cuenta —el estado en que estaba todo el sistema— y con vínculo resuelve la suya.
+
+---
+
+## 2026-08-15 — Listados tácticos de Emergencias (5 endpoints): un eje de acotamiento nuevo y tres correcciones de spec
+
+Alcance: `core/informes/cobertura.py` (**nuevo**, aditivo),
+`core/repositories/accidentes/` (4 repositorios de informes),
+`core/repositories/seguimiento/informes_despachos_repository.py`,
+`apps/accidentes/` (3 servicios, `views/informes_views.py`, `permissions.py` ampliado, 4 rutas),
+`apps/seguimiento/` (1 servicio, 1 vista, 1 ruta),
+`backend/conftest.py` (rama de consultas falsas **y corrección de las ramas de catálogo**),
+9 ficheros de prueba nuevos (167 pruebas),
+`spec.md`, `data-model.md` y el contrato OpenAPI (**corregidos**),
+`specs/002-tactico/contrato-informes-simples.md` (§5.6 y §5.7).
+
+**Es el primer módulo desde Red Operativa que amplía la capa transversal**, y por una razón
+legítima: ninguno de los tres ejes anteriores acota por cobertura geográfica. La ampliación es
+aditiva —`core/informes/acotamiento.py` no se tocó— y las suites de los seis departamentos previos
+quedaron intactas.
+
+### El cuarto eje no acota por titularidad
+
+Los tres anteriores preguntan **de quién es la fila**: el ejecutivo del prospecto, la cuenta de la
+suscripción, el partner de la credencial. Este no. Un cliente no ve «sus» accidentes —no son suyos en
+ningún sentido— sino los de **las zonas que tiene contratadas**.
+
+Cambian tres cosas a la vez, y por eso vive en su propio módulo en vez de ser un parámetro más:
+
+| | Ejes de titularidad | Cobertura contratada |
+|---|---|---|
+| Lo que se resuelve | un identificador | **un conjunto de ubicaciones** |
+| Cómo filtra | `= x` | **`IN (…)`** |
+| No tener nada | no se da | **cero resultados** |
+
+`meta.acotado_a` toma un valor propio: **`zonas_contratadas`**. Reutilizar `propios` diría algo falso.
+
+**Sin zonas contratadas es CERO, nunca TODO.** De las dos lecturas posibles, una da el mapa de
+siniestralidad completo a quien no contrató nada. La guarda se escribe explícita porque el fallo por
+omisión —un `if zonas:` que se salte el filtro cuando el conjunto está vacío— cae justo en la lectura
+peligrosa, y sin ruido: la respuesta conserva la forma correcta.
+
+**El conjunto se resuelve una vez, antes de consultar.** Condados → ciudades → calles son dos
+consultas por petición, sea cual sea el número de zonas, y hay una prueba que lo mide. El módulo
+operativo hace hoy lo contrario a diez líneas de donde hace lo correcto: comprueba el condado **fila
+a fila mientras recorre**, con un coste que crece más cuando las zonas del cliente son escasas — es
+decir, cuando menos resultados va a haber.
+
+### Tres correcciones que la implementación obligó a hacer
+
+**1. `borrador` no se puede dar, y la spec lo pedía.** `BORRADOR` es un estado formal que vive en el
+histórico. `Fact_Accidente` no guarda nada que lo distinga: un caso en borrador es `activo = true`
+sin hora de fin, **idéntico a cualquier otro caso en curso**. Implementarlo devolvería **todos los
+casos activos** etiquetados como detenidos en borrador — la forma correcta con el contenido
+equivocado. Obtenerlo de verdad exige el histórico, que es justo lo que FR-008 prohíbe: FR-002 y
+FR-008 se contradicen, y gana FR-008. Retirado de la spec, del data-model, del contrato y del
+catálogo, donde la fila queda marcada ⛔ con el motivo.
+
+**2. `cerrado` y `duplicado` no eran disjuntos.** Un duplicado que conservara hora de fin salía en
+los dos filtros — contando el mismo hecho dos veces, que es exactamente el defecto que la distinción
+existe para evitar. `cerrado` exige ahora además que el caso no apunte a otro.
+
+**3. El cursor de casos y cierres era inpaginable.** `idaccidente` es **texto** —el número de caso—
+y el componente de cursor convierte a entero por defecto. La primera página funcionaba y la segunda
+daba `400`. Lo encontró la prueba de integridad del recorrido.
+
+### Lo que el caso guarda, y lo que no
+
+`Fact_Accidente` **no tiene columna de estado**. Pero tres hechos suyos distinguen las tres formas de
+quedar inactivo: `activo`, `horafin` y `idaccidenteorigen`. El listado devuelve **los tres por
+separado** y no un estado calculado: la exclusividad entre cerrado, descartado y fusionado la
+garantiza el módulo de fusión, no este, y un campo derivado empezaría a mentir el día que esa
+garantía cambiara, conservando la forma correcta.
+
+Un recuento de «casos inactivos» sin distinguir sumaría **emergencias atendidas, falsas alarmas y
+duplicados**: el trabajo realizado y el ruido descartado como la misma cosa.
+
+Mismo criterio en despachos: «en tránsito» se deriva de las **horas del propio despacho** —despachado,
+sin llegada, sin retiro—, no del histórico de estados. Y `0` es el centinela de «aún no ha ocurrido»:
+una guarda por nulidad dejaría **ningún** despacho en tránsito.
+
+### Una exención de cargo no levanta una exclusión constitucional *(§5.7)*
+
+El Director de Operaciones ve los casos de todas las zonas y **sigue sin ver las coordenadas del
+accidente ni la identidad de los implicados**. Su exención es de **acotamiento**; aquellas son
+exclusiones que la constitución impone sobre el dato, no sobre quién pregunta.
+
+La distinción importa porque el camino contrario se recorre sin querer: quien implementa una exención
+de alcance puede leerla como «este rol lo ve todo». Cada listado con dato excluido lleva ahora una
+prueba **con la autoridad del departamento**, no solo con el rol acotado.
+
+### La hora que vale es la del sitio, y las dos tablas no son simétricas
+
+La fotografía toma su hora de registro de una **columna propia**; la nota, de la **marca genérica de
+modificación**, porque no tiene columna de sincronización. Tomar la equivocada devolvería la hora de
+última modificación como si fuera la de captura, y **el error sería invisible** en los registros
+hechos en línea —donde ambas coinciden—, apareciendo solo en los capturados sin conexión, que son
+justamente los que importan.
+
+Por eso cada prueba mira **los dos casos a la vez**: sin conexión, dos horas distintas; en línea, dos
+iguales. Verificar solo uno de los dos no distinguiría una implementación correcta de otra que sella
+la hora de subida en ambos campos.
+
+> **Deuda anotada.** Que la nota carezca de columna propia de sincronización es una asimetría del
+> modelo. Mientras siga así, cualquier consulta sobre sincronización de notas depende de una columna
+> genérica que una actualización futura pisaría.
+
+### Dos defectos que las pruebas encontraron en lo ya construido
+
+**Las ramas del Pinot falso capturaban consultas ajenas.** Mis ramas de catálogo despachaban solo por
+la lista de columnas, y los 19 informes agregados consultan `Dim_Calle` y `Dim_Ciudad` con **la misma
+lista y distinto `WHERE`**. Resultado: tres pruebas de agregados en rojo, y —peor— filas filtradas por
+la columna equivocada. Cada rama exige ahora también su cláusula `WHERE`.
+
+**Las pruebas de coste en consultas de Partners y Soporte pasaban en vacío.** El contador envolvía
+`PinotClient.query` y llamaba al original pasándole `self`; el mock que instala `mock_pinot` se llama
+**sin** `self`, así que cada consulta lanzaba `TypeError`, la petición acababa en `401` y el conteo
+quedaba en cero — con lo que `muchas == pocas` comparaba nada contra nada. Corregido en los tres
+módulos, y añadida la guarda `pocas > 0` que impide que vuelva a pasar desapercibido.
+
+Al arreglarlo apareció un matiz real: un catálogo que solo aplica a algunas filas cuesta **una**
+consulta más para toda la página, no una por fila. La aserción de igualdad exacta hacía fallar un
+comportamiento correcto; ahora es una cota fija, que es la que detecta el `N+1` de verdad.
+
+### Verificación
+
+`apps/accidentes` + `apps/seguimiento`: 463 pruebas verdes. Suite completa: **3591 verdes**, 2
+saltadas por casos de uso retirados. Cobertura de los cuatro servicios, las dos vistas, el eje nuevo
+y los cinco repositorios de informes: **95 %**.
+
+---
+
+## 2026-08-15 — Listados tácticos de Soporte al Cliente (2 endpoints): el módulo que verifica la capa transversal
+
+Alcance: `core/repositories/soporte/` (2 repositorios de informes),
+`apps/soporte_cliente/` (2 servicios, `informes_views.py`, `permissions.py` ampliado, 2 rutas),
+`backend/conftest.py` (rama de consultas falsas),
+6 ficheros de prueba nuevos (88 pruebas),
+`contracts/informes-tacticos-simples.openapi.yaml`, `spec.md` y `data-model.md` (**corregidos**),
+`database/seed_usuario_partner_demo.py` (comentario falso), `decisiones-pendientes.md` (#23).
+
+**`core/informes/` no se tocó**, y esa era la hipótesis del módulo. Es el segundo consecutivo que
+solo consume la capa transversal: la parametrización del criterio de pertenencia que introdujo Red
+Operativa cubrió el departamento que la necesitaba —el que usa el criterio **amplio**— sin ampliarse.
+Si hubiera hecho falta modificarla, la corrección iba allí, no aquí.
+
+### El acotamiento se decide por lo que NO se tiene
+
+Dos roles distintos —Cliente y Partner de integración— acotan por el mismo eje, y ninguno ve lo del
+otro. Decidirlo por «ser Cliente» es un fallo que el módulo operativo **ya tuvo que corregir**: el
+Partner reporta y no es Cliente, así que esa comparación lo habría dejado **fuera** del acotamiento,
+viendo tickets ajenos.
+
+La capa transversal lo resuelve sola: con los roles de atención como amplios y los de reporte como
+acotados, un usuario con **ambos** cae en la rama amplia, que es exactamente FR-012. Y hay una prueba
+que recorre toda combinación de hasta tres roles comprobando que el resolutor transversal y el
+`es_solo_reportador` del módulo operativo **deciden lo mismo**. Sin ella, pantalla y listado podrían
+acotar a poblaciones distintas sin que ninguna supiera de la otra.
+
+### La spec decía cuatro valores y el dominio tiene cinco
+
+`situacion_compromiso` se describía con cuatro situaciones: en curso, en riesgo, incumplido y sin
+compromiso. Falta **`cumplido`**, que `resolver_ticket_service` escribe al resolver dentro de plazo.
+
+Implementar las cuatro al pie de la letra habría dejado el filtro rechazando con `400` un valor
+legítimo —«no es válido» cuando sí lo es— y **habría hecho imposible listar los tickets resueltos a
+tiempo**. Es el mismo patrón que ya apareció en cuatro departamentos: la spec cita literales que no
+coinciden con lo que el código escribe.
+
+Corregido en los tres sitios —`spec.md`, `data-model.md` y el enum del contrato— y cerrado con una
+prueba que compara el enum del OpenAPI contra las constantes del dominio. Si mañana aparece un sexto
+valor, falla ahí en vez de manifestarse como un `400` inexplicable.
+
+### `sin compromiso` no es ausencia de dato, y `sin clasificar` sí
+
+Dos tickets pueden llegar sin situación de compromiso por motivos opuestos:
+
+* **sin clasificar** — aún no hay contador; llega con `null`, y no se le atribuye ninguna;
+* **`sin compromiso`** — está clasificado y **no se le pudo asignar plazo**; llega con su propio
+  valor.
+
+El vigilante de plazos descarta el segundo precisamente porque no tiene compromiso que vigilar: es el
+único estado en que un ticket puede quedarse indefinidamente sin que ningún proceso lo mire.
+Colapsarlo a `null`, u omitirlo, reintroduciría el defecto que la corrección anterior resolvió.
+
+### El texto de los mensajes no se consulta
+
+`Fact_Historial_Ticket` guarda `mensaje` y `es_nota_interna`. **Ninguna de las dos está en la lista
+blanca**, y esa es toda la protección. La pantalla operativa las lee y filtra después —tiene que, le
+hacen falta—; un listado táctico responde qué pasó, cuándo y quién lo hizo, y no necesita la prosa.
+
+No consultarlas es más seguro que filtrarlas: un filtro correcto sigue siendo un filtro que alguien
+puede olvidar al añadir un campo dentro de seis meses, y el fallo sería silencioso — la respuesta
+conservaría la forma esperada, solo que con notas internas dentro.
+
+### La autoría se decide por la ausencia de autor, no por el tipo de acción
+
+Manual y automático están registrados **por duplicado**: el tipo de acción y la presencia de autor.
+La ausencia de autor es la señal autoritativa, y es deliberada — antes se registraba al supervisor
+que **recibía** el escalado como si lo hubiera ejecutado, y la corrección consistió en dejar el autor
+vacío y mover al supervisor a destinatario.
+
+Por eso `tipo_escalado` se deriva del autor. Si las dos señales se contradijeran el dato estaría
+corrupto; decidir por el tipo lo **ocultaría**. Una prueba exige que coincidan en todos los registros.
+
+De los once tipos de acción, el listado incluye exactamente dos. `alerta_sla_riesgo` es un **aviso**
+—el ticket no cambia de agente ni de nivel— y `cierre_automatico_por_vencimiento` **cierra**, no
+deriva. Contarlos daría la impresión de que la cola se deriva mucho más de lo que se deriva.
+
+### Un defecto encontrado por las pruebas, el mismo de Partners
+
+`urls.py` iba a importar `TicketsView` de `informes_views` teniendo `views.py` otra `TicketsView`
+operativa: la segunda importación habría sustituido a la primera **en silencio**, y la ruta de
+informes serviría el listado operativo. Resuelto con alias explícito antes de que llegara a fallar.
+Es la segunda vez en dos módulos: conviene mirarlo en los departamentos que quedan.
+
+### Un hallazgo transversal que no se arregla aquí (#23)
+
+`Dim_Usuario_Cliente` **tiene topic de Kafka declarado** y aun así **ningún código de producción
+publica en ella**. `ClienteLookupService` consulta la tabla y cae en `admin_local_id` cuando no
+encuentra nada — es decir, siempre.
+
+Consecuencia: hoy, en **todos** los departamentos, la pertenencia se resuelve de hecho por
+administrador local, incluidos los listados que declaran el criterio amplio. Una organización con
+cinco usuarios tiene uno solo que puede consultar sus listados acotados. Poblar esa tabla decide
+quién de una organización ve qué, y eso excede a un módulo de listados. Anotado para decisión.
+
+De paso se corrigió el comentario de `seed_usuario_partner_demo.py`, que justificaba sembrar por
+`admin_local_id` diciendo que la tabla «no tiene topic de Kafka». Sí lo tiene; la conclusión práctica
+era correcta y el motivo no.
+
+### Verificación
+
+`apps/soporte_cliente`: 202 pruebas verdes (114 previas + 88 nuevas). Suite completa: **3400 verdes**,
+2 saltadas por casos de uso retirados. Cobertura de los dos servicios, las vistas y los dos
+repositorios de informes: **96 %**.
+
+---
+
+## 2026-08-15 — Listados tácticos de Partners y API (5 endpoints) y la regla de la lista blanca
+
+Alcance: `core/repositories/partners/` (3 repositorios de informes),
+`apps/partners/` (3 servicios, `views/informes_views.py`, `permissions.py` ampliado, 5 rutas),
+`apps/partners/views/urls.py` (**corrección**: colisión de nombres),
+`backend/conftest.py` (rama de consultas falsas),
+6 ficheros de prueba nuevos (156 pruebas),
+`specs/002-tactico/contrato-informes-simples.md` (§5.5 y el recuento de listados).
+
+**No se tocó ninguna pieza compartida.** `core/informes/` quedó igual: el acotamiento por
+organización que introdujo Suscripciones y corrigió Red Operativa cubrió este departamento sin
+ampliarse. Es la primera vez que la capa transversal absorbe un módulo nuevo sin cambiar.
+
+### El estado no está en la tabla: se deriva, y ahora se deriva dos veces
+
+`Dim_Partner` **no tiene columna `estado`**. Los seis estados de incorporación —Registrado, Plan
+asignado, Pruebas activo, Pendiente de aprobación, Producción activa, Suspendido— salen de combinar
+`activo`, `planapi`, las credenciales y el último evento de la bitácora.
+
+`ConsultaPartnerService.derivar_estado` ya lo hacía, pero consulta la bitácora **una vez por
+partner**. Correcto para una ficha; sobre una página de cincuenta, cincuenta consultas.
+
+`_derivar_estado` replica la **precedencia** alimentándose de **dos consultas por lote**. Dos
+derivaciones del mismo concepto es exactamente el tipo de duplicación que se paga tarde: si divergen,
+el mismo partner tendría un estado en su ficha y otro en el listado, y ninguna pantalla sabría que la
+otra discrepa. Por eso hay una prueba que **ejecuta las dos sobre los mismos datos** en los seis
+casos y exige que coincidan.
+
+Consecuencia declarada: el filtro `estado` empuja a SQL solo `Suspendido` y `Registrado`; los otros
+cuatro comparten un pre-filtro y se refinan en Python, así que **una página puede devolver menos
+filas que `limit`**. Es comportamiento del listado, no un defecto de la paginación — y por eso la
+prueba de integridad del recorrido se hace sin ese filtro.
+
+### La regla nueva: enumerar las columnas, no filtrarlas después *(§5.5)*
+
+`Dim_CredencialAPI.client_secret_hash` autentica a quien lo tenga. Lo natural es quitarlo al
+construir la fila. Lo natural **falla abierto**: el día que alguien añada otra columna sensible a la
+tabla, entra por la consulta, atraviesa el filtro que no la conoce y se publica sin que ninguna
+prueba se entere.
+
+La lista blanca invierte el defecto: lo que no está enumerado no sale, y añadir una columna a la
+tabla no cambia nada. Una prueba lee el propio fichero del repositorio y comprueba que ninguna
+consulta literal use `SELECT *`. Otra comprueba que **el contrato OpenAPI tampoco declare** el campo:
+si apareciera ahí, la implementación tendría permiso escrito para publicarlo.
+
+Aplica igual al medio de cobro de Suscripciones y al contacto del proveedor en Red Operativa, que ya
+lo hacían de facto. Ahora está escrito.
+
+### Lo que este módulo no puede decir, y por qué se dice en otro sitio
+
+Una credencial con `activo=False` puede estarlo porque el partner **la revocó** —decisión de
+seguridad— o porque **se desactivó en cascada** al suspenderlo por impago. En `Dim_CredencialAPI` las
+dos filas son **idénticas**.
+
+El listado de credenciales no inventa el motivo: no lo tiene. La bitácora sí, con **tipos distintos**
+(`revocacion_credencial` y `desactivacion_por_cascada`). Agruparlos bajo una etiqueta cómoda como
+«desactivada» llevaría a reactivar en bloque tras el pago, resucitando una credencial cuyo secreto
+está comprometido. Hay una prueba por cada mitad: una exige que el listado **no** traiga motivo, otra
+que la bitácora **sí** los distinga.
+
+En la misma línea, la **reactivación sin motivo es correcta**: el SRS exige motivo al cortar el
+acceso, no al devolverlo. Presentarla como dato faltante induciría a «completar» un registro completo.
+
+### Sin alcance configurado no es acceso ilimitado
+
+`Dim_Preferencias_Cliente.zonas_geograficas` vacío significa **que nadie lo ha configurado**.
+Devolver `[]` invita a leerlo como «sin restricción», y en un listado cuya función es decir qué datos
+puede consumir un partner, eso daría por contratado un alcance que nadie acordó. Se devuelve `null`.
+
+### Un defecto encontrado por las pruebas: la ruta servía la vista equivocada
+
+`apps/partners/views/urls.py` importaba `PartnersView` de `informes_views` y, más abajo, otra
+`PartnersView` de `partner_views`. La segunda importación **sustituía a la primera en silencio**, así
+que la ruta de informes servía el listado operativo. Ninguna prueba del módulo operativo podía
+detectarlo. Corregido con un alias explícito y comentado en el sitio.
+
+### Verificación
+
+`apps/partners`: 672 pruebas verdes (558 previas + 114 nuevas de informes, más las de servicio).
+Cobertura de los tres servicios de informes y las vistas: 93 % (mínimo 83 %).
+
+---
+
+## 2026-08-15 — Listados tácticos de Red Operativa (4 endpoints) y la corrección del acotamiento
+
+Alcance: `core/informes/pertenencia.py` (**nuevo**), `core/informes/acotamiento.py` y
+`envelope.py` (ampliados de forma **compatible hacia atrás**),
+`core/repositories/red_operativa/` (3 repositorios de informes),
+`apps/red_operativa/` (3 servicios, 4 módulos de vistas, `permissions.py`, 4 rutas),
+`apps/suscripciones/views/informes_base.py` (declara su criterio explícitamente),
+`backend/conftest.py`, 10 ficheros de prueba nuevos,
+`specs/002-tactico/contrato-informes-simples.md` (§5.3 y §5.4),
+`decisiones-pendientes.md` (#22).
+
+**Es el primer módulo que CORRIGE la capa transversal en vez de ampliarla**, y por eso su
+comprobación de compatibilidad pesaba más que en los anteriores. Salió limpia: piloto, Ventas,
+Suscripciones y los 19 informes agregados, todos sin moverse.
+
+### La generalización de Suscripciones se quedó corta, y esto lo demuestra
+
+El eje «organización» se diseñó allí como si **«pertenecer a una cuenta» fuese un concepto único**.
+No lo es:
+
+| Criterio | Quién cumple | Pantallas |
+|---|---|---|
+| **Administrador local** | Una sola persona por cuenta | Alta de unidades, facturación |
+| **Vínculo a la cuenta** | Cualquier miembro | Expediente de cliente, tickets |
+
+Unificarlos rompería la regla del contrato común —*un informe nunca más amplio que su pantalla*— en
+un departamento u otro. Así que el criterio pasa a ser **parámetro explícito** y cada listado declara
+el suyo. El defecto sigue siendo el estricto, que es lo que Suscripciones ya hacía: **se añadió una
+opción, no se alteró la existente**.
+
+Corregirlo ahora, con dos departamentos usándolo, fue barato. Con cinco no lo habría sido.
+
+> **Trampa encontrada de paso.** `CuentaUsuarioRepository.get_cliente_ids_for_user` **suena** a
+> criterio amplio y es el estricto: solo mira `admin_local_id`. El amplio real es
+> `list_cuentas_del_usuario`.
+
+### El defecto de mayor consecuencia de toda la serie
+
+**`activo` significa «existe», no «puede acudir».** Los cuatro estados operativos de una unidad
+—`Activa`, `Ocupada`, `En Misión`, `Fuera de servicio`— viven **solo en el histórico**, y obtenerlos
+cuesta una consulta por unidad.
+
+Un listado de flota presentado como disponibilidad llevaría a decidir cobertura sobre unidades fuera
+de servicio, ocupadas o ya en camino a otro accidente. **En los módulos comerciales un error así
+infla una cifra; aquí decide si alguien acude.**
+
+Tres defensas, y la prueba comprueba las tres: el campo se llama `dado_de_alta`, la respuesta
+**declara su alcance** en `meta`, y ningún campo promete disponibilidad. La regla sube al contrato
+común como **§5.4**.
+
+### Dos hallazgos más, de la misma familia
+
+**`En_Alerta` no se agrupa con `Despublicada`.** Es una región **operativa** con cobertura
+degradada: candidata a despublicarse, no despublicada. Agruparlas ocultaría exactamente la ventana en
+la que OT13 puede actuar. Mismo patrón que «en disputa» vs «impaga» en Suscripciones.
+
+**Una baja forzada trae su caso afectado; una normal, no.** No es una etiqueta: es la traza de
+impacto que el SRS exige. Sumar ambos tipos convertiría un incidente operativo —un accidente que se
+quedó sin su unidad— en una estadística de rotación de flota.
+
+### Rendimiento: el riesgo que la spec anotaba
+
+La geografía se resuelve **por lotes** —dos consultas por página, no una por fila—, reutilizando el
+patrón que `ubicacion_catalogo_repository` ya tenía. La prueba **cuenta consultas con 100 unidades**
+y no mide tiempo: con diez, una implementación N+1 parece igual de rápida y el defecto pasaría.
+
+### Lo que no sale
+
+`latitud`, `longitud` y `contactoproveedor`. La posición de una unidad es dato sensible sujeto a
+control y auditoría, y no aporta a un listado de composición — para seguir una unidad en tránsito
+existe el módulo de seguimiento, con su propio control.
+
+**Verificación.** 2925 → **3162** pruebas (+237), mismas 2 omitidas, cero regresiones.
+
+---
+
+## 2026-08-15 — Listados tácticos de Suscripciones y Facturación (4 endpoints) y el eje «organización»
+
+Alcance: `core/informes/acotamiento.py` (segundo eje) y `core/informes/periodo.py`
+(`parse_fecha_columna`, ambos ampliados de forma aditiva),
+`core/repositories/suscripciones/` (3 repositorios de informes),
+`apps/suscripciones/` (3 servicios, 4 módulos de vistas, `permissions.py`, 4 rutas),
+`backend/conftest.py`, 12 ficheros de prueba nuevos,
+`specs/002-tactico/contrato-informes-simples.md` (regla 5 de Pinot),
+`decisiones-pendientes.md` (#20 y #21). **Los 16 contratos OpenAPI del catálogo** corregidos.
+
+**El segundo eje de acotamiento.** El primero —«persona», de Ventas y CRM— asume que el titular *es*
+el solicitante. Éste tiene un **salto de indirección**: el usuario pregunta y el resultado se acota a
+la cuenta cliente a la que pertenece. Red Operativa, Partners y Soporte heredan este mismo eje, así
+que la quinta y la sexta copia ya no aparecerán solas.
+
+**Y una diferencia deliberada con el resolutor operativo.** `resolve_cliente_activo` exige cuenta
+`Activo`; el táctico **no**. Aquél controla escrituras; éste, la lectura de los propios registros — y
+una cuenta suspendida es justamente donde su responsable mira para saber qué regularizar (FR-011).
+Negárselo lo dejaría a ciegas sobre su propia deuda.
+
+### El requisito de seguridad más fuerte de la serie
+
+`Dim_MetodoPago.tokenpasarela` **no es un hash**: `cobro_service.py:68` lo pasa a la pasarela para
+ejecutar el cargo. **Quien lo tenga, puede cobrar.** No hay nada que romper —bastaría con leer la
+respuesta— y el impacto no es informativo sino económico.
+
+La prueba inspecciona **la respuesta serializada completa** de los cuatro listados, no los campos que
+el contrato declara. La razón: un `SELECT *` filtra el campo **aunque el contrato no lo mencione**.
+El contrato describe lo que se pretende devolver; la respuesta es lo que se devuelve.
+
+### Dos hallazgos que habrían producido informes equivocados
+
+**1. «Sin cambio de plan programado» es un centinela `0`, no una ausencia.** El código escribe un `0`
+explícito. Un filtro escrito como comprobación de nulidad sería **siempre cierto** y devolvería
+*todas* las suscripciones como si todas tuvieran una reducción pendiente — alimentando una previsión
+de ingresos con reducciones inventadas.
+
+**2. Una factura `En disputa` no es una factura impaga.** `estado_pago` toma **cuatro** valores, no
+tres. La disputa significa que el cliente abrió un reclamo y el sistema **dejó de reintentar el
+cargo**; presentarla como mora induce a perseguir un cobro detenido a propósito, que es lo que
+corrigió el hallazgo B41. El filtro de vencidas la excluye **en la consulta**, no en Python: filtrar
+después de paginar devolvería páginas incompletas.
+
+### Lo que se hizo bien por comprobar antes
+
+`Dim_MetodoPago.fechaexpiracion` es `LONG`, así que el filtro de caducidad va **entero a la base**.
+En Ventas y CRM la columna equivalente era texto con formatos mixtos y obligó a un filtro en dos
+pasos y a admitir páginas cortas. Comprobar el tipo **antes** de diseñar evitó arrastrar aquella
+complejidad, y la lección sube al contrato común como **regla 5 de Pinot**.
+
+### Defecto sistémico corregido
+
+**Los 16 contratos OpenAPI del catálogo táctico eran YAML inválido** — la misma descripción sin
+comillas con `data: []`, repetida por copia. Ninguno se había cargado nunca con un parser. Ahora los
+16 validan, y los tres departamentos implementados tienen una prueba que carga su contrato y compara
+la implementación contra él.
+
+**Verificación.** 2579 → **2925** pruebas (+346), mismas 2 omitidas, cero regresiones. La ampliación
+de `core/informes/` se comprobó **aditiva** (T011): ni el piloto, ni Ventas y CRM, ni los 19 informes
+agregados se movieron.
+
+---
+
+## 2026-08-15 — Listados tácticos de Ventas y CRM (4 endpoints) y el acotamiento por titularidad
+
+Alcance: `backend/core/informes/acotamiento.py` (**nuevo**, transversal a 7 departamentos),
+`core/informes/{envelope,vistas}.py` (ampliados de forma aditiva),
+`backend/core/repositories/ventas_crm/` (3 repositorios de informes),
+`backend/apps/ventas_crm/` (3 servicios, 3 módulos de vistas, `permissions.py`, 4 rutas),
+`backend/scripts/seed_demo_ventas_tactico.py` (**nuevo**), `backend/conftest.py`,
+13 ficheros de prueba nuevos, `specs/002-tactico/contrato-informes-simples.md` (§5.1 y §5.2),
+`decisiones-pendientes.md` (#19).
+
+**Lo que este módulo aporta a los seis departamentos restantes.** El piloto construyó el andamiaje
+de forma —período, paginación, envelope—; éste construye el de **acceso**: un único resolutor de
+acotamiento por titularidad, y el campo `meta.acotado_a` que declara el alcance de cada respuesta.
+Soporte acotará por cliente reportador, Partners por partner, Red Operativa por proveedor de flota;
+ninguno vuelve a decidir la regla.
+
+**Pedir lo ajeno es `403`, nunca sustitución silenciosa.** Es la decisión con más consecuencias.
+Devolverle su propia cartera a quien pidió la ajena produce un informe plausible que **responde a una
+pregunta que nadie hizo**, y además le oculta al solicitante que pidió algo indebido. El
+comportamiento se copió del que ya estaba verificado en producción
+(`consulta_notificacion_ventas_service.py`), en vez de inventarlo.
+
+### Tres hallazgos que habrían producido informes equivocados
+
+**1. «Perdido» no es «inactivo».** Un prospecto se vuelve inactivo por dos motivos **opuestos** y los
+dos dejan `activo = false`: se perdió la oportunidad, o **se ganó** y ya es cliente. Un listado de
+perdidos filtrado por `activo = false` incluiría los convertidos — es decir, **presentaría los éxitos
+comerciales como fracasos**, sin dar ningún error. El filtro tiene tres valores, no dos, y la
+condición de cada uno vive en una tabla y no en un `if` encadenado, para que la equivalencia
+prohibida no pueda colarse sin verse.
+
+**2. La expiración de la demo no se puede comparar en SQL.** `demo_expiracion` es `STRING` cuando
+todo lo demás es `LONG` epoch-ms, y el sistema acepta tres formatos (`Z`, `+00:00`, sin zona).
+Compararla entera da resultados incorrectos sin error visible. Se resuelve en dos pasos: prefiltro
+por el prefijo `YYYY-MM-DD` —los diez primeros caracteres sí son uniformes— y refinamiento exacto en
+el servicio, **con el mismo instante** que calcula los días restantes. La causa raíz queda anotada
+como decisión pendiente **#19**.
+
+**3. Los datos de contacto no salen.** `Dim_Prospecto` guarda `gmail` y `telefono`; el propósito
+táctico es supervisar la cartera, no contactar. Columnas enumeradas y prueba que mira el código,
+porque el doble en memoria recorta las columnas él mismo y una prueba contra la respuesta seguiría
+pasando con un `SELECT *`.
+
+### El fixture del que depende que este módulo esté probado
+
+`dos_carteras`. **Con una sola cartera poblada, filtrar por ejecutivo y no filtrar devuelven lo
+mismo**, así que toda prueba de acotamiento pasa aunque el acotamiento no exista. Es el fallo más
+fácil de cometer aquí, y por eso los dos gerentes tienen cartera a la vez y de tamaños distintos.
+
+### Defecto preexistente corregido
+
+**El contrato OpenAPI no era YAML válido** — una descripción sin comillas contenía `data: []`,
+exactamente el mismo defecto que el del módulo piloto. Ahora hay una prueba que lo carga y compara
+la implementación contra él, endpoint por endpoint.
+
+### Lo que se declara y conviene saber
+
+Una página de `demos-activas` **puede devolver menos filas que el `limit` pedido**: el prefiltro por
+día trae de más y el refinamiento descarta con precisión de segundo. `has_next` es la autoridad; el
+número de filas no lo es. Y `reasignaciones` **no lo ve un gerente** ni acotado a lo suyo: el reparto
+de cartera es una decisión sobre él, no una herramienta suya.
+
+**Verificación.** 2193 → **2579** pruebas (+386), mismas 2 omitidas, cero regresiones. La ampliación
+de `core/informes/` se comprobó **aditiva** (T011): ni el piloto ni los 19 informes agregados se
+movieron.
+
+---
+
+## 2026-08-15 — Piloto de listados tácticos: Cuentas y Clientes (8 endpoints) y la capa transversal
+
+Alcance: `backend/core/informes/` (**nuevo**, 5 módulos), `backend/core/repositories/cuentas_clientes/`
+(3 repositorios de informes + constantes canónicas en 3 existentes),
+`backend/apps/cuentas_clientes/` (3 servicios, 3 módulos de vistas, `permissions.py`, 8 rutas),
+`backend/conftest.py` (doble de Pinot ampliado), 14 ficheros de prueba nuevos,
+`specs/002-tactico/Cuentas-Clientes/informes-tacticos-simples/`, `decisiones-pendientes.md` (#18).
+
+**Qué se construyó.** Los 8 listados de OT04, OT17 y OT18, y con ellos **el andamiaje que los siete
+departamentos restantes reutilizan**: período con rango opcional, paginación keyset por cursor,
+envelope `{data, meta:{pagination, filtros}}`, vista base con las tres validaciones que el contrato
+obliga a rechazar en vez de tolerar, y presentación de ausencias.
+
+**El cursor y el `ORDER BY` salen del mismo objeto.** Es la decisión de diseño con más consecuencias:
+si divergen, la consulta devuelve la página anterior en vez de la siguiente y el consumidor pagina en
+círculos **sin recibir ningún error**. `Cursor` genera ambos, más la cláusula keyset con su
+desempate anidado, desde una única declaración de campos.
+
+### Tres correcciones sobre la spec, todas del mismo tipo
+
+La spec citaba **valores literales que no existen en el sistema**. Implementarlos al pie de la letra
+no habría fallado: habría devuelto `200` con `data: []` para siempre.
+
+| Dónde | Decía | Es | Efecto de no corregirlo |
+|---|---|---|---|
+| L6 sesiones | `estadosession = 'Activa'` | `'Inicio sesion'` | Listado vacío permanente |
+| L7 credenciales | `estadocredencial = 'Temporal'` | `'Cambio contraseña'` | Listado vacío permanente |
+| L3 cuentas (OpenAPI) | `enum [... Suspendido, Baja]` | `Rechazado`, `Dado de baja` | `400` a un filtro correcto |
+
+No es hipotético: `credential_repository.py:14` documenta que **este mismo fallo ya ocurrió** —un
+seed escribía `"ACTIVA"` mientras el código comparaba contra `"Activo"`, invalidando la credencial de
+todos los usuarios sembrados—. Por eso la corrección no fue cambiar un literal por otro, sino
+**centralizar los estados** donde aún eran literales sueltos: `ESTADO_SESION_*` en
+`session_repository`, `ESTADO_CLIENTE_*` en `cliente_repository`, y consumirlos desde el informe.
+
+**Y un cuarto caso, de orden.** L7 debía ordenarse por `fecha_solicitud_cambio`, columna que existe
+en el esquema y **ningún escritor rellena**. Un cursor sobre una columna siempre ausente no localiza
+ninguna fila: la **segunda página** habría fallado, y solo con datos suficientes para que hubiera
+segunda página. Se ordena por `fecha_actualizacion`, que lleva el dato y significa lo mismo; el campo
+de la respuesta conserva su nombre.
+
+### Lo que el doble en memoria no podía cubrir
+
+`conftest.py` recorta a mano las columnas que cada consulta enumera, así que una prueba que solo
+mirase la respuesta seguiría en verde si alguien cambiara una consulta a `SELECT *` —y la contraseña
+viajaría contra Pinot real—. Las pruebas de research D7 tienen por eso **dos mitades**: la respuesta
+y el texto de las consultas del repositorio.
+
+Del mismo modo, las de centinelas (D3) se verifican contra `_coerce_value` y `core/informes/formato.py`,
+no contra el doble, que no coerciona nada. Esa laguna produjo un defecto real durante la
+implementación: `dias_transcurridos` convertía el centinela `LONG` en «hace 106.752.011.843 días».
+La ausencia la decide ahora un único `marca_ausente`, compartido por la fecha que se muestra y por
+los días que se calculan, para que las dos lecturas no puedan discrepar.
+
+### Defectos preexistentes corregidos de paso
+
+- **El contrato OpenAPI no era YAML válido**: una descripción sin comillas contenía `data: []`.
+  Ninguna herramienta lo había cargado nunca. Ahora hay una prueba que lo carga y compara la
+  implementación contra él, endpoint por endpoint.
+- **`fechahorainiciosesion` se sembraba como texto ISO** en 16 sitios, cuando el esquema la declara
+  `LONG` epoch-ms y el escritor real escribe epoch-ms. Nadie la leía, así que nadie lo notaba.
+
+### Lo que queda abierto
+
+`transferencias-propiedad` está implementado y verificado, pero
+`Fact_HistorialTransferenciaPropiedad` **no la escribe nadie**: la transferencia solo deja rastro en
+la auditoría. Contra el stack real ese endpoint devolverá vacío. Es trabajo del módulo operativo
+(CU-O15) y está anotado como decisión pendiente **#18**.
+
+**Verificación.** 1673 → **2193** pruebas (+520), mismas 2 omitidas, cero regresiones.
+`apps/informes_tacticos` intacto (research D1), que era el guardián del aislamiento del piloto.
+
+---
+
+## 2026-08-14 — Modelo analítico táctico: esquema en estrella implementado
+
+Alcance: `dags/` (7 módulos de dimensión y hecho, 4 flujos nuevos, 15 ficheros de prueba),
+`specs/002-tactico/modelo-analitico/`, `specs/002-tactico/Emergencias/informes-tacticos-compuestos/`
+(marcado como sustituido), `decisiones-pendientes.md` (#19 y #20).
+
+**Por qué.** El diseño anterior creaba **una tabla y un flujo por informe**. Con ~105 informes
+compuestos por delante, eso son ~105 tablas y ~105 flujos, cada uno con su forma de calcular lo mismo
+y su oportunidad de discrepar. El modelo en estrella los resuelve con consultas.
+
+**Qué se construyó.** 5 dimensiones y 4 hechos en `tsi_tactico`, cargados por 4 flujos de Airflow.
+Los hechos van particionados por mes y la recarga **descarta la partición** en vez de borrar por
+condición — que en este almacén es una mutación, y las tres tablas viejas acumulan una por corrida
+con ~180 fechas literales cada una.
+
+**El defecto que justificaba el modelo, corregido.** `dim_unidad` guarda una fila por **versión**:
+cada despacho apunta a la versión vigente cuando ocurrió, así que cambiar de proveedor ya no
+reescribe la historia. El flujo anterior lo reconocía en su propio código («usa el `idcliente`
+**actual** […] no un snapshot histórico real»).
+
+**Tres defectos encontrados en los informes que sustituye**, todos verificados con cifras:
+
+1. ⚠️ **Truncamiento silencioso a 10 000 filas.** Dos consultas a Pinot sin `LIMIT` explícito reciben
+   el límite por defecto del cliente. La pérdida de señal analizaba **10 000 de 59 045 posiciones**
+   (16,9 %) y publicaba el resultado como completo: 714 huecos donde hay 3 942. El rendimiento por
+   proveedor veía **10 000 de 19 528 transiciones**: 344 rechazos donde hay 661.
+2. **La completitud del índice de calidad no podía dar otra respuesta que `1.0`**: comparaba contra
+   nulidad y el origen usa centinelas.
+3. **`Fact_NotificacionDespacho` no tiene hora propia de confirmación ni rechazo** y tiene 31 filas
+   para 4 314 despachos. Los hitos se tomaron de `Fact_HistorialDespachoUnidad`.
+
+**Validación.** Corriendo la lógica del flujo viejo sobre datos completos salen exactamente las
+cifras del modelo (3 942 huecos, 661 rechazos, 331 abortos), y el tiempo medio de llegada coincide
+al centésimo: **669.44 s**. Suite de `dags/`: **151 pasan**. Backend: **1 673 pasan, 2 omitidas**,
+sin movimiento — este módulo solo lee el sistema operativo.
+
+**Lo que NO se retiró, y por qué.** Las tres tablas y sus flujos siguen vivos: tres repositorios del
+backend los leen, y dejar de refrescarlos mientras los endpoints siguen consultándolos serviría datos
+congelados sin error visible. Registrado como decisión pendiente #20.
+
+---
+
+## 2026-08-14 — Autoridades departamentales: catálogo de roles y constantes
+
+Alcance: `backend/scripts/_demo_seed_common.py`, `backend/core/auth/roles_tacticos.py`,
+`.specify/docs/actors.md`, `.specify/docs/architecture/architectural-patterns.md`,
+`specs/002-tactico/` (contrato común, `acceso-tactico.md` y las 7 specs de módulo).
+
+**Por qué.** Los informes tácticos especificados en `specs/002-tactico/` asignaban permisos
+solo a roles operativos. Al revisar el §5.1 del SRS —que define, por departamento, un
+responsable operativo y una autoridad superior— se comprobó que **seis de las ocho
+autoridades no existían como rol del sistema**, y que `actors.md` las documentaba en una
+sección marcada como fuera de alcance.
+
+**Roles añadidos al catálogo** (`ROLES_DEMO`, fuente única de `Dim_Rol`): `DirectorMarketing`
+(17), `DirectorFinanciero` (18), `DirectorExpansion` (19), `DirectorOperaciones` (20),
+`GerenteExitoCliente` (21) y `DirectorDatos` (22). `DirectorTecnologico` (6) y
+`DirectorEstrategia` (14) ya existían y suman autoridad táctica sin perder su papel
+operativo.
+
+**Defecto latente corregido de paso.** `GerenteCuentasPublicas` **estaba referenciado por
+código de producción en cuatro sitios de `apps/ventas_crm`** —entre ellos la asignación
+automática, que enruta los prospectos del sector público a ese rol— y **no existía en el
+catálogo**. Ningún usuario podía tenerlo, así que esos prospectos se quedaban sin ejecutivo
+candidato. Añadido como idrol 16.
+
+**Constantes.** Nuevo `backend/core/auth/roles_tacticos.py`, transversal en vez de duplicado
+en siete `permissions.py`: dos departamentos comparten `DirectorTecnologico`, y repetir la
+cadena en siete sitios es como aparecen las divergencias de un carácter que nadie detecta
+hasta que un permiso deja de conceder. Expone conjuntos **por materia**, no por
+departamento, porque el SRS advierte que la autoridad «no siempre es una jefatura única»:
+en Suscripciones y Red Operativa está repartida, y en Cuentas y Clientes alcanza a un solo
+listado.
+
+**Dos discrepancias documentales resueltas** a favor del SRS, según lo decidido: `actors.md`
+asignaba Ventas y CRM a un «Director Comercial» que ese mismo documento había introducido
+—el §5.1 dice Director de Marketing—, y Cuentas y Clientes al Gerente de Éxito del Cliente
+—el §5.1 dice Director Tecnológico, y **solo sobre la capa de accesos técnicos**—. El rol
+`Director Comercial` queda retirado.
+
+**Hallazgo anotado, no resuelto.** Cuentas y Clientes **no tiene autoridad de negocio**: la
+única que el §5.1 le asigna es el Director Tecnológico con alcance limitado. Sus siete
+listados restantes quedan bajo el Administrador, que es a la vez su responsable operativo.
+Puede ser intencional o faltar un cargo; queda en `decisiones-pendientes.md`.
+
+**Límite que se dejó explícito en código y en spec.** La autoridad accede **sin el
+acotamiento por titularidad**, pero esa exención **no alcanza al dato sensible**:
+coordenadas, identidad de personas implicadas, secretos de autenticación y medios de cobro
+siguen excluidos de todo informe para todos los roles. Son exclusiones constitucionales, no
+de acotamiento.
+
+**Verificación.** `python -m pytest` → **1673 passed, 2 skipped**, idéntico a la línea base:
+el catálogo crece de 14 a 21 roles sin identificadores ni nombres duplicados, sin reutilizar
+el idrol 11 (obsoleto), y sin que ninguna suite existente se mueva. Los conjuntos de
+autoridad y el predicado `es_autoridad` verificados por separado.
+
+**Pendiente.** Ningún usuario de demo tiene todavía los roles nuevos. Sembrarlos entra con
+la implementación de los informes, que es cuando habrá algo que puedan consultar.
+
+---
+
 ## 2026-08-01 — Revisión `002-tactico` (spec vs. docs globales)
 
 Alcance: `specs/002-tactico/`, `.specify/docs/infra/infrastructure.md`

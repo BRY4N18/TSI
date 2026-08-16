@@ -1,0 +1,307 @@
+openapi: 3.0.3
+
+info:
+  title: Informes compuestos de Partners y API sobre el modelo analítico
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los 13 informes agregados en alcance de Partners y API
+    (OT08–OT10), con **cuatro indicadores BSC**.
+
+    ## Reglas transversales
+
+    - **Solo lectura.**
+    - ⚠️ **Sin secretos, sin contacto técnico y sin IP de origen.** La IP identifica a un consumidor
+      concreto, y los patrones anómalos se describen con volumen, códigos y latencia.
+    - ⚠️ **Sin desglose por la persona** que ejecutó un cambio de acceso.
+    - **Una sola fuente de consumo: el detalle de llamadas.** El modelo no contiene métricas
+      preagregadas del sistema operativo, que difieren en un orden de magnitud.
+    - **Toda medida declara sobre cuántas llamadas se calculó.** Con el tráfico actual las cifras son
+      pequeñas, y hay que poder distinguir **poco consumo** de **poco registrado**.
+    - **429, 403 y 5xx no se suman**: límite de cupo, autorización y fallo del servicio son tres
+      problemas con tres responsables.
+
+    ## Convivencia con lo ya construido ⚠️
+
+    Dos informes existen ya en la app de partners. Este módulo entrega sus equivalentes y **no los
+    apaga**. Sus cifras de latencia **diferirán a propósito**: el endpoint actual da solo media, y el
+    BSC pide p95. **La diferencia es el arreglo, no una regresión.**
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT08 Incorporación
+  - name: OT09 Consumo
+  - name: OT10 Entrega
+
+paths:
+  /informes-tacticos/partners/metricas-consumo:
+    get:
+      tags: [OT09 Consumo]
+      summary: Métricas de consumo por partner (CU-T12)
+      description: |
+        ⚠️ Devuelve **latencia media y p95**, con el número de muestras. El endpoint equivalente ya
+        construido da **solo media**: sus cifras diferirán, y esta es la correcta.
+
+        Un partner **sin llamadas** aparece con cero, no se omite: dejar de consumir es justo lo que
+        hay que ver.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/reporte-mensual-consumo:
+    get:
+      tags: [OT09 Consumo]
+      summary: Reporte mensual de consumo por partner (CU-T12)
+      parameters:
+        - name: mes
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/consumo-por-endpoint:
+    get:
+      tags: [OT09 Consumo]
+      summary: Consumo por endpoint y método (CU-T12)
+      description: |
+        El endpoint se agrupa **sin su cadena de consulta**. Agrupar por la cadena completa
+        fragmentaría el consumo en tantos grupos como combinaciones de parámetros haya, y ningún
+        endpoint parecería usado.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/latencia-p95:
+    get:
+      tags: [OT09 Consumo]
+      summary: Latencia p95 por endpoint (BSC)
+      description: |
+        ⚠️ **Un percentil no se puede reconstruir desde una media**: hace falta tener las
+        observaciones. Es la razón técnica de que la métrica actual no pueda darlo, y el mejor
+        argumento a favor de guardar el detalle.
+
+        Devuelve **p95 y media juntas**: si la p95 supera mucho a la media, hay una cola de llamadas
+        lentas que la media esconde — que es lo que el BSC quiere vigilar.
+
+        Por debajo de `muestra_minima`, `percentil_fiable` viene en `false` **y la fila igualmente se
+        devuelve**: filtrarla dejaría el informe vacío con el tráfico actual.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: percentil
+          in: query
+          schema: { type: integer, default: 95, minimum: 50, maximum: 99 }
+        - name: muestra_minima
+          in: query
+          schema: { type: integer, default: 20, minimum: 1 }
+      responses:
+        '200':
+          description: Latencia por endpoint
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - endpoint_path: "/api/v1/datos/accidentes"
+                    latencia_media_ms: 88.4
+                    latencia_p95_ms: 210.0
+                    muestras: 16
+                    percentil_fiable: false
+                meta:
+                  periodo: { desde: "2026-08-01", hasta: "2026-08-31" }
+                  nota_muestras: "Percentil calculado sobre menos de 20 llamadas; indicativo, no estable."
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/taxonomia-errores:
+    get:
+      tags: [OT09 Consumo]
+      summary: Taxonomía de errores y su evolución temporal (CU-T12)
+      description: |
+        ⚠️ Agrupa por **clase de resultado** antes que por código: `429` es límite de cupo —un
+        problema de contrato—, `403` es autorización y `5xx` es fallo del servicio. Un informe que
+        los sume dice «hay errores» sin decir de quién.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/comparativa:
+    get:
+      tags: [OT09 Consumo]
+      summary: Comparativa entre partners y patrones anómalos
+      description: |
+        Describe el patrón con **volumen, tasa de error y latencia**, y su desviación respecto de la
+        mediana del conjunto. ⚠️ **Sin IP de origen**: añadiría rastreo sin añadir análisis.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/participacion-ingresos-api:
+    get:
+      tags: [OT09 Consumo]
+      summary: Participación de ingresos por API, excedente frente a ingreso base (BSC)
+      description: |
+        El excedente se calcula contra el **cupo del plan vigente en el período**, y se presenta
+        **separado del ingreso base**.
+      parameters:
+        - name: mes
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/motivo-credencial-inactiva:
+    get:
+      tags: [OT08 Incorporación]
+      summary: Motivo por el que una credencial está inactiva
+      description: |
+        ⚠️ Distingue **revocada, desactivada en cascada, expirada y suspendida manualmente**. En el
+        sistema operativo las cuatro producen **exactamente el mismo estado**: la credencial solo
+        guarda un indicador de actividad, y el motivo vive en la bitácora de acceso.
+
+        Los tres primeros motivos tienen **responsables distintos**: una revocación es una decisión,
+        una cascada es una consecuencia y una expiración es el paso del tiempo.
+      parameters:
+        - name: dias_aviso_expiracion
+          in: query
+          schema: { type: integer, default: 30, minimum: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/tiempo-incorporacion:
+    get:
+      tags: [OT08 Incorporación]
+      summary: Tiempo de incorporación, de registro a producción por etapa
+      description: |
+        Los partners **aún en proceso** se cuentan aparte y **quedan fuera de la media**: no tardaron
+        cero, siguen tardando.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/adopcion-versiones:
+    get:
+      tags: [OT08 Incorporación]
+      summary: Adopción de versiones del contrato de integración (BSC)
+      description: |
+        ⚠️ **La versión no está en el log**: se **deriva del endpoint** (`/api/v1/...`), y la
+        respuesta lo declara en `version_es_derivada`.
+
+        La derivación depende de que el path mantenga su forma. **El día que cambie, no fallará:
+        devolverá otra cosa** — por eso se declara, para que alguien pueda revisarlo cuando las
+        cifras se muevan sin explicación.
+
+        Agrupa por **(servicio, versión)**: dos servicios distintos comparten el nombre `v1`.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/tasa-rechazo-produccion:
+    get:
+      tags: [OT08 Incorporación]
+      summary: Tasa de rechazo de solicitudes de producción y sus motivos
+      description: |
+        ⚠️ Agrupa **por motivo, nunca por la persona** que resolvió la solicitud.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/clientes-integracion-activa:
+    get:
+      tags: [OT10 Entrega]
+      summary: Clientes con integración API activa — meta ≥70 % (BSC)
+      description: |
+        ⚠️ El denominador son **todos los clientes**, no solo los que tienen partner. Con el
+        denominador equivocado el indicador daría **siempre 100 %** y parecería cumplido.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/partners/volumen-expedientes:
+    get:
+      tags: [OT10 Entrega]
+      summary: Volumen de expedientes entregados por cliente y canal
+      description: |
+        Separa **portal y API** como canales distintos.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      schema: { type: string, format: date }
+      description: Inicio del período, inclusive. Por defecto, hace 30 días.
+    Hasta:
+      name: hasta
+      in: query
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. Por defecto, hoy.
+
+  responses:
+    Informe:
+      description: Filas agregadas del informe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaInforme' }
+    SinPermiso:
+      description: |
+        El solicitante no es el **Director Tecnológico** ni tiene papel operativo en integraciones.
+        ⚠️ Un **partner** no accede a estos informes: son cifras comparadas de todos los partners. Su
+        propio consumo lo ve por el autoservicio ya existente.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío** si el período no tiene llamadas.
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            periodo:
+              type: object
+              properties:
+                desde: { type: string, format: date }
+                hasta: { type: string, format: date }
+            mes:
+              type: string
+            nota_muestras:
+              type: string
+              description: |
+                Presente cuando una medida estadística se calculó sobre pocas llamadas.
+            filtros:
+              type: object
+              additionalProperties: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            codigo: { type: string }
+            mensaje: { type: string }

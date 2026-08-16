@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: Informes Compuestos de Soporte al Cliente
+  version: 1.0.0
+  description: |
+    Nueve informes agregados de solo lectura sobre el modelo analítico (`tsi_tactico`),
+    incluido el indicador BSC de cumplimiento de SLA.
+
+    **Cuatro reglas rigen todas las respuestas:**
+
+    1. **El SLA aplicado es el vigente cuando se creó el ticket**, no el actual. Acortar un SLA
+       no reescribe el cumplimiento pasado.
+    2. **El cumplimiento se mide solo sobre tickets con compromiso**, y `pct_sin_compromiso`
+       viaja en la misma fila. Excluirlos sin declararlo premiaría dejar tickets sin clasificar.
+    3. **Ausencia no es cero.** Un tiempo sin hito alcanzado se devuelve `null`; un porcentaje sin
+       denominador se devuelve `null`. Nunca `0`.
+    4. **Sin identidad ni texto libre.** Agentes y clientes se identifican por clave. No se expone
+       asunto, descripción, mensajes ni **notas internas**.
+
+servers:
+  - url: /api/v1/informes-tacticos/soporte
+
+tags:
+  - name: OT19
+    description: Cumplimiento de compromisos de servicio
+  - name: OT20
+    description: Cola en curso y tendencias
+
+paths:
+  /cumplimiento-sla:
+    get:
+      tags: [OT19]
+      summary: Cumplimiento de SLA (indicador BSC, meta ≥ 95 %)
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+      responses:
+        '200':
+          description: Serie de cumplimiento con su cobertura
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [periodo, resultados, declaraciones]
+                properties:
+                  periodo: { $ref: '#/components/schemas/PeriodoAplicado' }
+                  resultados:
+                    type: array
+                    items: { $ref: '#/components/schemas/FilaCumplimiento' }
+                  declaraciones:
+                    $ref: '#/components/schemas/Declaraciones'
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+
+  /cumplimiento-sla/por-plan:
+    get:
+      tags: [OT19]
+      summary: Cumplimiento desglosado por plan contratado
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+      responses:
+        '200':
+          description: Una serie por plan; los tickets sin plan se agrupan como «sin plan»
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/FilaCumplimiento'
+                        - type: object
+                          properties:
+                            id_plan: { type: integer, nullable: true }
+                            plan: { type: string, example: 'sin plan' }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /rendimiento-agentes:
+    get:
+      tags: [OT19]
+      summary: Rendimiento por agente
+      description: |
+        ⚠️ **Devuelve la clave del agente, nunca su nombre.** El informe evalúa el desempeño de una
+        persona; resolver el nombre exige entrar al sistema operativo, donde ese acceso queda
+        auditado.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+      responses:
+        '200':
+          description: Una fila por agente con tickets asignados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items: { $ref: '#/components/schemas/FilaAgente' }
+                  sin_agente:
+                    type: integer
+                    description: Tickets no asignados a nadie, excluidos del desglose
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /tickets-por-servicio:
+    get:
+      tags: [OT19]
+      summary: Tickets por servicio afectado
+      description: |
+        ⚠️ **Hoy devuelve una sola fila: «sin servicio».** `idservicio` es nulo en todos los tickets
+        pese a existir un catálogo de servicios. El informe se entrega igualmente: es la evidencia
+        de que la asignación no se está registrando, y lo declara.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+      responses:
+        '200':
+          description: Recuento por servicio, con «sin servicio» como fila explícita
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id_servicio: { type: integer, nullable: true }
+                        servicio: { type: string, example: 'sin servicio' }
+                        tickets: { type: integer }
+                        incumplidos: { type: integer }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /tablero-cola:
+    get:
+      tags: [OT20]
+      summary: Tablero del estado de la cola
+      description: |
+        ⚠️ **Sustituye al tablero actual y sus cifras diferirán a propósito** cuando se pida un
+        período: el actual devuelve toda la cola sin corte temporal. El período aplicado viaja en la
+        respuesta.
+      parameters:
+        - $ref: '#/components/parameters/DesdeOpcional'
+        - $ref: '#/components/parameters/HastaOpcional'
+        - name: agrupar_por
+          in: query
+          schema:
+            type: string
+            enum: [estado, prioridad, tipo, agente]
+            default: estado
+      responses:
+        '200':
+          description: Recuentos de la cola por el eje pedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  periodo: { $ref: '#/components/schemas/PeriodoAplicado' }
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        clave: { type: string }
+                        tickets: { type: integer }
+                        sin_agente: { type: integer }
+                        sin_primera_respuesta: { type: integer }
+                        incumplidos: { type: integer }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /evolucion-incumplimiento:
+    get:
+      tags: [OT20]
+      summary: Evolución temporal del incumplimiento
+      description: Los períodos sin tickets aparecen con cero, nunca se omiten de la serie.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+      responses:
+        '200':
+          description: Serie de incumplimiento con cobertura
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items: { $ref: '#/components/schemas/FilaCumplimiento' }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /escalado-automatico:
+    get:
+      tags: [OT20]
+      summary: Tasa de escalado automático por SLA
+      description: |
+        ⚠️ **El escalado automático y el humano se devuelven separados y nunca se suman.** El primero
+        es el sistema avisando de que un compromiso se rompe; el segundo es una decisión de una
+        persona.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+      responses:
+        '200':
+          description: Recuento de tickets escalados por tipo y prioridad
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tipo_incidencia: { type: string, nullable: true }
+                        prioridad: { type: string, nullable: true }
+                        tickets: { type: integer }
+                        con_escalado_automatico: { type: integer }
+                        con_escalado_humano: { type: integer }
+                        pct_escalado_automatico:
+                          type: number
+                          nullable: true
+                          description: Ausente si no hay tickets en el grupo
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /carga-entrante-resuelta:
+    get:
+      tags: [OT20]
+      summary: Carga entrante frente a resuelta, por día
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+      responses:
+        '200':
+          description: Dos series diarias y el crecimiento neto acumulado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        dia: { type: string, format: date }
+                        creados: { type: integer }
+                        resueltos: { type: integer }
+                        neto_acumulado: { type: integer }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+  /reincidencia-clientes:
+    get:
+      tags: [OT20]
+      summary: Clientes que abren tickets repetidamente
+      description: |
+        ⚠️ **El eje natural sería el servicio, y hoy no existe**: `idservicio` es nulo en todos los
+        tickets. Se ofrece el tipo de incidencia como alternativa, y se declara.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: eje
+          in: query
+          schema: { type: string, enum: [tipo_incidencia, tipo], default: tipo_incidencia }
+        - name: minimo
+          in: query
+          description: Número mínimo de tickets para considerar reincidencia
+          schema: { type: integer, minimum: 2, default: 2 }
+      responses:
+        '200':
+          description: Una fila por cliente reincidente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id_cliente: { type: integer, description: Clave, nunca nombre }
+                        tipo_cliente: { type: string, nullable: true }
+                        tickets: { type: integer }
+                        tipos_distintos: { type: integer }
+                        reaperturas: { type: integer }
+                  declaraciones: { $ref: '#/components/schemas/Declaraciones' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    DesdeOpcional:
+      name: desde
+      in: query
+      required: false
+      schema: { type: string, format: date }
+    HastaOpcional:
+      name: hasta
+      in: query
+      required: false
+      schema: { type: string, format: date }
+    Granularidad:
+      name: granularidad
+      in: query
+      schema: { type: string, enum: [dia, semana, mes], default: mes }
+
+  schemas:
+    PeriodoAplicado:
+      type: object
+      description: |
+        El período efectivamente aplicado. Viaja siempre, incluso cuando no se pidió, para que las
+        diferencias con el tablero actual se expliquen sin comparar dos pantallas.
+      properties:
+        desde: { type: string, format: date, nullable: true }
+        hasta: { type: string, format: date, nullable: true }
+        acotado: { type: boolean }
+
+    FilaCumplimiento:
+      type: object
+      required: [periodo, tickets, con_compromiso, sin_compromiso, pct_sin_compromiso]
+      properties:
+        periodo: { type: string, format: date }
+        tickets: { type: integer }
+        con_compromiso:
+          type: integer
+          description: Denominador del cumplimiento
+        sin_compromiso: { type: integer }
+        cumplidos: { type: integer }
+        incumplidos: { type: integer }
+        pct_cumplimiento:
+          type: number
+          nullable: true
+          description: ⚠️ **Ausente** si no hubo tickets con compromiso. Nunca 0 en ese caso.
+        pct_sin_compromiso:
+          type: number
+          nullable: true
+          description: |
+            ⚠️ **Va en la misma fila que el cumplimiento, deliberadamente.** Dejar de clasificar
+            tickets sube el cumplimiento; publicarlo aquí hace que suba también, a la vista, el
+            porcentaje sin compromiso.
+        sin_compromiso_por_motivo:
+          type: object
+          description: Los tres motivos no son iguales y no se suman
+          properties:
+            pendiente_clasificar: { type: integer, description: Fallo del proceso }
+            sin_compromiso: { type: integer, description: Decisión declarada }
+            sin_configuracion: { type: integer, description: Hueco del catálogo de SLA }
+
+    FilaAgente:
+      type: object
+      properties:
+        id_agente: { type: integer, description: Clave, nunca nombre }
+        asignados: { type: integer }
+        resueltos: { type: integer }
+        incumplidos: { type: integer }
+        reabiertos: { type: integer }
+        media_resolucion_s:
+          type: number
+          nullable: true
+          description: ⚠️ Calculada solo sobre tickets resueltos
+        sin_resolver:
+          type: integer
+          description: |
+            ⚠️ Tickets excluidos de la media. Sin esta cifra, un agente con un ticket rápido y veinte
+            abiertos parecería el mejor del equipo.
+
+    Declaraciones:
+      type: array
+      description: |
+        Advertencias que acompañan al dato. Nunca vacío por omisión: si no hay nada que declarar,
+        se devuelve la lista vacía explícitamente.
+      items:
+        type: object
+        required: [codigo, mensaje]
+        properties:
+          codigo:
+            type: string
+            enum:
+              - sla_historico_aplicado
+              - cobertura_incompleta
+              - servicio_no_registrado
+              - tiempos_excluidos_sin_hito
+              - periodo_acotado_difiere_del_tablero
+              - sin_datos_en_periodo
+          mensaje: { type: string }
+          detalle: { type: object, additionalProperties: true }
+
+  responses:
+    PeticionInvalida:
+      description: Rango o parámetros inválidos
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail: { type: string }

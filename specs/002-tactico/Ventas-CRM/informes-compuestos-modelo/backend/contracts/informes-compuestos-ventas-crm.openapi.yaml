@@ -1,0 +1,305 @@
+openapi: 3.0.3
+
+info:
+  title: Informes compuestos de Ventas y CRM sobre el modelo analítico
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los 13 informes agregados de Ventas y CRM (OT01–OT03).
+
+    **Ninguno existe hoy.** Satisfacen **CU-T03 y CU-T04**, los dos casos de uso tácticos que hasta
+    ahora no cubría ningún informe del proyecto.
+
+    ## Reglas transversales
+
+    - **Solo lectura.**
+    - ⚠️ **Ningún dato personal del prospecto**: ni nombre, ni apellidos, ni correo, ni teléfono, ni
+      cargo. No hace falta filtrarlo — **no existe en el modelo**. Se agrega por empresa, canal, tipo
+      de organización y etapa.
+    - **El desenlace nunca sale de la columna de actividad del sistema operativo**, que cubre a la
+      vez convertido y perdido.
+    - **Sin dato ≠ cero.** Un canal sin prospectos, un aviso sin reacción o una primera transición
+      sin duración se devuelven `null`.
+    - **Todo porcentaje viene con su denominador.**
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT01 Captación
+  - name: OT02 Embudo
+  - name: OT03 Nutrición
+
+paths:
+  /informes-tacticos/ventas-crm/embudo-conversion:
+    get:
+      tags: [OT02 Embudo]
+      summary: Embudo de conversión, volumen y % de paso entre etapas (CU-T03)
+      description: |
+        Se mide sobre **transiciones**, no sobre el estado actual del prospecto: el estado actual no
+        dice por dónde pasó.
+
+        El porcentaje se calcula **sobre transiciones y no sobre prospectos únicos**, porque un
+        prospecto puede retroceder de etapa. `denominador` lo hace comprobable.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/permanencia-por-etapa:
+    get:
+      tags: [OT02 Embudo]
+      summary: Tiempo medio de permanencia en cada etapa (CU-T03)
+      description: |
+        ⚠️ Incluye el **tramo abierto**: la etapa vigente al final del período cuenta **hasta el fin
+        del período**, y esos prospectos se informan aparte en `abiertos`.
+
+        Sin eso, los prospectos **estancados no aparecerían en la medida** — y son exactamente los
+        que este informe existe para encontrar.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Permanencia por etapa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-08"
+                    etapa: "Negociación"
+                    prospectos_medidos: 3
+                    segundos_mediana: 604800
+                    abiertos: 1
+                meta:
+                  periodo: { desde: "2026-08-01", hasta: "2026-08-31" }
+                  filtros: {}
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/carga-por-ejecutivo:
+    get:
+      tags: [OT02 Embudo]
+      summary: Carga por ejecutivo, activos, valor en pipeline y conversiones (CU-T03)
+      description: |
+        ⚠️ Atribuye al ejecutivo **vigente en el momento medido**. Una reasignación no reescribe la
+        carga histórica de nadie.
+
+        Es el **único informe del módulo que desglosa por ejecutivo**, porque ahí el desglose es el
+        objeto del informe. El ejecutivo se identifica por su clave, no por su nombre.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/pipeline-ponderado:
+    get:
+      tags: [OT02 Embudo]
+      summary: Valor estimado del pipeline ponderado por etapa
+      description: |
+        ⚠️ `pesos_etapa` es una **convención de este informe**, no una política de la empresa: el
+        sistema operativo no define ninguna ponderación. La respuesta devuelve el peso aplicado a
+        cada etapa para que la cifra sea auditable.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: pesos_etapa
+          in: query
+          schema: { type: string, default: "Nuevo=0.1,Contactado=0.2,Calificado=0.4,Propuesta=0.6,Negociación=0.8" }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/motivos-perdida:
+    get:
+      tags: [OT02 Embudo]
+      summary: Motivos de pérdida más frecuentes, por etapa de abandono
+      description: |
+        Agrupa motivo **y etapa juntos**: el mismo motivo significa cosas distintas en «Contactado»
+        que en «Negociación».
+
+        Un motivo ausente aparece como **sin motivo registrado**, que es información — dice que se
+        perdió un prospecto y nadie anotó por qué.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: top
+          in: query
+          schema: { type: integer, default: 10, minimum: 1 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/captacion-por-canal:
+    get:
+      tags: [OT01 Captación]
+      summary: Volumen de captación por canal y período (CU-T04)
+      description: |
+        Los prospectos **sin canal registrado** aparecen como `Desconocido` y **suman en los
+        totales**: la suma de todos los canales es igual al total del período.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/conversion-por-canal:
+    get:
+      tags: [OT01 Captación]
+      summary: Tasa de conversión por canal (CU-T04)
+      description: |
+        ⚠️ El desenlace **no se lee de la columna de actividad** del sistema operativo, que cubre a la
+        vez convertido y perdido. Un canal sin prospectos devuelve `pct_conversion: null`, nunca `0`.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/convertidos-por-canal:
+    get:
+      tags: [OT01 Captación]
+      summary: Clientes convertidos por canal — parte medible del indicador BSC de adquisición
+      description: |
+        ⚠️ **Esto NO es el CAC.** El coste de cada canal **no existe en ninguna tabla del sistema**:
+        no hay inversión publicitaria, presupuesto por campaña ni coste imputado.
+
+        Este informe entrega **el denominador del indicador** —clientes convertidos por canal— y
+        **no devuelve ninguna columna de coste, ni siquiera vacía**: una columna así invitaría a
+        rellenarla desde fuera, y el tablero mostraría un CAC que el sistema no puede sostener.
+
+        `nota_indicador` declara qué parte falta.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Convertidos por canal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-08"
+                    canal: "Referido"
+                    convertidos: 2
+                    prospectos: 5
+                    nota_indicador: "Parte medible del CAC. Falta el coste por canal, que el sistema no registra."
+                meta:
+                  periodo: { desde: "2026-08-01", hasta: "2026-08-31" }
+                  filtros: {}
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/intensidad-demo:
+    get:
+      tags: [OT03 Nutrición]
+      summary: Intensidad de uso de la demo (CU-O24)
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/secciones-visitadas:
+    get:
+      tags: [OT03 Nutrición]
+      summary: Secciones más visitadas de la demo (CU-O24)
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: top
+          in: query
+          schema: { type: integer, default: 10, minimum: 1 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/efectividad-nutricion:
+    get:
+      tags: [OT03 Nutrición]
+      summary: Efectividad de la nutrición, conversión con demo frente a sin demo (CU-T04)
+      description: |
+        Devuelve **dos filas**, cada una con su propio denominador. Un porcentaje sin su base no
+        permite comparar grupos de tamaño distinto.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/latencia-reaccion:
+    get:
+      tags: [OT03 Nutrición]
+      summary: Latencia de reacción comercial, del aviso al siguiente avance
+      description: |
+        ⚠️ Los avisos **sin reacción posterior** se cuentan en `sin_reaccion` y **quedan fuera de la
+        mediana**. Contarlos como latencia cero haría que los avisos ignorados **mejoraran** el
+        indicador.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/ventas-crm/reglas-disparo:
+    get:
+      tags: [OT03 Nutrición]
+      summary: Reglas de disparo por tasa de acierto
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      schema: { type: string, format: date }
+      description: Inicio del período, inclusive. Por defecto, hace 30 días.
+    Hasta:
+      name: hasta
+      in: query
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. Por defecto, hoy.
+
+  responses:
+    Informe:
+      description: Filas agregadas del informe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaInforme' }
+    SinPermiso:
+      description: |
+        El solicitante no es el Director de Marketing ni un ejecutivo comercial. Un ejecutivo obtiene
+        los informes **acotados a sus propios prospectos**.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío** si no hubo actividad — que en OT03 es distinto de «hubo demos
+            y no se usaron», y ambos casos se distinguen.
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            periodo:
+              type: object
+              properties:
+                desde: { type: string, format: date }
+                hasta: { type: string, format: date }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              description: Presente cuando el solicitante es un ejecutivo y ve solo sus prospectos.
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            codigo: { type: string }
+            mensaje: { type: string }

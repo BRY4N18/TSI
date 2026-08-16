@@ -5,6 +5,32 @@
       "name": "app-docker",
       "url": "http://localhost:4200",
       "port": 4200
+    },
+    {
+      "name": "backend-local",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["manage.py", "runserver", "127.0.0.1:8001", "--noreload"],
+      "cwd": "backend",
+      "port": 8001,
+      "env": {
+        "PINOT_BROKER_URL": "http://127.0.0.1:8099",
+        "KAFKA_BOOTSTRAP_SERVERS": "127.0.0.1:9092",
+        "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1"
+      }
+    },
+    {
+      "name": "frontend-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "ng",
+        "serve",
+        "--port",
+        "4300",
+        "--proxy-config",
+        "proxy.local.conf.json"
+      ],
+      "cwd": "frontend",
+      "port": 4300
     }
   ]
 }

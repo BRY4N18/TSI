@@ -1,0 +1,279 @@
+openapi: 3.0.3
+
+info:
+  title: Informes compuestos de Cuentas y Clientes sobre el modelo analítico
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los 9 informes agregados de Cuentas y Clientes (OT04, OT17,
+    OT18), con **dos indicadores BSC** que hoy no tienen fuente.
+
+    ## Reglas transversales
+
+    - **Solo lectura.**
+    - ⚠️ **Sin token de sesión.** Es una credencial viva y no entra al modelo bajo ningún concepto.
+    - ⚠️ **Sin identidad de usuario**: ni nombre, ni correo, ni identificación, ni teléfono, ni
+      **género ni fecha de nacimiento**. Un solo informe devuelve una **clave** de usuario.
+    - **El abandono de onboarding se mide por ausencia**: el sistema solo registra lo completado.
+    - **La duración de sesión se mide solo donde hay cierre**, y las abiertas se declaran aparte.
+    - **Sin dato ≠ cero.** Un cliente sin sesiones, sin plan o aún en onboarding se devuelve como
+      `null`, nunca como `0`.
+
+    ## Autoridad, con un matiz ⚠️
+
+    El **Administrador** cubre todo el departamento. El **Director Tecnológico** cubre **solo los
+    informes de acceso (OT18)** — no el ciclo de vida ni la incorporación. Es la limitación del §5.1
+    del SRS.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT04 Incorporación
+  - name: OT17 Ciclo de vida
+  - name: OT18 Acceso
+
+paths:
+  /informes-tacticos/cuentas/churn-por-cohorte:
+    get:
+      tags: [OT17 Ciclo de vida]
+      summary: Tasa de baja por cohorte de alta, con motivo (BSC)
+      description: |
+        ⚠️ Agrupa por **cohorte de alta**, no por mes de baja. La pregunta del indicador es **qué
+        cohortes retienen peor**; agrupando por baja, una cohorte de 50 clientes y otra de 5 se
+        mezclan en el mismo número y dejan de ser comparables.
+      parameters:
+        - name: mes_cohorte
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/antiguedad-media:
+    get:
+      tags: [OT17 Ciclo de vida]
+      summary: Antigüedad media de cuenta, por tipo de cliente y plan
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/usuarios-vs-tope:
+    get:
+      tags: [OT17 Ciclo de vida]
+      summary: Usuarios por cliente frente al tope de su plan
+      description: |
+        ⚠️ Devuelve **`pct_cobertura_pertenencia`**, y no es un adorno: hoy solo el **9,5 %** de los
+        usuarios del sistema tiene organización declarada.
+
+        Sin ese número, «1 de 10 usuarios» se lee como **ocupación real** cuando en realidad es
+        **cobertura del dato** — y un cliente parecería tener sitio de sobra cuando quizá esté lleno.
+
+        Devuelve **usuarios y tope**, no solo el porcentaje. Un cliente **sin plan** devuelve
+        ocupación `null`, nunca 0 %.
+      responses:
+        '200':
+          description: Ocupación por cliente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - idcliente: 920001
+                    usuarios_conocidos: 1
+                    tope_plan: 10
+                    pct_ocupacion: 0.10
+                    pct_cobertura_pertenencia: 0.095
+                meta:
+                  nota_cobertura: "Solo el 9,5 % de los usuarios tiene organización declarada; la ocupación real puede ser mayor."
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/cuentas-en-riesgo:
+    get:
+      tags: [OT17 Ciclo de vida]
+      summary: Cuentas sin actividad de sesión en N días
+      description: |
+        ⚠️ Distingue **«sin sesión desde hace N días»** de **«sin ninguna sesión registrada»**. Nunca
+        haber entrado y haber entrado hoy son lo contrario, y un `0` los confundiría.
+      parameters:
+        - name: dias_inactividad
+          in: query
+          schema: { type: integer, default: 90, minimum: 1 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/tiempo-onboarding:
+    get:
+      tags: [OT04 Incorporación]
+      summary: Tiempo de onboarding, de registro a última etapa (BSC)
+      description: |
+        Los clientes **aún en proceso** se cuentan en `en_proceso` y **quedan fuera de la mediana**:
+        siguen tardando, no tardaron cero.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/embudo-abandono:
+    get:
+      tags: [OT04 Incorporación]
+      summary: Embudo de abandono, % de clientes que supera cada etapa
+      description: |
+        ⚠️ **El sistema no registra abandonos**: solo escribe las etapas completadas. El embudo se
+        calcula **por ausencia**, contra un catálogo explícito de etapas esperadas.
+
+        Devuelve **todas las etapas del catálogo**, incluidas las que **nadie ha completado nunca**.
+        Si se calculara sobre las etapas observadas, esa etapa desaparecería del informe — y es
+        exactamente donde está el problema que el embudo existe para encontrar.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Embudo por etapa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - orden: 1
+                    etapa: "cambio_password"
+                    clientes_que_llegaron: 1
+                    pct_supera: 1.0
+                    detenidos_aqui: 0
+                  - orden: 4
+                    etapa: "verificacion_documental"
+                    clientes_que_llegaron: 0
+                    pct_supera: null
+                    detenidos_aqui: 1
+                meta:
+                  nota_catalogo: "Etapas tomadas del catálogo declarado; incluye las que ningún cliente ha completado."
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/tasa-aprobacion:
+    get:
+      tags: [OT04 Incorporación]
+      summary: Tasa de aprobación frente a rechazo, por tipo de organización
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/cuentas/concurrencia-sesiones:
+    get:
+      tags: [OT18 Acceso]
+      summary: Sesiones concurrentes por día y franja; duración media
+      description: |
+        ⚠️ **La concurrencia se mide por solape de intervalos**, no contando inicios: diez sesiones de
+        un minuto repartidas por la hora y diez simultáneas dan el mismo conteo y describen
+        situaciones opuestas.
+
+        ⚠️ **La duración media se calcula solo sobre sesiones con cierre**, y `sesiones_sin_cierre` lo
+        declara. Con 513 inicios y 195 cierres, una mediana sin ese contexto describe **el 27 %** como
+        si fuera el total.
+
+        Una sesión que cruza la medianoche cuenta en **ambas franjas**, así que la suma de franjas es
+        **mayor** que el total de sesiones. `nota_solape` lo advierte para que no parezca un error.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermisoTecnologico' }
+
+  /informes-tacticos/cuentas/roles-incompatibles:
+    get:
+      tags: [OT18 Acceso]
+      summary: Usuarios con acumulación de roles incompatibles
+      description: |
+        ⚠️ **Sin política declarada, devuelve vacío.** El multi-rol es el **mecanismo previsto** del
+        sistema —una persona acumula roles mediante filas en la tabla puente, sin herencia—, así que
+        un informe que marcara «más de un rol» estaría denunciando el funcionamiento normal.
+
+        Qué combinaciones son incompatibles **lo decide el negocio**, no el modelo.
+
+        ⚠️ Devuelve **la clave del usuario, nunca su nombre**, y **nombra los dos roles**: el hallazgo
+        es la combinación. Quien deba actuar resuelve la identidad en el sistema operativo, **donde
+        ese acceso queda auditado**.
+      parameters:
+        - name: pares_incompatibles
+          in: query
+          schema: { type: string }
+          description: |
+            Pares de roles declarados incompatibles, `rolA:rolB,rolC:rolD`. **Vacío por defecto.**
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermisoTecnologico' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      schema: { type: string, format: date }
+      description: Inicio del período, inclusive. Por defecto, hace 30 días.
+    Hasta:
+      name: hasta
+      in: query
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. Por defecto, hoy.
+
+  responses:
+    Informe:
+      description: Filas agregadas del informe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaInforme' }
+    SinPermiso:
+      description: |
+        El solicitante no es el **Administrador**. ⚠️ El Director Tecnológico **no** cubre el ciclo de
+        vida ni la incorporación: su autoridad en este departamento alcanza solo la capa de accesos.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermisoTecnologico:
+      description: |
+        Informes de acceso: los cubren el **Administrador** y el **Director Tecnológico**.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: Filas agregadas. **Vacío** si el período no tiene datos.
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            periodo:
+              type: object
+              properties:
+                desde: { type: string, format: date }
+                hasta: { type: string, format: date }
+            nota_cobertura:
+              type: string
+              description: Presente en los informes que dependen de la pertenencia usuario ↔ cliente.
+            nota_catalogo:
+              type: string
+              description: Presente en el embudo, para declarar que las etapas salen del catálogo.
+            nota_solape:
+              type: string
+              description: Presente en la concurrencia, por las sesiones que cruzan la medianoche.
+            filtros:
+              type: object
+              additionalProperties: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            codigo: { type: string }
+            mensaje: { type: string }

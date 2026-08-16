@@ -70,7 +70,7 @@ class TestConfirmarCierreContract:
                 "token": "session-token-999",
                 "refresh_token": "refresh-token-999",
                 "navegador": "pytest",
-                "fechahorainiciosesion": "2026-01-01T00:00:00+00:00",
+                "fechahorainiciosesion": 1767225600000,
                 "fechahoracierresesion": None,
                 "estadosession": "Inicio sesion",
             }

@@ -1,0 +1,436 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Partners y API
+  version: 1.0.0
+  description: |
+    Cinco listados llanos de solo lectura sobre el acceso programático (OT08, OT09, OT10).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    **⚠️ Una credencial inactiva no dice por qué lo está.** Revocación por seguridad,
+    desactivación en cascada por impago y expiración son indistinguibles en el registro
+    de la credencial. Los motivos viven en el listado de cambios de acceso, cada uno con
+    su tipo propio. Unir ambas cosas es un informe compuesto.
+
+    Confundirlas no es cosmético: pondría en la misma línea una decisión de seguridad del
+    partner y un impago administrativo, y reactivar guiándose por eso resucitaría una
+    credencial comprometida.
+
+    **Ningún endpoint devuelve el secreto con el que un partner se autentica**, en
+    ninguna de sus formas.
+
+    **Acotamiento**: un partner ve lo suyo; los gestores —Desarrollador de APIs y
+    Administrador— ven todo. Un partner **suspendido conserva** el acceso a sus propios
+    listados: es donde ve su situación.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT08 — Partners y credenciales
+  - name: OT08/OT09 — Bitácora de acceso
+  - name: OT08/OT10 — Contrato y alcance
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/partners-api/partners:
+    get:
+      tags: [OT08 — Partners y credenciales]
+      summary: Partners con su estado de incorporación, plan y cupos
+      description: |
+        «Pruebas activo» y «Producción activa» describen el punto de la incorporación, no
+        entornos excluyentes: un partner en producción conserva su acceso de pruebas. El
+        entorno de cada credencial se consulta en el listado de credenciales.
+      operationId: listarPartners
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Partner'
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [Registrado, Plan asignado, Pruebas activo, Pendiente de aprobación, Producción activa, Suspendido]
+        - name: plan
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Partner' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/partners-api/credenciales:
+    get:
+      tags: [OT08 — Partners y credenciales]
+      summary: Credenciales por entorno, vigencia y caducidad
+      description: |
+        **Indica si una credencial está activa. NO indica por qué no lo está** — ese dato
+        no existe en el registro de la credencial. Para conocer el motivo, consultar el
+        listado de cambios de acceso.
+
+        Ordenado por caducidad ascendente: lo que antes vence, primero. Una credencial
+        que caduca el jueves es una integración que deja de funcionar el jueves.
+
+        **No devuelve el secreto de autenticación** en ninguna de sus formas.
+      operationId: listarCredenciales
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Partner'
+        - name: entorno
+          in: query
+          schema: { type: string, enum: [Sandbox, Produccion] }
+        - name: activa
+          in: query
+          schema: { type: boolean }
+        - name: caduca_en_dias
+          in: query
+          description: Solo las que caducan dentro de este plazo.
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Credencial' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/partners-api/cambios-acceso:
+    get:
+      tags: [OT08/OT09 — Bitácora de acceso]
+      summary: Cambios de acceso con su motivo y ejecutor
+      description: |
+        Listado de hechos del período: `desde` y `hasta` son opcionales.
+
+        **Aquí viven los motivos que el listado de credenciales no puede dar.** Cada tipo
+        de cambio se conserva por separado; en particular, una revocación decidida por el
+        partner nunca se confunde con una desactivación por suspensión: la primera es una
+        decisión de seguridad, la segunda una consecuencia administrativa.
+
+        Una **reactivación puede no traer motivo**, y es correcto: el motivo se exige al
+        cortar el acceso, no al devolverlo.
+      operationId: listarCambiosAcceso
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Partner'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: tipo_cambio
+          in: query
+          description: |
+            Validado contra las constantes del dominio, no contra una copia:
+            un tipo nuevo no produce un rechazo engañoso.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CambioAcceso' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/partners-api/versiones-contrato:
+    get:
+      tags: [OT08/OT10 — Contrato y alcance]
+      summary: Versiones del contrato de integración
+      description: |
+        Incluye las versiones **retiradas**: saber qué se retiró y cuándo es parte de la
+        supervisión del contrato, y omitirlas escondería justo lo que hay que mirar antes
+        de retirar una más.
+
+        Restringido a gestores.
+      operationId: listarVersionesContrato
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: estado
+          in: query
+          schema: { type: string }
+        - name: servicio
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/VersionContrato' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/partners-api/alcance-datos:
+    get:
+      tags: [OT08/OT10 — Contrato y alcance]
+      summary: Alcance de datos contratado por cliente
+      description: |
+        Zonas geográficas habilitadas y condiciones de entrega pactadas.
+
+        **Un cliente sin configurar aparece con el alcance ausente, NUNCA como acceso
+        ilimitado.** De las dos lecturas posibles de un dato vacío, es la única segura.
+
+        Restringido a gestores.
+      operationId: listarAlcanceDatos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: cuenta
+          in: query
+          schema: { type: integer }
+        - name: frecuencia
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AlcanceDatos' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+    Partner:
+      name: partner
+      in: query
+      description: |
+        Solo un gestor puede indicar un partner. Un partner que indique otro distinto del
+        suyo recibe 403.
+      schema: { type: integer }
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango de fechas en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            estadoInvalido:
+              value:
+                error: bad_request
+                detail: "estado 'Activo' no es válido, use uno de: Pendiente de aprobación, Plan asignado, Producción activa, Pruebas activo, Registrado, Suspendido."
+                code: "400"
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: |
+        Rol sin acceso, o un partner pidiendo los registros de otro. No se devuelve
+        ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            partnerAjeno:
+              value:
+                error: forbidden
+                detail: "No puede consultar los registros de otro partner."
+                code: "403"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [propios, todos]
+
+    Partner:
+      type: object
+      properties:
+        cuenta: { type: string }
+        nombre_partner: { type: string }
+        estado_acceso: { type: string }
+        plan_api: { type: string, nullable: true }
+        limite_llamadas_mes: { type: integer, nullable: true }
+        limite_llamadas_minuto: { type: integer, nullable: true }
+        contacto_tecnico: { type: string, nullable: true }
+        fecha_suspension:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ausente si el partner no está suspendido.
+        motivo_suspension:
+          type: string
+          nullable: true
+          description: El sistema lo exige al suspender, así que está presente siempre que haya suspensión.
+
+    Credencial:
+      type: object
+      description: |
+        **No incluye ningún campo de motivo de inactividad**: ese dato no existe en el
+        registro de la credencial. Ver el listado de cambios de acceso.
+      properties:
+        partner: { type: string }
+        nombre_credencial: { type: string }
+        entorno: { type: string, enum: [Sandbox, Produccion] }
+        activa:
+          type: boolean
+          description: |
+            Indica **si** está activa. No indica **por qué** no lo está.
+        fecha_creacion: { type: string, format: date-time }
+        fecha_expiracion: { type: string, format: date-time, nullable: true }
+        dias_para_caducar: { type: integer, nullable: true }
+
+    CambioAcceso:
+      type: object
+      properties:
+        partner: { type: string }
+        credencial: { type: string, nullable: true }
+        tipo_cambio:
+          type: string
+          description: |
+            Conserva su valor propio. `revocacion_credencial` (decisión de seguridad del
+            partner) y `desactivacion_por_cascada` (consecuencia de una suspensión) son
+            situaciones opuestas y **nunca se agrupan**.
+        estado_anterior: { type: string, nullable: true }
+        estado_nuevo: { type: string, nullable: true }
+        motivo:
+          type: string
+          nullable: true
+          description: |
+            Presente en las suspensiones, que lo exigen. **Ausente en las reactivaciones**,
+            que no lo exigen — no es un dato incompleto.
+        ejecutado_por: { type: string, nullable: true }
+        fecha: { type: string, format: date-time }
+
+    VersionContrato:
+      type: object
+      properties:
+        servicio: { type: string }
+        version: { type: string }
+        estado: { type: string }
+        spec_url: { type: string, nullable: true }
+        fecha_publicacion: { type: string, format: date-time }
+        fecha_retiro:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ausente si la versión sigue publicada.
+
+    AlcanceDatos:
+      type: object
+      properties:
+        cuenta: { type: string }
+        zonas_geograficas:
+          type: array
+          nullable: true
+          items: { type: string }
+          description: |
+            **Ausente si el cliente no tiene alcance configurado. Nunca debe leerse como
+            acceso ilimitado.**
+        frecuencia_reportes: { type: string, nullable: true }
+        formato_reportes: { type: string, nullable: true }
+        canales_notificacion: { type: array, nullable: true, items: { type: string } }
+        destinatarios_reportes: { type: array, nullable: true, items: { type: string } }

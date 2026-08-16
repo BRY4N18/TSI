@@ -8,6 +8,14 @@ from apps.suscripciones.views.cambio_plan_views import (
     SolicitudCambioPlanListCreateView,
 )
 from apps.suscripciones.views.factura_views import FacturaDetailView, FacturaListView
+from apps.suscripciones.views.informes_cambio_plan_views import (
+    SolicitudesCambioPlanView,
+)
+from apps.suscripciones.views.informes_facturacion_views import (
+    FacturasView,
+    MetodosPagoView,
+)
+from apps.suscripciones.views.informes_suscripcion_views import SuscripcionesView
 from apps.suscripciones.views.metodo_pago_views import MetodoPagoListCreateView
 from apps.suscripciones.views.plan_views import (
     PlanDetailView,
@@ -22,6 +30,28 @@ from apps.suscripciones.views.suscripcion_views import (
 )
 
 urlpatterns = [
+    # ── Informes tácticos simples ───────────────────────────────────────────
+    # Antes que las rutas operativas: Django resuelve por orden de declaración.
+    path(
+        "informes/suscripciones-facturacion/suscripciones",
+        SuscripcionesView.as_view(),
+        name="informes-susc-suscripciones",
+    ),
+    path(
+        "informes/suscripciones-facturacion/facturas",
+        FacturasView.as_view(),
+        name="informes-susc-facturas",
+    ),
+    path(
+        "informes/suscripciones-facturacion/metodos-pago",
+        MetodosPagoView.as_view(),
+        name="informes-susc-metodos-pago",
+    ),
+    path(
+        "informes/suscripciones-facturacion/solicitudes-cambio-plan",
+        SolicitudesCambioPlanView.as_view(),
+        name="informes-susc-solicitudes-cambio-plan",
+    ),
     path("suscripciones", AltaSuscripcionView.as_view()),
     path("suscripciones/mia", MiSuscripcionView.as_view()),
     path("suscripciones/mia/cancelar", CancelarSuscripcionView.as_view()),

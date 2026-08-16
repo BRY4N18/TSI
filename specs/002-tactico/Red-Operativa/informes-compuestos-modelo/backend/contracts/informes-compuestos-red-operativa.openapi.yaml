@@ -1,0 +1,331 @@
+openapi: 3.0.3
+
+info:
+  title: Informes compuestos de Red Operativa sobre el modelo analítico
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los 15 informes agregados de Red Operativa (OT11–OT13),
+    resueltos con una consulta sobre el modelo analítico.
+
+    **Ninguno existe hoy**: los quince son construcción nueva.
+
+    ## Reglas transversales
+
+    - **Solo lectura.**
+    - **Sin dato sensible**, para ningún rol: ni coordenadas, ni identidad de personas — lo que
+      **incluye al validador de una región**, que el catálogo pedía como desglose.
+    - **Sin dato ≠ cero.** Una disponibilidad desconocida, una región que aún no llegó a producción o
+      una tasa sobre cero validaciones se devuelven `null`, nunca `0`.
+    - **Todo porcentaje viene con su denominador.**
+    - Los informes que dependen del versionado de región devuelven **desde qué fecha su medida es
+      exacta**.
+
+    ## Autoridad repartida ⚠️
+
+    Este departamento no tiene una jefatura única. El **Director de Expansión** gobierna el
+    crecimiento y la flota; el **Director Tecnológico**, los criterios de validación de región. Cada
+    uno accede sin acotamiento **a su materia**, no a la del otro.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT11 Regiones
+  - name: OT12 Flota
+  - name: OT13 Retirada
+
+paths:
+  /informes-tacticos/red-operativa/unidades-por-estado:
+    get:
+      tags: [OT12 Flota]
+      summary: Unidades por estado operativo
+      description: |
+        ⚠️ Agrupa por el **texto del estado tal como lo registró la operación**. No une con el
+        catálogo de estados del sistema operativo, que **no define el estado «En Misión»** pese a
+        usarse en 6 de sus 45 transiciones: unir con él perdería el 13 % de los datos en silencio.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/disponibilidad-declarada:
+    get:
+      tags: [OT12 Flota]
+      summary: Disponibilidad declarada por unidad
+      description: |
+        ⚠️ Mide **la fracción del período en que la unidad estuvo Activa**, sumando duraciones — no
+        el número de transiciones. Una unidad activa todo el mes **no tiene ninguna transición dentro
+        del período**: contada por transiciones daría 0 %, que es lo contrario de la verdad.
+
+        Una unidad **sin ninguna transición conocida** devuelve `pct_disponibilidad: null`.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Disponibilidad por unidad
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-08"
+                    unidad: "ABC-123"
+                    segundos_activa: 2246400
+                    segundos_medidos: 2678400
+                    pct_disponibilidad: 0.8387
+                  - periodo: "2026-08"
+                    unidad: "XYZ-999"
+                    segundos_activa: null
+                    segundos_medidos: 0
+                    pct_disponibilidad: null
+                meta:
+                  periodo: { desde: "2026-08-01", hasta: "2026-08-31" }
+                  filtros: {}
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/cobertura-flota-por-region:
+    get:
+      tags: [OT12 Flota]
+      summary: Cobertura de flota por región
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/condados-cobertura-critica:
+    get:
+      tags: [OT12 Flota]
+      summary: Condados en cobertura crítica, con vecinos disponibles
+      description: |
+        ⚠️ `umbral_unidades` es una **convención de este informe**, no una política de la empresa: el
+        sistema operativo no define ningún umbral de cobertura.
+
+        Un condado **sin vecinos declarados** aparece con `sin_alternativas: true`. Es la situación
+        más grave, no un caso a omitir.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: umbral_unidades
+          in: query
+          schema: { type: integer, default: 1, minimum: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/rotacion-flota:
+    get:
+      tags: [OT12 Flota]
+      summary: Rotación de flota, altas frente a bajas por proveedor
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/bajas-forzadas:
+    get:
+      tags: [OT12 Flota]
+      summary: Bajas forzadas con caso en curso, por proveedor
+      description: |
+        Distingue **normal, forzada y forzada con reasignación**, y señala las que ocurrieron con un
+        caso en curso — que es lo que separa una baja ordenada de una que dejó trabajo a medias.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/pendientes-primer-acceso:
+    get:
+      tags: [OT12 Flota]
+      summary: Unidades de lote pendientes de primer acceso
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/rendimiento-proveedor:
+    get:
+      tags: [OT12 Flota]
+      summary: Rendimiento por proveedor
+      description: |
+        ⚠️ Agrupa por el proveedor **vigente cuando ocurrió cada despacho**. Un cambio de proveedor no
+        reescribe el desempeño anterior.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/tiempo-puesta-operacion:
+    get:
+      tags: [OT11 Regiones]
+      summary: Tiempo de puesta en operación regional (BSC normativo ≤30 días)
+      description: |
+        ⚠️ Mide **solo las regiones que llegaron a producción**. Una región que aún no ha llegado
+        devuelve `dias: null` y `cumple_objetivo: null` — **no `0` ni `false`**: no incumplió un
+        plazo, todavía está dentro de él.
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: dias_objetivo
+          in: query
+          schema: { type: integer, default: 30, minimum: 1 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/mercados-activos:
+    get:
+      tags: [OT11 Regiones]
+      summary: Mercados activos, regiones con al menos un cliente activo (BSC)
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/tasa-aprobacion-primer-intento:
+    get:
+      tags: [OT11 Regiones]
+      summary: Tasa de aprobación al primer intento, por región
+      description: |
+        ⚠️ **Sin desglose por validador**: es identidad de una persona, y la exclusión no admite
+        excepciones ni para la autoridad departamental.
+
+        Cuenta **intentos de validación**, no regiones: una región rechazada dos veces y aprobada a
+        la tercera **no** aprobó al primer intento.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/motivos-rechazo:
+    get:
+      tags: [OT11 Regiones]
+      summary: Motivos de rechazo más frecuentes
+      description: |
+        Agrupa **solo validaciones rechazadas**. Una aprobación sin motivo no debe aparecer como un
+        grupo «sin motivo».
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: top
+          in: query
+          schema: { type: integer, default: 10, minimum: 1 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/regiones-en-riesgo:
+    get:
+      tags: [OT13 Retirada]
+      summary: Regiones publicadas con cobertura bajo el umbral
+      parameters:
+        - { $ref: '#/components/parameters/Desde' }
+        - { $ref: '#/components/parameters/Hasta' }
+        - name: umbral_unidades
+          in: query
+          schema: { type: integer, default: 1, minimum: 0 }
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/casos-activos-al-despublicar:
+    get:
+      tags: [OT13 Retirada]
+      summary: Casos activos al despublicar una región
+      description: |
+        ⚠️ **Mide desde la primera carga del modelo.** El sistema operativo nunca guardó cuándo
+        cambiaba el estado de una región, así que no hay despublicaciones anteriores que mostrar —
+        **no porque no ocurrieran, sino porque no se guardaron**.
+
+        La respuesta incluye `medida_exacta_desde` para que un histórico vacío no se lea como «nunca
+        pasó».
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200':
+          description: Casos activos por región despublicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data: []
+                meta:
+                  periodo: { desde: "2026-01-01", hasta: "2026-08-31" }
+                  medida_exacta_desde: "2026-08-14"
+                  nota: "Sin despublicaciones registradas desde el inicio de la medición."
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-tacticos/red-operativa/tiempo-perdida-a-despublicacion:
+    get:
+      tags: [OT13 Retirada]
+      summary: Tiempo entre pérdida de cobertura y despublicación efectiva
+      description: |
+        ⚠️ Mide desde la primera carga del modelo, por la misma razón que el informe anterior.
+      parameters: [{ $ref: '#/components/parameters/Desde' }, { $ref: '#/components/parameters/Hasta' }]
+      responses:
+        '200': { $ref: '#/components/responses/Informe' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      schema: { type: string, format: date }
+      description: Inicio del período, inclusive. Por defecto, hace 30 días.
+    Hasta:
+      name: hasta
+      in: query
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. Por defecto, hoy.
+
+  responses:
+    Informe:
+      description: Filas agregadas del informe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaInforme' }
+    SinPermiso:
+      description: |
+        El solicitante no tiene autoridad sobre esta materia ni papel operativo en Red Operativa.
+        ⚠️ La autoridad está **repartida**: el Director de Expansión no cubre la validación de
+        región, ni el Director Tecnológico el crecimiento de flota.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío** si el período no tiene datos — distinto de una fila de ceros.
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          type: object
+          properties:
+            periodo:
+              type: object
+              properties:
+                desde: { type: string, format: date }
+                hasta: { type: string, format: date }
+            filtros:
+              type: object
+              additionalProperties: true
+            medida_exacta_desde:
+              type: string
+              format: date
+              description: |
+                Solo en los informes que dependen del versionado de región. Antes de esta fecha no
+                hay historia porque el sistema operativo no la guardaba.
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            codigo: { type: string }
+            mensaje: { type: string }

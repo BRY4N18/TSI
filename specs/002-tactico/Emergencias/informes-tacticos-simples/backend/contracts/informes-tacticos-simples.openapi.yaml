@@ -1,17 +1,295 @@
 openapi: 3.0.3
 info:
-  title: Informes Tácticos Simples de Emergencias
-  version: "1.0.0"
-  description: >
-    16 endpoints de agregación de solo lectura sobre Apache Pinot para los módulos
-    Registro de Accidente, Despacho Inteligente y Seguimiento y Cierre de Casos.
-    Ver specs/002-tactico/Emergencias/informes-tacticos-simples/backend/spec.md.
+  title: Informes Tácticos Simples — Emergencias
+  version: 1.0.0
+  description: |
+    Cinco listados llanos de solo lectura sobre el núcleo del sistema
+    (OT21, OT22, OT23, OT24, OT25).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+    **No duplican los 19 informes agregados** del módulo vecino.
+
+    **⚠️ El estado de un caso no es una propiedad del caso.** El listado devuelve tres
+    hechos —si sigue activo, si tiene hora de fin, de qué caso es duplicado— y **no** un
+    campo «estado» calculado. Con esos tres se distinguen las cuatro situaciones: en
+    curso, cerrado, descartado por falsa alarma y fusionado como duplicado.
+
+    Un recuento de «casos inactivos» sin distinguir sumaría emergencias atendidas, falsas
+    alarmas y duplicados: el trabajo realizado y el ruido descartado como la misma cosa.
+
+    **Acotamiento por cobertura contratada.** Un cliente ve **solo casos cerrados** y
+    **solo de las zonas que tiene contratadas**. Sin zonas contratadas, resultado vacío
+    — nunca el listado completo.
+
+    **Ningún endpoint devuelve las coordenadas del accidente** ni la identidad de
+    conductores, implicados o víctimas.
 
 servers:
-  - url: /api/v1/informes-tacticos
+  - url: /api/v1
+
+tags:
+  - name: OT21/OT25 — Casos
+  - name: OT22/OT23 — Despachos
+  - name: OT24 — Evidencia de campo
+  - name: OT25 — Cierres
 
 security:
   - bearerAuth: []
+
+paths:
+  /informes/emergencias/casos:
+    get:
+      tags: [OT21/OT25 — Casos]
+      summary: Casos con ubicación, severidad, impacto y situación
+      description: |
+        Devuelve **tres hechos** en lugar de un estado calculado: `activo`, `hora_fin` y
+        `duplicado_de`. Las cuatro situaciones se leen así:
+
+        | Situación | activo | hora_fin | duplicado_de |
+        |---|:--:|:--:|:--:|
+        | En curso | sí | — | — |
+        | Cerrado | no | sí | — |
+        | Fusionado | no | — | sí |
+        | Descartado | no | — | — |
+
+        Un caso fusionado o descartado **sigue apareciendo**: el sistema garantiza que no
+        se borran.
+
+        La ubicación se expresa por nombre. **No se devuelven coordenadas.**
+      operationId: listarCasos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: severidad
+          in: query
+          schema: { type: integer }
+        - name: condado
+          in: query
+          schema: { type: integer }
+        - name: ciudad
+          in: query
+          schema: { type: integer }
+        - name: tipo_reportado
+          in: query
+          schema: { type: integer }
+        - name: situacion
+          in: query
+          description: |
+            Combina los tres hechos. `borrador` son casos cuyo registro levantó
+            advertencias y nadie confirmó ni descartó.
+          schema:
+            type: string
+            enum: [en_curso, cerrado, duplicado, descartado]
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Caso' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/emergencias/despachos:
+    get:
+      tags: [OT22/OT23 — Despachos]
+      summary: Despachos con su origen, unidad y momento
+      description: |
+        Un caso puede acumular **varios despachos** de orígenes distintos; aparecen todos.
+
+        `en_transito` se deriva de las horas del propio despacho —despachado, sin llegada
+        y sin retiro—, no de un histórico de estados.
+
+        El **retiro forzado** se distingue del normal: es la traza de que la central
+        retiró a una unidad en vez de que la unidad terminara su parte.
+
+        Restringido a roles internos.
+      operationId: listarDespachos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: origen
+          in: query
+          schema: { type: integer }
+        - name: unidad
+          in: query
+          schema: { type: integer }
+        - name: caso
+          in: query
+          schema: { type: string }
+        - name: en_transito
+          in: query
+          description: Despachos sin hora de llegada ni de retiro.
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Despacho' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/emergencias/evidencia-fotos:
+    get:
+      tags: [OT24 — Evidencia de campo]
+      summary: Fotografías de evidencia, con su hora de captura
+      description: |
+        **La hora de captura es la del sitio**, no la de la subida. Ambas se devuelven por
+        separado: en una fotografía capturada sin conexión difieren, y en una tomada en
+        línea coinciden. Ese contraste es lo que demuestra que no se está sellando la hora
+        de subida.
+
+        El filtro `sincronizado=false` lista la evidencia que se levantó y **nunca
+        llegó** — el hueco que la revisión del sistema dejó anotado.
+
+        Restringido a roles internos.
+      operationId: listarEvidenciaFotos
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: sincronizado
+          in: query
+          schema: { type: boolean }
+        - name: caso
+          in: query
+          schema: { type: string }
+        - name: autor
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/EvidenciaFoto' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/emergencias/notas-campo:
+    get:
+      tags: [OT24 — Evidencia de campo]
+      summary: Notas de campo, con su hora de captura
+      description: |
+        Mismo criterio que las fotografías: la hora de captura es la del sitio.
+
+        **Nota de implementación relevante para el consumidor:** la nota no dispone de una
+        marca de sincronización propia como sí tienen las fotografías, así que su hora de
+        registro procede de la marca genérica de última modificación de la fila. El
+        significado expuesto es el mismo; el origen del dato, no.
+
+        Restringido a roles internos.
+      operationId: listarNotasCampo
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: sincronizado
+          in: query
+          schema: { type: boolean }
+        - name: tipo
+          in: query
+          schema: { type: string }
+        - name: caso
+          in: query
+          schema: { type: string }
+        - name: autor
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/NotaCampo' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/emergencias/cierres:
+    get:
+      tags: [OT25 — Cierres]
+      summary: Cierres de caso con resultado y calificación
+      description: |
+        **Una calificación ausente no es un cero.** En una escala, cero es el peor valor:
+        presentar «no se calificó» como «se calificó con la nota mínima» invertiría el
+        significado, y un promedio que incluyera esos ceros hundiría la media.
+
+        Listado de estado actual: el registro de cierre no tiene fecha propia —la hora de
+        fin vive en el caso—, así que no acepta rango de fechas.
+
+        Restringido a roles internos.
+      operationId: listarCierres
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - name: resultado
+          in: query
+          schema: { type: string }
+        - name: sin_observaciones
+          in: query
+          schema: { type: boolean }
+        - name: con_calificacion
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Cierre' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
 
 components:
   securitySchemes:
@@ -21,474 +299,189 @@ components:
       bearerFormat: JWT
 
   parameters:
-    periodoDesde:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+    Desde:
       name: desde
       in: query
-      required: true
       schema: { type: string, format: date }
-    periodoHasta:
+    Hasta:
       name: hasta
       in: query
-      required: true
+      description: Inclusiva — se interpreta como fin del día.
       schema: { type: string, format: date }
-    granularidad:
-      name: granularidad
-      in: query
-      required: false
-      schema: { type: string, enum: [dia, semana, mes], default: dia }
-    idcondado:
-      name: idcondado
-      in: query
-      required: false
-      schema: { type: integer }
-      description: Corte opcional por condado (Dim_UnidadEmergencia.idcondado).
-    top:
-      name: top
-      in: query
-      required: false
-      schema: { type: integer, default: 10, maximum: 100 }
-      description: Tope de filas para informes de ranking (evita LIMIT implícito de Pinot).
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango de fechas en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            situacionInvalida:
+              value:
+                error: bad_request
+                detail: "situacion 'inactivo' no es válida, use una de: borrador, cerrado, descartado, duplicado, en_curso."
+                code: "400"
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: |
+        Rol sin acceso, o un cliente accediendo a un listado reservado a roles internos.
+        No se devuelve ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
-    Meta:
+    Error:
       type: object
-      properties:
-        periodo:
-          type: object
-          properties:
-            desde: { type: string, format: date }
-            hasta: { type: string, format: date }
-            granularidad: { type: string }
-        filtros:
-          type: object
-          additionalProperties: true
-    ErrorEnvelope:
-      type: object
+      required: [error, detail, code]
       properties:
         error: { type: string }
         detail: { type: string }
         code: { type: string }
-    InformeSinDatos:
-      description: Período sin datos — respuesta explícita, no error (FR-006 de la spec).
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [zonas_contratadas, todos]
+              description: |
+                `zonas_contratadas` si el resultado está limitado a la cobertura del
+                cliente. Sin este campo, un cliente no podría distinguir «no hubo
+                accidentes graves» de «no hubo accidentes graves **en mis zonas**».
+
+    Caso:
+      type: object
+      description: |
+        **No incluye un campo «estado»**: van los tres hechos por separado. Y no incluye
+        coordenadas.
+      properties:
+        numero_caso: { type: string }
+        severidad: { type: string, nullable: true }
+        calle: { type: string, nullable: true }
+        ciudad: { type: string, nullable: true }
+        condado:
+          type: string
+          nullable: true
+          description: |
+            Ausente si la ubicación del caso no resuelve. La fila **no se omite**: es una
+            anomalía real, y además ese caso nunca podrá acotarse a ninguna zona.
+        tipo_reportado: { type: string, nullable: true }
+        num_vehiculos: { type: integer, nullable: true }
+        num_heridos: { type: integer, nullable: true }
+        num_victimas: { type: integer, nullable: true }
+        num_fallecidos: { type: integer, nullable: true }
+        fecha_accidente: { type: string, format: date-time }
+        activo: { type: boolean }
+        hora_fin: { type: string, format: date-time, nullable: true }
+        duracion_minutos: { type: integer, nullable: true }
+        duplicado_de:
+          type: string
+          nullable: true
+          description: Número del caso del que este es duplicado. Presente solo en los fusionados.
+
+    Despacho:
       type: object
       properties:
-        data: { type: array, items: {}, example: [] }
-        meta: { $ref: '#/components/schemas/Meta' }
+        numero_caso: { type: string }
+        unidad: { type: string, nullable: true }
+        origen_despacho: { type: string }
+        fecha_despacho: { type: string, format: date-time }
+        fecha_llegada: { type: string, format: date-time, nullable: true }
+        fecha_retiro: { type: string, format: date-time, nullable: true }
+        retiro_forzado:
+          type: boolean
+          description: La central retiró a la unidad, en vez de que la unidad terminara su parte.
+        en_transito:
+          type: boolean
+          description: Despachado, sin llegada y sin retiro. Derivado de las horas, no de un histórico.
 
-  responses:
-    Unauthorized:
-      description: Rol sin permiso para consultar informes tácticos (FR-007).
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    EvidenciaFoto:
+      type: object
+      properties:
+        numero_caso: { type: string }
+        autor: { type: string, nullable: true }
+        url: { type: string }
+        sincronizado: { type: boolean }
+        hora_captura:
+          type: string
+          format: date-time
+          description: |
+            **La hora del sitio.** Nunca se sustituye por la hora de subida.
+        hora_registro:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Hora en que la evidencia llegó al sistema. En una captura sin conexión difiere
+            de `hora_captura`; en una tomada en línea, coincide.
 
-paths:
-  # ── Registro de Accidente (7) ──────────────────────────────
-  /registro/volumen-casos:
-    get:
-      summary: Volumen total de casos registrados, por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/granularidad'
-      responses:
-        '200':
-          description: Conteo de accidentes agrupado por período.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        periodo: { type: string, format: date }
-                        total_casos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+    NotaCampo:
+      type: object
+      properties:
+        numero_caso: { type: string }
+        autor: { type: string, nullable: true }
+        nota: { type: string }
+        tipo: { type: string, nullable: true }
+        sincronizado: { type: boolean }
+        hora_captura: { type: string, format: date-time, description: La hora del sitio. }
+        hora_registro:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Mismo significado que en las fotografías, aunque su origen en el modelo es
+            distinto: la nota no dispone de marca de sincronización propia.
 
-  /registro/distribucion-severidad:
-    get:
-      summary: Distribución de casos por nivel de severidad, por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Conteo agrupado por severidad.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idseveridad: { type: integer }
-                        severidad: { type: string }
-                        total_casos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /registro/distribucion-zona:
-    get:
-      summary: Distribución de casos por zona (calle), por período
-      description: >-
-        MVP: agrupa por `idcalle` (nivel geográfico disponible directamente en
-        Fact_Accidente). `calle_nombre` se resuelve vía Dim_Calle y puede ser
-        `null` si no existe una fila correspondiente.
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Conteo agrupado por idcalle.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idcalle: { type: integer }
-                        calle_nombre: { type: string, nullable: true }
-                        total_casos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /registro/completitud-campos-criticos:
-    get:
-      summary: "% de registros con campos críticos completos, por período"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/granularidad'
-      responses:
-        '200':
-          description: Porcentaje de completitud por período.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        periodo: { type: string, format: date }
-                        pct_completos: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /registro/descarte-fusion:
-    get:
-      summary: "% de descarte y de fusión sobre total de reportes, por período"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/granularidad'
-      responses:
-        '200':
-          description: Porcentajes de descarte y fusión por período.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        periodo: { type: string, format: date }
-                        pct_descarte: { type: number }
-                        pct_fusion: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /registro/ranking-ubicaciones:
-    get:
-      summary: Ranking de ubicaciones con mayor frecuencia de casos, por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/top'
-      responses:
-        '200':
-          description: Ubicaciones ordenadas por frecuencia descendente.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idcalle: { type: integer }
-                        calle_nombre: { type: string, nullable: true }
-                        total_casos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /registro/impacto-humano:
-    get:
-      summary: Impacto humano (víctimas, heridos, fallecidos) por calle
-      description: >-
-        MVP: agrupa por `idcalle` como región (ver nota de distribucion-zona).
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Suma de víctimas/heridos/fallecidos por idcalle.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idcalle: { type: integer }
-                        calle_nombre: { type: string, nullable: true }
-                        total_victimas: { type: integer }
-                        total_heridos: { type: integer }
-                        total_fallecidos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  # ── Despacho Inteligente (6) ────────────────────────────────
-  /despacho/asignacion-automatica-vs-manual:
-    get:
-      summary: "% de asignaciones automáticas vs. manuales/escaladas"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/idcondado'
-      responses:
-        '200':
-          description: Porcentaje agrupado por origen de despacho.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        origen: { type: string }
-                        pct_total: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /despacho/tiempo-reportado-confirmado:
-    get:
-      summary: Tiempo promedio entre "reportado" y "confirmado"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Tiempo promedio en segundos.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      promedio_segundos: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /despacho/tiempo-respuesta-por-severidad:
-    get:
-      summary: Distribución del tiempo de respuesta por nivel de severidad, por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/idcondado'
-      responses:
-        '200':
-          description: Tiempo promedio agrupado por severidad (y condado si se filtra).
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idseveridad: { type: integer }
-                        promedio_segundos: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /despacho/rechazo-timeout-por-unidad:
-    get:
-      summary: "% de rechazo/timeout por unidad, por período"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Porcentaje de rechazo/timeout agrupado por unidad.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idunidademergencia: { type: integer }
-                        pct_rechazo_timeout: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /despacho/carga-por-unidad:
-    get:
-      summary: Carga de despachos atendidos por unidad, por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Conteo de despachos agrupado por unidad.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idunidademergencia: { type: integer }
-                        total_despachos: { type: integer }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /despacho/ratio-demanda-capacidad:
-    get:
-      summary: Ratio demanda/capacidad por condado (casos por unidad disponible), por período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Ratio de accidentes sobre unidades activas, por condado.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idcondado: { type: integer }
-                        total_accidentes: { type: integer }
-                        unidades_activas: { type: integer }
-                        ratio: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  # ── Seguimiento y Cierre de Casos (3) ───────────────────────
-  /seguimiento/tiempo-asignado-cerrado:
-    get:
-      summary: Tiempo promedio entre "asignado" y "cerrado", por unidad/zona/período
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - name: agrupar_por
-          in: query
-          required: false
-          schema: { type: string, enum: [unidad, zona], default: unidad }
-      responses:
-        '200':
-          description: Tiempo promedio agrupado por unidad o zona.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        grupo_id: { type: integer }
-                        promedio_segundos: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /seguimiento/cierres-forzados:
-    get:
-      summary: "% de cierres forzados sobre total de cierres, por período"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-        - $ref: '#/components/parameters/granularidad'
-      responses:
-        '200':
-          description: Porcentaje de cierres forzados por período.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        periodo: { type: string, format: date }
-                        pct_cierres_forzados: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /seguimiento/abortos-perdidas:
-    get:
-      summary: "% de abortos/pérdidas sobre total de despachos, por unidad/período"
-      parameters:
-        - $ref: '#/components/parameters/periodoDesde'
-        - $ref: '#/components/parameters/periodoHasta'
-      responses:
-        '200':
-          description: Porcentaje de abortos/pérdidas agrupado por unidad.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        idunidademergencia: { type: integer }
-                        pct_abortos_perdidas: { type: number }
-                  meta: { $ref: '#/components/schemas/Meta' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+    Cierre:
+      type: object
+      properties:
+        numero_caso: { type: string }
+        resultado_atencion: { type: string, nullable: true }
+        calificacion:
+          type: integer
+          nullable: true
+          description: |
+            **Ausente si no se calificó. Nunca cero**: en una escala, cero es el peor
+            valor, y no calificar no es calificar mal.
+        observaciones_finales: { type: string, nullable: true }

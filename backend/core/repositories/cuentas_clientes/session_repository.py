@@ -10,6 +10,16 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
+# Valores canónicos de `Fact_Session.estadosession`. Estaban como literales
+# sueltos dentro de los métodos; se nombran aquí por la misma razón que en
+# `credential_repository`: el informe táctico de sesiones abiertas necesita
+# filtrar por "activa", y si copiara el literal, una divergencia de un carácter
+# devolvería un listado vacío con `200` — sin error y sin nada que lo distinga
+# de "no hay sesiones abiertas".
+ESTADO_SESION_ACTIVA = "Inicio sesion"
+ESTADO_SESION_CERRADA = "Cierre sesion"
+ESTADO_SESION_EXPULSADO = "Expulsado"
+
 
 class SessionRepository:
     """Repository for Fact_Session entity."""
@@ -35,9 +45,9 @@ class SessionRepository:
         return self.pinot.query(
             """
             SELECT * FROM Fact_Session
-            WHERE idusuario = %(idusuario)s AND estadosession = 'Inicio sesion'
+            WHERE idusuario = %(idusuario)s AND estadosession = %(estado)s
             """,
-            {"idusuario": user_id},
+            {"idusuario": user_id, "estado": ESTADO_SESION_ACTIVA},
         )
 
     def create(
@@ -58,7 +68,7 @@ class SessionRepository:
             "navegador": navegador,
             "fechahorainiciosesion": now,
             "fechahoracierresesion": None,
-            "estadosession": "Inicio sesion",
+            "estadosession": ESTADO_SESION_ACTIVA,
             "fecha_actualizacion": now,
         }
         self.kafka.publish(self.TOPIC, payload)
@@ -71,7 +81,7 @@ class SessionRepository:
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         payload = {
             **session,
-            "estadosession": "Cierre sesion",
+            "estadosession": ESTADO_SESION_CERRADA,
             "fechahoracierresesion": now,
             "fecha_actualizacion": now,
         }
@@ -85,7 +95,7 @@ class SessionRepository:
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         payload = {
             **session,
-            "estadosession": "Expulsado",
+            "estadosession": ESTADO_SESION_EXPULSADO,
             "fechahoracierresesion": now,
             "fecha_actualizacion": now,
         }
@@ -96,7 +106,7 @@ class SessionRepository:
         session = self.find_by_id(session_id)
         if not session:
             return False
-        return session.get("estadosession") == "Inicio sesion"
+        return session.get("estadosession") == ESTADO_SESION_ACTIVA
 
     def expel_all_by_cliente(self, cliente_id: int) -> int:
         """Expel all active sessions for users belonging to cliente (CU-O11)."""

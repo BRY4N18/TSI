@@ -90,6 +90,20 @@ export const routes: Routes = [
           import('./modules/accidentes/accidentes.routes').then((m) => m.ACCIDENTES_ROUTES),
       },
       {
+        path: 'cuentas-clientes/informes',
+        loadChildren: () =>
+          import(
+            './modules/cuentas-clientes/informes/cuentas-clientes-informes.routes'
+          ).then((m) => m.CUENTAS_CLIENTES_INFORMES_ROUTES),
+      },
+      {
+        path: 'soporte-cliente/informes',
+        loadChildren: () =>
+          import(
+            './modules/soporte-cliente/informes/soporte-cliente-informes.routes'
+          ).then((m) => m.SOPORTE_CLIENTE_INFORMES_ROUTES),
+      },
+      {
         path: 'emergencias',
         loadChildren: () =>
           import('./modules/emergencias/emergencias.routes').then((m) => m.EMERGENCIAS_ROUTES),

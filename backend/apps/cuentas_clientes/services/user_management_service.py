@@ -5,6 +5,9 @@ from __future__ import annotations
 from core.repositories.cuentas_clientes.credential_repository import (
     CredentialRepository,
 )
+from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+    CuentaUsuarioRepository,
+)
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 
@@ -27,10 +30,12 @@ class UserManagementService:
         user_repo: UserRepository | None = None,
         role_repo: RoleRepository | None = None,
         credential_repo: CredentialRepository | None = None,
+        cuenta_usuario_repo: CuentaUsuarioRepository | None = None,
     ):
         self.user_repo = user_repo or UserRepository()
         self.role_repo = role_repo or RoleRepository()
         self.credential_repo = credential_repo or CredentialRepository()
+        self.cuenta_usuario_repo = cuenta_usuario_repo or CuentaUsuarioRepository()
 
     def _require_admin(self, roles: list[str]) -> None:
         if self.ADMIN_ROLE not in roles:
@@ -60,6 +65,14 @@ class UserManagementService:
         role_ids = data.get("role_ids", [])
         for role_id in role_ids:
             self.role_repo.assign_role_to_user(user["idusuario"], role_id)
+
+        # Pertenencia a una cuenta cliente, si el alta la declara (decision #23).
+        # Es **opcional**: los usuarios internos de TSI no pertenecen a ninguna
+        # organizacion, y exigirlo dejaria sin poder crearlos.
+        idcliente = data.get("idcliente")
+        if idcliente:
+            self.cuenta_usuario_repo.vincular(user["idusuario"], int(idcliente))
+            user["idcliente"] = int(idcliente)
 
         user["roles"] = self.role_repo.get_user_roles(user["idusuario"])
         return user

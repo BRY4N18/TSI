@@ -3,6 +3,16 @@
 from django.urls import path
 
 from apps.partners.views.contrato_views import ContratoIntegracionView
+from apps.partners.views.informes_views import (
+    AlcanceDatosView,
+    CambiosAccesoView,
+    CredencialesView as InformesCredencialesView,
+    # Se importa con alias porque `partner_views` exporta otra `PartnersView`:
+    # sin alias, la importación posterior sustituía a esta en silencio y la ruta
+    # de informes acababa sirviendo el listado operativo.
+    PartnersView as InformesPartnersView,
+    VersionesContratoView,
+)
 from apps.partners.views.datos_views import ConsultarAccidentesView
 from apps.partners.views.metricas_views import (
     ConsolaLogsView,
@@ -30,6 +40,33 @@ from apps.partners.views.promocion_views import (
 )
 
 urlpatterns = [
+    # ── Informes tácticos simples ───────────────────────────────────────────
+    # Antes que las rutas operativas: Django resuelve por orden de declaración.
+    path(
+        "informes/partners-api/partners",
+        InformesPartnersView.as_view(),
+        name="informes-partners",
+    ),
+    path(
+        "informes/partners-api/credenciales",
+        InformesCredencialesView.as_view(),
+        name="informes-partners-credenciales",
+    ),
+    path(
+        "informes/partners-api/cambios-acceso",
+        CambiosAccesoView.as_view(),
+        name="informes-partners-cambios-acceso",
+    ),
+    path(
+        "informes/partners-api/versiones-contrato",
+        VersionesContratoView.as_view(),
+        name="informes-partners-versiones-contrato",
+    ),
+    path(
+        "informes/partners-api/alcance-datos",
+        AlcanceDatosView.as_view(),
+        name="informes-partners-alcance-datos",
+    ),
     # --- CU-O48: registro y cupo ---
     path("partners", PartnersView.as_view(), name="partners"),
     # ANTES del patron numerico: `me` no es un `<int:idpartner>`, pero dejar

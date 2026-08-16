@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.seguimiento.views.informes_views import DespachosView
+
 from apps.seguimiento.views.cierre_views import (
     CancelarCasoView,
     CerrarCasoView,
@@ -30,6 +32,10 @@ from apps.seguimiento.views.mi_seguimiento_views import (
 from apps.seguimiento.views.ruta_views import RutaSeguimientoView
 
 urlpatterns = [
+    # ── Informes tácticos simples ───────────────────────────────────────────
+    path("informes/emergencias/despachos", DespachosView.as_view(),
+         name="informes-emergencias-despachos"),
+
     path("seguimiento/mapa", MapaSeguimientoView.as_view()),
     path("seguimiento/ruta", RutaSeguimientoView.as_view()),
     path("seguimiento/stream", SeguimientoStreamView.as_view()),

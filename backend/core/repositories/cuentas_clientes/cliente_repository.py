@@ -10,6 +10,29 @@ from core.pinot.client import PinotClient
 from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
 
+# Valores canónicos de `Dim_Cliente.estado`. Estaban repartidos como literales
+# entre `aprobacion_proveedor_service`, `baja_cuenta_service` y este módulo; se
+# nombran aquí por la misma razón que en `credential_repository` y en
+# `session_repository`: el informe táctico de cuentas por estado filtra por
+# ellos, y un literal copiado con una divergencia de un carácter devolvería un
+# listado vacío con `200`, sin error y sin nada que lo distinga de "no hay
+# cuentas en ese estado".
+ESTADO_CLIENTE_ACTIVO = "Activo"
+ESTADO_CLIENTE_PENDIENTE = "Pendiente"
+ESTADO_CLIENTE_RECHAZADO = "Rechazado"
+ESTADO_CLIENTE_RECHAZADO_ANULADO = "Rechazado_Anulado"
+ESTADO_CLIENTE_BAJA = "Dado de baja"
+
+ESTADOS_CLIENTE = frozenset(
+    {
+        ESTADO_CLIENTE_ACTIVO,
+        ESTADO_CLIENTE_PENDIENTE,
+        ESTADO_CLIENTE_RECHAZADO,
+        ESTADO_CLIENTE_RECHAZADO_ANULADO,
+        ESTADO_CLIENTE_BAJA,
+    }
+)
+
 
 class ClienteRepository:
     """Repository for Dim_Cliente entity."""

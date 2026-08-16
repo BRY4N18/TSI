@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: Informes Tácticos Simples — Suscripciones y Facturación
+  version: 1.0.0
+  description: |
+    Cuatro listados llanos de solo lectura sobre el contrato comercial recurrente
+    (OT05, OT06, OT07).
+
+    Gobernado por `specs/002-tactico/contrato-informes-simples.md`.
+
+    **Acotamiento por organización**: un usuario pregunta y el resultado se acota a la
+    cuenta cliente a la que pertenece.
+      * **Administrador**: ve todas las cuentas; puede filtrar por una concreta.
+      * **Cliente / Proveedor**: obtiene únicamente los de su cuenta, resuelta por
+        pertenencia. Si pide otra, recibe **403** — nunca se le sustituye en silencio.
+      * Una cuenta con la suscripción **suspendida conserva** el acceso a lo suyo: es
+        donde ve lo que debe regularizar.
+
+    **Ningún endpoint devuelve el identificador con el que se ejecuta el cobro contra la
+    pasarela de pagos.** Los últimos dígitos bastan para identificar el método.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: OT05/OT07 — Estado de las suscripciones
+  - name: OT06 — Facturación y cobro
+  - name: OT07 — Cambios de plan
+
+security:
+  - bearerAuth: []
+
+paths:
+  /informes/suscripciones-facturacion/suscripciones:
+    get:
+      tags: [OT05/OT07 — Estado de las suscripciones]
+      summary: Suscripciones con su estado comercial
+      description: |
+        Un solo listado que responde las cinco preguntas que el catálogo planteaba por
+        separado: clientes por plan, vencimientos próximos, suspendidas por impago,
+        reducciones pendientes de aplicar y cancelaciones con motivo.
+
+        **`con_cambio_programado` distingue un plan real de la ausencia de cambio.** El
+        modelo guarda un valor por defecto que significa «sin cambio», no un vacío, así
+        que una comprobación de nulidad devolvería todas las suscripciones.
+      operationId: listarSuscripciones
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: estado
+          in: query
+          schema: { type: string, enum: [Activa, Suspendida, Cancelada, Vencida] }
+        - name: plan
+          in: query
+          schema: { type: integer }
+        - name: vence_en_dias
+          in: query
+          description: Solo las que vencen dentro de este plazo.
+          schema: { type: integer, minimum: 0 }
+        - name: con_cambio_programado
+          in: query
+          description: Solo las que tienen una reducción aprobada pendiente de aplicarse.
+          schema: { type: boolean }
+        - name: cancelada_desde
+          in: query
+          description: Filtro sobre la fecha de cancelación, no un período genérico.
+          schema: { type: string, format: date }
+        - name: cancelada_hasta
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: "Listado paginado. Vacío devuelve `data: []`, nunca 404."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Suscripcion' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/suscripciones-facturacion/facturas:
+    get:
+      tags: [OT06 — Facturación y cobro]
+      summary: Facturas con su estado de pago y mora
+      description: |
+        Listado de hechos del período: `desde` y `hasta` son opcionales y omitirlos
+        devuelve el histórico completo paginado.
+
+        **Una factura en disputa no es una factura impaga.** Está excluida del cobro
+        automático mientras se resuelve, así que el filtro `vencidas` la deja fuera:
+        presentarla como mora induciría a perseguir un cobro que el sistema detuvo a
+        propósito.
+      operationId: listarFacturas
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: desde
+          in: query
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          description: Inclusiva — se interpreta como fin del día.
+          schema: { type: string, format: date }
+        - name: estado_pago
+          in: query
+          schema: { type: string, enum: [Pendiente, Pagada, Fallida, En disputa] }
+        - name: vencidas
+          in: query
+          description: Solo vencidas e impagas. **Excluye las que están en disputa.**
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Factura' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/suscripciones-facturacion/solicitudes-cambio-plan:
+    get:
+      tags: [OT07 — Cambios de plan]
+      summary: Solicitudes de cambio de plan y su espera
+      description: |
+        Bandeja de trabajo ordenada de más antigua a más reciente: lo que lleva más
+        tiempo esperando aparece primero.
+      operationId: listarSolicitudesCambioPlan
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: estado
+          in: query
+          schema: { type: string, enum: [Pendiente, Aprobada, Rechazada] }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/SolicitudCambioPlan' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes/suscripciones-facturacion/metodos-pago:
+    get:
+      tags: [OT06 — Facturación y cobro]
+      summary: Métodos de pago vigentes y próximos a caducar
+      description: |
+        Solo los métodos **vigentes**: reemplazar uno desactiva el anterior sin borrarlo,
+        y el historial no es medio de cobro.
+
+        **Este endpoint no devuelve, bajo ninguna circunstancia, el identificador con el
+        que se ejecuta el cargo contra la pasarela.** Los últimos dígitos identifican el
+        método ante una persona y no sirven para cobrar.
+      operationId: listarMetodosPago
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Dir'
+        - $ref: '#/components/parameters/Cuenta'
+        - name: caduca_en_dias
+          in: query
+          description: Solo los que caducan dentro de este plazo.
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RespuestaListado'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MetodoPago' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Un valor mayor que el máximo responde 400, no se recorta.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+    Dir:
+      name: dir
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+    Cuenta:
+      name: cuenta
+      in: query
+      description: |
+        Identificador de la cuenta cliente. Solo el Administrador puede indicar una;
+        un usuario de cuenta que indique otra distinta de la suya recibe 403.
+      schema: { type: integer }
+
+  responses:
+    PeticionInvalida:
+      description: Filtro inválido, `limit` excedido, o rango genérico en un listado de estado actual.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            estadoInvalido:
+              value:
+                error: bad_request
+                detail: "estado 'Anulada' no es válido, use uno de: Activa, Cancelada, Suspendida, Vencida."
+                code: "400"
+            rangoNoAdmitido:
+              value:
+                error: bad_request
+                detail: "Este listado describe el estado actual y no admite 'desde'/'hasta'."
+                code: "400"
+    NoAutenticado:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: Rol sin acceso, o un usuario pidiendo registros de otra cuenta. No se devuelve ninguna fila.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            cuentaAjena:
+              value:
+                error: forbidden
+                detail: "No puede consultar los registros de otra cuenta cliente."
+                code: "403"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+    Paginacion:
+      type: object
+      required: [cursor, limit, has_next]
+      properties:
+        cursor: { type: string, nullable: true }
+        limit: { type: integer }
+        has_next: { type: boolean }
+
+    RespuestaListado:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { type: object } }
+        meta:
+          type: object
+          required: [pagination, filtros, acotado_a]
+          properties:
+            pagination: { $ref: '#/components/schemas/Paginacion' }
+            filtros:
+              type: object
+              additionalProperties: true
+            acotado_a:
+              type: string
+              enum: [propios, todos]
+              description: |
+                `propios` si el resultado está limitado a la cuenta del solicitante.
+                Sin este campo, un resultado vacío sería ambiguo.
+
+    Suscripcion:
+      type: object
+      properties:
+        cuenta: { type: string }
+        plan: { type: string }
+        nivel: { type: string, nullable: true }
+        estado: { type: string }
+        precio: { type: number }
+        periodicidad: { type: string, nullable: true }
+        renovacion_automatica: { type: boolean }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: string, format: date-time, nullable: true }
+        motivo_cancelacion: { type: string, nullable: true }
+        fecha_cancelacion: { type: string, format: date-time, nullable: true }
+        cambio_programado:
+          type: object
+          nullable: true
+          description: |
+            Ausente cuando no hay ningún cambio pendiente. **Nunca se devuelve como un
+            plan con identificador cero**, que es el valor que el modelo guarda para
+            significar «sin cambio».
+          properties:
+            plan: { type: string }
+            se_aplica_el: { type: string, format: date-time }
+
+    Factura:
+      type: object
+      properties:
+        cuenta: { type: string }
+        numero_factura: { type: string }
+        periodo: { type: string }
+        tipo_documento:
+          type: string
+          description: |
+            Distingue un cargo de una nota de crédito. Hoy la operación no emite notas de
+            crédito; se expone para que, cuando las emita, no se sumen como cargos.
+        monto_base: { type: number }
+        impuestos: { type: number }
+        monto_total: { type: number }
+        estado_pago: { type: string, enum: [Pendiente, Pagada, Fallida, En disputa] }
+        reintentos: { type: integer }
+        fecha_emision: { type: string, format: date-time }
+        fecha_vencimiento: { type: string, format: date-time }
+        dias_mora:
+          type: integer
+          nullable: true
+          description: Presente solo si la factura está vencida e impaga. Ausente si está en disputa.
+
+    SolicitudCambioPlan:
+      type: object
+      properties:
+        cuenta: { type: string }
+        plan_actual: { type: string }
+        plan_solicitado: { type: string }
+        estado: { type: string, enum: [Pendiente, Aprobada, Rechazada] }
+        motivo: { type: string, nullable: true }
+        dias_espera: { type: integer }
+        resuelta_por: { type: string, nullable: true, description: Ausente mientras siga pendiente. }
+        motivo_rechazo: { type: string, nullable: true }
+        fecha_solicitud: { type: string, format: date-time }
+        fecha_resolucion: { type: string, format: date-time, nullable: true }
+
+    MetodoPago:
+      type: object
+      description: |
+        El identificador de cobro contra la pasarela **no forma parte de este esquema y
+        no debe aparecer en la respuesta bajo ninguna circunstancia**.
+      properties:
+        cuenta: { type: string }
+        tipo: { type: string }
+        ultimos_digitos: { type: string }
+        fecha_expiracion: { type: string, format: date-time }
+        dias_para_caducar: { type: integer }

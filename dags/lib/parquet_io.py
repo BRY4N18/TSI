@@ -35,15 +35,28 @@ STAGE_FILENAMES = {
 }
 
 
-def stage_path(ts: str, stage: str, etl_root: Path | None = None) -> Path:
-    """Construye ETL/<fecha>/<hora>/<stage>_data.parquet a partir de un ts ISO8601 de Airflow."""
+def stage_path(
+    ts: str,
+    stage: str,
+    etl_root: Path | None = None,
+    prefijo: str = "",
+) -> Path:
+    """Construye ETL/<fecha>/<hora>/<prefijo><stage>_data.parquet a partir de un ts ISO8601 de Airflow.
+
+    `prefijo` distingue flujos **dentro de la misma carpeta**, sin añadir un
+    segmento de `dag_id` a la ruta —la convención de carpetas se mantiene tal
+    como se decidió—. Sin él, los flujos del modelo analítico se pisarían entre
+    sí: corren `@daily`, comparten `ts`, y el de hechos depende de que el de
+    dimensiones haya dejado su fichero intacto. Para los tres DAGs anteriores el
+    riesgo se aceptó porque son independientes entre sí; aquí no lo son.
+    """
     if stage not in STAGE_FILENAMES:
         raise ValueError(f"stage desconocido: {stage!r} (esperado uno de {sorted(STAGE_FILENAMES)})")
     dt = datetime.fromisoformat(ts)
     date_part = dt.strftime("%Y-%m-%d")
     time_part = dt.strftime("%H-%M")
     root = etl_root or ETL_ROOT
-    return root / date_part / time_part / STAGE_FILENAMES[stage]
+    return root / date_part / time_part / f"{prefijo}{STAGE_FILENAMES[stage]}"
 
 
 def write_parquet(df: pd.DataFrame, path: Path) -> None:

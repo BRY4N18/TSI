@@ -1,5 +1,12 @@
 from django.urls import path
 
+from apps.accidentes.views.informes_views import (
+    CasosView,
+    CierresView,
+    EvidenciaFotosView,
+    NotasCampoView,
+)
+
 from apps.accidentes.views.accidente_views import (
     AccidenteDetailView,
     AccidenteListCreateView,
@@ -46,6 +53,16 @@ from apps.accidentes.views.ubicacion_catalogo_views import (
 )
 
 urlpatterns = [
+    # ── Informes tácticos simples ───────────────────────────────────────────
+    path("informes/emergencias/casos", CasosView.as_view(),
+         name="informes-emergencias-casos"),
+    path("informes/emergencias/evidencia-fotos", EvidenciaFotosView.as_view(),
+         name="informes-emergencias-evidencia-fotos"),
+    path("informes/emergencias/notas-campo", NotasCampoView.as_view(),
+         name="informes-emergencias-notas-campo"),
+    path("informes/emergencias/cierres", CierresView.as_view(),
+         name="informes-emergencias-cierres"),
+
     path("catalogos/periodos-dias", CatalogoPeriodosDiasView.as_view()),
     path("catalogos/estados-climas", CatalogoEstadosClimasView.as_view()),
     path("catalogos/elementos-fisicos", CatalogoElementosFisicosView.as_view()),
