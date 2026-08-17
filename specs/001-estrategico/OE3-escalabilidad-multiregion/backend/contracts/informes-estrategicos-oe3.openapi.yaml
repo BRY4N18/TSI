@@ -1,0 +1,501 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE3 — Escalabilidad Multi-Región sin Degradación
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los informes del objetivo estratégico OE3, resueltos con una
+    consulta sobre el modelo analítico.
+
+    **Perspectiva BSC:** Procesos internos.
+
+    ## Alcance de esta versión: 7 de los 14 del catálogo
+
+    **OE3 puede medir que el servicio no se degrada. No puede medir la escalabilidad.**
+
+    Siete informes quedan sin endpoint y **no se publican vacíos**, porque publicarlos daría cifras
+    que parecen responder la pregunta:
+
+    | Informe | Por qué no está |
+    |---|---|
+    | E3-04, E3-05, E3-06 | El modelo **no sabe cuándo entró en producción** ninguna región: `valido_desde` es `1970-01-01`. E3-04 daría más de veinte mil días en rojo contra una meta `[NORMATIVO]` |
+    | E3-12 | El sistema **no registra que el algoritmo falle**. 1 082 de 1 083 despachos manuales no siguen a ningún intento automático |
+    | E3-01, E3-09 | Fuente externa: monitoreo de infraestructura y costos por región |
+    | E3-14 | Cobertura de pruebas. No es un informe de negocio |
+
+    ## Este es el único módulo de la capa que semaforiza
+
+    En OE6 y OE4 todas las metas son `[CALIBRAR]` y `cumple` es siempre `null`. **Aquí dos informes
+    devuelven un `cumple` booleano** porque sus metas son compromisos:
+
+    | Informe | Meta | Medido en la línea base |
+    |---|---|---|
+    | `latencia-asignacion` | `<2 min p95` `[NORMATIVO]` | 1,77 min ✅ |
+    | `tasa-error-registro` | `<1 %` `[NORMATIVO]` | 0 % ✅ |
+
+    ⚠️ **La meta de E3-02 no es la del catálogo.** El catálogo dice «≤100 ms», que es la latencia
+    **técnica** del algoritmo; el informe mide el tiempo **operativo** del proceso completo, cuya meta
+    real es la de `RNF-DES-001`: menos de 2 minutos en el p95. Contra 100 ms, el p95 medido estaría
+    1 060 veces por encima y el rojo sería falso.
+
+    ## Reglas transversales
+
+    Se heredan del contrato de la capa: período obligatorio, ventanas de comparación de igual
+    longitud, todo porcentaje con su denominador, sin dato sensible para ningún rol, sin
+    `acotado_a`, sin paginación. Ver `contrato-informes-estrategicos.md`.
+
+    ## Acceso: la autoridad está repartida
+
+    ⚠️ **Primer módulo de la capa donde el acceso no es uniforme.** No basta con comprobar quién
+    entra: hay que comprobar **quién no**.
+
+    | Informes | Autoridad |
+    |---|---|
+    | Los cuatro de despacho y registro | `DirectorOperaciones` |
+    | Los tres de capacidad y flota | `DirectorExpansion` · `DirectorOperaciones` |
+    | Todos | `Gerente` |
+
+    `DirectorExpansion` **no** accede a los de despacho.
+
+    ## Agrupación por región: no disponible
+
+    Se agrupa por `condado`. Ver `decisiones-pendientes.md` #38.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: US1 Rendimiento del despacho
+  - name: US2 Tensión de la capacidad
+
+paths:
+
+  # ─────────────────────────── US1 ───────────────────────────
+
+  /informes-estrategicos/oe3/latencia-asignacion:
+    get:
+      tags: [US1 Rendimiento del despacho]
+      summary: Latencia operativa de asignación, registro a primera unidad asignada — meta <2 min p95
+      description: |
+        Tiempo entre el registro del accidente y la primera asignación de unidad, en mediana y p95.
+
+        ⚠️ **Mide el proceso operativo completo, no la respuesta del algoritmo.** Son dos métricas
+        distintas que el catálogo mezcló en una:
+
+        | | Qué es | p95 medido |
+        |---|---|--:|
+        | **Este informe** | Registro → primera asignación | 106 s = 1,77 min |
+        | Oferta de despacho → confirmación de la unidad | Tiempo de reacción de la unidad | 28 s |
+        | Latencia del algoritmo de asignación | Instrumentación de la aplicación | **no se mide aquí** |
+
+        La meta `<2 min p95` viene de `RNF-DES-001` del módulo de despacho, que el propio catálogo
+        llama «meta operativa del BSC». La de ≤100 ms del catálogo se refiere a la latencia técnica
+        y pertenece a la instrumentación, no a los datos de operación.
+
+        Se excluyen los casos descartados y los fusionados, y los que nunca llegaron a asignarse
+        —que se declaran aparte, **nunca como tiempo cero**.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Latencia de asignación por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    casos_asignados: 3638
+                    excluidos_sin_asignacion: 394
+                    mediana_seg: 38
+                    p95_seg: 106
+                    p95_min: 1.77
+                    sobre_umbral: 58
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  objetivo: { valor: 2, unidad: "min", tipo: "NORMATIVO", cumple: true }
+                  alcance: >-
+                    Mide el proceso operativo registro→asignación (meta RNF-DES-001, <2 min p95),
+                    no la latencia técnica del algoritmo.
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe3/evolucion-latencia:
+    get:
+      tags: [US1 Rendimiento del despacho]
+      summary: Evolución de la latencia p95 (MoM / YoY)
+      description: |
+        Serie temporal del p95 sobre ventanas amplias. Existe para detectar **degradación gradual**,
+        que es el fallo que este objetivo teme: no un salto que dispare una alarma, sino un
+        empeoramiento lento a medida que la operación crece.
+
+        ⚠️ Es el informe donde el filtrado por partición más pesa: sin él, una ventana anual recorre
+        el histórico entero y se degradará según crezca, sin que nada avise.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Serie de latencia p95
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe3/tasa-error-registro:
+    get:
+      tags: [US1 Rendimiento del despacho]
+      summary: Tasa de error en el registro de accidentes — meta <1 %
+      description: |
+        Porcentaje de casos con algún campo crítico ausente.
+
+        ⚠️ **Se mide contra la ausencia real del modelo**, no contra nulidad en el sistema operativo,
+        donde los nulos son valores centinela y la condición sería siempre cierta.
+
+        ⚠️ **La respuesta publica la lista de campos que comprueba**, y no es decorativo: la tasa
+        medida hoy es **0 %** sobre 4 252 casos. Un indicador que estructuralmente nunca se mueve no
+        es una señal — sin la lista, un 0 % permanente se lee como «el registro es perfecto» cuando
+        dice «los dos campos que miro están completos».
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Tasa de error por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    casos: 4252
+                    incompletos: 0
+                    tasa_error: 0.0
+                    campos_comprobados: ["severidad", "calle"]
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  objetivo: { valor: 1, unidad: "%", tipo: "NORMATIVO", cumple: true }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe3/primer-intento:
+    get:
+      tags: [US1 Rendimiento del despacho]
+      summary: Despachos resueltos al primer intento — meta ≥90 % (CALIBRAR)
+      description: |
+        Solo es calculable con **grano de intento**: los intentos con ordinal 1 y desenlace
+        confirmado. Con grano de caso los intentos fallidos desaparecen y el indicador sube solo.
+
+        La meta es `[CALIBRAR]`, así que `cumple` viene `null` — a diferencia de los otros dos
+        informes de esta historia.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Resolución al primer intento por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US2 ───────────────────────────
+
+  /informes-estrategicos/oe3/ratio-demanda-capacidad:
+    get:
+      tags: [US2 Tensión de la capacidad]
+      summary: Ratio demanda / capacidad por condado
+      description: |
+        Casos frente a unidades disponibles, por condado y período. Detecta zonas en tensión antes de
+        que el SLA se degrade.
+
+        ⚠️ **La capacidad son las versiones de unidad vigentes en el período consultado**, no la
+        flota de hoy. Usar la flota actual calcularía un ratio de hace tres meses contra unidades que
+        quizá no existían entonces — el defecto que la dimensión versionada existe para corregir.
+
+        ⚠️ **Un condado con demanda y ninguna unidad vigente se declara `sin_capacidad: true`**, no
+        con un ratio infinito ni con una división que falla. Es el hallazgo más valioso del informe:
+        una zona donde una emergencia no tiene quién la atienda.
+
+        **Declara desde cuándo su atribución es fiable.** Las versiones de unidad arrancan el día de
+        la primera carga del modelo, porque el sistema operativo no historiza el cambio de proveedor.
+        Antes de esa fecha, la atribución es la del estado inicial conocido.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Ratio por condado y período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    condado: "Cuauhtemoc"
+                    casos: 2158
+                    unidades_vigentes: 12
+                    ratio: 179.83
+                    sin_capacidad: false
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: "La atribución unidad-proveedor es exacta desde la primera carga del modelo."
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe3/cobertura-de-respaldo:
+    get:
+      tags: [US2 Tensión de la capacidad]
+      summary: Cobertura de respaldo — condados vecinos con unidad disponible
+      description: |
+        Para cada condado, cuántos de sus vecinos tienen al menos una unidad **disponible**. Mide si
+        una zona en tensión tiene a quién recurrir.
+
+        ⚠️ **Disponible, no existente.** Un vecino con unidades dadas de alta pero todas ocupadas,
+        en misión o fuera de servicio **no es respaldo**. La disponibilidad se lee del último estado
+        registrado de cada unidad, no de que la unidad exista — es la distinción que Red Operativa
+        documentó como el error más caro de su departamento.
+
+        **Con dos condados en la línea base**, el informe devuelve una fila por condado y un vecino
+        cada uno. Es poco interesante y **es correcto**: la escasez de datos se declara, la
+        imposibilidad no.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+      responses:
+        '200':
+          description: Respaldo disponible por condado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - condado: "Cuauhtemoc"
+                    vecinos: 1
+                    vecinos_con_unidad_disponible: 1
+                    pct_respaldo: 1.0
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe3/perdida-de-senal:
+    get:
+      tags: [US2 Tensión de la capacidad]
+      summary: Pérdida de señal GPS por unidad
+      description: |
+        Huecos entre posiciones consecutivas, con su frecuencia y duración. Detecta dispositivos
+        problemáticos, que son unidades cuya posición el despacho no conoce.
+
+        ⚠️ **Analiza todas las posiciones del período.** El flujo legado analizaba 10 000 de 59 045
+        —el 16,9 %— por un truncamiento silencioso, y publicaba el resultado como completo. Las
+        cifras de este endpoint son **mayores**: eso es el arreglo, no una regresión.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - name: umbral_seg
+          in: query
+          schema: { type: integer, default: 60, minimum: 1 }
+          description: Segundos sin reportar a partir de los cuales se considera hueco.
+      responses:
+        '200':
+          description: Huecos de señal por unidad y período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+      description: Inicio del período. **Obligatorio**.
+
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. **Obligatorio**.
+
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+      description: Agrupación temporal. **Obligatoria**; un valor fuera de la lista responde `400`.
+
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+      description: |
+        La ventana anterior tiene **la misma longitud** que la actual.
+
+        ⚠️ `yoy` no tiene término de comparación todavía: el histórico arranca en febrero de 2026.
+        Devuelve la comparación **ausente con motivo**, no un `400`.
+
+    PorCondado:
+      name: por_condado
+      in: query
+      schema: { type: boolean, default: false }
+      description: |
+        Añade el condado como clave de agrupación. ⚠️ **No existe `por_region`**: ver la nota de la
+        descripción general.
+
+    MuestraMinima:
+      name: muestra_minima
+      in: query
+      schema: { type: integer, default: 5, minimum: 1, maximum: 1000 }
+      description: |
+        Observaciones mínimas para publicar un percentil. Por debajo, el p95 sale `null`: con cinco
+        observaciones el p95 es el máximo, no un percentil.
+
+  schemas:
+
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío significa «no hubo»**, distinto de una fila de ceros y distinto
+            de «no se pudo medir», que lo dice `meta.cobertura`.
+          items: { type: object, additionalProperties: true }
+        meta: { $ref: '#/components/schemas/MetaInforme' }
+
+    MetaInforme:
+      type: object
+      required: [periodo, cobertura]
+      properties:
+        periodo: { $ref: '#/components/schemas/Periodo' }
+        comparacion:
+          allOf: [{ $ref: '#/components/schemas/Comparacion' }]
+          nullable: true
+        objetivo:
+          allOf: [{ $ref: '#/components/schemas/Objetivo' }]
+          nullable: true
+        cobertura: { type: string, enum: [completa, parcial] }
+        falta:
+          type: array
+          items: { type: string }
+        alcance:
+          type: string
+          description: |
+            Advertencia sobre lo que el informe **no** dice. En este módulo la emiten
+            `latencia-asignacion` —para separar el tiempo operativo de la latencia técnica— y
+            `ratio-demanda-capacidad` —para declarar desde cuándo la atribución es fiable.
+
+    Periodo:
+      type: object
+      required: [desde, hasta, granularidad, parcial]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+        granularidad: { type: string, enum: [mes, trimestre, anio] }
+        parcial: { type: boolean }
+
+    Comparacion:
+      type: object
+      required: [tipo, ventana_actual, ventana_anterior]
+      properties:
+        tipo: { type: string, enum: [mom, yoy] }
+        ventana_actual: { $ref: '#/components/schemas/Ventana' }
+        ventana_anterior:
+          allOf: [{ $ref: '#/components/schemas/Ventana' }]
+          nullable: true
+        variacion:
+          type: object
+          nullable: true
+          additionalProperties: { type: number, nullable: true }
+        motivo_ausencia: { type: string, nullable: true }
+
+    Ventana:
+      type: object
+      required: [desde, hasta]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+
+    Objetivo:
+      type: object
+      required: [tipo, cumple]
+      properties:
+        valor: { type: number, nullable: true }
+        unidad: { type: string, nullable: true }
+        tipo: { type: string, enum: [NORMATIVO, CALIBRAR] }
+        cumple:
+          type: boolean
+          nullable: true
+          description: |
+            **Booleano en `latencia-asignacion` y `tasa-error-registro`**, cuyas metas son
+            compromisos `[NORMATIVO]`. `null` en toda meta `[CALIBRAR]`.
+
+            ⚠️ Este es el único módulo de la capa estratégica donde `cumple` puede ser booleano. La
+            prueba transversal de OE6 —«ningún `cumple` booleano»— **no aplica aquí**.
+
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail:
+          type: string
+          description: Nombra los valores válidos cuando el fallo es de enumeración.
+        code: { type: string }
+
+  responses:
+
+    PeticionInvalida:
+      description: Falta un parámetro obligatorio, o un valor de enumeración no se reconoce.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+    SinPermiso:
+      description: |
+        El rol no tiene la autoridad de **ese informe concreto**. ⚠️ La autoridad está repartida:
+        `DirectorExpansion` accede a los de capacidad y **no** a los de despacho. Es un `403`, no un
+        `200` con `data: []`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+security:
+  - bearerAuth: []

@@ -63,9 +63,12 @@ class TestFilasDesconocidas:
             "dim_severidad",
             "dim_origen_despacho",
             "dim_unidad",
-            # Red Operativa. `dim_tiempo` sigue sin aparecer: se genera
-            # completa, asi que no puede faltarle una fila.
             "dim_region",
+            # Ventas y CRM. `dim_prospecto` no la necesita: un prospecto
+            # sin canal cae en la fila desconocida del canal, no en una suya.
+            "dim_canal",
+            "dim_canal",
+            "dim_condado_vecino",
         }
 
     def test_todas_se_etiquetan_igual(self):

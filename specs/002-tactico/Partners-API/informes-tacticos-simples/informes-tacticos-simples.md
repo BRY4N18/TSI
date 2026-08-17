@@ -12,8 +12,8 @@ organización**.
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| backend | Spec redactada · implementada | [`backend/spec.md`](backend/spec.md) |
+| **frontend** | Spec redactada · implementada | [`frontend/spec.md`](frontend/spec.md) |
 
 ## Los cinco listados
 
@@ -61,5 +61,6 @@ Por eso:
 ## Documentos que lo gobiernan
 
 - [`specs/002-tactico/contrato-informes-simples.md`](../../contrato-informes-simples.md)
+- [`specs/002-tactico/contrato-informes-simples-frontend.md`](../../contrato-informes-simples-frontend.md)
 - `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` §6
 - `.specify/docs/actors.md`, `.specify/docs/architecture/api-standards.md`

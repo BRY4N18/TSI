@@ -62,6 +62,7 @@ frontend/chrome/
 /bocetos-dashboards/
 /informestacticos
 /flujoscorreguidos
+/guion
 
 # ETL staging (parquet): artefactos regenerables del pipeline tactico, no código fuente
 /ETL/**/*.parquet

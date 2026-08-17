@@ -216,3 +216,62 @@ def limpiar_pings() -> None:
     from lib.clickhouse_http_client import execute_clickhouse
 
     execute_clickhouse(f"ALTER TABLE hecho_ping_unidad DROP PARTITION {PARTICION_DE_PRUEBA}")
+
+
+# ── Red Operativa: transiciones de estado y bajas en la particion aislada ────
+
+
+def transicion(
+    idhistorial: int,
+    *,
+    unidad: str = "TEST-RO",
+    idunidad: int = 9101,
+    estado: str | None = "Activa",
+    hora: str = "00:00:00",
+    proveedor: str = "Proveedor de prueba",
+) -> dict:
+    """Una transicion de estado de unidad.
+
+    `estado` es el **texto**, no un identificador: el hecho lo guarda resuelto
+    precisamente para que las consultas no tengan que unir con un catalogo que
+    esta incompleto.
+    """
+    return {
+        "idhistorial": idhistorial,
+        "fecha": FECHA_DE_PRUEBA,
+        "fechahora": f"{FECHA_DE_PRUEBA} {hora}",
+        "sk_unidad": 990000 + idunidad,
+        "idunidademergencia": idunidad,
+        "unidad": unidad,
+        "proveedor": proveedor,
+        "estado_nuevo": estado,
+        "es_cambio_efectivo": 1,
+        "cargado_en": f"{FECHA_DE_PRUEBA} 12:00:00",
+    }
+
+
+def cargar_transiciones(filas: list[dict]) -> None:
+    import json
+
+    from lib.clickhouse_http_client import execute_clickhouse
+
+    payload = "\n".join(json.dumps(f, ensure_ascii=False) for f in filas)
+    execute_clickhouse(f"INSERT INTO hecho_estado_unidad FORMAT JSONEachRow\n{payload}")
+
+
+def limpiar_transiciones() -> None:
+    from lib.clickhouse_http_client import execute_clickhouse
+
+    execute_clickhouse(
+        f"ALTER TABLE hecho_estado_unidad DROP PARTITION {PARTICION_DE_PRUEBA}"
+    )
+
+
+def ejecutar_red_operativa(nombre: str, **parametros) -> list[dict]:
+    """Ejecuta una consulta de Red Operativa sobre el periodo de prueba."""
+    from lib.clickhouse_http_client import query_clickhouse
+    from lib.consultas import cargar
+
+    params = {"desde": FECHA_DE_PRUEBA, "hasta": FECHA_DE_PRUEBA}
+    params.update({k: str(v) for k, v in parametros.items()})
+    return query_clickhouse(cargar(nombre, departamento="red_operativa"), params=params)

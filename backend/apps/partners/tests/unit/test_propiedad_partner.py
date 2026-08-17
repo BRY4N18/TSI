@@ -14,6 +14,7 @@ import pytest
 from apps.partners.permissions import (
     PropiedadPartnerError,
     es_gestor,
+    es_gestor_informes,
     verificar_propiedad,
 )
 
@@ -95,6 +96,14 @@ class TestExencionDeGestores:
         assert es_gestor(_request(["DesarrolladorAPIs"])) is True
         assert es_gestor(_request(["PartnerIntegracion"])) is False
         assert es_gestor(_request(["Cliente"])) is False
+        # FR-014a: el Director lee informes, no opera la consola.
+        assert es_gestor(_request(["DirectorTecnologico"])) is False
+
+    def test_es_gestor_informes_incluye_al_director(self):
+        assert es_gestor_informes(_request(["Administrador"])) is True
+        assert es_gestor_informes(_request(["DesarrolladorAPIs"])) is True
+        assert es_gestor_informes(_request(["DirectorTecnologico"])) is True
+        assert es_gestor_informes(_request(["PartnerIntegracion"])) is False
 
 
 class TestVerificarPropiedadNoDevuelveBooleano:

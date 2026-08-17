@@ -38,7 +38,7 @@ LIMITE = 100_000
 
 CONSULTA_UNIDADES = f"""
     SELECT idunidademergencia, unidademergencia, placa, tipounidademergencia,
-           capacidad, idcliente, idcondado, zonacobertura
+           capacidad, idcliente, idcondado, zonacobertura, fecha_creacion
     FROM Dim_UnidadEmergencia
     LIMIT {LIMITE}
 """
@@ -46,6 +46,45 @@ CONSULTA_UNIDADES = f"""
 CONSULTA_CLIENTES = f"SELECT idcliente, nombre, razon_social FROM Dim_Cliente LIMIT {LIMITE}"
 
 CONSULTA_CONDADOS = f"SELECT idcondado, condado FROM Dim_Condado LIMIT {LIMITE}"
+
+#: Red Operativa (US1). El **primer acceso** de una unidad: la primera vez que
+#: se conecto de verdad, no la fecha en que se le creo el usuario.
+#:
+#: ⚠️ La distincion es el informe entero. «Pendientes de primer acceso» busca
+#: unidades dadas de alta que **nunca llegaron a operar**, y confundir el alta
+#: del usuario con su primer uso las haria desaparecer justo a todas: todas
+#: tienen usuario desde el dia que se crearon.
+#: ⚠️ El primer acceso **se deriva del estado de la credencial**, porque el
+#: origen no guarda ninguna fecha de primer acceso.
+#:
+#: * `Activo` — la credencial esta en uso: la unidad entro.
+#: * `Cambio contrasena` — se le exige cambiarla, es decir **todavia no entro de
+#:   verdad**. Es el estado con el que nace una credencial recien creada.
+#: * Sin credencial — nunca se le dio uno.
+#:
+#: Es una derivacion, no una medicion, y tiene un limite conocido: una unidad que
+#: entro y luego pidio cambio de contrasena vuelve a contar como pendiente. Con
+#: los datos de hoy son 2 de 31 credenciales. Se documenta en vez de disimularse
+#: porque el informe se usa para perseguir altas que nunca arrancaron, y una
+#: unidad que si arranco apareciendo en esa lista cuesta una llamada, no una
+#: decision equivocada.
+CONSULTA_CREDENCIALES = f"""
+    SELECT idusuario, estadocredencial
+    FROM Dim_Credencial
+    LIMIT {LIMITE}
+"""
+
+#: Estado de credencial que significa «ya entro».
+CREDENCIAL_EN_USO = "Activo"
+
+#: La unidad y su usuario. `Dim_UnidadEmergencia.idusuario` los relaciona, y
+#: **no se copia al modelo**: se usa aqui para resolver el primer acceso y se
+#: descarta. Saber si una unidad opero no requiere saber quien la opera.
+CONSULTA_UNIDAD_USUARIO = f"""
+    SELECT idunidademergencia, idusuario
+    FROM Dim_UnidadEmergencia
+    LIMIT {LIMITE}
+"""
 
 #: Las versiones vigentes ya cargadas. `FINAL` es obligatorio: sin él, una
 #: unidad con dos versiones a medio fusionar devolvería ambas como vigentes y el
@@ -72,6 +111,8 @@ def extraer(
         consultar_origen(CONSULTA_CLIENTES),
         consultar_origen(CONSULTA_CONDADOS),
         consultar_modelo(CONSULTA_VIGENTES),
+        consultar_origen(CONSULTA_CREDENCIALES),
+        consultar_origen(CONSULTA_UNIDAD_USUARIO),
     )
 
 
@@ -79,10 +120,16 @@ def aplanar(
     unidades: Iterable[Mapping[str, Any]],
     clientes: Iterable[Mapping[str, Any]],
     condados: Iterable[Mapping[str, Any]],
+    credenciales: Iterable[Mapping[str, Any]] = (),
+    unidad_usuario: Iterable[Mapping[str, Any]] = (),
 ) -> list[dict]:
     """Fila del origen → fila candidata a versión, con proveedor y condado por nombre."""
     por_cliente = {c["idcliente"]: c for c in clientes}
     por_condado = {c["idcondado"]: c for c in condados}
+    estado_credencial = {c["idusuario"]: c.get("estadocredencial") for c in credenciales}
+    usuario_de_unidad = {
+        u["idunidademergencia"]: u.get("idusuario") for u in unidad_usuario
+    }
 
     filas = []
     for u in unidades:
@@ -102,9 +149,35 @@ def aplanar(
                 "idcondado": u.get("idcondado"),
                 "condado": condado.get("condado"),
                 "zona_cobertura": u.get("zonacobertura"),
+                # Red Operativa (US1). Ninguno de los dos abre version.
+                "fecha_alta": _fecha(u.get("fecha_creacion")),
+                "tuvo_primer_acceso": 1
+                if estado_credencial.get(usuario_de_unidad.get(u["idunidademergencia"]))
+                == CREDENCIAL_EN_USO
+                else 0,
             }
         )
     return filas
+
+
+def _fecha(epoch_ms: Any) -> str | None:
+    """Epoch-ms del origen → texto. **Ausente sigue ausente**, no epoca cero.
+
+    Una unidad sin fecha de alta con `1970-01-01` tendria cincuenta y seis anos
+    de antiguedad, y el informe de rotacion la contaria como la mas veterana de
+    la flota.
+    """
+    from datetime import datetime, timezone
+
+    if epoch_ms in (None, 0):
+        return None
+    try:
+        valor = int(epoch_ms)
+    except (TypeError, ValueError):
+        return None
+    if valor <= 0:
+        return None
+    return datetime.fromtimestamp(valor / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _serializar(fila: dict) -> dict:
@@ -123,18 +196,71 @@ def construir(
     condados: Iterable[Mapping[str, Any]],
     vigentes: Iterable[Mapping[str, Any]],
     ahora: datetime,
+    credenciales: Iterable[Mapping[str, Any]] = (),
+    unidad_usuario: Iterable[Mapping[str, Any]] = (),
 ) -> list[dict]:
     """Filas a escribir. **Vacía si ninguna unidad cambió**, que es lo normal."""
     por_clave = {v["idunidademergencia"]: v for v in vigentes}
+    candidatas = aplanar(unidades, clientes, condados, credenciales, unidad_usuario)
     filas = versionar_lote(
-        aplanar(unidades, clientes, condados),
+        candidatas,
         por_clave,
         clave_negocio="idunidademergencia",
         atributos=ATRIBUTOS_VERSIONADOS_UNIDAD,
         ahora=ahora,
     )
     _verificar_sin_inicio_real(filas)
+    filas.extend(_refrescar_no_versionados(candidatas, por_clave, filas, ahora))
     return [_serializar(f) for f in filas]
+
+
+#: Atributos que **no abren versión** pero sí tienen que llegar al almacén.
+#:
+#: El alta no cambia y el primer acceso ocurre una vez: versionarlos llenaría la
+#: dimensión de versiones nuevas sin que nada de negocio hubiera pasado.
+ATRIBUTOS_NO_VERSIONADOS = ("fecha_alta", "tuvo_primer_acceso")
+
+
+def _refrescar_no_versionados(candidatas, vigentes_por_clave, ya_escritas, ahora):
+    """Reescribe la versión vigente con los atributos no versionados al día.
+
+    ⚠️ **Sin esto, estas columnas no llegan nunca al almacén.** El versionado no
+    escribe nada cuando ningún atributo versionado cambió —que es lo normal y lo
+    correcto—, así que una unidad estable nunca vería actualizado su primer
+    acceso. La columna existiría, estaría a cero para siempre, y el informe de
+    pendientes de primer acceso diría que **ninguna unidad ha entrado nunca**.
+
+    No abre versión: reescribe **la misma fila** —misma clave de negocio, mismo
+    `valido_desde`, mismo `sk_unidad`— con un `version` mayor.
+    `ReplacingMergeTree(version)` la sustituye. Cambiar `valido_desde` habría
+    creado una fila nueva en vez de reemplazar, y la unidad habría acabado con
+    dos versiones vigentes a la vez.
+
+    Las unidades cuya versión sí cambió no entran aquí: su fila nueva ya trae los
+    valores frescos, y reescribirlas ademas duplicaría la clave.
+    """
+    ya_versionadas = {f["idunidademergencia"] for f in ya_escritas}
+
+    refrescadas = []
+    for candidata in candidatas:
+        clave = candidata["idunidademergencia"]
+        if clave in ya_versionadas:
+            continue
+        vigente = vigentes_por_clave.get(clave)
+        if vigente is None:
+            continue
+        if all(
+            vigente.get(a) == candidata.get(a) for a in ATRIBUTOS_NO_VERSIONADOS
+        ):
+            # Nada que refrescar. No escribir es lo correcto: una reescritura por
+            # corrida llenaría la tabla de versiones idénticas.
+            continue
+
+        fila = dict(vigente)
+        fila.update({a: candidata.get(a) for a in ATRIBUTOS_NO_VERSIONADOS})
+        fila["version"] = ahora
+        refrescadas.append(fila)
+    return refrescadas
 
 
 def _verificar_sin_inicio_real(filas: Iterable[Mapping[str, Any]]) -> None:

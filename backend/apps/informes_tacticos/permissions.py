@@ -10,6 +10,7 @@ from rest_framework.permissions import BasePermission
 
 from core.auth.roles_tacticos import (
     AUTORIDAD_EMERGENCIAS,
+    AUTORIDAD_VENTAS_CRM,
     AUTORIDAD_RED_OPERATIVA_CRECIMIENTO,
     AUTORIDAD_RED_OPERATIVA_VALIDACION,
 )
@@ -111,3 +112,38 @@ class RedOperativaCompuestosPermission(BasePermission):
 
         roles = set(getattr(user, "roles", []))
         return bool(roles & AUTORIDAD_POR_MATERIA[materia]) or ROLE_ADMIN in roles
+
+
+#: Rol operativo del ejecutivo comercial. Entra **acotado a sus prospectos**.
+ROLE_GERENTE_VENTAS = "GerenteVentas"
+
+
+class VentasCrmCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Ventas y CRM (FR-033, FR-034).
+
+    Dos cargos entran, y **no ven lo mismo**:
+
+    * El **Director de Marketing** es la autoridad del departamento: ve el
+      departamento entero, sin acotamiento por titularidad.
+    * El **ejecutivo comercial** ve **sus propios prospectos**, no los de los
+      demas. El acotamiento no lo decide esta clase —eso lo hace la vista, que
+      pasa su identificador al servicio— pero si decide que entra.
+
+    El `Administrador` entra tambien, acotado igual que el ejecutivo: es el
+    responsable operativo, y su papel no le da la vista de departamento.
+
+    ⚠️ **La exencion del director no alcanza al dato personal.** Este es el
+    departamento con mas dato personal del sistema —prospectos con nombre,
+    correo, telefono y cargo— y **nada de eso esta en el modelo**. Que el
+    director vea el departamento entero no le da el telefono de nadie: esa
+    exclusion es constitucional y se resuelve en el esquema, no aqui.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_VENTAS_CRM) or bool(
+            roles & {ROLE_ADMIN, ROLE_GERENTE_VENTAS}
+        )

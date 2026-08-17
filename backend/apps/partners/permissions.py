@@ -18,6 +18,7 @@ from rest_framework.permissions import BasePermission
 from apps.partners.domain_constants import (
     ROL_ADMINISTRADOR,
     ROL_DESARROLLADOR_APIS,
+    ROL_DIRECTOR_TECNOLOGICO,
     ROL_PARTNER_INTEGRACION,
 )
 
@@ -70,8 +71,17 @@ class PropiedadPartnerError(Exception):
 
 
 def es_gestor(request) -> bool:
-    """Administrador o Desarrollador de APIs: operan sobre cualquier partner."""
+    """Administrador o Desarrollador de APIs: operan sobre cualquier partner.
+
+    El Director Tecnológico **no** está aquí: es autoridad de los listados
+    (FR-014a), no de la consola operativa. Ver `es_gestor_informes`.
+    """
     return bool(_roles(request) & {ROL_ADMINISTRADOR, ROL_DESARROLLADOR_APIS})
+
+
+def es_gestor_informes(request) -> bool:
+    """Quien ve los cinco listados sin acotar: gestores operativos y el Director."""
+    return bool(_roles(request) & ROLES_GESTORES_INFORMES)
 
 
 def verificar_propiedad(
@@ -118,17 +128,21 @@ def verificar_propiedad(
 # **lanza en vez de devolver un booleano** — un `if not verificar(...)` olvidado
 # seria un fallo silencioso de autorizacion. Los listados lo reutilizan tal cual.
 
-#: Gestores: operan sobre cualquier partner.
+#: Gestores operativos: incorporan, suspenden, emiten. **No** incluye al Director.
 ROLES_GESTORES = frozenset({ROL_ADMINISTRADOR, ROL_DESARROLLADOR_APIS})
 
-#: Partners, credenciales y bitacora: gestores **y** el propio partner.
-ROLES_INFORMES_ACCESO = frozenset(ROLES_GESTORES | {ROL_PARTNER_INTEGRACION})
+#: Lectura de los cinco listados sin acotar (FR-014a). El Director entra aquí
+#: y **no** en `es_gestor()`: la consola operativa no se le abre por URL.
+ROLES_GESTORES_INFORMES = frozenset(ROLES_GESTORES | {ROL_DIRECTOR_TECNOLOGICO})
 
-#: Versiones del contrato y alcance de datos: **solo gestores** (FR-013).
+#: Partners, credenciales y bitacora: gestores de informe **y** el propio partner.
+ROLES_INFORMES_ACCESO = frozenset(ROLES_GESTORES_INFORMES | {ROL_PARTNER_INTEGRACION})
+
+#: Versiones del contrato y alcance de datos: **solo** gestores de informe (FR-013).
 #: El alcance de datos describe lo que cada CLIENTE tiene contratado, y las
 #: versiones gobiernan el ciclo de vida del contrato: son materia de quien
 #: administra la plataforma, no de quien la consume.
-ROLES_INFORMES_CONTRATO = frozenset(ROLES_GESTORES)
+ROLES_INFORMES_CONTRATO = frozenset(ROLES_GESTORES_INFORMES)
 
 
 class _RolesInformesPermission(BasePermission):

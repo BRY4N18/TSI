@@ -26,7 +26,9 @@ TABLAS_DEL_MODELO = {
     "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
     "dim_unidad", "hecho_accidente", "hecho_despacho", "hecho_estado_unidad",
     "hecho_ping_unidad", "hecho_evidencia",
-    "dim_region",
+    "dim_region", "hecho_baja_unidad", "hecho_validacion_region",
+    "dim_prospecto", "dim_canal",
+    "dim_condado_vecino",
 }
 
 #: Las tres del diseño anterior. Sus flujos y su DDL se retiraron el 2026-08-15

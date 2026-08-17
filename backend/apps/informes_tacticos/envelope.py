@@ -57,3 +57,30 @@ def informe_con_medida_exacta(
         "medida_exacta_desde": medida_exacta_desde,
     }
     return success_response(data, meta=meta)
+
+
+def informe_acotado(
+    data: Any, periodo: Periodo, *, acotado_a: str,
+    filtros: dict[str, Any] | None = None,
+) -> Response:
+    """Envelope de los informes que pueden venir acotados por titularidad.
+
+    ⚠️ `acotado_a` no es decoración. Una cifra acotada y una completa **se ven
+    identicas**: «12 prospectos en pipeline» es lo mismo en pantalla tanto si son
+    los del ejecutivo como si son los de todo el departamento.
+
+    Sin este campo, un ejecutivo y su director verian la misma pantalla con
+    cifras distintas y ninguno sabria por que — y la conversacion terminaria en
+    «el informe esta mal» en vez de «estamos viendo cosas distintas».
+
+    Vale `todos` o `propios`, nunca vacio: no declarar el alcance es peor que
+    declararlo mal, porque lo segundo se discute y lo primero no se nota.
+    """
+    return success_response(
+        data,
+        meta={
+            "periodo": {"desde": periodo.desde, "hasta": periodo.hasta},
+            "filtros": filtros or {},
+            "acotado_a": acotado_a,
+        },
+    )

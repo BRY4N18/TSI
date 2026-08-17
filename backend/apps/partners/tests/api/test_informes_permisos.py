@@ -38,7 +38,7 @@ def test_un_rol_ajeno_al_departamento_es_403(client, todo_sembrado, informe):
 
 
 @pytest.mark.parametrize("informe", TODOS)
-@pytest.mark.parametrize("rol", ["Administrador", "DesarrolladorAPIs"])
+@pytest.mark.parametrize("rol", ["Administrador", "DesarrolladorAPIs", "DirectorTecnologico"])
 def test_los_gestores_entran_a_los_cinco(client, todo_sembrado, informe, rol):
     assert client.get(f"{BASE}/{informe}", **_headers([rol])).status_code == 200
 

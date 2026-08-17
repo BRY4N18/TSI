@@ -62,6 +62,11 @@ def fila_desconocida_geografia(ahora: datetime) -> dict[str, Any]:
         "idestado": ID_DESCONOCIDO,
         "estado": ETIQUETA_DESCONOCIDA,
         "idpais": ID_DESCONOCIDO,
+        # Red Operativa (US1). La fila desconocida no tiene vecinos **ni puede
+        # tenerlos**: no es un condado, es el destino de las calles cuyo condado
+        # no esta en el catalogo. Su lista vacia es correcta y no una omision.
+        "condados_vecinos": [],
+        "idregionoperativa": None,
         "pais": ETIQUETA_DESCONOCIDA,
         "version": ahora.strftime(FORMATO),
     }
@@ -147,6 +152,35 @@ def fila_desconocida_region(ahora: datetime) -> dict[str, Any]:
     }
 
 
+def fila_desconocida_condado_vecino(ahora: datetime) -> dict[str, Any]:
+    """Par desconocido: el condado no resolvió vecino, o el vecino no está en el catálogo.
+
+    Sin esta fila, un condado huérfano **desaparece en la primera unión** en vez
+    de aparecer sin respaldo — que es la respuesta que E3-08 existe para dar.
+    """
+    return {
+        "idcondado": ID_DESCONOCIDO,
+        "condado": ETIQUETA_DESCONOCIDA,
+        "idcondadovecino": ID_DESCONOCIDO,
+        "condado_vecino": ETIQUETA_DESCONOCIDA,
+        "version": ahora.strftime(FORMATO),
+    }
+
+
+def fila_desconocida_canal(ahora: datetime) -> dict[str, Any]:
+    """Canal desconocido: el prospecto llego sin registrar por donde.
+
+    ⚠️ **Cuenta en los totales.** Llego igual, y dejarlo fuera haria que la suma
+    de los canales fuera menor que el total del embudo — con los porcentajes
+    sumando 100 % entre ellos, que es la forma en que ese fallo pasa inadvertido.
+    """
+    return {
+        "idcanal": ID_DESCONOCIDO,
+        "canal": ETIQUETA_DESCONOCIDA,
+        "version": ahora.strftime(FORMATO),
+    }
+
+
 #: Tabla → constructor de su fila desconocida. `dim_tiempo` **no aparece**: se
 #: genera completa a partir de un rango de fechas, así que no puede faltarle una
 #: fila; un hecho sin fecha no es un hecho.
@@ -156,6 +190,8 @@ FILAS_DESCONOCIDAS = {
     "dim_origen_despacho": fila_desconocida_origen_despacho,
     "dim_unidad": fila_desconocida_unidad,
     "dim_region": fila_desconocida_region,
+    "dim_canal": fila_desconocida_canal,
+    "dim_condado_vecino": fila_desconocida_condado_vecino,
 }
 
 

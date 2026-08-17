@@ -31,14 +31,18 @@ los módulos equivalentes en los otros siete departamentos.
 
 | Capa | Ruta | Autoridad | Estado |
 |------|------|-----------|--------|
-| **Backend** | [`backend/`](./backend/) | Consultas sobre el modelo analítico y endpoints de lectura | activa |
-| **Frontend** | *(pendiente)* | Ubicación de cada informe en los tableros | aplazada, como en todos los módulos tácticos |
+| **Backend** | [`backend/`](./backend/) | Consultas sobre el modelo analítico y endpoints de lectura | hecha |
+| **Frontend** | [`frontend/`](./frontend/) | Tres pantallas nuevas (patrón Z); no el tablero de Registro/Despacho/Seguimiento | hecha — `/emergencias/gestion/{calidad,despacho,cierre}` |
+
+**Pantallas (13 informes publicados, no los 26 del catálogo):** Calidad del registro · Despacho ·
+Evidencia y cierre. Detalle en [`frontend/spec.md`](frontend/spec.md).
 
 ## Orden de trabajo
 
 1. **Requiere el modelo analítico cargado.** Es prerrequisito duro: sin él no hay sustrato.
-2. Backend primero: consultas y endpoints.
-3. Frontend después, cuando se decida dónde vive cada informe.
+2. Backend primero: consultas y endpoints. **Hecho.**
+3. Frontend: tres dashboards nuevos en patrón Z. **Hecho.** Director/Admin en
+   `/emergencias/gestion/{calidad,despacho,cierre}`. El workpanel del Operador no se tocó.
 
 ## Lo que este módulo NO hace
 

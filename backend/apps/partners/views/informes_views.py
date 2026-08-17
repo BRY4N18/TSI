@@ -28,7 +28,7 @@ from apps.partners.permissions import (
     InformesAccesoPermission,
     InformesContratoPermission,
     PropiedadPartnerError,
-    es_gestor,
+    es_gestor_informes,
 )
 from apps.partners.services.informes_acceso_service import InformesAccesoService
 from apps.partners.services.informes_bitacora_service import InformesBitacoraService
@@ -85,7 +85,7 @@ class _ListadoAccesoView(ListadoBaseView):
         """
         pedido = self.parse_entero(request.query_params, "partner", minimo=1)
 
-        if es_gestor(request):
+        if es_gestor_informes(request):
             # Puede filtrar por un partner concreto sin que eso reduzca su
             # alcance declarado: sigue teniendo acceso a todos.
             return Acotamiento(titular=None, alcance=ACOTADO_TODOS)

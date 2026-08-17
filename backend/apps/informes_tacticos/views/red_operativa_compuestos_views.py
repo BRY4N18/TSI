@@ -24,6 +24,8 @@ from apps.informes_tacticos.envelope import informe_con_medida_exacta
 from apps.informes_tacticos.periodo import PeriodoInvalido, parse_periodo_con_defecto
 from apps.informes_tacticos.permissions import RedOperativaCompuestosPermission
 from apps.informes_tacticos.services.red_operativa_compuestos_service import (
+    NOTAS,
+    PARAMETROS,
     InformeDesconocido,
     RedOperativaCompuestosService,
 )
@@ -38,6 +40,10 @@ DEPENDEN_DEL_VERSIONADO = frozenset({
     "rotacion-flota",
     "tiempo-perdida-a-despublicacion",
     "regiones-en-riesgo",
+    # ⚠️ Faltaba, y es el que mas lo necesita: si no hay despublicaciones
+    # observadas devuelve una tabla vacia, y una tabla vacia se lee como «nunca
+    # paso» cuando lo que dice es «no lo vimos».
+    "casos-activos-al-despublicar",
 })
 
 
@@ -54,7 +60,12 @@ class RedOperativaCompuestoView(APIView):
 
         servicio = RedOperativaCompuestosService()
         try:
-            datos = servicio.calcular(informe, periodo)
+            extra = _leer_parametros(informe, request.query_params)
+        except ValueError as exc:
+            return error_response("bad_request", str(exc), "400", status_code=400)
+
+        try:
+            datos = servicio.calcular(informe, periodo, extra=extra)
         except InformeDesconocido:
             return error_response(
                 "not_found",
@@ -64,9 +75,41 @@ class RedOperativaCompuestoView(APIView):
                 status_code=404,
             )
 
-        return informe_con_medida_exacta(
-            datos, periodo, medida_exacta_desde=_medida_exacta_desde(informe)
+        respuesta = informe_con_medida_exacta(
+            datos,
+            periodo,
+            medida_exacta_desde=_medida_exacta_desde(informe),
+            filtros=dict(extra),
         )
+        # La nota viaja **con la cifra**, no en la documentacion: quien lee el
+        # numero no lee el contrato.
+        if informe in NOTAS:
+            respuesta.data["meta"].update(NOTAS[informe])
+        return respuesta
+
+
+def _leer_parametros(informe: str, query_params) -> dict:
+    """Los parametros propios del informe, con su defecto declarado.
+
+    Se validan aqui y no en la consulta porque el error tiene que llegar como un
+    400 con su explicacion. Un valor mal escrito que llegara al almacen fallaria
+    con un error de conversion de tipos que no dice cual era el problema, y quien
+    consulta solo veria un 500.
+    """
+    valores = {}
+    for nombre, defecto in PARAMETROS.get(informe, {}).items():
+        crudo = query_params.get(nombre)
+        if crudo is None:
+            valores[nombre] = defecto
+            continue
+        try:
+            valor = int(crudo)
+        except (TypeError, ValueError):
+            raise ValueError(f"'{nombre}' debe ser un numero entero.") from None
+        if valor < 1:
+            raise ValueError(f"'{nombre}' debe ser mayor que cero.")
+        valores[nombre] = valor
+    return valores
 
 
 def _medida_exacta_desde(informe: str) -> str | None:

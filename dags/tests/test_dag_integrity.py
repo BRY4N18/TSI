@@ -34,6 +34,8 @@ EXPECTED_DAG_IDS = {
     "modelo_hecho_estado_unidad",
     "modelo_hecho_ping_unidad",
     "modelo_hecho_evidencia",
+    "modelo_hecho_baja_unidad",
+    "modelo_hecho_validacion_region",
 }
 
 

@@ -43,6 +43,11 @@ ROL_DIRECTOR_MARKETING = "DirectorMarketing"
 ROL_DIRECTOR_FINANCIERO = "DirectorFinanciero"
 ROL_DIRECTOR_EXPANSION = "DirectorExpansion"
 ROL_DIRECTOR_OPERACIONES = "DirectorOperaciones"
+#: Autoridad de empresa. **No es un grupo que acumule directores**: cada director
+#: entra a la capa estratégica por su departamento. El `Gerente` es quien ve los
+#: seis OE porque responde por el tablero entero (CU-E01/E09/E10), no porque
+#: herede los roles de debajo.
+ROL_GERENTE = "Gerente"
 ROL_GERENTE_EXITO_CLIENTE = "GerenteExitoCliente"
 ROL_DIRECTOR_DATOS = "DirectorDatos"
 
@@ -72,6 +77,23 @@ AUTORIDAD_PARTNERS_API = frozenset({ROL_DIRECTOR_TECNOLOGICO})
 
 #: Emergencias: autoridad unica sobre los cinco listados.
 AUTORIDAD_EMERGENCIAS = frozenset({ROL_DIRECTOR_OPERACIONES})
+
+#: OE6 (y solo OE6): el Director de Operaciones como autoridad del departamento
+#: de Emergencias, más el Gerente que ve todos los OE. Cualquier otro rol —
+#: incluidos Operador, Despacho y Unidad, que sí ven los listados tácticos—
+#: queda fuera. La versión de empresa de su operación no es una ampliación de
+#: su pantalla.
+AUTORIDAD_ESTRATEGICA_OE6 = frozenset({ROL_DIRECTOR_OPERACIONES, ROL_GERENTE})
+
+#: OE3 despacho y registro (E3-02, E3-03, E3-10, E3-11). Expansion no entra.
+AUTORIDAD_OE3_DESPACHO = frozenset({ROL_DIRECTOR_OPERACIONES, ROL_GERENTE})
+#: OE3 capacidad y flota (E3-07, E3-08, E3-13). Expansion sí, y Operaciones
+#: también porque tocan despacho y flota.
+AUTORIDAD_OE3_CAPACIDAD = frozenset(
+    {ROL_DIRECTOR_EXPANSION, ROL_DIRECTOR_OPERACIONES, ROL_GERENTE}
+)
+#: Cualquier autoridad de OE3: para que un bloqueado responda 404 y no 403.
+AUTORIDAD_OE3 = AUTORIDAD_OE3_DESPACHO | AUTORIDAD_OE3_CAPACIDAD
 
 #: Soporte al Cliente: autoridad unica sobre los dos listados.
 AUTORIDAD_SOPORTE = frozenset({ROL_GERENTE_EXITO_CLIENTE})

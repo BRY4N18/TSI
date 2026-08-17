@@ -77,8 +77,79 @@ MATERIAS: dict[str, str] = {
     },
 }
 
+#: Parametros propios de cada informe, ademas del rango.
+#:
+#: ⚠️ `umbral_unidades` es **una convencion del informe, no una politica de la
+#: empresa** (T033): el origen no define ningun umbral de cobertura minima. Por
+#: eso viaja como parametro con un defecto explicito, y la respuesta lo devuelve
+#: en `filtros` — quien lea «3 condados en estado critico» tiene que poder ver
+#: contra que numero se midio. Sin eso, una cifra elegida por defecto pasaria por
+#: una decision de la empresa.
+PARAMETROS: dict[str, dict[str, int]] = {
+    "condados-cobertura-critica": {"umbral_unidades": 5},
+    "motivos-rechazo": {"top": 10},
+    # ⚠️ `dias_objetivo` es la otra convencion del departamento: el sistema **no
+    # guarda ningun plazo** para poner una region en operacion. Sin verlo en la
+    # respuesta, «3 regiones fuera de objetivo» pasaria por el incumplimiento de
+    # un acuerdo que nadie firmo.
+    "tiempo-puesta-operacion": {"dias_objetivo": 30},
+    "regiones-en-riesgo": {"umbral_unidades": 5},
+}
+
 #: Los que se publican como endpoint.
 PUBLICADOS: frozenset[str] = frozenset(CATALOGO)
+
+
+#: Nota que viaja **con la cifra** en los informes que la necesitan.
+NOTAS: dict[str, dict[str, str]] = {
+    "condados-cobertura-critica": {
+        "nota_umbral": (
+            "El umbral es una convencion de este informe: el sistema operativo no "
+            "define ninguna cobertura minima."
+        )
+    },
+    "tiempo-puesta-operacion": {
+        "nota_objetivo": (
+            "El objetivo en dias es una convencion de este informe: el sistema "
+            "operativo no define ningun plazo de puesta en operacion."
+        ),
+        "nota_medida": (
+            "Una region que aun no esta en produccion devuelve dias y "
+            "cumple_objetivo ausentes: no incumplio un plazo, sigue dentro de el."
+        ),
+    },
+    "tiempo-perdida-a-despublicacion": {
+        "nota_historico": (
+            "Un historico vacio aqui no significa que nunca haya pasado: significa "
+            "que el modelo no lo vio. Ver medida_exacta_desde."
+        )
+    },
+    "casos-activos-al-despublicar": {
+        "nota_historico": (
+            "Un resultado vacio aqui no significa que ninguna region se haya "
+            "despublicado con casos abiertos: significa que el modelo no observo "
+            "ninguna despublicacion. Ver medida_exacta_desde."
+        )
+    },
+    "regiones-en-riesgo": {
+        "nota_umbral": (
+            "El umbral es una convencion de este informe: el sistema operativo no "
+            "define ninguna cobertura minima por region."
+        )
+    },
+    "tasa-aprobacion-primer-intento": {
+        "nota_grano": (
+            "Se cuentan intentos de validacion, no regiones: una region aprobada "
+            "al tercer intento no cuenta como aprobada al primero."
+        )
+    },
+    "cobertura-flota-por-region": {
+        "nota_region": (
+            "No existe relacion region-condado en el origen; mientras no exista, "
+            "la cobertura no puede repartirse por region (decision #38)."
+        )
+    },
+}
 
 
 class RedOperativaCompuestosService:
@@ -106,6 +177,8 @@ class RedOperativaCompuestosService:
             raise InformeDesconocido(informe) from exc
 
         parametros: dict[str, Any] = {"desde": periodo.desde, "hasta": periodo.hasta}
+        # El defecto declarado primero, y lo que llegue por encima.
+        parametros.update(PARAMETROS.get(informe, {}))
         parametros.update(extra or {})
         return self._repositorio.ejecutar(
             consulta, departamento=DEPARTAMENTO, parametros=parametros

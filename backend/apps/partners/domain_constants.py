@@ -7,6 +7,7 @@ Compartidas por los tres modulos del departamento.
 ROL_ADMINISTRADOR = "Administrador"
 ROL_DESARROLLADOR_APIS = "DesarrolladorAPIs"
 ROL_PARTNER_INTEGRACION = "PartnerIntegracion"  # idrol 15, creado 2026-08-08
+ROL_DIRECTOR_TECNOLOGICO = "DirectorTecnologico"
 ROL_CLIENTE = "Cliente"
 
 # --- Entornos de credencial ---

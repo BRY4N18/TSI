@@ -35,9 +35,9 @@ cargo— y **nada de eso entra al modelo**.
 
 ## Phase 1: Setup
 
-- [ ] T001 Verificar que el modelo analítico está cargado, ejecutando `docker exec -w /opt/airflow tactico-airflow-scheduler python -m pytest dags/tests -q`
-- [ ] T002 Verificar que **las fases 1 y 2 de Emergencias están implementadas**: existen `dags/lib/consultas/__init__.py` y `backend/core/repositories/informes_tacticos/modelo_repository.py`
-- [ ] T003 Crear `dags/lib/consultas/ventas_crm/` con un `README.md` que remita a `contracts/catalogo-consultas.md` y recoja **las dos reglas propias**: ninguna consulta lee `activo`, y ninguna devuelve dato personal
+- [X] T001 Verificar que el modelo analítico está cargado, ejecutando `docker exec -w /opt/airflow tactico-airflow-scheduler python -m pytest dags/tests -q`
+- [X] T002 Verificar que **las fases 1 y 2 de Emergencias están implementadas**: existen `dags/lib/consultas/__init__.py` y `backend/core/repositories/informes_tacticos/modelo_repository.py`
+- [X] T003 Crear `dags/lib/consultas/ventas_crm/` con un `README.md` que remita a `contracts/catalogo-consultas.md` y recoja **las dos reglas propias**: ninguna consulta lee `activo`, y ninguna devuelve dato personal
 
 ---
 
@@ -50,21 +50,53 @@ aquí. Y es donde se resuelve, de una vez, el defecto que si no tendrían que es
 
 ### Las dos dimensiones
 
-- [ ] T004 Crear `dim_prospecto` y `dim_canal` en `dags/lib/ddl.py` según `data-model.md` §2.1 y §2.2. ⚠️ **Sin nombres, apellidos, correo, teléfono ni cargo**: es la tabla con más dato personal del sistema y ningún informe del catálogo necesita saber quién es el prospecto
-- [ ] T005 ⚠️ Implementar `dags/lib/dimensiones/dim_prospecto.py` con la columna **`desenlace` de tres valores** —convertido, perdido, en_curso— derivada de `motivo_inactividad` y `etapa_actual`. **Nunca de `activo`**, que cubre a la vez convertido y perdido (research D1)
-- [ ] T006 Implementar `dags/lib/dimensiones/dim_canal.py`, normalizando el texto libre de `como_nos_conocio`, con su **fila desconocida** para los prospectos sin canal — que **cuentan en los totales**
-- [ ] T007 Añadir ambas al flujo existente en `dags/lib/dimensiones_tasks.py` y sus filas desconocidas en `dags/lib/dimensiones/desconocido.py`. **No se crean flujos propios**
-- [ ] T008 ⚠️ **Prueba del desenlace** en `dags/tests/test_dim_prospecto.py`: un prospecto convertido y otro perdido —que en el origen comparten `activo = false`— quedan en **grupos distintos**. Si el modelo solo distingue dos grupos, el desenlace salió de la columna equivocada (SC-002)
-- [ ] T009 [P] Prueba de que **la dimensión no contiene dato personal** en `dags/tests/test_dim_prospecto_sin_identidad.py`: ninguna columna de nombre, correo, teléfono ni cargo. **No filtradas: inexistentes** (SC-007)
+- [X] T004 Crear `dim_prospecto` y `dim_canal` en `dags/lib/ddl.py` según `data-model.md` §2.1 y §2.2. ⚠️ **Sin nombres, apellidos, correo, teléfono ni cargo**: es la tabla con más dato personal del sistema y ningún informe del catálogo necesita saber quién es el prospecto
+- [X] T005 ⚠️ Implementar `dags/lib/dimensiones/dim_prospecto.py` con la columna **`desenlace` de tres valores** —convertido, perdido, en_curso— derivada de `motivo_inactividad` y `etapa_actual`. **Nunca de `activo`**, que cubre a la vez convertido y perdido (research D1)
+- [X] T006 Implementar `dags/lib/dimensiones/dim_canal.py`, normalizando el texto libre de `como_nos_conocio`, con su **fila desconocida** para los prospectos sin canal — que **cuentan en los totales**
+- [X] T007 Añadir ambas al flujo existente en `dags/lib/dimensiones_tasks.py` y sus filas desconocidas en `dags/lib/dimensiones/desconocido.py`. **No se crean flujos propios**
+- [X] T008 ⚠️ **Prueba del desenlace** en `dags/tests/test_dim_prospecto.py`: un prospecto convertido y otro perdido —que en el origen comparten `activo = false`— quedan en **grupos distintos**. Si el modelo solo distingue dos grupos, el desenlace salió de la columna equivocada (SC-002)
+- [X] T009 [P] Prueba de que **la dimensión no contiene dato personal** en `dags/tests/test_dim_prospecto_sin_identidad.py`: ninguna columna de nombre, correo, teléfono ni cargo. **No filtradas: inexistentes** (SC-007)
 
 ### El servicio, las vistas y los permisos
 
-- [ ] T010 Implementar `backend/apps/informes_tacticos/services/ventas_crm_compuestos_service.py` sobre el `modelo_repository` existente
-- [ ] T011 Implementar `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` reutilizando `views/base.py` y `envelope.py`
-- [ ] T012 Aplicar los permisos en `backend/apps/informes_tacticos/permissions.py` con `AUTORIDAD_VENTAS_CRM` de `backend/core/auth/roles_tacticos.py`: el **Director de Marketing** sin acotamiento; el **ejecutivo comercial** acotado a sus propios prospectos (FR-033, FR-034)
-- [ ] T013 Implementar el campo `acotado_a` de la meta en `backend/apps/informes_tacticos/envelope.py`, para que la respuesta declare cuándo viene acotada
+- [X] T010 Implementar `backend/apps/informes_tacticos/services/ventas_crm_compuestos_service.py` sobre el `modelo_repository` existente
+- [X] T011 Implementar `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` reutilizando `views/base.py` y `envelope.py`
+- [X] T012 Aplicar los permisos en `backend/apps/informes_tacticos/permissions.py` con `AUTORIDAD_VENTAS_CRM` de `backend/core/auth/roles_tacticos.py`: el **Director de Marketing** sin acotamiento; el **ejecutivo comercial** acotado a sus propios prospectos (FR-033, FR-034)
+- [X] T013 Implementar el campo `acotado_a` de la meta en `backend/apps/informes_tacticos/envelope.py`, para que la respuesta declare cuándo viene acotada
 
 ### Las pruebas de las reglas que no avisan
+
+
+> **Fases 1 y 2 (T001-T013) hechas el 2026-08-16.** `dags/` en **626 verdes**, `apps/informes_tacticos`
+> en **199**.
+>
+> **La trampa de `activo`, medida:** de los tres prospectos con `activo = false`, **dos son
+> convertidos y uno perdido**. Agrupar por esa columna juntaria el mejor desenlace con el peor y
+> devolveria «3 inactivos» — una cifra que no significa nada y que nadie cuestionaria. `desenlace`
+> tiene tres valores y sale de `motivo_inactividad` y `etapa_actual`; hoy da **7 en curso, 2
+> convertidos, 1 perdido**. Verificado por mutacion.
+>
+> **`activo` no participa ni como respaldo.** Un prospecto inactivo del que no se sabe nada sigue **en
+> curso**: no saber como acabo no es saber que acabo mal.
+>
+> **Ningun dato personal entra, y se comprueba en dos mitades**: que la consulta no lo pide y que la
+> fila no lo lleva. Las dos hacen falta — con solo la primera, un cambio en la consulta lo publicaria;
+> con solo la segunda, nadie notaria que el dato viaja por la red y queda en el fichero intermedio.
+>
+> **El canal ya tiene dos variantes del mismo valor** → decision **#41**. «Web / catalogo planes» y
+> «Web / catalogo de planes» son el mismo canal, y partido en dos **no aparece como el mayor** —lo es,
+> con 3 de 10—. Se resolvio con un **mapa de alias declarado a mano**: «Referido institucional» y
+> «Referido tsi» **no** son el mismo canal, y ninguna regla automatica que junte el primer par deja el
+> segundo en paz.
+>
+> **El acotamiento filtra por el hecho, no por la dimension.** `dim_prospecto` no guarda a quien
+> pertenece un prospecto: la asignacion tiene instante propio y un prospecto puede reasignarse, asi
+> que vive en `hecho_asignacion_prospecto`. Guardarlo en la dimension haria que reasignar reescribiera
+> la carga de todos los periodos anteriores (FR-015).
+>
+> ⚠️ **El defecto del acotamiento es acotar, no abrir.** `_acotamiento_de` devuelve `None` solo si el
+> rol **es** la autoridad; cualquier otro caso acota. Escrito al reves —«si no es ejecutivo, ve
+> todo»— un rol nuevo que nadie clasificara abriria el departamento entero en silencio.
 
 - [ ] T014 ⚠️ **Prueba de que ninguna consulta lee `activo`**, en `dags/tests/test_catalogo_ventas_crm.py`, sobre el **texto** de las consultas. Es el defecto que mezcla éxito con fracaso sin fallar
 - [ ] T015 [P] Prueba de que **ninguna consulta nombra un campo personal ni una columna de coste**, en `dags/tests/test_catalogo_ventas_crm.py` (FR-022, FR-027)

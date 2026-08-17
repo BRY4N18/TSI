@@ -72,6 +72,18 @@ def ensure_dim_geografia() -> None:
             estado       String,
             idpais       Int32,
             pais         String,
+
+            -- Red Operativa (US1). La vecindad es una **relacion estatica entre
+            -- entidades ya modeladas**: no tiene instante ni grano propio, asi
+            -- que es un atributo y no un hecho (research D3). Un hecho de
+            -- vecindad seria una tabla de dos filas con su flujo y su DAG.
+            --
+            -- ⚠️ Vacio significa **sin vecinos declarados**, que es un dato y no
+            -- una ausencia: un condado sin alternativas es la situacion mas
+            -- grave que puede reportar la cobertura critica.
+            condados_vecinos  Array(Int32),
+            idregionoperativa Nullable(Int32),
+
             version      DateTime
         ) ENGINE = ReplacingMergeTree(version)
         ORDER BY idcalle
@@ -90,6 +102,27 @@ def ensure_dim_severidad() -> None:
             version      DateTime
         ) ENGINE = ReplacingMergeTree(version)
         ORDER BY idseveridad
+        """
+    )
+
+
+def ensure_dim_condado_vecino() -> None:
+    """Adyacencia física entre condados. Única ampliación de OE3.
+
+    No se versiona por atributo: si el mapa cambiara, sería otro mapa.
+    Necesita su fila desconocida o los condados sin vecino resuelto
+    desaparecen en la primera unión.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS dim_condado_vecino (
+            idcondado        Int32,
+            condado          String,
+            idcondadovecino  Int32,
+            condado_vecino   String,
+            version          DateTime
+        ) ENGINE = ReplacingMergeTree(version)
+        ORDER BY (idcondado, idcondadovecino)
         """
     )
 
@@ -132,6 +165,14 @@ def ensure_dim_unidad() -> None:
             idcondado          Nullable(Int32),
             condado            Nullable(String),
             zona_cobertura     Nullable(String),
+
+            -- Red Operativa (US1). ⚠️ **No son atributos versionados**: el alta
+            -- no cambia, y el primer acceso ocurre una vez. Versionarlos
+            -- llenaria la dimension de versiones nuevas cada vez que una unidad
+            -- entra por primera vez, sin que nada de negocio haya cambiado.
+            fecha_alta         Nullable(DateTime),
+            tuvo_primer_acceso UInt8 DEFAULT 0,
+
             valido_desde       DateTime,
             valido_hasta       Nullable(DateTime),
             es_vigente         UInt8,
@@ -191,6 +232,78 @@ def ensure_dim_region() -> None:
             version           DateTime
         ) ENGINE = ReplacingMergeTree(version)
         ORDER BY (idregionoperativa, valido_desde)
+        """
+    )
+
+
+def ensure_dim_prospecto() -> None:
+    """Un prospecto del embudo comercial (Ventas y CRM).
+
+    ⚠️ SIN NINGUN DATO PERSONAL, Y NO ES UN FILTRO: ES QUE NO ESTA
+    ---------------------------------------------------------------
+    `Dim_Prospecto` es la tabla con **mas dato personal del sistema**: nombres,
+    apellidos, correo, telefono y cargo. Ninguna de esas columnas existe aqui.
+
+    La diferencia entre no pedirlo y que no este es toda: un dato que la consulta
+    no pide hoy vuelve en cuanto alguien anada un `SELECT`; un dato que no esta
+    en la tabla no puede volver por descuido. Y ningun informe del catalogo
+    necesita saber **quien** es el prospecto — necesita saber de que empresa
+    viene, por que canal y en que acabo.
+
+    ⚠️ `desenlace` TIENE TRES VALORES, Y `activo` SOLO DOS
+    ------------------------------------------------------
+    `Dim_Prospecto.activo` **no dice si el prospecto sigue en curso**: cubre a la
+    vez a los que se convirtieron y a los que se perdieron. Medido hoy: de los
+    tres con `activo = false`, **dos son convertidos y uno perdido**.
+
+    Agrupar por esa columna juntaria el mejor desenlace con el peor y devolveria
+    «3 inactivos», una cifra que no significa nada y que nadie cuestionaria
+    porque suena a lo esperado.
+
+    `desenlace` se deriva en la carga de `motivo_inactividad` y `etapa_actual`, y
+    vale `convertido`, `perdido` o `en_curso`.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS dim_prospecto (
+            idprospecto        Int32,
+            empresa            Nullable(String),
+            tipo_organizacion  Nullable(String),
+            idcanal            Int32,
+            canal              String,
+            etapa_actual       Nullable(String),
+            desenlace          String,
+            motivo_inactividad Nullable(String),
+            valor_estimado     Nullable(Float64),
+            fecha_registro     Nullable(DateTime),
+            version            DateTime
+        ) ENGINE = ReplacingMergeTree(version)
+        ORDER BY idprospecto
+        """
+    )
+
+
+def ensure_dim_canal() -> None:
+    """El canal por el que llego un prospecto (Ventas y CRM).
+
+    El origen lo guarda como **texto libre** en `como_nos_conocio`, asi que la
+    carga lo normaliza: sin eso, «Redes sociales», «redes sociales» y «RRSS»
+    serian tres canales distintos y el informe de rendimiento por canal
+    repartiria el mismo canal en tres filas con un tercio del volumen cada una.
+    Ninguno pareceria importante.
+
+    ⚠️ La fila desconocida **cuenta en los totales**. Un prospecto sin canal
+    llego igual, y dejarlo fuera haria que los canales sumaran menos que el
+    embudo sin que nada lo indicara.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS dim_canal (
+            idcanal    Int32,
+            canal      String,
+            version    DateTime
+        ) ENGINE = ReplacingMergeTree(version)
+        ORDER BY idcanal
         """
     )
 
@@ -264,6 +377,104 @@ def ensure_hecho_accidente() -> None:
         ) ENGINE = ReplacingMergeTree(version)
         PARTITION BY toYYYYMM(fecha)
         ORDER BY (fecha, idaccidente)
+        """
+    )
+
+
+def ensure_hecho_baja_unidad() -> None:
+    """Hecho de **transaccion**. Grano: una baja de unidad (Red Operativa, US1).
+
+    Tiene instante propio, tipo y motivo, y su grano no es la unidad: una unidad
+    puede darse de baja mas de una vez si vuelve a la flota. Guardarlo como
+    metrica de la dimension perderia el instante, que es justo lo que miden la
+    rotacion y las bajas forzadas.
+
+    ⚠️ `con_caso_en_curso` se **deriva** de que la baja traiga un accidente
+    asociado. Es lo que distingue una baja ordenada de una que dejo un caso a
+    medias, y el origen no lo dice de otra forma: lo unico que hay es
+    `idaccidente` poblado o no.
+
+    ⚠️ `motivo` **si entra** al modelo, y es una excepcion razonada. Es un campo
+    corto y clasificable del catalogo operativo —«retiro por averia mecanica»—,
+    no una nota redactada por quien da la baja. Si algun dia admitiera texto
+    libre, sale del modelo: el criterio es si se puede agrupar, no si es corto.
+
+    **`idusuario` no se copia**, aunque el origen lo trae: quien firma la baja es
+    identidad de persona.
+
+    `proveedor` es el de la version vigente **al darse de baja**, por atribucion
+    historica. Copiar el actual reatribuiria las bajas de un proveedor al que
+    heredo sus unidades, que es el defecto que este modelo existe para corregir.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS hecho_baja_unidad (
+            idbaja             Int32,
+            fecha              Date,
+            fechahora          DateTime,
+
+            sk_unidad          UInt64,
+            idunidademergencia Int32,
+            unidad             String,
+            proveedor          String,
+            idcondado          Nullable(Int32),
+            condado            Nullable(String),
+
+            tipo_baja          String,
+            motivo             Nullable(String),
+            con_caso_en_curso  UInt8,
+            idaccidente        Nullable(String),
+
+            dias_en_flota      Nullable(Int32),
+
+            cargado_en         DateTime
+        ) ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(fecha)
+        ORDER BY (fecha, idunidademergencia)
+        """
+    )
+
+
+def ensure_hecho_validacion_region() -> None:
+    """Hecho de **transaccion**. Grano: un intento de validacion de region.
+
+    ⚠️ `numero_intento` es lo que hace calculable la tasa de aprobacion al primer
+    intento. Sin el, una region rechazada dos veces y aprobada a la tercera
+    contaria como **aprobada**, y el indicador daria el mejor resultado
+    justamente en el caso que peor fue. Es el mismo mecanismo que en el hecho de
+    despacho, y el mismo motivo.
+
+    ⚠️ **`idusuario` no se copia**, aunque el origen lo trae. El validador es una
+    persona, y un informe de validaciones desglosado por quien las firma es un
+    registro de decisiones individuales: sobre el se juzgaria a alguien por
+    resultados que dependen de las regiones que le tocaron (FR-021).
+
+    Cuesta mas de ver que otras exclusiones porque parece informacion de proceso.
+    No lo es.
+
+    `motivo` **si entra**: es la categoria del rechazo, y es lo que hace util el
+    informe de motivos. Un motivo ausente en una aprobacion es correcto —no hubo
+    nada que justificar— y **no** debe convertirse en una categoria.
+    """
+    execute_clickhouse(
+        """
+        CREATE TABLE IF NOT EXISTS hecho_validacion_region (
+            idvalidacion      Int32,
+            fecha             Date,
+            fechahora         DateTime,
+
+            sk_region         UInt64,
+            idregionoperativa Int32,
+            nombre_region     String,
+
+            resultado         String,
+            motivo            Nullable(String),
+            numero_intento    UInt8,
+
+            cargado_en        DateTime
+        ) ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(fecha)
+        ORDER BY (fecha, idregionoperativa, idvalidacion)
         """
     )
 
@@ -457,6 +668,29 @@ COLUMNAS_ANADIDAS_HECHO_ACCIDENTE = (
 )
 
 
+#: Columnas anadidas a dimensiones despues de su creacion (Red Operativa, US1).
+COLUMNAS_ANADIDAS_DIMENSIONES = (
+    ("dim_unidad", "fecha_alta", "Nullable(DateTime)"),
+    ("dim_unidad", "tuvo_primer_acceso", "UInt8 DEFAULT 0"),
+    ("dim_geografia", "condados_vecinos", "Array(Int32)"),
+    ("dim_geografia", "idregionoperativa", "Nullable(Int32)"),
+)
+
+
+def ensure_columnas_nuevas_dimensiones() -> None:
+    """Anade a las dimensiones las columnas que se sumaron despues de crearlas.
+
+    Misma razon que en `hecho_accidente`: `CREATE TABLE IF NOT EXISTS` **no
+    migra**. En una instalacion nueva la tabla nace completa; en la que ya existe
+    el `CREATE` no hace nada y las columnas no aparecen, sin ningun error hasta
+    que una consulta pida una que no esta.
+    """
+    for tabla, nombre, tipo in COLUMNAS_ANADIDAS_DIMENSIONES:
+        execute_clickhouse(
+            f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS {nombre} {tipo}"
+        )
+
+
 def ensure_columnas_nuevas_hecho_accidente() -> None:
     """Añade a `hecho_accidente` las columnas que se sumaron después de crearla.
 
@@ -484,11 +718,16 @@ DIMENSIONES = (
     ensure_dim_origen_despacho,
     ensure_dim_unidad,
     ensure_dim_region,
+    ensure_dim_prospecto,
+    ensure_dim_canal,
+    ensure_dim_condado_vecino,
 )
 
 HECHOS = (
     ensure_hecho_accidente,
     ensure_hecho_evidencia,
+    ensure_hecho_baja_unidad,
+    ensure_hecho_validacion_region,
     ensure_hecho_despacho,
     ensure_hecho_estado_unidad,
     ensure_hecho_ping_unidad,
@@ -501,3 +740,4 @@ def ensure_modelo_analitico() -> None:
         crear()
     # Después de los `CREATE`, porque migra una tabla que aquellos dan por hecha.
     ensure_columnas_nuevas_hecho_accidente()
+    ensure_columnas_nuevas_dimensiones()

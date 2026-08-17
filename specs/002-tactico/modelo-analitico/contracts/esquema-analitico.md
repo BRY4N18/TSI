@@ -151,6 +151,28 @@ ORDER BY idorigendespacho
 
 ---
 
+### `dim_condado_vecino`
+
+Adyacencia física entre condados. **Única ampliación de OE3** (E3-08). Es aditiva:
+ningún hecho se recarga. No se versiona: si el mapa cambiara, sería otro mapa.
+
+```sql
+CREATE TABLE IF NOT EXISTS dim_condado_vecino (
+    idcondado        Int32,
+    condado          String,
+    idcondadovecino  Int32,
+    condado_vecino   String,
+    version          DateTime
+) ENGINE = ReplacingMergeTree(version)
+ORDER BY (idcondado, idcondadovecino)
+```
+
+Origen: `Dim_CondadoVecino` (`activo = true`), nombres resueltos contra `Dim_Condado`.
+Lleva fila desconocida (`idcondado = -1`): sin ella, un condado sin vecino resuelto
+desaparece en la primera unión.
+
+---
+
 ## 3. Hechos
 
 ### `hecho_accidente` — instantánea acumulada

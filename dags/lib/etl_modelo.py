@@ -36,7 +36,17 @@ def guardar(filas: Iterable[Mapping[str, Any]], destino: Path) -> int:
 def _valor(valor: Any) -> Any:
     if valor is None or (isinstance(valor, float) and pd.isna(valor)):
         return None
-    if hasattr(valor, "item"):  # tipos de numpy
+    # ⚠️ Las columnas de array vuelven del parquet como `ndarray`, que **tambien**
+    # tiene `.item()` — y ahi `.item()` no convierte el array, exige que tenga un
+    # solo elemento y falla con «can only convert an array of size 1 to a Python
+    # scalar». El mensaje no menciona ni la columna ni el tipo, y el fallo ocurre
+    # dos pasos despues de donde esta la causa.
+    #
+    # La primera columna de array del modelo es `dim_geografia.condados_vecinos`;
+    # hasta ella, ninguna lo era, y por eso este `hasattr` bastaba.
+    if hasattr(valor, "tolist"):  # arrays de numpy
+        return valor.tolist()
+    if hasattr(valor, "item"):  # escalares de numpy
         return valor.item()
     return valor
 

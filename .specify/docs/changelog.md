@@ -7,6 +7,303 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-16 — Partners y API: cinco listados tácticos en pantalla (FR-014a + `entorno`)
+
+Alcance: `specs/002-tactico/Partners-API/informes-tacticos-simples/frontend/`,
+`frontend/src/app/modules/partners/informes/` (catálogo, 2 guards, 2 páginas, rutas),
+`app.routes.ts`, `nav-links.ts`,
+`backend/apps/partners/permissions.py` (`es_gestor_informes`),
+`backend/apps/partners/domain_constants.py`,
+`contracts/informes-tacticos-simples.openapi.yaml` (enum `entorno`).
+
+### La causa
+
+El backend de los cinco GET ya existía, pero el Director Tecnológico recibía **403** en todos:
+`InformesAccesoPermission` usaba `ROLES_GESTORES` (solo Administrador y Desarrollador de APIs).
+FR-014a y `acceso-tactico.md` lo exigen en los cinco, sin acotar. Meterlo en `es_gestor()` le
+abriría la consola operativa (emitir, suspender, resolver promociones).
+
+El OpenAPI declaraba `entorno: Produccion` sin tilde; el dominio y la vista validan `Producción`.
+Un filtro copiado del contrato produciría `400`.
+
+### El efecto verificado
+
+Un token `DirectorTecnologico` obtiene **200** en los cinco; `es_gestor()` sigue siendo False para
+él. El Partner entra a los tres de acceso (`acotado_a: propios`) y recibe **403** en versiones y
+alcance. El enum del contrato coincide con `ENTORNO_PRODUCCION`.
+
+### Lo que se hizo
+
+`ROLES_GESTORES_INFORMES` = gestores ∪ Director. `es_gestor_informes()` alimenta permisos y
+`acotar()`. `es_gestor()` no cambia. Frontend: ruta hermana `partners/informes` **antes** de
+`partners`; dos guards (acceso vs contrato); dos ítems de menú con la misma path y roles disjuntos.
+Credenciales no pintan motivo ni secreto. Ausente se ve `—`; cupo `0` se ve `0`.
+
+### Verificación
+
+Karma del módulo: **71 verdes**. Backend: `test_informes_permisos.py` + `test_propiedad_partner.py`,
+**36 verdes**. `ng build` de producción sin errores nuevos.
+
+---
+
+## 2026-08-16 — OE3: meta de E3-02 y reclasificación de E3-12
+
+Alcance: `specs/001-estrategico/OE3-escalabilidad-multiregion/backend/`,
+`informestacticos/TSI-Informes-Compuestos-Requeridos-por-OE.md` §3,
+`decisiones-pendientes.md` #38 (ampliada) y #41.
+
+### La causa
+
+El catálogo definía E3-02 como p95 solicitud→confirmación con alerta ≤100 ms.
+Esa frase mezcla la latencia **técnica** del algoritmo con el tiempo **operativo**
+del proceso. Medido: oferta→confirmación p95 28 s; registro→primera asignación
+p95 **106 s = 1,77 min**. Contra 100 ms el informe estaría 1 060 veces en rojo,
+y el rojo sería falso.
+
+E3-12 pedía la mediana entre la falla del algoritmo y la intervención manual.
+**1 082 de 1 083** despachos manuales no siguen a ningún intento automático.
+
+### El efecto verificado
+
+RNF-DES-001 fija `<2 min p95` para el proceso completo. Con esa meta, E3-02
+**cumple** (1,77 min; 58 de 3 638 sobre el umbral). E3-12 no se publica.
+
+### Lo que se hizo
+
+E3-02 mide registro→asignación contra 2 minutos `[NORMATIVO]`, con `meta.alcance`
+que separa las dos métricas. E3-12 pasa a ⛔ (decisión #41). E3-04/05/06 se
+declaran ⛔ con el prerrequisito de historizar el estado de región (#38).
+
+---
+
+## 2026-08-16 — D1 / #38: el eje de región no es construible (OE6)
+
+Alcance: `specs/001-estrategico/OE6-respuesta-y-vidas/backend/` (`research.md` D1,
+`spec.md` corrección de `FR-OE6-008`, `data-model.md` §5),
+`dags/tests/test_catalogo_estrategicos.py` (`TestProhibicionDelEjeDeRegion`),
+`informestacticos/TSI-Informes-Compuestos-Requeridos-por-OE.md` §6.
+
+### La causa
+
+`FR-OE6-008` pedía agrupación por región suponiendo que una región cubre un estado entero.
+Se comprobó contra `dim_region` y contra el origen operativo: **dos regiones vivas
+comparten el mismo `idestado_geo`** (Ciudad de Mexico). Unir `hecho_accidente` con
+`dim_region` por estado duplicaría cada caso —4 252 → 8 504— **sin que la consulta
+falle**. Cada región mostraría el total completo.
+
+Y no es un olvido de carga: **no existe relación región↔condado** en el sistema
+operativo. La cobertura se define a nivel de estado
+(`Dim_RegionOperativaEstadoRegion`).
+
+### El efecto verificado
+
+Con los datos de hoy el eje sería degenerado igual: 4 252 casos en dos condados del
+mismo estado. Agrupar por región devolvería una sola fila útil.
+
+### Lo que se hizo
+
+Se agrupa por **condado**. El eje de región queda ⛔ con prerrequisito nombrado
+(tabla puente región↔condado). `FR-OE6-008` se corrige. Una prueba sobre el texto
+de las consultas falla si alguien «arregla» el eje uniendo `dim_region`. Afecta
+también a OE3 (E3-01 a E3-08). Decisión pendiente **#38**.
+
+---
+
+## 2026-08-16 — Red Operativa: los 15 informes compuestos, construidos
+
+Alcance: `dags/lib/consultas/red_operativa/` (15 consultas), `dags/lib/ddl.py` (una dimensión, dos
+hechos, cuatro columnas), `dags/lib/dimensiones/dim_region.py`, `dags/lib/hechos/`
+(`hecho_baja_unidad`, `hecho_validacion_region`), sus flujos y DAG,
+`backend/apps/informes_tacticos/` (servicio, vista, permisos, 15 endpoints), `dags/tests/` (nueve
+ficheros nuevos).
+
+**El segundo departamento no necesitó plomería propia.** Reutiliza el cargador de consultas, el
+repositorio de lectura, la resolución de período, el versionado de dimensiones y el envelope — todo
+construido para Emergencias. Eso es lo que este módulo venía a comprobar: si el segundo hubiera
+necesitado la suya, los seis restantes también, y los 108 informes del catálogo volverían a ser 108
+soluciones particulares.
+
+### Las dos trampas del departamento
+
+**El catálogo de estados de unidad está incompleto** (decisión #40). Tiene tres filas y el historial
+usa cuatro: de **45 transiciones, 6 son «En Misión»**. Un `INNER JOIN` devolvería 39 sin fallar, y lo
+que desaparecería es la actividad de las unidades trabajando. El hecho guarda el **nombre** del estado
+ya resuelto, y una prueba sobre el texto de las consultas lo vigila en dos mitades: que no se une, y
+que el estado se lee por su nombre y no por su identificador.
+
+**La disponibilidad se mide en tiempo, no en transiciones.** Es la peor de las dos porque falla con el
+signo invertido: una unidad que nunca falló no tiene ninguna transición, así que contar cambios le da
+**0 %** — el peor resultado posible al mejor comportamiento, en el informe que sirve para premiar a
+los proveedores fiables.
+
+### El origen confunde dos nociones de «estado» de región
+
+`Dim_RegionOperativa.estadoregion` vale «Producción» —ciclo de vida— y `Dim_EstadoRegion.estadoregion`
+vale «Ciudad de Mexico» —geografía—, con el mismo nombre de columna. Y
+`Dim_RegionOperativaEstadoRegion`, que el catálogo de informes citaba como fuente del primero,
+relaciona con **el segundo**. Se comprobó fila a fila.
+
+Un informe de «regiones publicadas» que leyera la geografía devolvería todas o ninguna, y **las dos
+respuestas parecen plausibles**: con dos regiones, «2 de 2» y «0 de 2» son cifras que nadie cuestiona.
+
+### La autoridad repartida
+
+Este departamento no tiene jefatura única: Expansión gobierna crecimiento y flota, Tecnológico los
+criterios de validación de región. El error natural es admitir a las dos autoridades y quedarse
+tranquilo — eso daría a cada director la materia del otro **sin ningún síntoma**, porque un permiso
+demasiado ancho no falla.
+
+La materia se declara **por informe en el servicio**, y un informe sin materia **no lo ve nadie**. Se
+comprobó por HTTP con el login real de cada director.
+
+⚠️ Solo dos informes son de validación. «Regiones en riesgo» suena a validación —habla de regiones— y
+no lo es: habla de si el mercado aguanta, que es de quien decide dónde crecer.
+
+### El relleno del LEFT JOIN, cuatro veces más
+
+ClickHouse rellena las filas sin coincidencia con el **valor por defecto del tipo**, no con `NULL`, y
+volvió a morder en cuatro sitios: el nombre de región salía en blanco, `uniqExact` contaba el `0` del
+relleno como una unidad —un condado vecino sin ninguna salía con una—, y `minIf` sin filas que
+cumplan devolvía la época cero, dando **–20 677 días**. Ese negativo se ve; lo peligroso es que la
+misma causa produce números positivos plausibles en cuanto las fechas caen del otro lado.
+
+### Dos fallos en el andamiaje y dos en mis propias pruebas
+
+`condados_vecinos` es la primera columna de array del modelo, y destapó que `etl_modelo._valor`
+llamaba `.item()` sobre un `ndarray` —que también lo tiene, pero exige un solo elemento— y que
+`tipos_almacen` hacía `int()` sobre la lista entera.
+
+Y el `transform` de dimensiones leía los catálogos de geografía desde **una lista de cinco nombres a
+mano**, así que `vecinos` se sustituía por lista vacía: **ningún condado con vecinos**, que en la
+cobertura crítica es la marca de «sin alternativas». Es el mismo fallo que ya había pasado en
+`hecho_accidente` con `FUENTES`.
+
+En mis pruebas: una que dije haber verificado por mutación **cuya mutación ni se aplicó** —el
+`str.replace` que no falla cuando el ancla no existe— y, tras repetirla bien, otra que **pasaba por el
+motivo equivocado**: la región de prueba no tenía versión en producción, así que el resultado era
+ausente por otra razón.
+
+### Siete de quince informes son de corte, no de período
+
+Red Operativa es más un departamento de fotos que de películas, y las reglas del catálogo se
+escribieron pensando en Emergencias, que es lo contrario. Tres reglas necesitaron declarar
+excepciones —el `desde` obligatorio y el período vacío—, todas con su razón escrita y con una prueba
+de que la lista de exenciones no acumula entradas muertas.
+
+### Verificación
+
+`dags/`: **582 verdes, 53 saltadas**. `apps/informes_tacticos`: **199 verdes** ejecutado aislado.
+
+⚠️ **En la suite completa del backend fallan 13 pruebas de contraste** que pasan aisladas. Es
+contaminación por orden entre pruebas —alguna anterior deja parcheado el cliente de Pinot y los
+contrastes, que necesitan Pinot real, reciben el doble—. Es la misma familia que las 5 de
+`test_pinot_client_limit`, ya registradas, y **no un defecto de este módulo**: aislado, todo pasa.
+
+---
+
+## 2026-08-16 — Red Operativa: por qué `dim_geografia` no guardaba los vecinos
+
+Alcance: `dags/lib/dimensiones_tasks.py`, `dags/lib/dimensiones/desconocido.py`,
+`dags/lib/etl_modelo.py`, `dags/lib/tipos_almacen.py`,
+`dags/tests/test_fuentes_del_flujo_de_dimensiones.py` (nuevo).
+
+### La causa: el mismo fallo, por segunda vez
+
+El `transform` del flujo de dimensiones reconstruía los catálogos de geografía desde **una lista de
+cinco nombres escrita a mano**. El `extract` sí guardaba `vecinos` y `regiones`; el `transform` no los
+volvía a leer, y `catalogos.get("vecinos", [])` los sustituía por una lista vacía.
+
+Es exactamente lo que ya había pasado en `hecho_accidente` con `FUENTES`, y el síntoma vuelve a ser
+el mismo: **no falla nada**. Sale un cero plausible y nadie lo cuestiona.
+
+Aquí, además, el cero es la peor lectura posible: `condados_vecinos` vacío significa **«sin vecinos
+declarados»**, que en el informe de cobertura crítica es la marca de **sin alternativas** — la
+situación más grave que ese informe reporta. Un olvido de lectura se habría publicado como una
+emergencia operativa.
+
+Ahora los nombres salen de `dim_geografia.CONSULTAS`, y hay una prueba que **lee el código del flujo**
+para comprobar que no vuelve a existir una lista a mano. Verificada por mutación.
+
+### Dos fallos del andamiaje que la primera columna de array destapó
+
+Ninguna columna del modelo era un array hasta `condados_vecinos`, así que ningún camino lo
+contemplaba:
+
+* **`etl_modelo._valor`** llamaba `.item()` sobre un `ndarray`. Los arrays de numpy **también** tienen
+  `.item()`, pero ahí exige un solo elemento y falla con «can only convert an array of size 1 to a
+  Python scalar» — un mensaje que no menciona ni la columna ni el tipo, y que salta dos pasos después
+  de la causa.
+* **`tipos_almacen._ajustar`** hacía `int(valor)` sobre la lista entera.
+
+### La fila desconocida también necesitaba las columnas
+
+Y su lista vacía **sí es correcta**: no es un condado, es el destino de las calles cuyo condado no
+está en el catálogo, así que no puede tener vecinos. Se dice en el código para que nadie lo lea como
+una omisión.
+
+### Lo que sigue sin estar bien
+
+`dim_unidad.fecha_alta` y `tuvo_primer_acceso` **siguen sin llegar al almacén**, y la causa es
+distinta: el versionado no reescribe nada si ningún **atributo versionado** cambió, y estos dos no lo
+son a propósito. Hace falta refrescar las columnas no versionadas de la versión vigente sin abrir
+versión nueva — el motor lo permite (`ReplacingMergeTree(version)`), pero el flujo no lo hace hoy.
+
+⚠️ Seis de las ocho consultas de US1 leen esas columnas. Escribirlas antes de resolver esto daría
+informes que devuelven cero con toda naturalidad.
+
+---
+
+## 2026-08-16 — Los roles tácticos no existían en la base, y ahora sí
+
+Alcance: `database/siembra_roles_tacticos.py` (nuevo).
+
+### El punto ciego
+
+Los permisos de los informes tácticos conceden acceso a **ocho autoridades
+departamentales**. En la base solo existían dos: `DirectorTecnologico` y
+`DirectorEstrategia`. Las otras seis —incluido el **Director de Operaciones**, que es la autoridad
+de los trece informes compuestos de Emergencias— **no existían ni como rol ni con ningún usuario**.
+
+Los permisos pasaban sus pruebas porque **esas pruebas acuñan el JWT directamente**. Comprueban que
+el permiso decide bien, no que exista alguien capaz de obtener ese token. Y la distinción no falla por
+ninguna parte: la API responde `403` a quien no tiene el rol, y a un rol que no existe le responde
+exactamente igual. «Nadie puede entrar» y «el permiso funciona» se ven idénticos desde fuera.
+
+Lo levantó el usuario, no una prueba. Merece decirse: ninguna de las suites lo habría visto, porque
+todas entran por la puerta que se salta el problema.
+
+### Lo que se sembró
+
+Los seis roles que faltaban, y **un usuario por cada uno de los ocho** —no uno con los ocho roles—.
+La razón es que la autoridad de Red Operativa está **repartida**: Expansión y Tecnológico no ven lo
+mismo, y un usuario con todos los roles haría imposible comprobar ese reparto entrando de verdad.
+
+El script usa los repositorios del backend, que publican por Kafka. No escribe en Pinot: el único
+escritor del sistema operativo es el productor. Es idempotente.
+
+### Verificado por login real, no por token fabricado
+
+| Quién | Qué pidió | Resultado |
+|---|---|---|
+| Director de Operaciones | completitud de Emergencias | **200** |
+| Director de Expansión | completitud de Emergencias | **403** — no es su departamento |
+| Director de Expansión | mercados activos (crecimiento) | permiso concedido |
+| Director de Expansión | motivos de rechazo (validación) | **403** — materia ajena |
+| Director Tecnológico | motivos de rechazo (validación) | permiso concedido |
+| Director Tecnológico | mercados activos (crecimiento) | **403** — materia ajena |
+| Director de Marketing | completitud de Emergencias | **403** |
+
+La autoridad repartida de Red Operativa queda así comprobada **de extremo a extremo**: login, JWT
+emitido por el sistema, y el permiso decidiendo por materia.
+
+⚠️ Las contraseñas del script son de entorno de pruebas y están declaradas como tales.
+
+⚠️ **Queda una brecha de método**: todas las pruebas de permisos siguen acuñando el token. Convendría
+al menos una que entre por el login, para que el hueco que el usuario encontró no pueda repetirse en
+silencio.
+
+---
+
 ## 2026-08-16 — Emergencias compuestos: módulo terminado (T076 y T078)
 
 Alcance: recorrido del quickstart contra el stack, y

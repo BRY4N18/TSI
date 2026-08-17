@@ -125,11 +125,25 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'red-operativa/gestion',
+        loadChildren: () =>
+          import('./modules/red-operativa/gestion/red-operativa-gestion.routes').then(
+            (m) => m.RED_OPERATIVA_GESTION_ROUTES,
+          ),
+      },
+      {
         path: 'emergencias/informes-simples',
         loadChildren: () =>
           import(
             './modules/emergencias/informes/emergencias-informes-simples.routes'
           ).then((m) => m.EMERGENCIAS_INFORMES_SIMPLES_ROUTES),
+      },
+      {
+        path: 'emergencias/gestion',
+        loadChildren: () =>
+          import('./modules/emergencias/gestion/emergencias-gestion.routes').then(
+            (m) => m.EMERGENCIAS_GESTION_ROUTES,
+          ),
       },
       {
         path: 'emergencias',
@@ -172,6 +186,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/suscripciones/suscripciones.routes').then(
             (m) => m.SUSCRIPCIONES_ROUTES,
+          ),
+      },
+      {
+        path: 'partners/informes',
+        loadChildren: () =>
+          import('./modules/partners/informes/partners-informes.routes').then(
+            (m) => m.PARTNERS_INFORMES_ROUTES,
           ),
       },
       {

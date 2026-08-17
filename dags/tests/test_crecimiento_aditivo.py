@@ -131,7 +131,18 @@ class TestElTercerHechoUsaLasMismasDimensiones:
         # un hecho nuevo no necesita dimensiones nuevas; meter aqui las que
         # aportan otros departamentos convertiria la afirmacion en otra distinta
         # y la prueba dejaria de comprobar lo que dice su nombre.
-        dimensiones -= {"dim_region"}
+        # ⚠️ Se excluyen las que trajeron **otros modulos**, no el tercer hecho.
+        # Lo que esta prueba afirma es que un hecho nuevo no necesita dimensiones
+        # nuevas; meterle las que aportan otros departamentos la convertiria en
+        # otra afirmacion distinta.
+        #
+        # `dim_condado_vecino` la trajo **informes estrategicos**, y su presencia
+        # aqui deja constancia de que la vecindad entre condados esta representada
+        # dos veces: alli como tabla, y en Red Operativa como el atributo
+        # `dim_geografia.condados_vecinos`. Ver la decision #42.
+        dimensiones -= {
+            "dim_region", "dim_prospecto", "dim_canal", "dim_condado_vecino",
+        }
         assert dimensiones == {
             "dim_tiempo", "dim_geografia", "dim_severidad",
             "dim_origen_despacho", "dim_unidad",

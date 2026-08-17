@@ -1,0 +1,347 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8">
+  @if (definicion(); as def) {
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Gestión · Emergencias
+        </p>
+        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+          {{ def.titulo }}
+        </h1>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
+      </div>
+    </header>
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <!-- Z: héroe arriba izquierda -->
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        data-testid="zona-heroe"
+        data-bloque-vista
+      >
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          {{ def.heroe.titulo }}
+        </p>
+        @switch (cargaHeroe().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              (click)="reintentar(def.heroe.informes[0])"
+            >
+              Reintentar
+            </button>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @case ('sin_dato') {
+            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+          }
+          @default {
+            @if (idPantalla() === 'calidad') {
+              <p
+                class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                [class.text-alert-warning]="completitudBaja()"
+                data-testid="heroe-cifra"
+              >
+                {{ pct(completitud().pct) }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                {{ completitud().completos | number }} de {{ completitud().casos | number }} casos
+              </p>
+            }
+            @if (idPantalla() === 'despacho') {
+              <p
+                class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                [class.text-alert-success]="primerIntentoCumple()"
+                [class.text-alert-warning]="primerIntentoBajo()"
+                data-testid="heroe-cifra"
+              >
+                {{ pct(primerIntento().pct) }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                Meta ≥ 90 % · {{ primerIntento().resueltos | number }} de
+                {{ primerIntento().casos | number }} casos
+              </p>
+            }
+            @if (idPantalla() === 'cierre') {
+              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                {{ cartera().total | number }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">casos abiertos al cierre del período</p>
+            }
+          }
+        }
+      </article>
+
+      <!-- Z: período arriba derecha — única acción -->
+      <div class="lg:col-span-5" data-testid="zona-periodo" data-bloque-vista>
+        <app-periodo-selector (cambio)="onPeriodoChange($event)" />
+      </div>
+
+      <!-- Z: visual grande en la diagonal -->
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        data-testid="zona-visual"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        @switch (cargaVisual().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'calidad') {
+              @let c = completitud();
+              @let max = c.casos || 1;
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                <li>
+                  <div class="mb-1 flex justify-between text-sm">
+                    <span class="text-text-secondary">Completos</span>
+                    <span class="font-semibold text-text-primary">{{ c.completos | number }}</span>
+                  </div>
+                  <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                    <div
+                      class="h-full rounded-md bg-alert-success"
+                      [style.width.%]="(c.completos / max) * 100"
+                    ></div>
+                  </div>
+                </li>
+                <li data-testid="incompletos">
+                  <div class="mb-1 flex justify-between text-sm">
+                    <span class="text-text-secondary">Incompletos</span>
+                    <span class="font-semibold text-alert-warning">{{ c.incompletos | number }}</span>
+                  </div>
+                  <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                    <div
+                      class="h-full rounded-md bg-alert-warning"
+                      [style.width.%]="(c.incompletos / max) * 100"
+                    ></div>
+                  </div>
+                </li>
+              </ul>
+            }
+            @if (idPantalla() === 'despacho') {
+              <p
+                class="m-0 mt-3 rounded-md border-l-4 border-alert-info bg-alert-info-bg px-3 py-2 text-sm text-alert-info"
+                data-testid="aviso-no-sla"
+              >
+                {{ notaNoSla() }}
+              </p>
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li class="flex items-center justify-between gap-2 text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['unidad']) || 'Unidad' }}</span>
+                    @if (num(fila['desviacion_mediana']) === null) {
+                      <span class="text-text-secondary">sin dato</span>
+                    } @else {
+                      <span class="font-semibold tabular-nums text-text-primary">
+                        {{ num(fila['desviacion_mediana']) | number: '1.0-0' }} s
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'cierre') {
+              @let cob = cobertura();
+              @let max = cob.casos || 1;
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                @for (
+                  row of [
+                    { k: 'Solo foto', n: cob.soloFoto, tone: 'info' },
+                    { k: 'Solo nota', n: cob.soloNota, tone: 'info' },
+                    { k: 'Foto y nota', n: cob.fotoYNota, tone: 'success' },
+                    { k: 'Sin evidencia', n: cob.sinEvidencia, tone: 'warning' },
+                  ];
+                  track row.k
+                ) {
+                  <li [attr.data-testid]="row.k === 'Sin evidencia' ? 'sin-evidencia' : null">
+                    <div class="mb-1 flex justify-between text-sm">
+                      <span class="text-text-secondary">{{ row.k }}</span>
+                      <span class="font-semibold text-text-primary">{{ row.n | number }}</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                      <div
+                        class="h-full rounded-md"
+                        [class.bg-alert-info]="row.tone === 'info'"
+                        [class.bg-alert-success]="row.tone === 'success'"
+                        [class.bg-alert-warning]="row.tone === 'warning'"
+                        [style.width.%]="(row.n / max) * 100"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <!-- Z: lectura abajo derecha — no hay CTA operativa -->
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        data-testid="zona-lectura"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        @if (idPantalla() === 'calidad') {
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+            }
+            @default {
+              <p class="m-0 mt-3 text-3xl font-bold text-text-primary">
+                {{ completitud().incompletos | number }}
+              </p>
+              <p class="m-0 mt-1 text-sm text-text-secondary">casos que no entran en el porcentaje</p>
+              <p class="m-0 mt-4 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Campos comprobados
+              </p>
+              <p class="m-0 mt-1 text-sm text-text-primary" data-testid="campos-comprobados">
+                {{ camposComprobados().join(', ') }}
+              </p>
+            }
+          }
+        }
+        @if (idPantalla() === 'despacho') {
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @default {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track $index) {
+                  <li class="text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['proveedor']) || 'Proveedor' }}</span>
+                    <span class="ml-2 font-semibold text-text-primary">
+                      {{ num(fila['huecos']) | number }} huecos
+                    </span>
+                    <span class="block text-xs text-text-secondary">
+                      de {{ num(fila['intervalos_medidos']) | number }} intervalos
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+        @if (idPantalla() === 'cierre') {
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @default {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track $index) {
+                  <li class="text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['resultado']) }}</span>
+                    <span class="ml-2 font-semibold text-text-primary">{{ num(fila['casos']) | number }}</span>
+                    @if (num(fila['sin_calificar'])) {
+                      <span class="ml-2 text-xs text-text-secondary" data-testid="calificacion-ausente">
+                        calificación ausente ({{ num(fila['sin_calificar']) | number }})
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+              @if (cargaLecturaB().data.length) {
+                <p class="m-0 mt-4 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Retiros forzados
+                </p>
+                <ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0">
+                  @for (fila of cargaLecturaB().data; track $index) {
+                    <li class="text-sm text-text-primary">
+                      {{ texto(fila['proveedor']) }}
+                      · {{ num(fila['retiros_forzados']) | number }} retiros /
+                      {{ num(fila['finalizaciones_normales']) | number }} normales
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+        }
+      </article>
+
+      @if (def.apoyo && !def.apoyoPlegado) {
+        <article
+          class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-12"
+          data-testid="zona-apoyo"
+          data-bloque-vista
+        >
+          <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.apoyo.titulo }}</h2>
+          @switch (ratios().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-12 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ ratios().error }}</p>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @default {
+              <ul class="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3">
+                @for (fila of ratios().data; track $index) {
+                  <li class="rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['condado']) }}</span>
+                    @if (esSinCapacidad(fila)) {
+                      <span
+                        class="ml-2 rounded-md bg-alert-warning-bg px-2 py-0.5 text-xs font-medium text-alert-warning"
+                        data-testid="sin-capacidad"
+                      >
+                        sin capacidad
+                      </span>
+                    } @else {
+                      <span class="ml-2 font-semibold tabular-nums text-text-primary">
+                        {{ num(fila['ratio']) | number: '1.0-2' }}
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </article>
+      }
+
+      @if (def.apoyoPlegado) {
+        <div class="lg:col-span-12" data-bloque-vista>
+          <app-apoyo-plegable [bloques]="bloquesApoyo()" />
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="m-0 text-sm text-text-secondary">Pantalla no encontrada.</p>
+  }
+</div>

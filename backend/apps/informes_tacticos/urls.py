@@ -14,6 +14,9 @@ from apps.informes_tacticos.views.emergencias_compuestos_views import (
 from apps.informes_tacticos.views.red_operativa_compuestos_views import (
     RedOperativaCompuestoView,
 )
+from apps.informes_tacticos.views.ventas_crm_compuestos_views import (
+    VentasCrmCompuestoView,
+)
 from apps.informes_tacticos.views.registro_views import (
     CompletitudCamposCriticosView,
     DescarteFusionView,
@@ -130,5 +133,10 @@ urlpatterns = [
         "informes-tacticos/red-operativa/<str:informe>",
         RedOperativaCompuestoView.as_view(),
         name="informes-tacticos-red-operativa-compuesto",
+    ),
+    path(
+        "informes-tacticos/ventas-crm/<str:informe>",
+        VentasCrmCompuestoView.as_view(),
+        name="informes-tacticos-ventas-crm-compuesto",
     ),
 ]

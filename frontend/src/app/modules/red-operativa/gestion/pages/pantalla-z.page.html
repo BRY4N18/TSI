@@ -1,0 +1,278 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8">
+  @if (definicion(); as def) {
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Gestión · Red operativa
+        </p>
+        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+          {{ def.titulo }}
+        </h1>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
+      </div>
+    </header>
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        data-testid="zona-heroe"
+        data-bloque-vista
+      >
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          {{ def.heroe.titulo }}
+        </p>
+        @switch (cargaHeroe().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              (click)="reintentar(def.heroe.informes[0])"
+            >
+              Reintentar
+            </button>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @case ('sin_dato') {
+            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+          }
+          @default {
+            @if (idPantalla() === 'flota') {
+              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                {{ criticos().total | number }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                condados bajo el umbral
+                @if (criticos().umbral !== null) {
+                  de {{ criticos().umbral | number }} unidades
+                }
+              </p>
+              @if (criticos().sinAlternativas) {
+                <p class="m-0 mt-2 text-sm text-alert-warning">
+                  {{ criticos().sinAlternativas | number }} sin alternativas
+                </p>
+              }
+              <p class="m-0 mt-3 text-xs text-text-secondary">{{ notaUmbral() }}</p>
+            }
+            @if (idPantalla() === 'mercados') {
+              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                {{ mercados().produccion | number }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                regiones en producción · {{ mercados().total | number }} en el ciclo de vida
+              </p>
+            }
+            @if (idPantalla() === 'validacion') {
+              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                {{ pct(tasa().pct) }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                {{ tasa().aprobadas | number }} de {{ tasa().validadas | number }} primeros intentos
+              </p>
+            }
+          }
+        }
+      </article>
+
+      <div class="lg:col-span-5" data-testid="zona-periodo" data-bloque-vista>
+        <app-periodo-selector (cambio)="onPeriodoChange($event)" />
+      </div>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        data-testid="zona-visual"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        @switch (cargaVisual().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'flota') {
+              @let max = maxUnidadesEstado();
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li [attr.data-testid]="texto(fila['estado']) === 'En Misión' ? 'estado-en-mision' : null">
+                    <div class="mb-1 flex justify-between text-sm">
+                      <span class="text-text-secondary">{{ texto(fila['estado']) || 'Desconocido' }}</span>
+                      <span class="font-semibold text-text-primary">
+                        {{ cuentaEstado(fila) | number }}
+                      </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                      <div
+                        class="h-full rounded-md bg-accent-primary"
+                        [style.width.%]="(cuentaEstado(fila) / max) * 100"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'mercados') {
+              <p
+                class="m-0 mt-3 rounded-md border-l-4 border-alert-info bg-alert-info-bg px-3 py-2 text-sm text-alert-info"
+                data-testid="aviso-convencion-dias"
+              >
+                {{ notaObjetivo() }}
+              </p>
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li class="flex items-center justify-between gap-2 text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['region']) || 'Región' }}</span>
+                    @if (num(fila['dias']) === null) {
+                      <span class="text-text-secondary" data-testid="dias-ausentes">ausente</span>
+                    } @else {
+                      <span class="font-semibold tabular-nums text-text-primary">
+                        {{ num(fila['dias']) | number: '1.0-0' }} días
+                        @if (fila['cumple_objetivo'] === null) {
+                          · ausente
+                        }
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'validacion') {
+              @let max = maxRechazos();
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li>
+                    <div class="mb-1 flex justify-between text-sm">
+                      <span class="text-text-secondary">{{ texto(fila['motivo']) }}</span>
+                      <span class="font-semibold text-text-primary">{{ num(fila['rechazos']) | number }}</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                      <div
+                        class="h-full rounded-md bg-alert-warning"
+                        [style.width.%]="((num(fila['rechazos']) ?? 0) / max) * 100"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        data-testid="zona-lectura"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        @if (idPantalla() === 'flota') {
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+            }
+            @default {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track $index) {
+                  <li class="text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['unidad']) || 'Unidad' }}</span>
+                    @if (num(fila['pct_disponibilidad']) === null) {
+                      <span class="ml-2 text-text-secondary" data-testid="disponibilidad-ausente">ausente</span>
+                    } @else {
+                      <span
+                        class="ml-2 font-semibold tabular-nums text-text-primary"
+                        [attr.data-testid]="num(fila['pct_disponibilidad']) === 0 ? 'disponibilidad-cero' : null"
+                      >
+                        {{ pct(num(fila['pct_disponibilidad'])) }}
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+              @if (criticos().filas.length) {
+                <p class="m-0 mt-4 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Críticos
+                </p>
+                <ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0">
+                  @for (fila of criticos().filas; track $index) {
+                    <li class="text-sm text-text-primary">
+                      {{ texto(fila['condado']) }}
+                      @if (esVerdadero(fila['sin_alternativas'])) {
+                        <span
+                          class="ml-2 rounded-md bg-alert-warning-bg px-2 py-0.5 text-xs font-medium text-alert-warning"
+                          data-testid="sin-alternativas"
+                        >
+                          sin alternativas
+                        </span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+        }
+        @if (idPantalla() === 'mercados') {
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+            }
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+            }
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @default {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track $index) {
+                  <li class="text-sm">
+                    <span class="text-text-secondary">{{ texto(fila['region']) }}</span>
+                    <span class="ml-2 font-semibold text-text-primary">
+                      {{ num(fila['unidades']) | number }} unidades
+                    </span>
+                    <span class="block text-xs text-text-secondary">
+                      umbral {{ num(fila['umbral_aplicado']) | number }} · faltan
+                      {{ num(fila['unidades_faltantes']) | number }}
+                    </span>
+                  </li>
+                }
+              </ul>
+              @if (notaRiesgo()) {
+                <p class="m-0 mt-3 text-xs text-text-secondary">{{ notaRiesgo() }}</p>
+              }
+            }
+          }
+        }
+        @if (idPantalla() === 'validacion') {
+          <p class="m-0 mt-3 text-sm text-text-primary" data-testid="grano-intentos">
+            {{ notaGrano() }}
+          </p>
+        }
+      </article>
+
+      @if (def.apoyoPlegado) {
+        <div class="lg:col-span-12" data-bloque-vista>
+          <app-apoyo-plegable [bloques]="bloquesApoyo()" />
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="m-0 text-sm text-text-secondary">Pantalla no encontrada.</p>
+  }
+</div>

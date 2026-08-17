@@ -41,6 +41,21 @@ CONSULTAS = {
     "condados": f"SELECT idcondado, condado, idestado FROM Dim_Condado LIMIT {LIMITE}",
     "estados": f"SELECT idestado, estado, idpais FROM Dim_Estado LIMIT {LIMITE}",
     "paises": f"SELECT idpais, pais FROM Dim_Pais LIMIT {LIMITE}",
+    # Red Operativa (US1). La vecindad entre condados es una **relacion estatica
+    # entre entidades ya modeladas**: no tiene instante ni grano propio, asi que
+    # es un atributo de la geografia y no un hecho (research D3). Un hecho de
+    # vecindad seria una tabla de dos filas con su flujo y su DAG.
+    "vecinos": f"SELECT idcondado, idcondadovecino FROM Dim_CondadoVecino WHERE activo = true LIMIT {LIMITE}",
+    # ⚠️ La region operativa se relaciona con la geografia **por estado**, no por
+    # condado: `Dim_RegionOperativa.idestado`. No existe ninguna tabla que ate
+    # region y condado directamente —se comprobo—, asi que el condado hereda la
+    # region de su estado.
+    #
+    # Tiene una consecuencia que conviene saber: **todos los condados de un
+    # estado comparten region**. Si algun dia una region cubriera parte de un
+    # estado, esta derivacion se la atribuiria entera, y la cobertura por region
+    # saldria de mas sin que nada fallara.
+    "regiones": f"SELECT idregionoperativa, idestado FROM Dim_RegionOperativa WHERE activo = true LIMIT {LIMITE}",
 }
 
 
@@ -59,6 +74,45 @@ def construir(catalogos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datet
     condados = _indexar(catalogos["condados"], "idcondado")
     estados = _indexar(catalogos["estados"], "idestado")
     paises = _indexar(catalogos["paises"], "idpais")
+
+    # ⚠️ La vecindad es **simetrica**: si A es vecino de B, B lo es de A. El
+    # origen guarda una sola direccion, y leerla tal cual dejaria a la mitad de
+    # los condados sin vecinos declarados — que en el informe de cobertura
+    # critica es la marca de «sin alternativas», la situacion mas grave que
+    # reporta. Un fallo de lectura se publicaria como una emergencia operativa.
+    vecinos_por_condado: dict[Any, set] = {}
+    for rel in catalogos.get("vecinos", []):
+        a, b = rel.get("idcondado"), rel.get("idcondadovecino")
+        if a is None or b is None:
+            continue
+        vecinos_por_condado.setdefault(a, set()).add(b)
+        vecinos_por_condado.setdefault(b, set()).add(a)
+
+    # ⚠️ UN ESTADO PUEDE TENER VARIAS REGIONES, Y ENTONCES LA REGION ES AMBIGUA
+    # -------------------------------------------------------------------------
+    # La version obvia de esto es un diccionario `idestado -> idregionoperativa`,
+    # y **miente en silencio**: hoy las dos regiones del sistema comparten
+    # `idestado = 1`, asi que el diccionario se queda con la ultima que llegue y
+    # atribuye TODOS los condados a esa. Con los datos actuales serian todos a
+    # «Region Prueba Norte», una region de pruebas.
+    #
+    # El orden en que Pinot devuelva las filas decidiria la respuesta, y la
+    # cobertura por region saldria completa y equivocada — el peor resultado
+    # posible: una cifra que nadie cuestiona porque no parece rota.
+    #
+    # Cuando el estado tiene mas de una region, la region del condado es
+    # **ausente**: no se sabe cual lo cubre. Es informacion honesta, y deja el
+    # informe de cobertura por region senalando lo que falta en vez de inventarlo.
+    por_estado: dict[Any, set] = {}
+    for r in catalogos.get("regiones", []):
+        if r.get("idestado") is None or r.get("idregionoperativa") is None:
+            continue
+        por_estado.setdefault(r["idestado"], set()).add(r["idregionoperativa"])
+
+    region_por_estado = {
+        estado: next(iter(regiones)) if len(regiones) == 1 else None
+        for estado, regiones in por_estado.items()
+    }
     version = ahora.strftime("%Y-%m-%d %H:%M:%S")
 
     filas = []
@@ -76,6 +130,13 @@ def construir(catalogos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datet
                 "ciudad": ciudad.get("ciudad", ETIQUETA_DESCONOCIDA),
                 "idcondado": condado.get("idcondado", ID_DESCONOCIDO),
                 "condado": condado.get("condado", ETIQUETA_DESCONOCIDA),
+                # Vacio significa **sin vecinos declarados**, que es un dato y no
+                # una ausencia: un condado sin alternativas es lo que la
+                # cobertura critica tiene que senalar, no omitir.
+                "condados_vecinos": sorted(
+                    vecinos_por_condado.get(condado.get("idcondado"), ())
+                ),
+                "idregionoperativa": region_por_estado.get(condado.get("idestado")),
                 "idestado": estado.get("idestado", ID_DESCONOCIDO),
                 "estado": estado.get("estado", ETIQUETA_DESCONOCIDA),
                 "idpais": pais.get("idpais", ID_DESCONOCIDO),

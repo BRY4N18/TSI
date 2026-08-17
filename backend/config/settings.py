@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.ventas_crm",
     "apps.suscripciones",
     "apps.informes_tacticos",
+    "apps.informes_estrategicos",
     "apps.partners",
 ]
 

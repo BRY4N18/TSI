@@ -47,6 +47,17 @@ def tipos_de(tabla: str, consultar: Callable[[str], list[dict]] = query_clickhou
 def _ajustar(valor: Any, tipo: str) -> Any:
     if valor is None:
         return None
+
+    # ⚠️ Las columnas de array se pasan tal cual, elemento a elemento.
+    #
+    # Sin esto, `int(valor)` recibe la lista entera y falla con «can only convert
+    # an array of size 1 to a Python scalar», un mensaje que no menciona ni la
+    # columna ni el tipo. La primera columna de array del modelo es
+    # `dim_geografia.condados_vecinos`, y hasta ella ninguna lo era.
+    if tipo.startswith("Array("):
+        interno = tipo[len("Array(") : -1]
+        return [_ajustar(v, interno) for v in (valor if valor is not None else [])]
+
     base = tipo.replace("Nullable(", "").rstrip(")")
     if base.startswith(("Int", "UInt")):
         return int(valor)

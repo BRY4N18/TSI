@@ -35,6 +35,10 @@ TABLAS = (
     "hecho_estado_unidad",
     "hecho_ping_unidad",
     "hecho_evidencia",
+    "hecho_baja_unidad",
+    "hecho_validacion_region",
+    "dim_prospecto",
+    "dim_canal",
 )
 
 #: Columnas que coinciden con un patrón prohibido y **no son** dato sensible.

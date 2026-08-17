@@ -1,0 +1,571 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE4 — Registro Histórico e Inteligencia Predictiva
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los informes del objetivo estratégico OE4, resueltos con una
+    consulta sobre el modelo analítico.
+
+    **Perspectiva BSC:** Aprendizaje y crecimiento.
+
+    ## Alcance: 9 de los 15 del catálogo
+
+    | Informe | Por qué no está |
+    |---|---|
+    | E4-07, E4-08, E4-09, E4-10, E4-11 | Esperan tres tablas que **no existen en ningún sitio**: `registro_predicciones`, `registro_modelos`, `catalogo_productos_inteligencia` |
+    | E4-14 | **La idempotencia del modelo impide medirlo.** Cada recarga reescribe `cargado_en` de la partición entera, así que la columna nunca puede decir cuándo estuvo disponible un caso por primera vez |
+
+    **Tres indicadores del BSC de este objetivo quedan sin fuente** —precisión del modelo, unidades
+    preposicionadas y productos de inteligencia—. OE4 solo cubre hoy la mitad de su propio tablero.
+
+    ## Este módulo NO semaforiza
+
+    Todas las metas de OE4 son `[CALIBRAR]`, así que **`cumple` es `null` en todo el módulo**. A
+    diferencia de OE3, aquí sí aplica la comprobación de OE6: ningún `cumple` booleano.
+
+    ## Lo que se vende
+
+    E4-05, E4-06, E4-12 y E4-13 no son informes de gestión interna: son el dato que una aseguradora o
+    un municipio paga por recibir. Eso sube el listón de dos cosas:
+
+    - **Ninguna ubicación por coordenadas.** Un mapa de siniestralidad con coordenadas exactas
+      vendido a un tercero es una fuga con destinatario comercial.
+    - **«Cero» y «no registrado» nunca se confunden.** Un cliente no puede distinguir un cero real de
+      un cero por falta de registro, así que el informe tiene que hacerlo por él.
+
+    ## Reglas transversales
+
+    Se heredan del contrato de la capa: período obligatorio, ventanas de igual longitud, todo
+    porcentaje con su denominador, sin `acotado_a`, sin paginación. Ver
+    `contrato-informes-estrategicos.md`.
+
+    ## Acceso
+
+    `DirectorDatos` y `Gerente` en los nueve. **`DirectorOperaciones` solo en los que miden el
+    expediente de accidente** —E4-01 a E4-04, E4-12 y E4-13—, porque el expediente es de su
+    departamento y su calidad se mide contra su operación. **No** accede a E4-05, E4-06 ni E4-15.
+
+    ## Agrupación por región: no disponible
+
+    Se agrupa por `condado`. Ver `decisiones-pendientes.md` #38.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: US1 Calidad del histórico
+  - name: US2 Inteligencia vendible
+  - name: US3 Aptitud para entrenar
+
+paths:
+
+  # ─────────────────────────── US1 ───────────────────────────
+
+  /informes-estrategicos/oe4/indice-calidad-historico:
+    get:
+      tags: [US1 Calidad del histórico]
+      summary: Índice consolidado de calidad del histórico (migrado — sustituye tabla precalculada)
+      description: |
+        ⚠️ **Sustituye a `indice_calidad_historico`**, una tabla precalculada del diseño que el modelo
+        analítico reemplazó: una tabla por informe, con las métricas como columnas.
+
+        **Fórmula**, conservada del legado y verificada contra sus 182 días:
+
+        ```
+        índice = ( completitud + (1 − descarte) + (1 − fusión) + cobertura_evidencia ) / 4
+        ```
+
+        Es una **media sin ponderar**: la cobertura de evidencia pesa lo mismo que la completitud de
+        campos críticos. Es discutible y no se cambia aquí — cambiar la fórmula y migrar el informe a
+        la vez haría imposible saber cuál de los dos movió las cifras.
+
+        **Las cuatro componentes se devuelven por separado**, además del índice. Un número único dice
+        que la calidad bajó y no dice por qué, que es lo único accionable.
+
+        ⚠️ **La cobertura de evidencia se define explícitamente**: `con_foto`, `con_nota` y
+        `con_ambas`. El legado no permite saber cuál mide, y por eso sus cifras **no se pueden
+        reproducir**: se probaron las tres definiciones y ninguna encaja.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Índice y sus componentes por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    casos: 892
+                    pct_completitud: 1.0
+                    pct_descarte: 0.0517
+                    pct_fusion: 0.0325
+                    con_foto: 2
+                    con_nota: 38
+                    con_ambas: 1
+                    pct_cobertura_evidencia: 0.0437
+                    indice_consolidado: 0.7399
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: >-
+                    Media sin ponderar de las cuatro componentes. La cobertura de evidencia se define
+                    como casos con foto o nota; el informe legado usaba una definición no reproducible.
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/completitud-campos-criticos:
+    get:
+      tags: [US1 Calidad del histórico]
+      summary: Completitud de campos críticos del expediente — meta ≥97 % (CALIBRAR)
+      description: |
+        ⚠️ **Se mide contra la ausencia real del modelo**, no contra nulidad en el sistema operativo,
+        donde los nulos son valores centinela y la condición sería siempre cierta. Es el defecto que
+        el módulo táctico corrigió, y este informe hereda la corrección.
+
+        La respuesta **publica la lista de campos que comprueba**. La cifra medida es 100 %, y un
+        indicador que estructuralmente nunca se mueve no es una señal: sin la lista se lee como «el
+        expediente es perfecto» cuando dice «los campos que miro están completos».
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Completitud por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    casos: 892
+                    completos: 892
+                    pct_completitud: 1.0
+                    campos_comprobados: ["severidad", "calle"]
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  objetivo: { valor: 97, unidad: "%", tipo: "CALIBRAR", cumple: null }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/campos-mas-ausentes:
+    get:
+      tags: [US1 Calidad del histórico]
+      summary: Ranking de campos críticos con mayor tasa de ausencia
+      description: |
+        Qué campos del expediente faltan más a menudo, para saber dónde intervenir.
+
+        ⚠️ **Incluye todos los campos críticos, también los que no fallan nunca, con cero.** Un campo
+        que sale de la lista se confunde con un campo que nadie revisó — y son conclusiones opuestas:
+        la primera no requiere acción y la segunda sí.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+      responses:
+        '200':
+          description: Ranking de ausencias por campo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/calidad-por-origen:
+    get:
+      tags: [US1 Calidad del histórico]
+      summary: Calidad del dato por origen — captura central vs enriquecimiento en campo
+      description: |
+        Compara la completitud de lo capturado en central con lo enriquecido en sitio, usando la
+        categoría de la nota de evidencia.
+
+        ⚠️ **Sin desglose por persona.** Ni el operador que registró ni el técnico que enriqueció.
+        Es una exclusión constitucional y no la levanta ningún cargo — el informe compara **orígenes
+        de captura**, no rendimiento individual.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Calidad comparada por origen de captura
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US2 ───────────────────────────
+
+  /informes-estrategicos/oe4/concentracion-siniestralidad:
+    get:
+      tags: [US2 Inteligencia vendible]
+      summary: Mapa de concentración de siniestralidad por zona
+      description: |
+        Densidad de accidentes por condado, ciudad y calle, con top N y porcentaje acumulado. Es el
+        insumo del modelo predictivo y uno de los productos vendibles del objetivo.
+
+        ⚠️ **La ubicación se expresa por nombre, nunca por coordenadas.** El modelo analítico no las
+        contiene, por decisión constitucional, y este informe es precisamente el que un tercero
+        compraría.
+
+        Los casos sin ubicación resoluble aparecen como **«Desconocido»**, no desaparecen: la suma por
+        ubicación es igual al total del período.
+
+        **Una zona con un solo caso no es una concentración** y se declara bajo el umbral.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - name: nivel
+          in: query
+          schema: { type: string, enum: [condado, ciudad, calle], default: condado }
+          description: Nivel de la jerarquía geográfica sobre el que se agrupa.
+        - $ref: '#/components/parameters/Top'
+      responses:
+        '200':
+          description: Concentración por zona
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    condado: "Cuauhtemoc"
+                    casos: 2158
+                    pct: 0.5075
+                    pct_acumulado: 0.5075
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/patron-horario-climatico:
+    get:
+      tags: [US2 Inteligencia vendible]
+      summary: Patrón horario y climático de la siniestralidad
+      description: |
+        Distribución por franja horaria, día de semana y condición climática. Es el dataset de
+        entrenamiento del modelo predictivo.
+
+        ⚠️ **Las dos mitades tienen densidad de dato muy distinta, y la respuesta lo declara:**
+
+        | Mitad | Casos con dato |
+        |---|--:|
+        | Franja horaria y día de semana | **4 252** — es un patrón |
+        | Condición climática | **3** — no es un patrón |
+
+        La parte climática se entrega con `cobertura: "parcial"` mientras la muestra no alcance el
+        mínimo. Un reparto por condición climática sobre tres casos **tiene la forma de un patrón y el
+        significado de una anécdota**, y este informe alimenta un modelo predictivo.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Patrón horario y climático
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - franja_horaria: "tarde"
+                    dia_semana: 3
+                    casos: 412
+                    casos_con_clima: 1
+                    condicion_clima: null
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "parcial"
+                  falta: ["condición climática: 3 casos de 4252, por debajo de la muestra mínima"]
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/impacto-humano-por-zona:
+    get:
+      tags: [US2 Inteligencia vendible]
+      summary: Impacto humano — víctimas, heridos y fallecidos por zona
+      description: |
+        El dato de mayor valor para aseguradoras y municipios.
+
+        ⚠️ **Distingue «cero» de «no registrado»**, y en un informe que se vende la distinción es
+        crítica: un accidente con cero heridos es una buena noticia; uno cuyos heridos nadie contó es
+        un expediente incompleto. Sumar los segundos como ceros haría **bajar** el impacto humano
+        total cada vez que empeora la calidad del registro — el indicador se movería en dirección
+        contraria a la realidad, y el comprador no tiene forma de notarlo.
+
+        `casos_con_dato` es el denominador real.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Impacto humano por severidad y zona
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe4/impacto-vial-por-zona:
+    get:
+      tags: [US2 Inteligencia vendible]
+      summary: Impacto vial — duración y extensión de la afectación por zona
+      description: |
+        Duración en minutos y **distancia afectada en millas**, vendible a municipios y Smart Cities.
+
+        🆕 **La distancia se incorpora en este módulo.** El dato existe en el origen —4 200 de 4 252
+        casos, el 98,8 %— y el modelo analítico no lo cargaba: E4-13 entregaba la mitad del producto,
+        y la mitad que faltaba es la que más se paga.
+
+        ⚠️ **Declara desde cuándo existe la métrica.** Las filas cargadas antes de que la columna se
+        añadiera no tienen el dato y **quedan fuera del promedio**, no entran como cero — que
+        presentaría «no lo medíamos» como «no hubo afectación».
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Impacto vial por zona
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    condado: "Cuauhtemoc"
+                    casos: 2158
+                    casos_con_duracion: 2158
+                    casos_con_distancia: 2131
+                    duracion_media_min: 47.2
+                    distancia_media_millas: 0.83
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: "La distancia afectada existe en el modelo desde su incorporación en OE4."
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US3 ───────────────────────────
+
+  /informes-estrategicos/oe4/cobertura-del-historico:
+    get:
+      tags: [US3 Aptitud para entrenar]
+      summary: Cobertura del histórico por zona — masa crítica para entrenar
+      description: |
+        Volumen de casos por zona, contrastado con el umbral mínimo para entrenar un modelo.
+
+        ⚠️ **El umbral se publica en la respuesta**, y es un parámetro. Un «esta zona no tiene masa
+        crítica» sin decir contra qué umbral no es accionable.
+
+        **No hay un valor de referencia en el marco**, y no se inventa uno fijo: el número de casos
+        que necesita un modelo depende del modelo, y aquí **no hay modelo todavía** —los cinco
+        informes que lo evalúan están bloqueados—. La referencia inicial es 500.
+
+        Con los datos de hoy, los dos condados están por encima y **ninguna zona se marca**. Es la
+        respuesta correcta, no un fallo.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: umbral_casos
+          in: query
+          schema: { type: integer, default: 500, minimum: 1 }
+          description: Casos mínimos para considerar que una zona tiene masa crítica de entrenamiento.
+      responses:
+        '200':
+          description: Cobertura del histórico por zona
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - condado: "Cuauhtemoc"
+                    casos: 2158
+                    umbral: 500
+                    sin_masa_critica: false
+                meta:
+                  periodo: { desde: "2026-02-01", hasta: "2026-08-31", granularidad: "anio", parcial: true }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+      description: Obligatoria; un valor fuera de la lista responde `400` nombrando los válidos.
+
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+      description: |
+        La ventana anterior tiene la misma longitud que la actual. ⚠️ `yoy` no tiene término de
+        comparación todavía: devuelve la comparación **ausente con motivo**, no un `400`.
+
+    PorCondado:
+      name: por_condado
+      in: query
+      schema: { type: boolean, default: false }
+      description: ⚠️ **No existe `por_region`** (`decisiones-pendientes.md` #38).
+
+    MuestraMinima:
+      name: muestra_minima
+      in: query
+      schema: { type: integer, default: 5, minimum: 1, maximum: 1000 }
+      description: Observaciones mínimas para publicar una lectura. Por debajo, `cobertura` es `parcial`.
+
+    Top:
+      name: top
+      in: query
+      schema: { type: integer, default: 10, minimum: 1, maximum: 100 }
+
+  schemas:
+
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            **Vacío significa «no hubo»**, distinto de una fila de ceros y distinto de «no se pudo
+            medir», que lo dice `meta.cobertura`.
+          items: { type: object, additionalProperties: true }
+        meta: { $ref: '#/components/schemas/MetaInforme' }
+
+    MetaInforme:
+      type: object
+      required: [periodo, cobertura]
+      properties:
+        periodo: { $ref: '#/components/schemas/Periodo' }
+        comparacion:
+          allOf: [{ $ref: '#/components/schemas/Comparacion' }]
+          nullable: true
+        objetivo:
+          allOf: [{ $ref: '#/components/schemas/Objetivo' }]
+          nullable: true
+        cobertura: { type: string, enum: [completa, parcial] }
+        falta:
+          type: array
+          items: { type: string }
+          description: Obligatorio si `cobertura` es `parcial`. Nombra qué falta y por qué.
+        alcance:
+          type: string
+          description: |
+            Lo emiten `indice-calidad-historico` —para declarar la fórmula y la definición de
+            evidencia— e `impacto-vial-por-zona` —para declarar desde cuándo existe la distancia.
+
+    Periodo:
+      type: object
+      required: [desde, hasta, granularidad, parcial]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+        granularidad: { type: string, enum: [mes, trimestre, anio] }
+        parcial: { type: boolean }
+
+    Comparacion:
+      type: object
+      required: [tipo, ventana_actual, ventana_anterior]
+      properties:
+        tipo: { type: string, enum: [mom, yoy] }
+        ventana_actual: { $ref: '#/components/schemas/Ventana' }
+        ventana_anterior:
+          allOf: [{ $ref: '#/components/schemas/Ventana' }]
+          nullable: true
+        variacion:
+          type: object
+          nullable: true
+          additionalProperties: { type: number, nullable: true }
+        motivo_ausencia: { type: string, nullable: true }
+
+    Ventana:
+      type: object
+      required: [desde, hasta]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+
+    Objetivo:
+      type: object
+      required: [tipo, cumple]
+      properties:
+        valor: { type: number, nullable: true }
+        unidad: { type: string, nullable: true }
+        tipo: { type: string, enum: [NORMATIVO, CALIBRAR] }
+        cumple:
+          type: boolean
+          nullable: true
+          description: |
+            ⚠️ **Siempre `null` en este módulo.** Todas las metas de OE4 son `[CALIBRAR]`, y las tres
+            comprometidas del tablero están bloqueadas. Aquí **sí** aplica la comprobación de OE6:
+            ningún `cumple` booleano en todo el módulo.
+
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+        code: { type: string }
+
+  responses:
+
+    PeticionInvalida:
+      description: Falta un parámetro obligatorio, o un valor de enumeración no se reconoce.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+    SinPermiso:
+      description: |
+        El rol no tiene la autoridad de **ese informe**. `DirectorOperaciones` accede a los del
+        expediente y **no** a los de analítica pura. Es un `403`, no un `200` con `data: []`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+security:
+  - bearerAuth: []

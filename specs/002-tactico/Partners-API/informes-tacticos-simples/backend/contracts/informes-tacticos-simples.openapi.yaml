@@ -95,7 +95,7 @@ paths:
         - $ref: '#/components/parameters/Partner'
         - name: entorno
           in: query
-          schema: { type: string, enum: [Sandbox, Produccion] }
+          schema: { type: string, enum: [Sandbox, Producción] }
         - name: activa
           in: query
           schema: { type: boolean }
@@ -374,7 +374,7 @@ components:
       properties:
         partner: { type: string }
         nombre_credencial: { type: string }
-        entorno: { type: string, enum: [Sandbox, Produccion] }
+        entorno: { type: string, enum: [Sandbox, Producción] }
         activa:
           type: boolean
           description: |

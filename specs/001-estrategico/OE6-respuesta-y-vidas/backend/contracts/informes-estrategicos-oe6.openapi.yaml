@@ -1,0 +1,722 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE6 — Tiempo de Respuesta y Seguridad de Vidas
+  version: "1.0.0"
+  description: |
+    Endpoints de **solo lectura** de los doce informes del objetivo estratégico OE6, resueltos con
+    una consulta sobre el modelo analítico.
+
+    **Perspectiva BSC:** Procesos internos / Safety.
+
+    ## Reglas transversales de la capa estratégica
+
+    - **El período es obligatorio.** `desde`, `hasta` y `granularidad` sin excepción. Omitir
+      cualquiera es `400`. A diferencia de los listados tácticos, aquí no hay estado actual:
+      un tiempo de respuesta sin período no es un número peor, no es un número.
+    - **La comparación declara sus dos ventanas**, de igual longitud. Un período en curso se marca
+      `parcial: true`.
+    - **`cumple` es `null` en todo objetivo `CALIBRAR`.** No es un `false` pendiente: es que el
+      umbral no está calibrado contra nada. Hoy **todos** los objetivos propios de OE6 lo son.
+    - **Todo porcentaje viene con su denominador.**
+    - **Sin dato ≠ cero.** Un período sin datos devuelve `data: []`, que es distinto de una fila
+      de ceros.
+    - **Sin dato sensible, para ningún rol.** Ni coordenadas, ni identidad de implicados,
+      conductores, operadores o técnicos. La autoridad departamental **no** levanta la exclusión.
+    - **No se emite `acotado_a`.** Estos informes no acotan por titularidad.
+    - **No hay paginación.** Un agregado solo significa entero; los rankings acotan con `top`.
+
+    ## Acceso
+
+    `DirectorOperaciones` (autoridad de Emergencias) y `Gerente`. Cualquier otro rol recibe `403`,
+    **incluidos los roles operativos de Emergencias**: la versión de empresa de su operación no es
+    una ampliación de su pantalla.
+
+    ## Agrupación por región: no disponible
+
+    ⚠️ El catálogo pide desglose por región en los doce. **No es construible**: el sistema operativo
+    define la cobertura de una región a nivel de estado, no de condado, y hoy dos regiones comparten
+    estado. Unir por estado duplicaría cada caso sin fallar. Se agrupa por `condado`, que es la clave
+    con la que el despacho opera de verdad. Ver `research.md` D1.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: US1 Tiempo de respuesta
+  - name: US2 Dónde se va el tiempo
+  - name: US3 Modos de fallo
+  - name: US4 Resultado sobre la persona
+
+paths:
+
+  # ─────────────────────────── US1 ───────────────────────────
+
+  /informes-estrategicos/oe6/tiempo-respuesta-global:
+    get:
+      tags: [US1 Tiempo de respuesta]
+      summary: Tiempo global de respuesta, registro a llegada (mediana y p95) — KPI del BSC
+      description: |
+        El indicador que da nombre al objetivo: cuánto pasa entre que se reporta un accidente y
+        llega una unidad al sitio.
+
+        **Mediana y p95, no promedio.** La distribución tiene cola larga: un promedio aceptable
+        puede esconder que uno de cada veinte accidentes espera el triple, y en un sistema que
+        despacha ambulancias ese uno de cada veinte es la cifra que importa.
+
+        **Se excluyen** los casos sin llegada registrada, los descartados y los fusionados. Los
+        primeros se declaran en `excluidos_sin_llegada`: contarlos como cero haría instantáneos
+        precisamente los casos que nadie atendió.
+
+        ⚠️ El p95 se devuelve `null` cuando la muestra del período no llega a `muestra_minima`.
+        Con cinco observaciones el p95 es el máximo, no un percentil.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Tiempo de respuesta por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-04"
+                    casos_con_llegada: 2030
+                    excluidos_sin_llegada: 341
+                    mediana_min: 8.7
+                    p95_min: 14.9
+                  - periodo: "2026-07"
+                    casos_con_llegada: 921
+                    excluidos_sin_llegada: 158
+                    mediana_min: 8.8
+                    p95_min: 15.2
+                meta:
+                  periodo: { desde: "2026-01-01", hasta: "2026-09-30", granularidad: "trimestre", parcial: true }
+                  comparacion:
+                    tipo: "mom"
+                    ventana_actual: { desde: "2026-07-01", hasta: "2026-09-30" }
+                    ventana_anterior: { desde: "2026-04-01", hasta: "2026-06-30" }
+                    variacion: { mediana_min: 0.1, p95_min: 0.3 }
+                  objetivo: { valor: null, unidad: "min", tipo: "CALIBRAR", cumple: null }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/tiempo-respuesta-por-severidad:
+    get:
+      tags: [US1 Tiempo de respuesta]
+      summary: Tiempo de respuesta desglosado por severidad
+      description: |
+        Lo mismo que el anterior, por nivel de gravedad. Ordenado **por gravedad y no
+        alfabéticamente** (`dim_severidad.orden`): un informe que ponga «Fatal» antes que «Grave»
+        porque la F va antes obliga a releer cada fila.
+
+        Los casos cuya severidad no se resolvió aparecen como **«Desconocido»**, no desaparecen.
+        La suma de los recuentos por severidad es igual al total de casos con llegada del período.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Tiempo de respuesta por severidad
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    severidad: "Leve"
+                    orden: 1
+                    casos: 1434
+                    mediana_min: 8.5
+                    p95_min: 15.0
+                  - periodo: "2026-07"
+                    severidad: "Grave"
+                    orden: 3
+                    casos: 639
+                    mediana_min: 9.2
+                    p95_min: 15.3
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  objetivo: { valor: null, unidad: "min", tipo: "CALIBRAR", cumple: null }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US2 ───────────────────────────
+
+  /informes-estrategicos/oe6/tramos-del-ciclo:
+    get:
+      tags: [US2 Dónde se va el tiempo]
+      summary: Desglose del tiempo por tramo del ciclo de emergencia
+      description: |
+        Los cuatro tramos: registro→confirmación, confirmación→asignación, asignación→llegada,
+        llegada→cierre. Es el diagnóstico del número de `tiempo-respuesta-global`.
+
+        ⚠️ **Cada tramo publica su propia población**, y no es un descuido. Un caso que se confirmó
+        pero nunca se asignó entra en el primer tramo y no en el segundo. Calcular los cuatro sobre
+        los casos completos descartaría los que se atascaron al principio, que es justo donde está
+        la información.
+
+        **Se entrega por período, nunca por unidad.** Cuánto tardó en cerrarse un caso es propiedad
+        del caso: la unidad no controla cuándo se cierra el expediente, y repartir esa duración
+        entre unidades exige elegir una de forma no determinista *(decisión #35)*.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Tiempos por tramo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    tramo: "registro_a_confirmacion"
+                    orden: 1
+                    casos: 4040
+                    mediana_min: 1.2
+                    p95_min: 4.8
+                  - periodo: "2026-07"
+                    tramo: "asignacion_a_llegada"
+                    orden: 3
+                    casos: 3637
+                    mediana_min: 6.1
+                    p95_min: 11.4
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/origen-de-asignacion:
+    get:
+      tags: [US2 Dónde se va el tiempo]
+      summary: Asignación automática vs manual y sus tiempos respectivos
+      description: |
+        Reparto y tiempo de respuesta por origen del despacho. **Incluye «escalado a zona» como
+        origen propio**, no agregado en «manual»: es un tercer camino con su propia causa —no había
+        candidatas en el condado— y sumarlo a los otros dos oculta cuándo el sistema se queda sin
+        cobertura local. Los porcentajes suman 100 % con los tres.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Reparto y tiempos por origen
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/desviacion-de-llegada:
+    get:
+      tags: [US2 Dónde se va el tiempo]
+      summary: Desviación entre la llegada real y la referencia histórica
+      description: |
+        ⚠️ **La referencia NO es un compromiso operativo.** El sistema **no guarda ninguna estimación
+        de llegada** y calcularla exigiría coordenadas, excluidas por decisión constitucional. La
+        referencia se **deriva**: mediana de lo que tardaron despachos comparables —mismo condado y
+        severidad— en los `ventana_dias` **anteriores** al período medido.
+
+        Una desviación positiva significa «más lento de lo habitual», nunca «incumplió un plazo»:
+        no había plazo. Presentarla como un SLA inventaría un compromiso que nadie asumió, y sobre
+        esa lectura se decide qué proveedor sigue.
+
+        Con menos de `muestra_minima` llegadas comparables, **referencia y desviación salen `null`**.
+        Un `0` diría «llegó exactamente a tiempo», que es lo contrario de «no sabemos qué esperar» —
+        y convertiría una unidad sin histórico en una unidad ejemplar.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - name: ventana_dias
+          in: query
+          schema: { type: integer, default: 90, minimum: 7, maximum: 730 }
+          description: Días de histórico anteriores al período con los que se construye la referencia.
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Desviación por unidad y período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    unidad: "AMB-014"
+                    llegadas_medidas: 38
+                    llegadas_con_referencia: 31
+                    segundos_reales_mediana: 372
+                    segundos_referencia: 341
+                    desviacion_mediana: 31
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: "La referencia es el histórico comparable, no un ETA estimado."
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US3 ───────────────────────────
+
+  /informes-estrategicos/oe6/rechazo-y-timeout-por-unidad:
+    get:
+      tags: [US3 Modos de fallo]
+      summary: Tasa de rechazo y de vencimiento por unidad
+      description: |
+        ⚠️ **El denominador son intentos de despacho ofrecidos a esa unidad**, nunca transiciones de
+        estado. El endpoint táctico equivalente divide entre filas de historial —cinco por cada
+        despacho bien atendido—, con una consecuencia perversa: **cuanto mejor trabaja una unidad,
+        más baja parece su tasa de rechazo**. Medido, un factor de 2,6 *(decisión #34)*.
+
+        **Rechazo y vencimiento van separados**, con su tasa cada uno. Son causas opuestas: un
+        rechazo es una negativa —alguien miró y dijo que no— y un vencimiento es una ausencia de
+        respuesta. Sumarlos en «no atendidos» ocultaría que la mitad de las veces nadie contestó,
+        que es otro problema y se arregla de otra manera.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/Top'
+      responses:
+        '200':
+          description: Tasas por unidad
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    unidad: "AMB-014"
+                    ofrecidos: 52
+                    rechazados: 6
+                    vencidos: 4
+                    tasa_rechazo: 0.1154
+                    tasa_vencimiento: 0.0769
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: "El denominador son intentos ofrecidos, no transiciones de estado."
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/abortos-y-misiones-fallidas:
+    get:
+      tags: [US3 Modos de fallo]
+      summary: Abortos y misiones fallidas, por causa
+      description: |
+        Misiones que se interrumpieron después de confirmarse, desglosadas por causa. **Cuenta
+        misiones, no transiciones.**
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Abortos por causa y período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/cierres-forzados:
+    get:
+      tags: [US3 Modos de fallo]
+      summary: Cierres forzados desde central (⚠️ alcance limitado)
+      description: |
+        ⚠️ **Este endpoint mide el indicador `retiro_forzado` del despacho, que NO es la definición
+        que el catálogo pide.**
+
+        Son dos cosas distintas con nombres casi iguales:
+
+        | | Cuántos |
+        |---|---|
+        | `retiro_forzado` del despacho — lo que este endpoint mide | **1** de 4 314 |
+        | Retiro manual desde central — lo que el informe pide | **451** de 3 310 |
+
+        Difieren en un factor de 451. **El modelo no puede calcular la segunda**: lo que distingue un
+        retiro manual de uno automático es la presencia de identidad de usuario, excluida por
+        decisión constitucional.
+
+        `meta.alcance` lo declara en cada respuesta. Sin esa declaración, un `1 de 4314` se lee como
+        «esto casi no pasa», cuando pasa 451 veces *(decisión #36)*.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Cierres forzados por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    despachos_confirmados: 3310
+                    forzados: 1
+                    pct_forzados: 0.0003
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  alcance: >-
+                    Mide el indicador retiro_forzado del despacho, no el retiro manual desde central.
+                    Las dos definiciones difieren; ver decisión #36.
+                  cobertura: "parcial"
+                  falta: ["retiro manual desde central"]
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/envejecimiento-de-casos-abiertos:
+    get:
+      tags: [US3 Modos de fallo]
+      summary: Envejecimiento de la cartera de casos abiertos
+      description: |
+        Distribución de los casos **todavía abiertos** por tramos de antigüedad.
+
+        **Se calcula contra el instante de la consulta**, no contra el fin del período: la antigüedad
+        de un caso abierto crece mientras siga abierto. Un caso está abierto si no tiene hora de
+        cierre — y el modelo lo garantiza porque un hito no alcanzado va ausente, nunca con la fecha
+        de carga. Si llevara la fecha de carga, **todos los casos abiertos aparecerían cerrados** y
+        la cartera saldría vacía.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - name: tramos_dias
+          in: query
+          schema: { type: string, default: "1,3,7,30" }
+          description: |
+            Cortes de antigüedad en días, separados por coma, máximo 10. Se ordenan antes de
+            aplicarse: una lista desordenada asignaría casos al tramo equivocado **sin fallar**.
+      responses:
+        '200':
+          description: Casos abiertos por tramo de antigüedad
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  # ─────────────────────────── US4 ───────────────────────────
+
+  /informes-estrategicos/oe6/impacto-humano:
+    get:
+      tags: [US4 Resultado sobre la persona]
+      summary: Impacto humano agregado — víctimas, heridos y fallecidos
+      description: |
+        El dato que distingue OE6 de OE3: **OE3 mide el proceso; esto mide el resultado sobre quien
+        esperaba una ambulancia.**
+
+        ⚠️ **Distingue «cero» de «no registrado»**, y no es una sutileza: un accidente con cero
+        heridos es una buena noticia; un accidente cuyos heridos nadie contó es un expediente
+        incompleto. Sumar los segundos como ceros haría **bajar** el impacto humano total cada vez
+        que empeora la calidad del registro. `casos_con_dato` publica el denominador real.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - $ref: '#/components/parameters/PorCondado'
+      responses:
+        '200':
+          description: Impacto humano por severidad y período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    severidad: "Grave"
+                    casos: 639
+                    casos_con_dato: 631
+                    victimas: 1204
+                    heridos: 1088
+                    fallecidos: 116
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/escaladas-de-severidad:
+    get:
+      tags: [US4 Resultado sobre la persona]
+      summary: Escaladas de severidad originadas en sitio (⚠️ dato escaso)
+      description: |
+        Casos en los que el técnico de campo elevó la severidad respecto a la registrada en central.
+
+        ⚠️ **Opera sobre dato escaso y lo declara.** La fuente de escaladas del sistema operativo
+        tiene muy pocas filas —razón por la que se decidió no crear un hecho propio para ella—, así
+        que un porcentaje cercano a cero **no significa que la severidad inicial acierte casi
+        siempre**: significa que casi nadie usa la función. Cuando la muestra no alcanza el mínimo,
+        `cobertura` es `parcial`.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/MuestraMinima'
+      responses:
+        '200':
+          description: Escaladas por período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe6/cobertura-de-evidencia:
+    get:
+      tags: [US4 Resultado sobre la persona]
+      summary: Cobertura de evidencia en casos cerrados, por severidad
+      description: |
+        Proxy de la calidad de la documentación en sitio. **Solo casos cerrados.**
+
+        **Separa foto de nota antes de combinarlas.** Son capturas distintas, con dispositivos y
+        momentos distintos: un `% con evidencia` combinado esconde cuál de las dos falta, y son
+        problemas con soluciones diferentes.
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Cobertura de evidencia por severidad
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+              example:
+                data:
+                  - periodo: "2026-07"
+                    severidad: "Grave"
+                    casos_cerrados: 612
+                    con_foto: 480
+                    con_nota: 501
+                    con_ambas: 442
+                    pct_con_ambas: 0.7222
+                meta:
+                  periodo: { desde: "2026-07-01", hasta: "2026-07-31", granularidad: "mes", parcial: false }
+                  cobertura: "completa"
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+      description: Inicio del período. **Obligatorio**; omitirlo es `400`.
+
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+      description: Fin del período, inclusive. **Obligatorio**.
+
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+      description: |
+        Agrupación temporal. **Obligatoria.** Un valor fuera de la lista responde `400` nombrando
+        los válidos; no se sustituye en silencio por el defecto.
+
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+      description: |
+        Compara contra el período anterior (`mom`) o contra el mismo del año anterior (`yoy`).
+        La ventana anterior **tiene siempre la misma longitud** que la actual.
+
+        ⚠️ **`yoy` no tiene término de comparación todavía**: el histórico arranca en febrero de
+        2026. Se acepta igualmente y devuelve la comparación **ausente con motivo** — rechazarla
+        obligaría al cliente a saber cuánto histórico hay, y la petición será legítima en unos meses.
+
+    PorCondado:
+      name: por_condado
+      in: query
+      schema: { type: boolean, default: false }
+      description: |
+        Añade el condado como clave de agrupación.
+
+        ⚠️ **No existe `por_region`.** Ver la nota de agrupación por región en la descripción
+        general.
+
+    MuestraMinima:
+      name: muestra_minima
+      in: query
+      schema: { type: integer, default: 5, minimum: 1, maximum: 1000 }
+      description: |
+        Observaciones mínimas para que un estadístico se publique. Por debajo, la medida sale
+        `null` en vez de calcularse: con cinco observaciones un p95 es el máximo, no un percentil.
+
+    Top:
+      name: top
+      in: query
+      schema: { type: integer, default: 10, minimum: 1, maximum: 100 }
+      description: Número de filas en los informes de tipo ranking.
+
+  schemas:
+
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          description: |
+            Filas agregadas. **Vacío significa «no hubo»**, que es distinto de una fila de ceros y
+            distinto de «no se pudo medir» — esto último lo dice `meta.cobertura`.
+          items: { type: object, additionalProperties: true }
+        meta: { $ref: '#/components/schemas/MetaInforme' }
+
+    MetaInforme:
+      type: object
+      required: [periodo, cobertura]
+      properties:
+        periodo: { $ref: '#/components/schemas/Periodo' }
+        comparacion:
+          allOf: [{ $ref: '#/components/schemas/Comparacion' }]
+          nullable: true
+          description: Ausente si se pidió `ninguna`, o si la ventana anterior no tiene datos.
+        objetivo:
+          allOf: [{ $ref: '#/components/schemas/Objetivo' }]
+          nullable: true
+          description: Presente solo en los informes con meta declarada en el tablero BSC.
+        cobertura:
+          type: string
+          enum: [completa, parcial]
+        falta:
+          type: array
+          items: { type: string }
+          description: Qué falta para que la cobertura sea completa. Obligatorio si es `parcial`.
+        alcance:
+          type: string
+          description: |
+            Advertencia sobre lo que el informe **no** dice, cuando su nombre o sus campos podrían
+            leerse como algo que no mide. Solo lo emite el informe que lo necesita: añadirlo a todos
+            convertiría una advertencia deliberada en ruido.
+
+    Periodo:
+      type: object
+      required: [desde, hasta, granularidad, parcial]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+        granularidad: { type: string, enum: [mes, trimestre, anio] }
+        parcial:
+          type: boolean
+          description: |
+            `true` si el período está en curso. Un período incompleto comparado contra períodos
+            cerrados es la forma más fácil de inventar una tendencia a la baja.
+
+    Comparacion:
+      type: object
+      required: [tipo, ventana_actual, ventana_anterior]
+      properties:
+        tipo: { type: string, enum: [mom, yoy] }
+        ventana_actual: { $ref: '#/components/schemas/Ventana' }
+        ventana_anterior:
+          allOf: [{ $ref: '#/components/schemas/Ventana' }]
+          nullable: true
+        variacion:
+          type: object
+          nullable: true
+          additionalProperties: { type: number, nullable: true }
+          description: Variación por medida. `null` si la ventana anterior no tiene datos.
+        motivo_ausencia:
+          type: string
+          nullable: true
+          description: Por qué no hay comparación, cuando `ventana_anterior` es nula.
+
+    Ventana:
+      type: object
+      required: [desde, hasta]
+      properties:
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+
+    Objetivo:
+      type: object
+      required: [tipo, cumple]
+      properties:
+        valor: { type: number, nullable: true }
+        unidad: { type: string, nullable: true }
+        tipo:
+          type: string
+          enum: [NORMATIVO, CALIBRAR]
+          description: |
+            `NORMATIVO` es un umbral obligatorio adoptado como criterio del sistema.
+            `CALIBRAR` es una referencia sin línea base: **no es un compromiso**.
+        cumple:
+          type: boolean
+          nullable: true
+          description: |
+            **Siempre `null` cuando `tipo` es `CALIBRAR`.** No es un `false` pendiente de comprobar:
+            es que el umbral no está calibrado contra nada. Pintar en rojo un `CALIBRAR` presenta
+            como fracaso una meta que nadie midió nunca.
+
+    Error:
+      type: object
+      required: [error, detail, code]
+      properties:
+        error: { type: string }
+        detail:
+          type: string
+          description: |
+            Escrito para que quien lo lea pueda corregir la petición sin abrir la spec. **Nombra los
+            valores válidos** cuando el fallo es de enumeración.
+        code: { type: string }
+
+  responses:
+
+    PeticionInvalida:
+      description: |
+        Falta un parámetro obligatorio, o un valor de enumeración no se reconoce. **Nunca se recorta
+        ni se sustituye en silencio**: el consumidor tiene que poder saber que pidió algo mal.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+    SinPermiso:
+      description: |
+        El rol no es `DirectorOperaciones` ni `Gerente`. **Es un `403`, no un `200` con `data: []`**:
+        no tener acceso es distinto de que no haya datos.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+security:
+  - bearerAuth: []

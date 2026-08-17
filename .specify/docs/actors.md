@@ -53,11 +53,27 @@
 
 ---
 
+## Autoridad estratégica (capa estratégica — **en alcance**) 🆕
+
+> **Añadido 2026-08-16.** Los informes estratégicos de `specs/001-estrategico/` se reparten entre las
+> autoridades departamentales de la tabla anterior, según la regla de
+> [`acceso-estrategico.md`](../../specs/001-estrategico/acceso-estrategico.md) §1: *un informe lo ve la
+> autoridad del departamento dueño del dato que mide*. El §13.1 del marco asigna «Alta Dirección» a
+> los diez CU-E, pero eso describe el nivel de la decisión, no el permiso de lectura.
+
+| Actor | Rol JWT canónico | Autoridad de | Descripción |
+| --- | --- | --- | --- |
+| Gerente | `Gerente` | **El tablero estratégico integral** — los 76 informes de OE1–OE6 | Único rol transversal de la capa estratégica. Existe porque CU-E01 (tablero integral), CU-E09 (escenarios de expansión) y CU-E10 (reporte gerencial) **cruzan los seis objetivos por construcción**: sin él, esos tres casos de uso no son ejecutables por nadie. **No es un grupo que acumule directores** — cada director entra por su departamento. |
+
+> ⚠️ **`Gerente` no está sembrado todavía.** Falta crearlo en `Dim_Rol` y en
+> `backend/core/auth/roles_tacticos.py`, junto con los seis roles tácticos que siguen pendientes.
+
+---
+
 ## Actores estratégicos (fuera de alcance — no incluidos en los 89 CU operativos)
 
 | Actor                        | Descripción                                                                                                       |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Gerente                      | Consulta resultados estratégicos, rentabilidad, indicadores, y toma decisiones de largo plazo.                    |
 | Director de Producto         | Mide el Time-to-Market de nuevas funcionalidades y gestiona el roadmap de producto.                               |
 | Director de RRHH             | Capacita personal, gestiona rotación de personal clave y fortalece la cultura organizacional.                     |
 | Legal                        | Crea plantillas de contrato para integraciones API y gestiona aspectos legales.                                   |
@@ -131,7 +147,7 @@
 | Operativo | Partner de integración 🆕 | Actúa **solo sobre su propio perfil** en Partners y API (`idrol` 15, `PartnerIntegracion`). No es transversal: se lista aquí para dejar clara su separación del rol Cliente y del Desarrollador de APIs. |
 | Operativo | Sistema (actor automatizado) | Ejecuta procesos automáticos de varios módulos (despacho, facturación, notificaciones). |
 | Operativo | Proveedor 🆕 | Pertenece al módulo Marketplace-Proveedores, fuera de los 6 paquetes actuales. |
-| Táctico | Gerente | Visión estratégica de toda la empresa, no de un departamento puntual. |
+| **Estratégico** 🆕 | Gerente | Visión estratégica de toda la empresa, no de un departamento puntual. Es el único rol que abarca los seis OE (`acceso-estrategico.md` §2). |
 | Táctico | Director de Datos | Estrategia de datos transversal a todos los módulos. |
 | Táctico | Director de Expansión | Estrategia de crecimiento geográfico general, complementaria a Red Operativa pero no ejecutora directa de sus CU. |
 | Táctico | Director de Producto | Roadmap de producto, cruza todos los paquetes. |

@@ -37,6 +37,7 @@ TABLAS_GESTIONADAS = [
     "hecho_estado_unidad",
     "hecho_ping_unidad",
     "etl_demo_principal",
+    "dim_condado_vecino",
 ]
 
 

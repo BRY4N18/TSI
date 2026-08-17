@@ -16,8 +16,11 @@ from datetime import datetime, timedelta, timezone
 from lib.clickhouse_http_client import insert_rows, query_clickhouse
 from lib.ddl import ensure_modelo_analitico
 from lib.dimensiones import (
+    dim_canal,
+    dim_condado_vecino,
     dim_geografia,
     dim_origen_despacho,
+    dim_prospecto,
     dim_region,
     dim_severidad,
     dim_tiempo,
@@ -42,7 +45,8 @@ MARGEN_DIAS = 400
 #: puede acabar apuntando a una versión que todavía no existe.
 DIMENSIONES = (
     "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
-    "dim_unidad", "dim_region",
+    "dim_unidad", "dim_region", "dim_canal", "dim_prospecto",
+    "dim_condado_vecino",
 )
 
 
@@ -65,14 +69,21 @@ def extract(ts: str, **_) -> None:
     guardar(dim_severidad.extraer(), ruta(ts, "extract", _prefijo("severidad")))
     guardar(dim_origen_despacho.extraer(), ruta(ts, "extract", _prefijo("origen")))
 
+    for nombre, filas in dim_condado_vecino.extraer().items():
+        guardar(filas, ruta(ts, "extract", _prefijo(f"vecino_{nombre}")))
+
+    guardar(dim_prospecto.extraer(), ruta(ts, "extract", _prefijo("prospectos")))
+
     for nombre, filas in dim_region.extraer().items():
         guardar(filas, ruta(ts, "extract", _prefijo(f"region_{nombre}")))
 
-    unidades, clientes, condados, vigentes = dim_unidad.extraer()
+    unidades, clientes, condados, vigentes, credenciales, unidad_usuario = dim_unidad.extraer()
     guardar(unidades, ruta(ts, "extract", _prefijo("unidades")))
     guardar(clientes, ruta(ts, "extract", _prefijo("clientes")))
     guardar(condados, ruta(ts, "extract", _prefijo("condados_unidad")))
     guardar(vigentes, ruta(ts, "extract", _prefijo("vigentes")))
+    guardar(credenciales, ruta(ts, "extract", _prefijo("credenciales")))
+    guardar(unidad_usuario, ruta(ts, "extract", _prefijo("unidad_usuario")))
 
     # El rango del calendario sale de los datos, no de una constante: así el
     # modelo no depende de que alguien recuerde ampliarlo cada año.
@@ -99,7 +110,16 @@ def transform(ts: str, **_) -> None:
         ruta(ts, "transform", _prefijo("dim_tiempo")),
     )
 
-    catalogos = {n: leido(n) for n in ("calles", "ciudades", "condados", "estados", "paises")}
+    # ⚠️ Los nombres salen de `dim_geografia.CONSULTAS`, **no de una lista a
+    # mano**. Con una lista fija, anadir un catalogo al modulo de logica y
+    # olvidarlo aqui **no falla**: `construir` lo sustituye por una lista vacia.
+    #
+    # Paso exactamente eso con `vecinos`: el `extract` lo guardaba y el
+    # `transform` no lo leia, asi que todos los condados salieron **sin vecinos
+    # declarados** — que en el informe de cobertura critica es la marca de «sin
+    # alternativas», la situacion mas grave que reporta. Un olvido de lectura se
+    # habria publicado como una emergencia operativa, y sin un solo error.
+    catalogos = {n: leido(n) for n in dim_geografia.CONSULTAS}
     guardar(
         dim_geografia.construir(catalogos, ahora) + [FILAS_DESCONOCIDAS["dim_geografia"](ahora)],
         ruta(ts, "transform", _prefijo("dim_geografia")),
@@ -114,15 +134,34 @@ def transform(ts: str, **_) -> None:
         + [FILAS_DESCONOCIDAS["dim_origen_despacho"](ahora)],
         ruta(ts, "transform", _prefijo("dim_origen_despacho")),
     )
+    guardar(
+        dim_condado_vecino.construir(leido("vecino_vecinos"), leido("vecino_condados"), ahora)
+        + [FILAS_DESCONOCIDAS["dim_condado_vecino"](ahora)],
+        ruta(ts, "transform", _prefijo("dim_condado_vecino")),
+    )
 
     versiones = dim_unidad.construir(
-        leido("unidades"), leido("clientes"), leido("condados_unidad"), leido("vigentes"), ahora
+        leido("unidades"), leido("clientes"), leido("condados_unidad"), leido("vigentes"), ahora,
+        leido("credenciales"), leido("unidad_usuario"),
     )
     # La fila desconocida solo se escribe si aún no está: es fija, y reescribirla
     # en cada corrida ensuciaría la tabla con versiones idénticas.
     if not leido("vigentes"):
         versiones.append(FILAS_DESCONOCIDAS["dim_unidad"](ahora))
     guardar(versiones, ruta(ts, "transform", _prefijo("dim_unidad")))
+
+    # ⚠️ `dim_canal` primero: `dim_prospecto` necesita sus identificadores para
+    # resolver el canal de cada prospecto. Al reves, todos caerian en la fila
+    # desconocida y el informe por canal saldria entero bajo «Desconocido».
+    canales = dim_canal.construir(leido("prospectos"), ahora)
+    guardar(
+        canales + [FILAS_DESCONOCIDAS["dim_canal"](ahora)],
+        ruta(ts, "transform", _prefijo("dim_canal")),
+    )
+    guardar(
+        dim_prospecto.construir(leido("prospectos"), canales, ahora),
+        ruta(ts, "transform", _prefijo("dim_prospecto")),
+    )
 
     versiones_region = dim_region.construir(
         leido("region_regiones"), leido("region_estados_geo"),
