@@ -20,8 +20,8 @@ informe cuyo error tiene consecuencia operativa, no comercial**.
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/red_operativa/views/informes_*.py` |
+| **frontend** | **Implementada** (sin carpeta `frontend/` de Speckit; el índice mentía el aplazamiento) | `/red-operativa/informes` · `frontend/src/app/modules/red-operativa/informes/` |
 
 ## Los cuatro listados
 

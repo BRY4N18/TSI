@@ -13,13 +13,13 @@ el patrón que replicarán los siete departamentos restantes.
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/cuentas_clientes/views/informes_*.py` |
+| **frontend** | Spec redactada · **implementada** | [`frontend/spec.md`](frontend/spec.md) · `/cuentas-clientes/informes` |
 
-**Por qué el frontend está aplazado.** Hoy existe un solo tablero para todo, y varios de estos
-listados podrían tener que verse desde más de un sitio. Esa decisión de ubicación no condiciona el
-contrato HTTP, así que el backend avanza primero y la pantalla se define después, cuando esté claro
-el mapa de tableros.
+El aplazamiento del frontend era la hipótesis de 2026-08-14 (un solo tablero, ubicación incierta).
+**Quedó superado:** los ocho listados viven en
+`frontend/src/app/modules/cuentas-clientes/informes/`, separados de las pantallas Z de
+[`../informes-compuestos-modelo/`](../informes-compuestos-modelo/).
 
 ## Los ocho listados
 

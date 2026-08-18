@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-15
 
-**Status**: Draft
+**Status**: Implemented
 
 **Depends-on**: [`../backend/spec.md`](../backend/spec.md) y
 [`../backend/contracts/informes-tacticos-simples.openapi.yaml`](../backend/contracts/informes-tacticos-simples.openapi.yaml).

@@ -65,8 +65,9 @@
 | --- | --- | --- | --- |
 | Gerente | `Gerente` | **El tablero estratégico integral** — los 76 informes de OE1–OE6 | Único rol transversal de la capa estratégica. Existe porque CU-E01 (tablero integral), CU-E09 (escenarios de expansión) y CU-E10 (reporte gerencial) **cruzan los seis objetivos por construcción**: sin él, esos tres casos de uso no son ejecutables por nadie. **No es un grupo que acumule directores** — cada director entra por su departamento. |
 
-> ⚠️ **`Gerente` no está sembrado todavía.** Falta crearlo en `Dim_Rol` y en
-> `backend/core/auth/roles_tacticos.py`, junto con los seis roles tácticos que siguen pendientes.
+> Sembrado en `Dim_Rol` (`idrol` 23, `ROLES_DEMO`) y declarado en
+> `backend/core/auth/roles_tacticos.py`. Las seis autoridades tácticas (ids 17–22)
+> más `DirectorTecnologico` (6) y `DirectorEstrategia` (14) ya estaban en el catálogo.
 
 ---
 

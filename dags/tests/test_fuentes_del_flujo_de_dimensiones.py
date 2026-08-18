@@ -84,6 +84,24 @@ def test_todas_las_dimensiones_del_flujo_tienen_su_fila_desconocida_o_no_la_nece
     """
     from lib.dimensiones.desconocido import FILAS_DESCONOCIDAS
 
-    sin_fila = set(DIMENSIONES) - set(FILAS_DESCONOCIDAS) - {"dim_tiempo", "dim_prospecto"}
+    sin_fila = set(DIMENSIONES) - set(FILAS_DESCONOCIDAS) - {
+        "dim_tiempo",
+        "dim_prospecto",
+        # Soporte: el SLA se copia en el hecho al cargar; servicio y estado se
+        # unen con LEFT JOIN o van denormalizados. Una fila desconocida aquí
+        # fingiría un servicio o una vigencia que nadie registró.
+        "dim_sla_config",
+        "dim_servicio",
+        "dim_estado_soporte",
+        # Cuentas: catálogo explícito, pertenencia (incluye ausentes) y roles.
+        # Un LEFT JOIN cubre la clave ausente; una fila desconocida fingiría
+        # una etapa, un rol o una organización que nadie registró.
+        "dim_usuario_organizacion",
+        "dim_etapa_onboarding",
+        "dim_rol",
+        "dim_usuario_rol",
+        "dim_credencial_api",
+        "dim_version_contrato",
+    }
 
     assert not sin_fila, f"{sorted(sin_fila)} no tienen fila desconocida"

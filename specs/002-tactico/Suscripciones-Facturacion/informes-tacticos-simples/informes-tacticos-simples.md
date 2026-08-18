@@ -22,8 +22,8 @@ Cuatro listados llanos de solo lectura. Tercer módulo de la serie, tras
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/suscripciones/views/informes_*.py` |
+| **frontend** | **Implementada** (sin carpeta `frontend/` de Speckit; el índice mentía el aplazamiento) | `/suscripciones/informes` · `frontend/src/app/modules/suscripciones/informes/` |
 
 ## Los cuatro listados
 

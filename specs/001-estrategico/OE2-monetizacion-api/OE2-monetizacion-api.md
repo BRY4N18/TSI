@@ -7,38 +7,37 @@
 
 Índice global del módulo (no es una spec Speckit).
 
-## ⚠️ Estado: documentación anticipada — **no ejecutar `/plan` todavía**
+## Estado: **backend implementado** (2026-08-18)
 
 | Hecho o dimensión que necesita | Lo diseña | Estado |
 |---|---|:--:|
-| `hecho_llamada_api` · `hecho_cambio_acceso` · `dim_partner` · `dim_credencial_api` · `dim_version_contrato` | Partners y API | **0 / 68 tareas** |
+| `hecho_llamada_api` · `hecho_cambio_acceso` · `dim_partner` · `dim_credencial_api` · `dim_version_contrato` | Partners y API | ✅ compuestos tácticos |
 
-**Es el OE con la dependencia más limpia de los tres bloqueados**: un solo departamento, un solo
-módulo táctico. Cuando `Partners-API/informes-compuestos-modelo` esté construido, OE2 se desbloquea
-entero salvo un informe.
+Diez informes publicables, uno sin ruta (E2-06). E2-01 y E2-02 salen **parciales**. E2-08 es
+construible. Ver [`backend/plan.md`](backend/plan.md) y [`backend/research.md`](backend/research.md).
 
 ## Los once informes
 
 | # | Informe | Historia | Estado |
 |---|---|:--:|:--:|
-| **E2-03** | Clientes con integración API activa | US1 | ⏸ sin sustrato |
-| **E2-04** | Intensidad de consumo por partner | US1 | ⏸ |
-| **E2-05** | Latencia p95 por endpoint | US1 | ⏸ |
-| **E2-07** | Taxonomía de errores 4xx / 5xx | US1 | ⏸ |
-| **E2-01** | Participación de ingresos por API | US2 | ⏸ ⚠️ sin precio de plan API |
-| **E2-02** | MRR por línea: plataforma vs API | US2 | ⏸ ⚠️ ídem |
-| **E2-08** | Excedente facturable por partner | US2 | ⏸ ✅ *el precio sí existe* |
-| **E2-09** | Adopción de versiones del contrato | US3 | ⏸ |
-| **E2-10** | Comparativa entre partners | US3 | ⏸ |
-| **E2-11** | Crecimiento del ecosistema | US3 | ⏸ |
-| **E2-06** | Disponibilidad de la API pública | US4 | ⛔ fuente externa |
+| **E2-03** | Clientes con integración API activa | US1 | ✅ |
+| **E2-04** | Intensidad de consumo por partner | US1 | ✅ |
+| **E2-05** | Latencia p95 por endpoint | US1 | ✅ p95 ausente bajo muestra |
+| **E2-07** | Taxonomía de errores 4xx / 5xx | US1 | ✅ |
+| **E2-01** | Participación de ingresos por API | US2 | ✅ ⚠️ parcial (sin precio de plan API) |
+| **E2-02** | MRR por línea: plataforma vs API | US2 | ✅ ⚠️ ídem |
+| **E2-08** | Excedente facturable por partner | US2 | ✅ facturable, no cobrado |
+| **E2-09** | Adopción de versiones del contrato | US3 | ✅ |
+| **E2-10** | Comparativa entre partners | US3 | ✅ |
+| **E2-11** | Crecimiento del ecosistema | US3 | ✅ |
+| **E2-06** | Disponibilidad de la API pública | US4 | ⛔ 404 · sin endpoint |
 
 ## Capas
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | spec redactada · **plan bloqueado** |
-| Frontend | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **implementado** (10 GET, E2-06 → 404) |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** (uso / dinero / ecosistema; E2-06 sin recuadro) |
 
 ## Lo que hay que saber antes de tocar este módulo
 

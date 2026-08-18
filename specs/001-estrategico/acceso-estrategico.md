@@ -303,14 +303,15 @@ la asignación.
 | Documento | Cambio | Estado |
 |---|---|:--:|
 | `contrato-informes-estrategicos.md` §8 | Remite aquí en lugar de decidir permisos | ✅ |
-| `.specify/docs/actors.md` | El rol `Gerente` pasa de «fuera de alcance» a autoridad del tablero | ⏳ pendiente |
-| `backend/core/auth/roles_tacticos.py` | Añadir `ROL_GERENTE` y los conjuntos por OE | ⏳ pendiente — trabajo de código |
-| Specs de OE1–OE6 | Citan este documento en su sección de permisos | ⏳ pendiente — no existen aún |
+| `.specify/docs/actors.md` | El rol `Gerente` es autoridad del tablero | ✅ |
+| `backend/core/auth/roles_tacticos.py` | `ROL_GERENTE` y conjuntos OE3/OE6 | ✅ |
+| `ROLES_DEMO` idrol 23 | Fila `Gerente` en el catálogo de seed | ✅ código; **correr el seed** para Pinot |
+| Specs de OE1–OE6 | Citan este documento | ✅ existen |
 
-### Lo que queda pendiente de implementación
+### Semilla en Pinot
 
-**Crear el rol `Gerente`** en `Dim_Rol` y en las constantes del backend, junto con los seis roles
-tácticos que siguen sin sembrarse. Es trabajo de código, no de spec.
+El rol `Gerente` y las seis autoridades tácticas **están en código**. Falta **ejecutar el seed** de
+`Dim_Rol` en el entorno para que un usuario demo pueda acumular `Gerente`. No es trabajo de spec.
 
 ---
 

@@ -59,7 +59,7 @@ ESTADO_FUSIONADO = 8
 CONSULTA_ACCIDENTES = f"""
     SELECT idaccidente, idseveridad, idcalle, idtiporeportado, idaccidenteorigen,
            fechahoraaccidente, duracionminutos, numvehiculos, numvictimas,
-           numheridos, numfallecidos
+           numheridos, numfallecidos, distanciamillas
     FROM Fact_Accidente
     LIMIT {LIMITE}
 """
@@ -109,7 +109,11 @@ CONSULTA_IMPLICADOS = f"""
     SELECT idaccidente FROM Dim_Implicado WHERE activo = true LIMIT {LIMITE}
 """
 CONSULTA_CLIMA = f"""
-    SELECT idaccidente FROM Dim_ElementoClimaticosAccidente WHERE activo = true LIMIT {LIMITE}
+    SELECT e.idaccidente, c.condicionclima AS condicion_clima
+    FROM Dim_ElementoClimaticosAccidente AS e
+    LEFT JOIN Dim_EstadosClimas AS c ON e.idestadoclima = c.idestadoclima
+    WHERE e.activo = true
+    LIMIT {LIMITE}
 """
 CONSULTA_HISTORIAL_SEVERIDAD = f"""
     SELECT idaccidente, idseveridadanterior, idseveridadnueva, fechahora
@@ -251,6 +255,7 @@ def construir(datos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datetime)
         c: len(f) for c, f in agrupar_por(datos.get("implicados", []), "idaccidente").items()
     }
     clima_por_caso = {c: len(f) for c, f in agrupar_por(datos.get("clima", []), "idaccidente").items()}
+    clima_detalle = agrupar_por(datos.get("clima", []), "idaccidente")
     historial_por_caso = agrupar_por(datos.get("historial_severidad", []), "idaccidente")
     cierres = indexar_por(datos.get("cierres", []), "idaccidente")
     marca = ahora.strftime(FORMATO)
@@ -309,6 +314,15 @@ def construir(datos: Mapping[str, Iterable[Mapping[str, Any]]], ahora: datetime)
                 "num_conductores": conductores_por_caso.get(idaccidente, 0),
                 "num_implicados": implicados_por_caso.get(idaccidente, 0),
                 "num_elementos_clima": clima_por_caso.get(idaccidente, 0),
+                "distancia_millas": acc.get("distanciamillas"),
+                "condicion_clima": next(
+                    (
+                        _texto_o_none(f.get("condicion_clima"))
+                        for f in clima_detalle.get(idaccidente, [])
+                        if _texto_o_none(f.get("condicion_clima"))
+                    ),
+                    None,
+                ),
                 "num_escaladas_severidad": len(historial_por_caso.get(idaccidente, [])),
                 "severidad_inicial": _severidad_inicial(
                     historial_por_caso.get(idaccidente, []), severidades, sev.get("severidad")

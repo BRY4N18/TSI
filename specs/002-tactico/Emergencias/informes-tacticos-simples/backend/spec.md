@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Informes tácticos simples de Emergencias — listados llanos de solo lectura (backend) que satisfacen OT21, OT22, OT23, OT24 y OT25, bajo el contrato specs/002-tactico/contrato-informes-simples.md"
 

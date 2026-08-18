@@ -101,6 +101,53 @@ AUTORIDAD_SOPORTE = frozenset({ROL_GERENTE_EXITO_CLIENTE})
 #: Analitica: se aplicara cuando ese modulo se especifique.
 AUTORIDAD_ANALITICA = frozenset({ROL_DIRECTOR_DATOS})
 
+#: OE4: DirectorDatos y Gerente ven los nueve. DirectorOperaciones solo
+#: los del expediente (calidad e impacto), no los de inteligencia vendible.
+AUTORIDAD_OE4 = frozenset({ROL_DIRECTOR_DATOS, ROL_GERENTE, ROL_DIRECTOR_OPERACIONES})
+AUTORIDAD_OE4_INTELIGENCIA = frozenset({ROL_DIRECTOR_DATOS, ROL_GERENTE})
+AUTORIDAD_OE4_EXPEDIENTE = frozenset(
+    {ROL_DIRECTOR_DATOS, ROL_GERENTE, ROL_DIRECTOR_OPERACIONES}
+)
+
+#: OE2 consumo / ecosistema: Tecnología y Gerente. Finanzas no entra aquí.
+AUTORIDAD_OE2_CONSUMO = frozenset({ROL_DIRECTOR_TECNOLOGICO, ROL_GERENTE})
+#: OE2 dinero (E2-01, E2-02, E2-08): Finanzas y Gerente. Tecnología no entra.
+AUTORIDAD_OE2_DINERO = frozenset({ROL_GERENTE, ROL_DIRECTOR_FINANCIERO})
+#: Unión: un bloqueado responde 404 (no 403) a quien sí es autoridad de OE2.
+AUTORIDAD_OE2 = AUTORIDAD_OE2_CONSUMO | AUTORIDAD_OE2_DINERO
+
+#: OE1 finanzas (E1-01, E1-02, E1-06): Financiero y Gerente.
+AUTORIDAD_OE1_FINANZAS = frozenset({ROL_DIRECTOR_FINANCIERO, ROL_GERENTE})
+#: OE1 estrategia (E1-12). E1-03 suma Finanzas ∪ Estrategia en el permiso.
+AUTORIDAD_OE1_ESTRATEGIA = frozenset({ROL_DIRECTOR_ESTRATEGIA, ROL_GERENTE})
+#: OE1 captación (E1-04, E1-13): Marketing y Gerente.
+AUTORIDAD_OE1_MARKETING = frozenset({ROL_DIRECTOR_MARKETING, ROL_GERENTE})
+#: OE1 ciclo de vida (E1-09, E1-10, E1-11): solo Gerente. Cuentas no tiene autoridad de negocio.
+AUTORIDAD_OE1_CICLO = frozenset({ROL_GERENTE})
+#: Unión: un bloqueado responde 404 (no 403) a quien sí es autoridad de OE1.
+AUTORIDAD_OE1 = (
+    AUTORIDAD_OE1_FINANZAS
+    | AUTORIDAD_OE1_ESTRATEGIA
+    | AUTORIDAD_OE1_MARKETING
+    | AUTORIDAD_OE1_CICLO
+)
+
+#: OE5 soporte (E5-04, E5-05, E5-06, E5-08): Éxito Cliente y Gerente.
+AUTORIDAD_OE5_SOPORTE = frozenset({ROL_GERENTE_EXITO_CLIENTE, ROL_GERENTE})
+#: OE5 finanzas (E5-02): Financiero y Gerente.
+AUTORIDAD_OE5_FINANZAS = frozenset({ROL_DIRECTOR_FINANCIERO, ROL_GERENTE})
+#: OE5 estrategia (E5-03, E5-07, E5-15).
+AUTORIDAD_OE5_ESTRATEGIA = frozenset({ROL_DIRECTOR_ESTRATEGIA, ROL_GERENTE})
+#: OE5 riesgo (E5-12): solo Gerente. Cruza cuatro departamentos.
+AUTORIDAD_OE5_RIESGO = frozenset({ROL_GERENTE})
+#: Unión: un bloqueado responde 404 (no 403) a quien sí es autoridad de OE5.
+AUTORIDAD_OE5 = (
+    AUTORIDAD_OE5_SOPORTE
+    | AUTORIDAD_OE5_FINANZAS
+    | AUTORIDAD_OE5_ESTRATEGIA
+    | AUTORIDAD_OE5_RIESGO
+)
+
 #: Cuentas y Clientes: **solo** la capa de accesos tecnicos (§5.1). Los otros
 #: siete listados del departamento no tienen autoridad por encima del
 #: Administrador — no es un olvido, es lo que dice el SRS.

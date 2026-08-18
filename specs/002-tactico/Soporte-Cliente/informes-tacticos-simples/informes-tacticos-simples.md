@@ -12,8 +12,8 @@ cosas que ningún anterior validó.
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/soporte_cliente/informes_views.py` |
+| **frontend** | Spec redactada · **implementada** | [`frontend/spec.md`](frontend/spec.md) · `/soporte-cliente/informes` |
 
 ## Los dos listados
 

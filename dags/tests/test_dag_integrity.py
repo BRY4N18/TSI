@@ -36,6 +36,15 @@ EXPECTED_DAG_IDS = {
     "modelo_hecho_evidencia",
     "modelo_hecho_baja_unidad",
     "modelo_hecho_validacion_region",
+    "modelo_hecho_ciclo_prospecto",
+    "modelo_hecho_nutricion",
+    "modelo_hecho_suscripcion",
+    "modelo_hecho_facturacion",
+    "modelo_hecho_soporte",
+    "modelo_hecho_sesion",
+    "modelo_hecho_onboarding",
+    "modelo_hecho_llamada_api",
+    "modelo_hecho_cambio_acceso",
 }
 
 

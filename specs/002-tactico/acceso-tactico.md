@@ -252,10 +252,25 @@ añadió es la autoridad departamental, exenta de ese acotamiento.
 - `specs/002-tactico/contrato-informes-simples.md` — la regla de acotamiento gana su excepción
   explícita, con el límite de que no alcanza al dato sensible. ✅
 
-### Lo que queda pendiente de implementación
+### Catálogo de roles — **hecho**
 
-**Crear los seis roles en el catálogo del sistema** (`Dim_Rol`) y en las constantes del backend. Es
-trabajo de código, no de spec, y entra con la implementación de los módulos.
+Los seis roles de autoridad y las constantes viven en `backend/core/auth/roles_tacticos.py` y en
+`ROLES_DEMO` (`backend/scripts/_demo_seed_common.py`):
+
+| idrol | Rol JWT |
+|------:|---|
+| 6 | `DirectorTecnologico` *(ya existía; suma autoridad táctica)* |
+| 14 | `DirectorEstrategia` *(ya existía; suma autoridad táctica)* |
+| 17 | `DirectorMarketing` |
+| 18 | `DirectorFinanciero` |
+| 19 | `DirectorExpansion` |
+| 20 | `DirectorOperaciones` |
+| 21 | `GerenteExitoCliente` |
+| 22 | `DirectorDatos` |
+| 23 | `Gerente` *(tablero estratégico integral; no es autoridad de un departamento táctico)* |
+
+Quien asigna esos roles a personas sigue siendo el Administrador (§8). `DirectorDatos` no tiene
+módulo táctico: Analítica sigue aplazada.
 
 ---
 

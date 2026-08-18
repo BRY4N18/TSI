@@ -84,3 +84,88 @@ def informe_acotado(
             "acotado_a": acotado_a,
         },
     )
+
+
+def informe_con_periodo_natural(
+    data: Any,
+    periodo: Periodo,
+    *,
+    mes: str | None = None,
+    nota_periodo: str | None = None,
+    filtros: dict[str, Any] | None = None,
+) -> Response:
+    """Envelope de los informes que se resuelven a **mes natural** (research D8).
+
+    Comparar dos ventanas móviles solapadas no es comparar: MRR y NRR declaran
+    el mes aplicado, aunque se pidieran fechas arbitrarias.
+    """
+    meta: dict[str, Any] = {
+        "periodo": {"desde": periodo.desde, "hasta": periodo.hasta},
+        "filtros": filtros or {},
+    }
+    if mes:
+        meta["mes"] = mes
+    if nota_periodo:
+        meta["nota_periodo"] = nota_periodo
+    return success_response(data, meta=meta)
+
+
+def informe_soporte(
+    cuerpo: dict[str, Any],
+    periodo: Periodo | None,
+    *,
+    acotado_a: str,
+    filtros: dict[str, Any] | None = None,
+) -> Response:
+    """Envelope de Soporte: el contrato OpenAPI viaja en `data`.
+
+    `acotado_a` distingue la cifra del gerente (todos) de la del agente
+    (propios). Sin él, las dos pantallas se verían idénticas con números
+    distintos.
+    """
+    meta: dict[str, Any] = {
+        "filtros": filtros or {},
+        "acotado_a": acotado_a,
+    }
+    if periodo is not None:
+        meta["periodo"] = {
+            "desde": periodo.desde,
+            "hasta": periodo.hasta,
+            "granularidad": periodo.granularidad,
+        }
+    return success_response(cuerpo, meta=meta)
+
+
+def informe_cuentas(
+    cuerpo: dict[str, Any],
+    periodo: Periodo,
+    *,
+    notas: dict[str, str] | None = None,
+    filtros: dict[str, Any] | None = None,
+) -> Response:
+    """Envelope de Cuentas: cobertura, catálogo y solape viajan en `meta`."""
+    meta: dict[str, Any] = {
+        "periodo": {"desde": periodo.desde, "hasta": periodo.hasta},
+        "filtros": filtros or {},
+    }
+    for clave, valor in (notas or {}).items():
+        meta[clave] = valor
+    return success_response(cuerpo, meta=meta)
+
+
+def informe_partners(
+    cuerpo: dict[str, Any],
+    periodo: Periodo,
+    *,
+    notas: dict[str, str] | None = None,
+    filtros: dict[str, Any] | None = None,
+) -> Response:
+    """Envelope de Partners: `nota_muestras` viaja en `meta`."""
+    meta: dict[str, Any] = {
+        "periodo": {"desde": periodo.desde, "hasta": periodo.hasta},
+        "filtros": filtros or {},
+    }
+    for clave, valor in (notas or {}).items():
+        meta[clave] = valor
+    return success_response(cuerpo, meta=meta)
+

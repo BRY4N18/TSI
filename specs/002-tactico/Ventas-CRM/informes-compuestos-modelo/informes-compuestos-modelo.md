@@ -10,9 +10,8 @@ apuntada por `.specify/feature.json`.
 
 ## Los 13 informes compuestos de OT01 a OT03
 
-**Nada construido**: ni simples ni compuestos. Y **es el primer departamento cuyo dominio no toca
-ninguna tabla del modelo actual** — prospectos, embudo, asignaciones, demos y notificaciones son
-todo nuevo.
+El **backend de los 13 informes ya está publicado**. Esta capa pinta tres historias (embudo,
+captación, nutrición) sobre esas cifras; no las recalcula.
 
 **Cubre los dos casos de uso tácticos ausentes del proyecto**, CU-T03 y CU-T04, que hasta ahora no
 satisfacía ningún informe.
@@ -21,8 +20,8 @@ satisfacía ningún informe.
 
 | Capa | Ruta | Estado |
 |------|------|--------|
-| **Backend** | [`backend/`](./backend/) | activa |
-| **Frontend** | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | hecha |
+| **Frontend** | [`frontend/`](./frontend/) | hecha |
 
 ## Lo que hay que saber antes de tocar este departamento
 

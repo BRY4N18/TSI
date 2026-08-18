@@ -91,6 +91,10 @@ ROLES_DEMO = {
     # un escalado automatico, no la autoridad del departamento. Conviven.
     21: ("GerenteExitoCliente", "Autoridad de Soporte al Cliente: criterios de atencion y cumplimiento"),
     22: ("DirectorDatos", "Autoridad de Analitica e Inteligencia: calidad del dato y modelo predictivo"),
+    # Tablero estrategico integral (CU-E01 / E09 / E10). No es un grupo de
+    # directores: cruza los seis OE. Faltaba en Dim_Rol pese a existir ya en
+    # `core.auth.roles_tacticos`.
+    23: ("Gerente", "Tablero estrategico integral: los seis objetivos, porque cruza departamentos"),
 }
 
 # idrol 11 fue un "Operador" duplicado del 4. Se conserva la constante para poder

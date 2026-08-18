@@ -27,9 +27,9 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [ ] ⏸ **Ready for `/speckit-plan`** — **NO**, hasta que Partners y API cargue sus hechos
+- [x] **Ready for `/speckit-plan`** — sustrato de Partners cargado (2026-08-18)
 
-**15 / 16.**
+**16 / 16.**
 
 ---
 
@@ -69,15 +69,12 @@ El partner ya tiene su panel propio, acotado a él, construido en la capa operat
 entre «tu consumo» y «el consumo del ecosistema» es la misma que separa una pantalla operativa de un
 informe estratégico, y aquí tiene consecuencia comercial.
 
-### El riesgo cuando llegue `/plan`
+### El riesgo que `/plan` cierra por diseño
 
-**Que E2-06 se derive del log de llamadas.** Es tentador y está mal: si el servicio estuvo caído no
-hay filas, así que la ausencia de errores se leería como ausencia de problemas y el uptime saldría
-**100 % siempre**, incluso —sobre todo— durante una caída.
+**Que E2-06 se derive del log de llamadas.** El plan no publica la ruta: un GET a
+`disponibilidad-api` es 404. Si el servicio estuvo caído no hay filas; publicar 100 % mentiría.
 
 ### Lo mejor de este módulo
 
-**Es la dependencia más limpia de los tres bloqueados**: un solo departamento. Cuando
-`Partners-API/informes-compuestos-modelo` esté construido, OE2 se desbloquea entero salvo E2-06.
-
-De los tres objetivos sin sustrato, **es el primero que se podrá planificar**.
+**Dependencia de un solo departamento**, ya construida. `/plan` cierra el recuento: 10 publicados,
+E2-06 sin endpoint, E2-01/E2-02 parciales, E2-08 construible.

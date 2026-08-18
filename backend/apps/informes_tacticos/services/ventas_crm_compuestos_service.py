@@ -45,23 +45,40 @@ class InformeDesconocido(KeyError):
 
 #: Informe → consulta del catálogo.
 CATALOGO: dict[str, str] = {
-    # OT01/OT02 — el embudo
-    "embudo-conversion": "ot01_embudo_conversion",
-    "permanencia-por-etapa": "ot01_permanencia_por_etapa",
+    # OT02 — el embudo (CU-T03)
+    "embudo-conversion": "ot02_embudo_conversion",
+    "permanencia-por-etapa": "ot02_permanencia_por_etapa",
     "carga-por-ejecutivo": "ot02_carga_por_ejecutivo",
     "pipeline-ponderado": "ot02_pipeline_ponderado",
     "motivos-perdida": "ot02_motivos_perdida",
-    # OT03 — los canales
-    "captacion-por-canal": "ot03_captacion_por_canal",
-    "conversion-por-canal": "ot03_conversion_por_canal",
-    "convertidos-por-canal": "ot03_convertidos_por_canal",
-    # OT04 — la demo y la nutrición
-    "intensidad-demo": "ot04_intensidad_demo",
-    "secciones-visitadas": "ot04_secciones_visitadas",
-    "efectividad-nutricion": "ot04_efectividad_nutricion",
-    "latencia-reaccion": "ot04_latencia_reaccion",
-    "reglas-disparo": "ot04_reglas_disparo",
+    # OT01 — los canales (CU-T04)
+    "captacion-por-canal": "ot01_captacion_por_canal",
+    "conversion-por-canal": "ot01_conversion_por_canal",
+    "convertidos-por-canal": "ot01_convertidos_por_canal",
+    # OT03 — la demo y la nutrición
+    "intensidad-demo": "ot03_intensidad_demo",
+    "secciones-visitadas": "ot03_secciones_visitadas",
+    "efectividad-nutricion": "ot03_efectividad_nutricion",
+    "latencia-reaccion": "ot03_latencia_reaccion",
+    "reglas-disparo": "ot03_reglas_disparo",
 }
+
+#: Parametros propios, con su defecto. `top` recorta rankings; sin el, ClickHouse
+#: rechazaria las dos consultas que lo declaran.
+PARAMETROS: dict[str, dict[str, int]] = {
+    "motivos-perdida": {"top": 10},
+    "secciones-visitadas": {"top": 10},
+}
+
+#: Convención del pipeline ponderado. El sistema operativo no define pesos:
+#: viajan en `meta.filtros` para que la cifra no se lea como politica.
+PESOS_ETAPA_DEFECTO = (
+    "Nuevo=0.1, Contactado=0.2, Calificado=0.4, Propuesta=0.6, Negociación=0.8"
+)
+NOTA_PESOS_ETAPA = (
+    "pesos_etapa es una convencion del informe, no una politica de la empresa: "
+    "el sistema operativo no define ninguna ponderacion."
+)
 
 PUBLICADOS: frozenset[str] = frozenset(CATALOGO)
 
@@ -103,6 +120,7 @@ class VentasCrmCompuestosService:
             raise InformeDesconocido(informe) from exc
 
         parametros: dict[str, Any] = {"desde": periodo.desde, "hasta": periodo.hasta}
+        parametros.update(PARAMETROS.get(informe, {}))
         parametros.update(extra or {})
 
         # ⚠️ `-1` y no `NULL` para «sin acotar»: el parámetro con tipo de

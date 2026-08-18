@@ -28,6 +28,22 @@ informes funcionen.
 2. Aplicar la ampliación y recargar.
 3. Volver a pedirlas.
 
+**Cifras de referencia (T004, 2026-08-17, `tsi_tactico`):**
+
+| Informe | Resultado anotado **antes** de ampliar |
+|---|---|
+| `dim_cliente FINAL` | **0** filas |
+| `dim_plan FINAL` | **0** filas |
+| `ot06_mrr` | **0** filas (almacén sin `hecho_suscripcion` cargado) |
+| `ot06_ingresos` | **0** filas |
+| `ot05_distribucion_cartera` | **0** filas |
+
+En este entorno el DAG de Suscripciones no ha poblado el almacén. La prueba de
+ampliación (T009) exige que, tras añadir las seis columnas, esas tres consultas
+sigan devolviendo **cero filas** — no una fila de ceros, y no un error de
+esquema. Si un día el modelo está cargado, se reanotan aquí los números reales
+**antes** de volver a tocar `dim_cliente`.
+
 **Esperado: idénticas.** Si se mueven, la ampliación no fue aditiva y hay **dos verdades sobre el
 mismo cliente**.
 

@@ -27,9 +27,12 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [ ] ⏸ **Ready for `/speckit-plan`** — **NO.** Cuatro módulos tácticos, 292 tareas por delante
+- [x] **Ready for `/speckit-plan`** — sustrato táctico cargado y OE1 dueño de los cuatro
+  compartidos (2026-08-18)
 
-**15 / 16.**
+**16 / 16.** El ítem de `/plan` quedó listo al cargar Soporte, Suscripciones, Cuentas y
+Partners, y al publicar OE1. E5-01/11 siguen sin fuente: eso no bloquea planificar los nueve
+construibles.
 
 ---
 

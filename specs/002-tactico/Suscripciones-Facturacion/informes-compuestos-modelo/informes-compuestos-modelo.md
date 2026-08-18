@@ -18,8 +18,8 @@ indicadores comprometidos y menos informes construidos: solo existe un simple, e
 
 | Capa | Ruta | Estado |
 |------|------|--------|
-| **Backend** | [`backend/`](./backend/) | activa |
-| **Frontend** | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **hecha** |
+| **Frontend** | [`frontend/`](./frontend/) | **hecha** |
 
 ## Lo que hay que saber antes de tocar este departamento
 

@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Informes tácticos compuestos de Suscripciones y Facturación — los informes agregados de OT05 a OT07, resueltos con consultas sobre el modelo analítico"
 

@@ -10,8 +10,10 @@ apuntada por `.specify/feature.json`.
 
 ## Los 14 informes compuestos de OT08 a OT10
 
-**Es el único departamento con supervisión real construida**: OT09 tiene consola de logs, reporte
-mensual y métricas de consumo. OT08 y OT10, nada.
+**Backend hecho (13 en alcance).** GET `/informes-tacticos/partners/<informe>`. Los dos endpoints ya
+construidos en la app de partners **siguen intactos**. El 14.º (alcance geográfico) queda fuera:
+el log no registra la zona. La latencia del modelo **difiere a propósito** de la del endpoint
+actual: aquí hay p95; aquel solo media.
 
 **Y es del que dependía Suscripciones**: aquí se modela el hecho de llamadas API que aquel módulo se
 abstuvo deliberadamente de construir, para no decidir por este departamento.
@@ -20,8 +22,8 @@ abstuvo deliberadamente de construir, para no decidir por este departamento.
 
 | Capa | Ruta | Estado |
 |------|------|--------|
-| **Backend** | [`backend/`](./backend/) | activa |
-| **Frontend** | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | hecha |
+| **Frontend** | [`frontend/`](./frontend/) | **hecha** |
 
 ## Lo que hay que saber antes de tocar este departamento
 

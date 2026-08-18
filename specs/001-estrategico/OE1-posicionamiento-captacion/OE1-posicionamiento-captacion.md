@@ -7,38 +7,34 @@
 
 Índice global del módulo (no es una spec Speckit).
 
-## ⚠️ Estado: documentación anticipada — **no ejecutar `/plan` todavía**
+## Estado: backend con **[`tasks.md`](backend/tasks.md)** — siguiente `/speckit-implement`
 
-Este módulo **no tiene sustrato**. Sus trece informes necesitan hechos que **no existen en el
-almacén analítico**, y que construyen los módulos tácticos de tres departamentos:
+Sus trece informes consumen hechos que cargan los compuestos tácticos de tres departamentos:
 
 | Hecho o dimensión que necesita | Lo diseña | Estado del módulo |
 |---|---|:--:|
-| `hecho_suscripcion` · `hecho_factura` · `dim_plan` · `dim_cliente` | Suscripciones y Facturación | **0 / 71 tareas** |
-| `hecho_transicion_embudo` · `dim_prospecto` · `dim_canal` | Ventas y CRM | **0 / 64 tareas** |
-| `hecho_onboarding` · `dim_etapa_onboarding` | Cuentas y Clientes | **0 / 67 tareas** |
+| `hecho_suscripcion` · `hecho_factura` · `dim_plan` · `dim_cliente` | Suscripciones y Facturación | ✅ compuestos tácticos (2026-08-18) |
+| `hecho_transicion_embudo` · `dim_prospecto` · `dim_canal` | Ventas y CRM | ✅ compuestos tácticos (2026-08-18) |
+| `hecho_onboarding` · `dim_etapa_onboarding` | Cuentas y Clientes | ✅ compuestos tácticos (2026-08-18) |
 
-**La spec se escribe ahora a propósito**: documenta **qué necesita la capa estratégica de cada
-módulo táctico**, y eso es información útil *antes* de que esos módulos se construyan, no después.
-
-**Lo que no se puede hacer todavía es `/plan`**: no hay contra qué verificar la forma de las
-consultas. Los tres objetivos que sí tienen plan —OE6, OE3 y OE4— produjeron **once correcciones al
-catálogo** que salieron de medir, no de leer.
+**Actualizado 2026-08-18:** el sustrato táctico **ya está**. El backend tiene plan y
+[`tasks.md`](backend/tasks.md) (53). Siguen ⛔ E1-05 (sin costos de marketing) y E1-07/E1-08
+(sin geografía comercial en `dim_cliente`). El dato de demostración sigue siendo anecdótico.
 
 ## Los trece informes
 
 | # | Informe | Historia | Estado |
 |---|---|:--:|:--:|
-| **E1-01** | MRR mensual y variación MoM | US1 | ⏸ sin sustrato |
-| **E1-02** | ARR y proyección anual | US1 | ⏸ |
-| **E1-03** | MRR y ARPU por segmento | US1 | ⏸ |
-| **E1-12** | Distribución de la cartera por plan | US1 | ⏸ |
-| **E1-04** | Embudo de conversión digital | US2 | ⏸ |
-| **E1-13** | Velocidad del ciclo de venta | US2 | ⏸ |
-| **E1-06** | Tasa de renovación *(dueño de E5-09)* | US3 | ⏸ |
-| **E1-09** | Tiempo de onboarding *(dueño de E5-13)* | US3 | ⏸ |
-| **E1-10** | Embudo de abandono en onboarding *(dueño de E5-14)* | US3 | ⏸ |
-| **E1-11** | Churn de cliente por cohorte *(dueño de E5-10)* | US3 | ⏸ |
+| **E1-01** | MRR mensual y variación MoM | US1 | 📐 plan · parcial por n |
+| **E1-02** | ARR y proyección anual | US1 | 📐 |
+| **E1-03** | MRR y ARPU por segmento | US1 | 📐 |
+| **E1-12** | Distribución de la cartera por plan | US1 | 📐 |
+| **E1-04** | Embudo de conversión digital | US2 | 📐 |
+| **E1-13** | Velocidad del ciclo de venta | US2 | 📐 |
+| **E1-06** | Tasa de renovación *(dueño de E5-09)* | US3 | 📐 |
+| **E1-09** | Tiempo de onboarding *(dueño de E5-13)* | US3 | 📐 Gerente only |
+| **E1-10** | Embudo de abandono en onboarding *(dueño de E5-14)* | US3 | 📐 Gerente only |
+| **E1-11** | Churn de cliente por cohorte *(dueño de E5-10)* | US3 | 📐 Gerente only |
 | **E1-05** | CAC por canal | US4 | ⛔ sin fuente de costos |
 | **E1-07** | Mercados activos | US4 | ⛔ sin geografía comercial |
 | **E1-08** | Cartera y MRR por mercado | US4 | ⛔ ídem |
@@ -49,7 +45,7 @@ catálogo** que salieron de medir, no de leer.
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | spec redactada · **plan bloqueado** |
+| **Backend** | [`backend/`](./backend/) | spec + plan + tasks + **código HTTP** (10 GET, 3 → 404). Siguiente: frontend aplazado o `/plan` de OE5 |
 | Frontend | *(pendiente)* | aplazada |
 
 ## Lo que hay que saber antes de tocar este módulo

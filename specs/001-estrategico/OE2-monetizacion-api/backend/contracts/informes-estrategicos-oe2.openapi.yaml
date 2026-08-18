@@ -1,0 +1,286 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE2 — Monetización del Ecosistema de APIs
+  version: "1.0.0"
+  description: |
+    Solo lectura. Diez de once informes del OE2. **E2-06 no tiene path**: el log no mide
+    minutos en los que nadie pudo llamar.
+
+    **Perspectiva BSC:** Financiera / Cliente.
+
+    ## Fuente única de consumo
+
+    Solo `hecho_llamada_api`. El agregado operativo no se usa: no cuadra con el detalle
+    y sobre estas cifras se factura.
+
+    ## Parciales
+
+    `participacion-ingresos-api` y `mrr-por-linea` entregan volumen (y excedente cobrado
+    si existe) con `cobertura: parcial` mientras no haya precio de plan API.
+
+    ## Acceso
+
+    | Rutas | Quién |
+    |---|---|
+    | Las siete de consumo / ecosistema | `DirectorTecnologico` · `Gerente` |
+    | Las tres de dinero | esos **más** `DirectorFinanciero` |
+    | Rol partner | **403 en las diez** |
+
+    ## p95
+
+    Bajo `muestra_minima` (defecto 20) el p95 es `null` y `percentil_fiable` es 0.
+    Con 18 llamadas en el origen, será el caso habitual.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: US1 Consumo
+  - name: US2 Dinero
+  - name: US3 Ecosistema
+
+paths:
+
+  /informes-estrategicos/oe2/integraciones-activas:
+    get:
+      tags: [US1 Consumo]
+      summary: Partners con al menos una llamada / partners con acceso concedido
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Adopción. Denominador = acceso concedido, no el catálogo entero
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/consumo-por-partner:
+    get:
+      tags: [US1 Consumo]
+      summary: Llamadas por partner contra el cupo mensual
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Incluye partners en cero si tienen acceso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/latencia-por-endpoint:
+    get:
+      tags: [US1 Consumo]
+      summary: p95 y media por endpoint, con muestras
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+        - name: muestra_minima
+          in: query
+          schema: { type: integer, default: 20, minimum: 1 }
+      responses:
+        '200':
+          description: p95 ausente si muestras < muestra_minima
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/taxonomia-errores:
+    get:
+      tags: [US1 Consumo]
+      summary: 4xx y 5xx por separado, nunca un «error total»
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Clases de resultado desagregadas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/excedente-facturable:
+    get:
+      tags: [US2 Dinero]
+      summary: Importe facturable por exceso de cupo — no afirma cobro
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Llamadas, cupo, precio e importe. No tarificables aparte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/participacion-ingresos-api:
+    get:
+      tags: [US2 Dinero]
+      summary: Peso de la API en ingresos — parcial sin precio de plan
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Volumen + excedente cobrado; cobertura parcial si falta precio de plan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/mrr-por-linea:
+    get:
+      tags: [US2 Dinero]
+      summary: MRR plataforma vs API — parcial sin precio de plan API
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Misma regla de cobertura que participación
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/adopcion-versiones:
+    get:
+      tags: [US3 Ecosistema]
+      summary: Llamadas por (servicio, versión); la versión se declara derivada
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: No agrupa solo por etiqueta v1
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/comparativa-partners:
+    get:
+      tags: [US3 Ecosistema]
+      summary: Volumen, error y latencia por partner — ceros visibles
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Identifica organización, no contacto técnico
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe2/crecimiento-ecosistema:
+    get:
+      tags: [US3 Ecosistema]
+      summary: Primera llamada 2xx por partner — no el alta de credencial
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Credencial sin llamadas no cuenta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { type: object }
+        meta:
+          type: object
+          properties:
+            periodo: { type: object }
+            comparacion: { type: object, nullable: true }
+            objetivo: { type: object, nullable: true }
+            cobertura:
+              type: string
+              enum: [completa, parcial]
+            falta:
+              type: array
+              items: { type: string }
+            alcance: { type: string, nullable: true }
+
+  responses:
+    PeticionInvalida:
+      description: Falta desde, hasta o granularidad, o un valor no está en la lista
+    SinPermiso:
+      description: 403 — incluye cualquier rol de partner

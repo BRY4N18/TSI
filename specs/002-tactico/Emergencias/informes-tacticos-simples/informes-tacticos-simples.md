@@ -23,8 +23,11 @@ agreguen.
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/accidentes/views/informes_views.py`, `backend/apps/seguimiento/views/informes_views.py` |
+| **frontend** | Spec redactada · **implementada** | [`frontend/spec.md`](frontend/spec.md) · `/emergencias/informes-simples` |
+
+Los **agregados** de Emergencias (workpanels Registro/Despacho/Seguimiento) siguen en
+[`../informes-tacticos-agregados/`](../informes-tacticos-agregados/); no son estos listados.
 
 ## Los cinco listados
 

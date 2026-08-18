@@ -4,8 +4,7 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft — ⏸ **sustrato pendiente.** No ejecutar `/plan` hasta que
-`Partners-API/informes-compuestos-modelo` haya cargado sus hechos al modelo analítico.
+**Status**: Implemented — backend (2026-08-18). Diez GET publicados; E2-06 → 404.
 
 **Input**: User description: "Informes estratégicos del OE2 — los once informes que miden si el acceso programático a los datos de TSI se está vendiendo, usando y facturando, resueltos con consultas sobre el modelo analítico."
 
@@ -30,10 +29,10 @@ está mirando un indicador interno: está evaluando si sigue integrado.
 
 | Lo que OE2 consumirá | Lo diseña | Estado |
 |---|---|:--:|
-| `hecho_llamada_api`, `hecho_cambio_acceso`, `dim_partner`, `dim_credencial_api`, `dim_version_contrato` | `Partners-API/informes-compuestos-modelo` | **0 / 68** |
+| `hecho_llamada_api`, `hecho_cambio_acceso`, `dim_partner`, `dim_credencial_api`, `dim_version_contrato` | `Partners-API/informes-compuestos-modelo` | ✅ compuestos tácticos (2026-08-18) |
 
-**Es la dependencia más limpia de los tres objetivos bloqueados.** Cuando ese módulo se construya,
-OE2 se desbloquea entero salvo E2-06.
+**Es la dependencia más limpia de los tres objetivos que esperaban táctico.** El compuesto de
+Partners ya está; OE2 se planifica entero salvo E2-06.
 
 > **Discrepancia del catálogo.** El catálogo nombra `hecho_log_llamada_api` y `hecho_api_integracion`.
 > El diseño táctico crea **una sola** tabla: `hecho_llamada_api`, con el detalle evento a evento. Y es
@@ -312,11 +311,9 @@ Regla 2 del Tie-Breaker —no hay Safety—: **no se publica un uptime que serí
 
 ## Assumptions
 
-- ⏸ **`Partners-API/informes-compuestos-modelo` se implementa antes que este módulo.** Es la
-  suposición que bloquea `/plan`.
-- **Los hechos tendrán la forma de su `data-model.md`**, en particular `hecho_llamada_api` con
-  latencia y código de respuesta por evento. Si al construirse el detalle no conserva la latencia,
-  E2-05 deja de ser calculable — y **saberlo ahora es el valor de esta spec**.
+- ✅ **`Partners-API/informes-compuestos-modelo` ya está implementado** (2026-08-18).
+- **`hecho_llamada_api` conserva `latencia_ms` y `codigo_http` por evento** (DDL táctico). E2-05
+  es calculable; el p95 sigue sujeto a muestra mínima.
 - **El armazón de OE6 está construido.**
 - **La muestra mínima se hereda de OE6.** Con 18 llamadas, casi todo caerá por debajo.
 - **El frontend queda fuera de alcance.**

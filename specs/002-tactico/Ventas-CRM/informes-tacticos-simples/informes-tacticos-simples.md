@@ -18,8 +18,8 @@ consecuencia observable, y conviene validarla con dos departamentos construidos,
 
 | Capa | Estado | Ruta |
 |---|---|---|
-| **backend** | Spec redactada | [`backend/spec.md`](backend/spec.md) |
-| frontend | **Aplazado deliberadamente** | — |
+| **backend** | Spec redactada · **implementada** | [`backend/spec.md`](backend/spec.md) · `backend/apps/ventas_crm/views/informes_*.py` |
+| **frontend** | **Implementada** (sin carpeta `frontend/` de Speckit; el índice mentía el aplazamiento) | `/ventas-crm/informes` · `frontend/src/app/modules/ventas-crm/informes/` |
 
 ## Los cuatro listados
 

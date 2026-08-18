@@ -106,8 +106,12 @@ CREATE TABLE IF NOT EXISTS hecho_onboarding (
     cargado_en      DateTime
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(fecha)
-ORDER BY (fecha, idcliente, orden_etapa)
+ORDER BY (fecha, idcliente, idonboarding)
 ```
+
+ClickHouse 24.8 rechaza claves de ordenación anulables (`allow_nullable_key` desactivado).
+`orden_etapa` sigue siendo `Nullable` —una etapa no catalogada no inventa orden— pero **no** entra
+en el `ORDER BY`. El grano único es `(fecha, idcliente, idonboarding)`.
 
 ⚠️ **Solo contiene etapas completadas**, porque es lo único que el origen registra. **El abandono no
 está aquí**: se deduce cruzando con el catálogo (research D2).

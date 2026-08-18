@@ -1,0 +1,279 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE1 — Posicionamiento y Captación Digital
+  version: "1.0.0"
+  description: |
+    Solo lectura. Diez de trece informes del OE1.
+
+    **E1-05, E1-07 y E1-08 no tienen path:** no hay costos de marketing ni geografía
+    comercial en `dim_cliente`. Un GET a esas rutas responde 404.
+
+    **Perspectiva BSC:** Financiera.
+
+    ## Muestra de demostración
+
+    4 suscripciones, 6 facturas, 4 clientes, 3 onboardings, 10 prospectos (origen
+    2026-08-16). Los diez salen con `cobertura: parcial` bajo el umbral de muestra.
+
+    ## Acceso
+
+    | Rutas | Quién |
+    |---|---|
+    | `mrr-mensual`, `arr-proyeccion`, `tasa-renovacion` | `DirectorFinanciero` · `Gerente` |
+    | `mrr-por-segmento` | esos **más** `DirectorEstrategia` |
+    | `cartera-por-plan` | `DirectorEstrategia` · `Gerente` |
+    | `embudo-conversion`, `velocidad-ciclo-venta` | `DirectorMarketing` · `Gerente` |
+    | `tiempo-onboarding`, `abandono-onboarding`, `churn-por-cohorte` | **solo** `Gerente` |
+
+    Sin `acotado_a`. Sin medios de cobro. Sin país.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: US1 Ingreso recurrente
+  - name: US2 Captación
+  - name: US3 Ciclo de vida
+
+paths:
+
+  /informes-estrategicos/oe1/mrr-mensual:
+    get:
+      tags: [US1 Ingreso recurrente]
+      summary: MRR normalizado a mes, con recuento de suscripciones
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Usa precio_mensualizado; vigente al cierre
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/arr-proyeccion:
+    get:
+      tags: [US1 Ingreso recurrente]
+      summary: ARR como extrapolación del MRR, no ingreso comprometido
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: alcance declara extrapolación; escenarios etiquetados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/mrr-por-segmento:
+    get:
+      tags: [US1 Ingreso recurrente]
+      summary: MRR y ARPU por tipo de cliente
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Segmento = dim_cliente.tipo; desconocidos agrupados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/cartera-por-plan:
+    get:
+      tags: [US1 Ingreso recurrente]
+      summary: Mezcla de cartera por plan y su evolución
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Foto y evolución; no solo el corte actual
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/embudo-conversion:
+    get:
+      tags: [US2 Captación]
+      summary: Volumen y tasa de paso por etapa; ceros visibles
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Grano transiciones; tramo final cruza a Cuentas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/velocidad-ciclo-venta:
+    get:
+      tags: [US2 Captación]
+      summary: Tiempo por etapa; ejecutivo por id de cartera, no ficha de prospecto
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Sin identidad de prospecto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/tasa-renovacion:
+    get:
+      tags: [US3 Ciclo de vida]
+      summary: Renovación sobre suscripciones vencidas en el período
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Dueño de E5-09; denominador = vencidas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/tiempo-onboarding:
+    get:
+      tags: [US3 Ciclo de vida]
+      summary: Días de onboarding; en proceso aparte
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Solo Gerente; dueño de E5-13
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/abandono-onboarding:
+    get:
+      tags: [US3 Ciclo de vida]
+      summary: Ausencia contra catálogo de etapas, no solo lo completado
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Solo Gerente; dueño de E5-14
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe1/churn-por-cohorte:
+    get:
+      tags: [US3 Ciclo de vida]
+      summary: Churn por cohorte de alta; n bajo umbral sin porcentaje
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Solo Gerente; dueño de E5-10
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { type: object }
+        meta:
+          type: object
+          properties:
+            periodo: { type: object }
+            comparacion: { type: object, nullable: true }
+            objetivo: { type: object, nullable: true }
+            cobertura:
+              type: string
+              enum: [completa, parcial]
+            falta:
+              type: array
+              items: { type: string }
+            alcance: { type: string, nullable: true }
+
+  responses:
+    PeticionInvalida:
+      description: Falta desde, hasta o granularidad, o un valor no está en la lista
+    SinPermiso:
+      description: 403 — Marketing no ve MRR; Financiero no ve embudo; onboarding solo Gerente

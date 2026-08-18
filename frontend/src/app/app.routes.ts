@@ -66,6 +66,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'cuentas-clientes/gestion',
+        loadChildren: () =>
+          import('./modules/cuentas-clientes/gestion/cuentas-gestion.routes').then(
+            (m) => m.CUENTAS_GESTION_ROUTES,
+          ),
+      },
+      {
         path: 'cuentas-clientes/incorporacion-clientes',
         loadChildren: () =>
           import(
@@ -104,6 +111,13 @@ export const routes: Routes = [
           ).then((m) => m.SOPORTE_CLIENTE_INFORMES_ROUTES),
       },
       {
+        path: 'soporte-cliente/gestion',
+        loadChildren: () =>
+          import('./modules/soporte-cliente/gestion/soporte-cliente-gestion.routes').then(
+            (m) => m.SOPORTE_CLIENTE_GESTION_ROUTES,
+          ),
+      },
+      {
         path: 'ventas-crm/informes',
         loadChildren: () =>
           import('./modules/ventas-crm/informes/ventas-crm-informes.routes').then(
@@ -111,10 +125,24 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'ventas-crm/gestion',
+        loadChildren: () =>
+          import('./modules/ventas-crm/gestion/ventas-crm-gestion.routes').then(
+            (m) => m.VENTAS_CRM_GESTION_ROUTES,
+          ),
+      },
+      {
         path: 'suscripciones/informes',
         loadChildren: () =>
           import('./modules/suscripciones/informes/suscripciones-informes.routes').then(
             (m) => m.SUSCRIPCIONES_INFORMES_ROUTES,
+          ),
+      },
+      {
+        path: 'suscripciones/gestion',
+        loadChildren: () =>
+          import('./modules/suscripciones/gestion/suscripciones-gestion.routes').then(
+            (m) => m.SUSCRIPCIONES_GESTION_ROUTES,
           ),
       },
       {
@@ -186,6 +214,18 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/suscripciones/suscripciones.routes').then(
             (m) => m.SUSCRIPCIONES_ROUTES,
+          ),
+      },
+      {
+        path: 'estrategico/oe2',
+        loadChildren: () =>
+          import('./modules/estrategico/oe2/oe2.routes').then((m) => m.OE2_ROUTES),
+      },
+      {
+        path: 'partners/gestion',
+        loadChildren: () =>
+          import('./modules/partners/gestion/partners-gestion.routes').then(
+            (m) => m.PARTNERS_GESTION_ROUTES,
           ),
       },
       {

@@ -28,6 +28,13 @@ camino admitido. Se verifica con una prueba sobre el texto de las consultas.
 filtrarlo: esos campos **no existen en el modelo**. La prueba comprueba que ninguna consulta los
 nombra, para que nadie los reintroduzca al ampliar la dimensión.
 
+**3. Un LEFT JOIN de ClickHouse no devuelve NULL.** Sin coincidencia rellena con el valor por
+defecto del tipo (`''`, `0`, `1970-01-01`), y `ifNull` / `IS NULL` no disparan. La etapa vigente
+sin transiciones, el tramo abierto del estancado y el grupo «sin demo» se resuelven con
+`nullIf(..., '')` / `nullIf(..., toDateTime(0))` o con `IN (SELECT …)`, no con `ifNull` a secas.
+Una desigualdad de tiempo (`fechahora <=`) va en `WHERE`, no en `ON`: ClickHouse 24.8 la rechaza
+en el JOIN.
+
 ---
 
 ## 3. Parámetros propios
@@ -57,7 +64,9 @@ pipeline» suena a cifra corporativa y no lo es.
 
 ⚠️ **`ot02_permanencia_por_etapa.sql`** debe incluir el **tramo abierto**: la etapa vigente al final
 del período cuenta hasta el fin del período, y se informa aparte en `abiertos`. Sin eso, los
-prospectos estancados no aparecen — y son los que el informe existe para encontrar.
+prospectos estancados no aparecen — y son los que el informe existe para encontrar. El inicio del
+tramo sin transiciones es `fecha_registro`, resuelto con `nullIf(fechahora_ultima, toDateTime(0))`
+porque el LEFT JOIN no deja NULL.
 
 ⚠️ **`ot02_embudo_conversion.sql`** calcula el porcentaje **sobre transiciones**, no sobre prospectos
 únicos, porque un prospecto puede retroceder de etapa. El campo `denominador` lo hace comprobable.

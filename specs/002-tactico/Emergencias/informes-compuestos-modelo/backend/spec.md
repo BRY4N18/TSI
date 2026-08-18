@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Informes tácticos compuestos de Emergencias — los informes agregados de OT21 a OT25, resueltos con consultas sobre el modelo analítico en vez de una tabla y un flujo por informe"
 

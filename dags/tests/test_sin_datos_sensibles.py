@@ -39,7 +39,40 @@ TABLAS = (
     "hecho_validacion_region",
     "dim_prospecto",
     "dim_canal",
+    "hecho_transicion_embudo",
+    "hecho_asignacion_prospecto",
+    "hecho_interaccion_demo",
+    "hecho_notificacion_ventas",
+    "dim_plan",
+    "dim_cliente",
+    "hecho_suscripcion",
+    "hecho_factura",
+    "hecho_solicitud_cambio_plan",
+    "dim_sla_config",
+    "dim_servicio",
+    "dim_estado_soporte",
+    "hecho_ticket",
+    "hecho_accion_ticket",
+    "dim_usuario_organizacion",
+    "dim_etapa_onboarding",
+    "dim_rol",
+    "dim_usuario_rol",
+    "hecho_sesion",
+    "hecho_onboarding",
+    "dim_partner",
+    "dim_credencial_api",
+    "dim_version_contrato",
+    "hecho_llamada_api",
+    "hecho_cambio_acceso",
 )
+
+#: `idusuario` es clave, no identidad. Solo en las tablas de Cuentas que
+#: analizan pertenencia, sesión y roles (D6). El resto del modelo no la copia.
+CLAVE_USUARIO = frozenset({
+    "hecho_sesion",
+    "dim_usuario_organizacion",
+    "dim_usuario_rol",
+})
 
 #: Columnas que coinciden con un patrón prohibido y **no son** dato sensible.
 #:
@@ -53,6 +86,10 @@ TABLAS = (
 EXCEPCIONES = {
     ("hecho_accidente", "num_notas"),
     ("hecho_evidencia", "categoria_nota"),
+    ("hecho_factura", "es_nota_credito"),
+    # Flags y fecha de caducidad: hay método y cuándo caduca, nunca cuál.
+    ("dim_cliente", "tiene_metodo_pago"),
+    ("dim_cliente", "metodo_pago_caduca"),
 }
 
 #: Fragmentos que delatan una columna excluida. Se busca por patrón y no por
@@ -77,6 +114,16 @@ def _columnas() -> list[dict]:
 
 @requiere_modelo
 class TestEsquemaDelModelo:
+    @classmethod
+    def setup_class(cls):
+        # Las tablas que este modulo acaba de anadir tienen que existir antes
+        # de recorrer el esquema: si no, la prueba de «todas las tablas
+        # esperadas» fallaria por un CREATE que nadie ejecuto, no por un
+        # dato sensible.
+        from lib.ddl import ensure_modelo_analitico
+
+        ensure_modelo_analitico()
+
     def test_ninguna_columna_coincide_con_un_patron_prohibido(self):
         condicion = " OR ".join(f"name ILIKE '{p}'" for p in PATRONES_PROHIBIDOS)
         tablas = ", ".join(f"'{t}'" for t in TABLAS)
@@ -108,6 +155,12 @@ class TestEsquemaDelModelo:
             tipo = tipos.get(clave)
             if tipo is None:
                 continue
+            if clave == ("dim_cliente", "metodo_pago_caduca"):
+                assert "Date" in tipo, (
+                    f"{clave} está exceptuada y es de tipo {tipo}: debe ser la "
+                    "fecha de caducidad, no el medio"
+                )
+                continue
             assert "Int" in tipo or clave[1].startswith("categoria_"), (
                 f"{clave} está exceptuada y es de tipo {tipo}: una excepción "
                 f"solo vale para recuentos y categorías cerradas"
@@ -115,11 +168,14 @@ class TestEsquemaDelModelo:
 
     def test_ninguna_tabla_guarda_identidad_de_persona(self):
         # `idusuario` está en el origen de casi todas las tablas de hecho y NO se
-        # copia: analizar cuántos casos hubo no requiere saber quién los tocó
-        columnas = [c["name"] for c in _columnas()]
-        assert "idusuario" not in columnas
-        assert "idconductor" not in columnas
-        assert "idimplicado" not in columnas
+        # copia salvo donde Cuentas lo necesita como clave (sesión, pertenencia,
+        # roles). Analizar cuántos casos hubo no requiere saber quién los tocó.
+        columnas = _columnas()
+        nombres = [c["name"] for c in columnas]
+        claves = {c["table"] for c in columnas if c["name"] == "idusuario"}
+        assert claves <= CLAVE_USUARIO, f"idusuario fuera de clave: {claves - CLAVE_USUARIO}"
+        assert "idconductor" not in nombres
+        assert "idimplicado" not in nombres
 
     def test_la_comprobacion_recorre_las_siete_tablas(self):
         # Si una tabla no existiera, la prueba anterior pasaría sin mirarla

@@ -10,8 +10,9 @@ apuntada por `.specify/feature.json`.
 
 ## Los 9 informes compuestos de OT04, OT17 y OT18
 
-**Ninguno existe.** Contienen **dos indicadores BSC** sin fuente: el churn por cohorte y el tiempo de
-onboarding.
+**Backend hecho.** Nueve GET sobre el modelo analítico (`/informes-tacticos/cuentas/<informe>`).
+**Frontend hecho.** Tres pantallas Z (`ciclo`, `incorporacion`, `acceso`). Contienen **dos
+indicadores BSC** que ahora tienen fuente: el churn por cohorte y el tiempo de onboarding.
 
 ## Es el dueño de `dim_cliente`, y llega el sexto
 
@@ -23,8 +24,8 @@ dirección que más importaba: **el departamento dueño llega después y no tien
 
 | Capa | Ruta | Estado |
 |------|------|--------|
-| **Backend** | [`backend/`](./backend/) | activa |
-| **Frontend** | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | hecha |
+| **Frontend** | [`frontend/`](./frontend/) | hecha |
 
 ## Lo que hay que saber antes de tocar este departamento
 

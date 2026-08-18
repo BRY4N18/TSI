@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Informes tácticos compuestos de Cuentas y Clientes — los 9 informes agregados de OT04, OT17 y OT18, resueltos con consultas sobre el modelo analítico"
 

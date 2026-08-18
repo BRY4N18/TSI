@@ -4,8 +4,9 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft — ⏸ **sustrato pendiente.** No ejecutar `/plan` hasta que los tácticos de Soporte,
-Suscripciones y Cuentas hayan cargado sus hechos al modelo analítico.
+**Status**: Draft — plan desbloqueado (2026-08-18). Los compuestos tácticos de Soporte,
+Suscripciones, Cuentas y Partners ya existen. OE1 ya publicó los cuatro compartidos.
+E5-01 y E5-11 siguen sin fuente. Backend HTTP publicado (9 GET, 2+4 → 404).
 
 **Input**: User description: "Informes estratégicos del OE5 — los quince informes que miden si los clientes se quedan, si el servicio comprometido se cumple y dónde se pierde una cuenta, resueltos con consultas sobre el modelo analítico."
 
@@ -333,12 +334,10 @@ cobertura aparente; lo ganado es que no hay dos definiciones de la tasa de renov
 
 ## Assumptions
 
-- ⏸ **Los cuatro módulos tácticos se implementan antes que este.** Es la suposición que bloquea
-  `/plan`, y aquí son cuatro: **292 tareas**.
-- **OE1 se implementa antes o a la vez**, porque cuatro informes se consumen desde allí. Si OE1 no
-  existiera, esos cuatro quedan sin fuente **y no se reimplementan aquí**.
-- **Los hechos tendrán la forma de sus `data-model.md`.** En particular, `hecho_ticket` con
-  `sla_status` y tiempo de solución; si no los conservara, E5-04 deja de ser calculable.
+- ✅ **Los cuatro módulos tácticos ya cargaron los hechos** (2026-08-18).
+- ✅ **OE1 ya publicó E1-06/09/10/11.** Este módulo no los reimplementa.
+- **Los hechos tienen la forma de `dags/lib/ddl.py`.** En particular, `hecho_ticket` con
+  `tiene_compromiso` y `desenlace_sla`; si no los conservara, E5-04 deja de ser calculable.
 - **El armazón de OE6 está construido.**
 - **La muestra mínima se hereda de OE6.** Con 14 tickets y 4 suscripciones, casi todo caerá por debajo.
 - **El frontend queda fuera de alcance.**

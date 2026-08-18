@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Informes tácticos simples de Ventas y CRM — listados llanos de solo lectura (backend) que satisfacen OT01, OT02 y OT03, bajo el contrato specs/002-tactico/contrato-informes-simples.md"
 

@@ -1,0 +1,263 @@
+openapi: 3.0.3
+
+info:
+  title: Informes estratégicos OE5 — Retención y Ciclo de Vida
+  version: "1.0.0"
+  description: |
+    Solo lectura. Nueve de quince informes del OE5.
+
+    **E5-01 y E5-11 no tienen path:** no hay encuestas ni tabla de entregas
+    (`nps-satisfaccion`, `reportes-sin-correccion`).
+    **E5-09, E5-10, E5-13 y E5-14 no tienen path en OE5:** viven en OE1
+    (`tasa-renovacion`, `churn-por-cohorte`, `tiempo-onboarding`,
+    `abandono-onboarding`). Un GET a esas rutas bajo `/oe5/` responde 404.
+
+    **Perspectiva BSC:** Cliente.
+
+    ## Muestra de demostración
+
+    14 tickets, 4 suscripciones, 6 facturas, 4 clientes, 747 sesiones (origen
+    2026-08-16). Los nueve salen con `cobertura: parcial` bajo el umbral de muestra.
+
+    ## Acceso
+
+    | Rutas | Quién |
+    |---|---|
+    | `cumplimiento-sla`, `evolucion-incumplimiento`, `rendimiento-por-agente`, `reincidencia-soporte` | `GerenteExitoCliente` · `Gerente` |
+    | `sla-por-plan` | esos **más** `DirectorEstrategia` |
+    | `retencion-neta-ingresos` | `DirectorFinanciero` · `Gerente` |
+    | `movimientos-de-plan` | `DirectorEstrategia` · `DirectorFinanciero` · `Gerente` |
+    | `antiguedad-de-cuenta` | `DirectorEstrategia` · `Gerente` |
+    | `cuentas-en-riesgo` | **solo** `Gerente` |
+
+    Sin `acotado_a`. Sin texto de ticket. Sin medios de cobro. Sin NPS de emergencia.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: US1 Compromiso de servicio
+  - name: US2 Cartera
+  - name: US3 Señales
+
+paths:
+
+  /informes-estrategicos/oe5/cumplimiento-sla:
+    get:
+      tags: [US1 Compromiso de servicio]
+      summary: Cumplimiento de SLA; denominador = cerrados con compromiso
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Sin compromiso declarado aparte; no 0 % si no hubo qué cumplir
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/evolucion-incumplimiento:
+    get:
+      tags: [US1 Compromiso de servicio]
+      summary: Serie de incumplimiento de SLA
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/sla-por-plan:
+    get:
+      tags: [US1 Compromiso de servicio]
+      summary: SLA cruzado con el plan contratado
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Premium vs resto; precio no se lee del catálogo vigente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/retencion-neta-ingresos:
+    get:
+      tags: [US2 Cartera]
+      summary: NRR con expansión, contracción y churn por separado
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Cohorte al inicio; no hereda el stub 0 de OT07
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/movimientos-de-plan:
+    get:
+      tags: [US2 Cartera]
+      summary: Movimientos aprobados con delta congelado
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Pendientes fuera; no usa dim_plan.precio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/rendimiento-por-agente:
+    get:
+      tags: [US3 Señales]
+      summary: Carga por agente (id, no nombre)
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: alcance declara carga de trabajo, no desempeño
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/reincidencia-soporte:
+    get:
+      tags: [US3 Señales]
+      summary: Reincidencia por cliente y servicio
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/cuentas-en-riesgo:
+    get:
+      tags: [US3 Señales]
+      summary: Riesgo con ≥2 señales de cuatro fuentes
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Solo Gerente; una señal no marca; falta nombra la fuente ausente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /informes-estrategicos/oe5/antiguedad-de-cuenta:
+    get:
+      tags: [US3 Señales]
+      summary: Antigüedad media de relaciones activas
+      parameters:
+        - $ref: '#/components/parameters/Desde'
+        - $ref: '#/components/parameters/Hasta'
+        - $ref: '#/components/parameters/Granularidad'
+        - $ref: '#/components/parameters/Comparacion'
+      responses:
+        '200':
+          description: Cerradas aparte; criterio de reactivación en alcance
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaInforme' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Desde:
+      name: desde
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Hasta:
+      name: hasta
+      in: query
+      required: true
+      schema: { type: string, format: date }
+    Granularidad:
+      name: granularidad
+      in: query
+      required: true
+      schema: { type: string, enum: [mes, trimestre, anio] }
+    Comparacion:
+      name: comparacion
+      in: query
+      schema: { type: string, enum: [ninguna, mom, yoy], default: ninguna }
+
+  schemas:
+    RespuestaInforme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { type: object }
+        meta:
+          type: object
+          properties:
+            periodo: { type: object }
+            comparacion: { type: object, nullable: true }
+            objetivo: { type: object, nullable: true }
+            cobertura:
+              type: string
+              enum: [completa, parcial]
+            falta:
+              type: array
+              items: { type: string }
+            alcance: { type: string, nullable: true }
+
+  responses:
+    PeticionInvalida:
+      description: Falta desde, hasta o granularidad, o un valor no está en la lista
+    SinPermiso:
+      description: 403 — Financiero no ve SLA; Éxito Cliente no ve NRR; riesgo solo Gerente

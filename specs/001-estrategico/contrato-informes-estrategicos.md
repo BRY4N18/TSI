@@ -290,38 +290,35 @@ dags/lib/consultas/estrategicos/
 Y esos hechos los carga **el módulo táctico de informes compuestos del departamento dueño**, no esta
 capa. Es la dependencia que gobierna el orden de trabajo, y no era evidente al escribir este contrato.
 
-Estado medido el 2026-08-16 — el almacén tiene **13 tablas, todas de Emergencias más la geografía**:
+Estado **recontado el 2026-08-18** — los compuestos tácticos de los siete departamentos ya están
+en código. El recuento de 2026-08-16 (solo Emergencias en el almacén) **ya no gobierna el orden**:
 
-| Departamento | Compuestos tácticos | Consultas cargadas |
-|---|---|--:|
-| Emergencias | 78/78 ✅ | 26 |
-| Red Operativa | 22/67 en curso | 2 |
-| Cuentas · Partners · Soporte · Suscripciones · Ventas | **0** | 0 |
+| Departamento | Compuestos tácticos | Estado |
+|---|---|---|
+| Emergencias | backend + frontend | ✅ |
+| Red Operativa | backend + frontend | ✅ |
+| Cuentas · Partners · Soporte · Suscripciones · Ventas | backend + frontend | ✅ (2026-08-18) |
 
-Y lo que eso implica para cada objetivo:
+| OE | Sustrato | Construible | spec | plan | tasks | código HTTP |
+|:--:|---|:--:|:--:|:--:|:--:|---|
+| **OE6** Respuesta y vidas | Emergencias | 12 / 12 | ✅ | ✅ | ✅ 92 | **implementado** |
+| **OE3** Escalabilidad | Emergencias + Red | 7 / 14 | ✅ | ✅ | ✅ 72 | **implementado** |
+| **OE4** Inteligencia predictiva | Emergencias | 9 / 15 | ✅ | ✅ | ✅ 80 | **implementado** (9 GET, 6 → 404) |
+| **OE2** Monetización API | Partners táctico **listo** | 10 / 11 | ✅ | ✅ | ✅ 55 | **implementado** (10 GET, E2-06 → 404) |
+| **OE1** Posicionamiento | Suscripciones + Ventas + Cuentas **listos** | 10 / 13 | ✅ | ✅ | ✅ 53 | **implementado** (10 GET, E1-05/07/08 → 404) |
+| **OE5** Retención | Soporte + Suscripciones + Cuentas + Partners **listos** | 9 / 15 | ✅ | ✅ | ✅ 52 | **implementado** (9 GET; E5-01/11 y refs OE1 → 404) |
 
-| OE | Sustrato | Construible | spec | plan | tasks |
-|:--:|---|:--:|:--:|:--:|:--:|
-| **OE6** Respuesta y vidas | Emergencias completo | 12 / 12 | ✅ | ✅ | ✅ 92 **implementado** |
-| **OE3** Escalabilidad | Emergencias + Red Op + `dim_condado_vecino` | 7 / 14 | ✅ | ✅ | ✅ 72 **implementado** (2026-08-16) |
-| **OE4** Inteligencia predictiva | Emergencias completo | 9 / 15 | ✅ | ✅ | ✅ 80 |
-| **OE2** Monetización API | — | 10 / 11 *(al desbloquear)* | ✅ | ⏸ | ⏸ |
-| **OE1** Posicionamiento | — | 10 / 13 *(al desbloquear)* | ✅ | ⏸ | ⏸ |
-| **OE5** Retención | — | 9 / 15 *(al desbloquear)* | ✅ | ⏸ | ⏸ |
+Frontend de todos los OE: **aplazado** (decisión de capa, no de sustrato).
 
-### Los tres bloqueados: spec sí, plan no
+### OE5: backend implementado. OE1 backend implementado
 
-**OE1, OE2 y OE5 están especificados y su `/plan` está deliberadamente detenido.** La distinción
-importa:
+**OE5 tiene plan (2026-08-18; 9 publicados, 2 → 404, 4 referencias a OE1).** La spec se escribió
+antes del táctico porque documenta qué necesita la capa estratégica; el plan espera a haber
+medido. Los OE que sí midieron (OE6, OE3, OE4, OE2, OE1) produjeron correcciones al catálogo
+que **no se deducen de él**: eje de región muerto, E3-02 mezclando latencia técnica con tiempo
+operativo, E2-06 inmedible desde el log, NRR táctico con expansión/contracción en 0.
 
-- **La spec se escribe ahora** porque documenta **qué necesita la capa estratégica de cada módulo
-  táctico**, y eso es útil *antes* de construirlos. Si `hecho_suscripcion` no congela la periodicidad,
-  el MRR no se puede normalizar; es más barato saberlo ahora.
-- **El plan no**, porque no hay contra qué verificarlo. Los tres objetivos que sí lo tienen
-  produjeron **once correcciones al catálogo**, y las once salieron de medir: el eje de región
-  muerto, las regiones sin fecha de arranque, E3-02 mezclando latencia técnica con tiempo operativo,
-  E3-12 midiendo un suceso que no ocurre, `distanciamillas` que sí existía, E4-14 imposible por la
-  idempotencia. **Ninguna se deduce del catálogo.**
+- **OE5 backend está implementado.** Lo que queda de producto en esta capa es frontend (aplazado) o trabajo fuera de informes.
 
 ### Y la dependencia es doble
 
@@ -340,9 +337,9 @@ sobre 4 clientes y un cumplimiento de SLA sobre 14 tickets **son cifras anecdót
 indicador**. Por eso las tres specs obligan a declarar `cobertura: "parcial"` en casi todos sus
 informes.
 
-**Consecuencia práctica:** el camino que desbloquea la capa estratégica no pasa por ella. Pasa por
-terminar los compuestos tácticos de **Partners** —el más limpio, un solo departamento desbloquea OE2
-entero—, y después Suscripciones, Ventas, Cuentas y Soporte.
+**Consecuencia práctica:** los compuestos tácticos de los siete departamentos **ya están**. OE1
+backend está implementado. OE5 tiene plan. El siguiente de producto en esta capa es
+`/speckit-tasks` de OE5. Los cinco huecos de la tabla de abajo no los cierra ningún táctico.
 
 ### Cinco huecos que ningún módulo táctico resuelve
 

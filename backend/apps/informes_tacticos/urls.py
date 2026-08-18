@@ -1,5 +1,11 @@
 from django.urls import path
 
+from apps.informes_tacticos.views.cuentas_compuestos_views import (
+    CuentasCompuestoView,
+)
+from apps.informes_tacticos.views.partners_compuestos_views import (
+    PartnersCompuestoView,
+)
 from apps.informes_tacticos.views.despacho_views import (
     AsignacionAutomaticaVsManualView,
     CargaPorUnidadView,
@@ -13,6 +19,13 @@ from apps.informes_tacticos.views.emergencias_compuestos_views import (
 )
 from apps.informes_tacticos.views.red_operativa_compuestos_views import (
     RedOperativaCompuestoView,
+)
+from apps.informes_tacticos.views.suscripciones_compuestos_views import (
+    SuscripcionesCompuestoView,
+)
+from apps.informes_tacticos.views.soporte_compuestos_views import (
+    SoporteCompuestoView,
+    SoporteCumplimientoPorPlanView,
 )
 from apps.informes_tacticos.views.ventas_crm_compuestos_views import (
     VentasCrmCompuestoView,
@@ -138,5 +151,30 @@ urlpatterns = [
         "informes-tacticos/ventas-crm/<str:informe>",
         VentasCrmCompuestoView.as_view(),
         name="informes-tacticos-ventas-crm-compuesto",
+    ),
+    path(
+        "informes-tacticos/suscripciones/<str:informe>",
+        SuscripcionesCompuestoView.as_view(),
+        name="informes-tacticos-suscripciones-compuesto",
+    ),
+    path(
+        "informes-tacticos/soporte/cumplimiento-sla/por-plan",
+        SoporteCumplimientoPorPlanView.as_view(),
+        name="informes-tacticos-soporte-cumplimiento-por-plan",
+    ),
+    path(
+        "informes-tacticos/soporte/<str:informe>",
+        SoporteCompuestoView.as_view(),
+        name="informes-tacticos-soporte-compuesto",
+    ),
+    path(
+        "informes-tacticos/cuentas/<str:informe>",
+        CuentasCompuestoView.as_view(),
+        name="informes-tacticos-cuentas-compuesto",
+    ),
+    path(
+        "informes-tacticos/partners/<str:informe>",
+        PartnersCompuestoView.as_view(),
+        name="informes-tacticos-partners-compuesto",
     ),
 ]

@@ -7,14 +7,14 @@
 
 Índice global del módulo (no es una spec Speckit).
 
-## ⚠️ Estado: documentación anticipada — **no ejecutar `/plan` todavía**
+## Estado: backend **implementado** (9 GET; E5-01/11 y refs OE1 → 404)
 
 | Hecho o dimensión que necesita | Lo diseña | Estado |
 |---|---|:--:|
-| `hecho_ticket` · `hecho_accion_ticket` · `dim_sla_config` · `dim_servicio` | Soporte al Cliente | **0 / 86 tareas** |
-| `hecho_suscripcion` · `hecho_factura` · `hecho_solicitud_cambio_plan` · `dim_plan` · `dim_cliente` | Suscripciones y Facturación | **0 / 71** |
-| `hecho_onboarding` · `hecho_sesion` | Cuentas y Clientes | **0 / 67** |
-| `hecho_llamada_api` | Partners y API | **0 / 68** *(solo E5-12)* |
+| `hecho_ticket` · `hecho_accion_ticket` · `dim_sla_config` · `dim_servicio` | Soporte al Cliente | ✅ compuestos tácticos (2026-08-18) |
+| `hecho_suscripcion` · `hecho_factura` · `hecho_solicitud_cambio_plan` · `dim_plan` · `dim_cliente` | Suscripciones y Facturación | ✅ |
+| `hecho_onboarding` · `hecho_sesion` | Cuentas y Clientes | ✅ |
+| `hecho_llamada_api` | Partners y API | ✅ *(E5-12)* |
 
 **Es el objetivo con más dependencias de los seis**: cuatro módulos tácticos, 292 tareas.
 
@@ -22,15 +22,15 @@
 
 | # | Informe | Historia | Estado |
 |---|---|:--:|:--:|
-| **E5-04** | Cumplimiento consolidado de SLA | US1 | ⏸ sin sustrato |
-| **E5-05** | Evolución del incumplimiento de SLA | US1 | ⏸ |
-| **E5-07** | SLA desglosado por plan contratado | US1 | ⏸ |
-| **E5-02** | Retención neta de ingresos (NRR) | US2 | ⏸ |
-| **E5-03** | Movimientos de plan con delta de ingreso | US2 | ⏸ |
-| **E5-06** | Rendimiento por agente de soporte | US3 | ⏸ |
-| **E5-08** | Reincidencia de soporte | US3 | ⏸ |
-| **E5-12** | Cuentas en riesgo de churn | US3 | ⏸ ⚠️ cruza 4 departamentos |
-| **E5-15** | Antigüedad media de cuenta | US3 | ⏸ |
+| **E5-04** | Cumplimiento consolidado de SLA | US1 | 📐 plan · parcial por n |
+| **E5-05** | Evolución del incumplimiento de SLA | US1 | 📐 |
+| **E5-07** | SLA desglosado por plan contratado | US1 | 📐 |
+| **E5-02** | Retención neta de ingresos (NRR) | US2 | 📐 descompone; no copia stub OT07 |
+| **E5-03** | Movimientos de plan con delta de ingreso | US2 | 📐 |
+| **E5-06** | Rendimiento por agente de soporte | US3 | 📐 carga, no desempeño |
+| **E5-08** | Reincidencia de soporte | US3 | 📐 |
+| **E5-12** | Cuentas en riesgo de churn | US3 | 📐 ≥2 señales · solo Gerente |
+| **E5-15** | Antigüedad media de cuenta | US3 | 📐 |
 | **E5-01** | NPS / índice de satisfacción | US4 | ⛔ sin tabla de encuestas |
 | **E5-11** | Reportes entregados sin corrección | US4 | ⛔ sin tabla de entregas |
 | **E5-09** | → referencia a **E1-06** | — | dueño: OE1 |
@@ -45,7 +45,7 @@ Quedan **nueve propios construibles** y **dos bloqueados**.
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | spec redactada · **plan bloqueado** |
+| **Backend** | [`backend/`](./backend/) | spec + plan + tasks + **código HTTP** (9 GET; E5-01/11 y 4 refs OE1 → 404) |
 | Frontend | *(pendiente)* | aplazada |
 
 ## Lo que hay que saber antes de tocar este módulo

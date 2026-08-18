@@ -167,6 +167,68 @@ def fila_desconocida_condado_vecino(ahora: datetime) -> dict[str, Any]:
     }
 
 
+def fila_desconocida_plan(ahora: datetime) -> dict[str, Any]:
+    """Plan desconocido: la suscripción apunta a un catálogo que aún no está."""
+    return {
+        "idplan": ID_DESCONOCIDO,
+        "nombre": ETIQUETA_DESCONOCIDA,
+        "nivel": None,
+        "periodicidad": None,
+        "precio_lista": None,
+        "precio_excedente_llamada": None,
+        "limite_unidades": None,
+        "limite_usuarios": None,
+        "limite_llamadas_mes": None,
+        "limite_llamadas_minuto": None,
+        "severidades_habilitadas": [],
+        "carga_lote_habilitada": 0,
+        "es_activo": 0,
+        "version": ahora.strftime(FORMATO),
+    }
+
+
+def fila_desconocida_cliente(ahora: datetime) -> dict[str, Any]:
+    """Cliente desconocido: el hecho existe y su cuenta no se resolvió.
+
+    Sin fiscal, sin contacto, sin medio: esta fila tampoco los tiene. Es el
+    destino de una referencia huérfana, no un cliente de verdad.
+    """
+    return {
+        "idcliente": ID_DESCONOCIDO,
+        "nombre_comercial": ETIQUETA_DESCONOCIDA,
+        "tipo": None,
+        "estado_comercial": None,
+        "estado_onboarding": None,
+        "tiene_metodo_pago": 0,
+        "metodo_pago_caduca": None,
+        "fecha_alta": None,
+            "cohorte_alta": None,
+            "fecha_baja": None,
+            "motivo_baja": None,
+            "etapa_onboarding_actual": None,
+            "onboarding_completo": 0,
+            "resultado_solicitud": None,
+            "version": ahora.strftime(FORMATO),
+    }
+
+
+def fila_desconocida_partner(ahora: datetime) -> dict[str, Any]:
+    """Partner desconocido: la llamada existe y su cuenta no se resolvió."""
+    return {
+        "idpartner": ID_DESCONOCIDO,
+        "nombre_partner": ETIQUETA_DESCONOCIDA,
+        "idcliente": None,
+        "plan_api": None,
+        "limite_llamadas_mes": None,
+        "limite_llamadas_minuto": None,
+        "estado": ETIQUETA_DESCONOCIDA,
+        "fecha_suspension": None,
+        "sandbox_activado": None,
+        "sandbox_expiracion": None,
+        "version": ahora.strftime(FORMATO),
+    }
+
+
 def fila_desconocida_canal(ahora: datetime) -> dict[str, Any]:
     """Canal desconocido: el prospecto llego sin registrar por donde.
 
@@ -192,6 +254,9 @@ FILAS_DESCONOCIDAS = {
     "dim_region": fila_desconocida_region,
     "dim_canal": fila_desconocida_canal,
     "dim_condado_vecino": fila_desconocida_condado_vecino,
+    "dim_plan": fila_desconocida_plan,
+    "dim_cliente": fila_desconocida_cliente,
+    "dim_partner": fila_desconocida_partner,
 }
 
 

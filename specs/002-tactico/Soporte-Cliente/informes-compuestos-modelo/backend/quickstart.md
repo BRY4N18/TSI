@@ -20,7 +20,7 @@ Guía de validación. **No contiene implementación**: eso vive en `tasks.md`.
 ## 2. Cargar el dominio de soporte
 
 ```bash
-docker compose -f docker/docker-compose.tactico.yml exec airflow-scheduler airflow dags trigger dag_hecho_soporte
+docker compose -f docker/docker-compose.tactico.yml exec airflow-scheduler airflow dags trigger modelo_hecho_soporte
 ```
 
 Un solo flujo carga las tres dimensiones y los dos hechos: comparten fuente y cadencia.
@@ -87,6 +87,12 @@ clasificar tickets para verlo subir.
 **Con los datos de hoy:** 1 cumplido de 9 con compromiso → **11,1 %**, sobre un **35,7 % sin
 compromiso**. Ambas cifras son malas y ambas se ven.
 
+**Anotación T083 (2026-08-17):** la forma de la respuesta queda fijada en el contrato
+(`resultados[].pct_cumplimiento` + `pct_sin_compromiso` + `sin_compromiso_por_motivo`, más
+`declaraciones` con `sla_historico_aplicado`). Las cifras 11,1 % / 35,7 % son las medidas sobre el
+origen **antes** de cargar el modelo; tras el DAG `modelo_hecho_soporte` deben reproducirse en este
+endpoint, no contra el SLA vigente hoy.
+
 ### 3.5 El informe de servicio sale vacío, y lo dice
 
 ```bash
@@ -94,6 +100,9 @@ curl "http://localhost:8000/api/v1/informes-tacticos/soporte/tickets-por-servici
 ```
 
 **Esperado:** una sola fila `sin servicio | 14`, y una declaración `servicio_no_registrado`.
+
+**Anotación T083 (2026-08-17):** el recuento 14 y el código `servicio_no_registrado` son el
+resultado correcto mientras `idservicio` siga nulo en el origen. No es un fallo del informe.
 
 ⚠️ **Esto es éxito, no fallo.** El informe es correcto sobre un dato que la operación no rellena;
 entregarlo vacío es lo que hace visible el hueco.

@@ -4,8 +4,8 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft — ⏸ **sustrato pendiente.** No ejecutar `/plan` hasta que los tácticos de
-Suscripciones, Ventas y Cuentas hayan cargado sus hechos al modelo analítico.
+**Status**: Implemented — backend HTTP (2026-08-18). Diez GET publicados; E1-05/07/08 → 404.
+Los compuestos tácticos de Suscripciones, Ventas y Cuentas ya existen.
 
 **Input**: User description: "Informes estratégicos del OE1 — los trece informes que miden el ingreso recurrente, la captación digital y el ciclo de vida comercial del cliente, resueltos con consultas sobre el modelo analítico."
 
@@ -329,8 +329,8 @@ medir**. Lo sacrificado es cobertura aparente del catálogo.
 
 ## Assumptions
 
-- ⏸ **Los tres módulos tácticos se implementan antes que este.** Es la suposición que bloquea `/plan`,
-  y la única que no se puede eludir.
+- ✅ **Los tres módulos tácticos ya están implementados** (2026-08-18). Esta suposición dejó de
+  bloquear `/plan`.
 - **Los hechos tendrán la forma que sus `data-model.md` declaran.** Esta spec se escribió leyéndolos;
   si al construirse cambian, hay que revisarla — y ese es precisamente **el valor de escribirla
   ahora**: declara qué necesita la capa estratégica de cada uno.

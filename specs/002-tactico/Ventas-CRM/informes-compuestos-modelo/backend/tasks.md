@@ -98,10 +98,10 @@ aquí. Y es donde se resuelve, de una vez, el defecto que si no tendrían que es
 > rol **es** la autoridad; cualquier otro caso acota. Escrito al reves —«si no es ejecutivo, ve
 > todo»— un rol nuevo que nadie clasificara abriria el departamento entero en silencio.
 
-- [ ] T014 ⚠️ **Prueba de que ninguna consulta lee `activo`**, en `dags/tests/test_catalogo_ventas_crm.py`, sobre el **texto** de las consultas. Es el defecto que mezcla éxito con fracaso sin fallar
-- [ ] T015 [P] Prueba de que **ninguna consulta nombra un campo personal ni una columna de coste**, en `dags/tests/test_catalogo_ventas_crm.py` (FR-022, FR-027)
-- [ ] T016 [P] Prueba de la regla de versión final en `dags/tests/test_catalogo_ventas_crm.py`: obligatoria en las dos dimensiones, **prohibida** en los cuatro hechos, todos de transacción
-- [ ] T017 [P] Prueba del acotamiento en `backend/apps/informes_tacticos/tests/api/test_permisos_ventas_crm.py`: un ejecutivo obtiene solo sus prospectos y la meta lo declara (SC-008)
+- [X] T014 ⚠️ **Prueba de que ninguna consulta lee `activo`**, en `dags/tests/test_catalogo_ventas_crm.py`, sobre el **texto** de las consultas. Es el defecto que mezcla éxito con fracaso sin fallar
+- [X] T015 [P] Prueba de que **ninguna consulta nombra un campo personal ni una columna de coste**, en `dags/tests/test_catalogo_ventas_crm.py` (FR-022, FR-027)
+- [X] T016 [P] Prueba de la regla de versión final en `dags/tests/test_catalogo_ventas_crm.py`: obligatoria en las dos dimensiones, **prohibida** en los cuatro hechos, todos de transacción
+- [X] T017 [P] Prueba del acotamiento en `backend/apps/informes_tacticos/tests/api/test_permisos_ventas_crm.py`: un ejecutivo obtiene solo sus prospectos y la meta lo declara (SC-008)
 
 **Checkpoint**: sustrato listo — las tres user stories pueden abordarse en cualquier orden.
 
@@ -120,32 +120,32 @@ etapa son iguales a los que salen más los que permanecen.
 
 ### Ampliar el modelo
 
-- [ ] T018 [US1] Crear `hecho_transicion_embudo` y `hecho_asignacion_prospecto` en `dags/lib/ddl.py` según `data-model.md` §2.3 y §2.4. ⚠️ **Sin `notas`**: es texto libre escrito por el ejecutivo
-- [ ] T019 [US1] Implementar `dags/lib/hechos/hecho_transicion_embudo.py`, con `es_avance` para distinguir el retroceso de etapa y `segundos_en_etapa_anterior` **ausente en la primera transición** — cero significaría «pasó al instante»
-- [ ] T020 [US1] Implementar `dags/lib/hechos/hecho_asignacion_prospecto.py`. ⚠️ **Es el primer historial del proyecto que el origen sí guarda bien**: la atribución es exacta desde el primer día, sin marca de «inicio no real» (research D4)
-- [ ] T021 [US1] Implementar el flujo conjunto en `dags/lib/hecho_ciclo_prospecto_tasks.py` y `dags/etl/dag_hecho_ciclo_prospecto.py`: **los dos hechos comparten fuente y se cargan juntos**, no en dos DAGs
-- [ ] T022 [US1] Registrar el DAG en `dags/tests/test_dag_integrity.py` y las dos tablas en `dags/tests/test_sin_datos_sensibles.py`
+- [X] T018 [US1] Crear `hecho_transicion_embudo` y `hecho_asignacion_prospecto` en `dags/lib/ddl.py` según `data-model.md` §2.3 y §2.4. ⚠️ **Sin `notas`**: es texto libre escrito por el ejecutivo
+- [X] T019 [US1] Implementar `dags/lib/hechos/hecho_transicion_embudo.py`, con `es_avance` para distinguir el retroceso de etapa y `segundos_en_etapa_anterior` **ausente en la primera transición** — cero significaría «pasó al instante»
+- [X] T020 [US1] Implementar `dags/lib/hechos/hecho_asignacion_prospecto.py`. ⚠️ **Es el primer historial del proyecto que el origen sí guarda bien**: la atribución es exacta desde el primer día, sin marca de «inicio no real» (research D4)
+- [X] T021 [US1] Implementar el flujo conjunto en `dags/lib/hecho_ciclo_prospecto_tasks.py` y `dags/etl/dag_hecho_ciclo_prospecto.py`: **los dos hechos comparten fuente y se cargan juntos**, no en dos DAGs
+- [X] T022 [US1] Registrar el DAG en `dags/tests/test_dag_integrity.py` y las dos tablas en `dags/tests/test_sin_datos_sensibles.py`
 
 ### Las consultas
 
-- [ ] T023 [US1] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot02_embudo_conversion.sql`: el porcentaje se calcula **sobre transiciones, no sobre prospectos únicos** —un prospecto puede retroceder—, con `denominador` visible
-- [ ] T024 [US1] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot02_permanencia_por_etapa.sql` **incluyendo el tramo abierto**: la etapa vigente al final cuenta hasta el fin del período, y esos prospectos se informan en `abiertos`
-- [ ] T025 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_carga_por_ejecutivo.sql`, atribuyendo al ejecutivo **vigente en el momento medido**
-- [ ] T026 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_pipeline_ponderado.sql` con `pesos_etapa`, devolviendo el peso aplicado para que la cifra sea auditable
-- [ ] T027 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_motivos_perdida.sql`, agrupando **motivo y etapa juntos**
+- [X] T023 [US1] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot02_embudo_conversion.sql`: el porcentaje se calcula **sobre transiciones, no sobre prospectos únicos** —un prospecto puede retroceder—, con `denominador` visible
+- [X] T024 [US1] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot02_permanencia_por_etapa.sql` **incluyendo el tramo abierto**: la etapa vigente al final cuenta hasta el fin del período, y esos prospectos se informan en `abiertos`
+- [X] T025 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_carga_por_ejecutivo.sql`, atribuyendo al ejecutivo **vigente en el momento medido**
+- [X] T026 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_pipeline_ponderado.sql` con `pesos_etapa`, devolviendo el peso aplicado para que la cifra sea auditable
+- [X] T027 [P] [US1] Escribir `dags/lib/consultas/ventas_crm/ot02_motivos_perdida.sql`, agrupando **motivo y etapa juntos**
 
 ### Los endpoints
 
-- [ ] T028 [US1] Exponer los cinco endpoints de OT02 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `backend/apps/informes_tacticos/urls.py`, según `contracts/informes-compuestos-ventas-crm.openapi.yaml`
-- [ ] T029 [US1] Documentar en la respuesta del pipeline ponderado que `pesos_etapa` es **una convención del informe**, no una política: el sistema operativo no define ninguna (FR-020)
+- [X] T028 [US1] Exponer los cinco endpoints de OT02 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `backend/apps/informes_tacticos/urls.py`, según `contracts/informes-compuestos-ventas-crm.openapi.yaml`
+- [X] T029 [US1] Documentar en la respuesta del pipeline ponderado que `pesos_etapa` es **una convención del informe**, no una política: el sistema operativo no define ninguna (FR-020)
 
 ### Pruebas
 
-- [ ] T030 [US1] ⚠️ **Prueba del prospecto estancado** en `dags/tests/test_ot02_permanencia.py`: un prospecto semanas en la misma etapa **sin transiciones** muestra la permanencia **mayor** y se cuenta en `abiertos`. Si no aparece, la consulta solo mide etapas abandonadas y **deja fuera a quienes el informe existe para encontrar** (SC-004)
-- [ ] T031 [US1] ⚠️ **Prueba de que el embudo cuadra** en `dags/tests/test_ot02_embudo.py`: entran = salen + permanecen, con los retrocesos contados como transición (SC-003)
-- [ ] T032 [P] [US1] Prueba de que **la primera transición no tiene duración cero** en `dags/tests/test_ot02_primera_transicion.py`: va ausente, porque no había etapa anterior
-- [ ] T033 [P] [US1] Prueba de que **la carga histórica no se reescribe** en `dags/tests/test_ot02_carga.py`: reasignar un prospecto y comprobar que un período anterior devuelve lo mismo (SC-005)
-- [ ] T034 [P] [US1] Prueba de que **un motivo de pérdida ausente aparece como «sin motivo registrado»** en `dags/tests/test_ot02_motivos.py`, no como fila descartada (FR-014)
+- [X] T030 [US1] ⚠️ **Prueba del prospecto estancado** en `dags/tests/test_ot02_permanencia.py`: un prospecto semanas en la misma etapa **sin transiciones** muestra la permanencia **mayor** y se cuenta en `abiertos`. Si no aparece, la consulta solo mide etapas abandonadas y **deja fuera a quienes el informe existe para encontrar** (SC-004)
+- [X] T031 [US1] ⚠️ **Prueba de que el embudo cuadra** en `dags/tests/test_ot02_embudo.py`: entran = salen + permanecen, con los retrocesos contados como transición (SC-003)
+- [X] T032 [P] [US1] Prueba de que **la primera transición no tiene duración cero** en `dags/tests/test_ot02_primera_transicion.py`: va ausente, porque no había etapa anterior
+- [X] T033 [P] [US1] Prueba de que **la carga histórica no se reescribe** en `dags/tests/test_ot02_carga.py`: reasignar un prospecto y comprobar que un período anterior devuelve lo mismo (SC-005)
+- [X] T034 [P] [US1] Prueba de que **un motivo de pérdida ausente aparece como «sin motivo registrado»** en `dags/tests/test_ot02_motivos.py`, no como fila descartada (FR-014)
 
 **Checkpoint**: US1 entregable. Es el MVP y satisface CU-T03.
 
@@ -166,20 +166,20 @@ canal (SC-006).
 
 ### Las consultas
 
-- [ ] T035 [P] [US2] Escribir `dags/lib/consultas/ventas_crm/ot01_captacion_por_canal.sql`, con los prospectos sin canal bajo `Desconocido` **sumando en los totales**
-- [ ] T036 [P] [US2] Escribir `dags/lib/consultas/ventas_crm/ot01_conversion_por_canal.sql`, leyendo `desenlace` y **nunca `activo`**; un canal sin prospectos devuelve **sin dato**, no 0 %
-- [ ] T037 [US2] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot01_convertidos_por_canal.sql` **sin ninguna columna de coste, ni vacía**, y con `nota_indicador` declarando que es la parte medible del CAC (FR-021 a FR-023)
+- [X] T035 [P] [US2] Escribir `dags/lib/consultas/ventas_crm/ot01_captacion_por_canal.sql`, con los prospectos sin canal bajo `Desconocido` **sumando en los totales**
+- [X] T036 [P] [US2] Escribir `dags/lib/consultas/ventas_crm/ot01_conversion_por_canal.sql`, leyendo `desenlace` y **nunca `activo`**; un canal sin prospectos devuelve **sin dato**, no 0 %
+- [X] T037 [US2] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot01_convertidos_por_canal.sql` **sin ninguna columna de coste, ni vacía**, y con `nota_indicador` declarando que es la parte medible del CAC (FR-021 a FR-023)
 
 ### Los endpoints
 
-- [ ] T038 [US2] Exponer los tres endpoints de OT01 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `urls.py`
+- [X] T038 [US2] Exponer los tres endpoints de OT01 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `urls.py`
 
 ### Pruebas
 
-- [ ] T039 [US2] ⚠️ **Prueba de que el informe de convertidos no trae coste** en `dags/tests/test_ot01_sin_coste.py`: ninguna clave `coste`, `importe` ni `inversion`, **ni siquiera nula**. Una columna vacía invita a rellenarla desde fuera, y el tablero mostraría un CAC que el sistema no sostiene (FR-022)
-- [ ] T040 [P] [US2] Prueba de que **los canales suman el total** en `dags/tests/test_ot01_canales.py`, con `Desconocido` incluido (SC-006)
-- [ ] T041 [P] [US2] Prueba de que un **canal sin prospectos devuelve sin dato** y no 0 % en `dags/tests/test_ot01_conversion.py` (FR-020)
-- [ ] T042 [P] [US2] Prueba de que la conversión por canal **usa `desenlace`** en `dags/tests/test_ot01_desenlace.py`: un prospecto perdido no cuenta como convertido pese a compartir estado de actividad con uno que sí lo hizo
+- [X] T039 [US2] ⚠️ **Prueba de que el informe de convertidos no trae coste** en `dags/tests/test_ot01_sin_coste.py`: ninguna clave `coste`, `importe` ni `inversion`, **ni siquiera nula**. Una columna vacía invita a rellenarla desde fuera, y el tablero mostraría un CAC que el sistema no sostiene (FR-022)
+- [X] T040 [P] [US2] Prueba de que **los canales suman el total** en `dags/tests/test_ot01_canales.py`, con `Desconocido` incluido (SC-006)
+- [X] T041 [P] [US2] Prueba de que un **canal sin prospectos devuelve sin dato** y no 0 % en `dags/tests/test_ot01_conversion.py` (FR-020)
+- [X] T042 [P] [US2] Prueba de que la conversión por canal **usa `desenlace`** en `dags/tests/test_ot01_desenlace.py`: un prospecto perdido no cuenta como convertido pese a compartir estado de actividad con uno que sí lo hizo
 
 **Checkpoint**: US2 entregable. Con US1, quedan cubiertos **los dos casos de uso tácticos ausentes**.
 
@@ -202,30 +202,30 @@ prospectos con demo de prospectos sin demo, cada grupo con su denominador.
 
 ### Ampliar el modelo
 
-- [ ] T043 [US3] Crear `hecho_interaccion_demo` y `hecho_notificacion_ventas` en `dags/lib/ddl.py` según `data-model.md` §2.5 y §2.6. ⚠️ **Sin `metadata`** —campo libre— y **sin `estado_envio`**, que ningún código escribe
-- [ ] T044 [US3] Implementar `dags/lib/hechos/hecho_interaccion_demo.py`
-- [ ] T045 [US3] ⚠️ Implementar `dags/lib/hechos/hecho_notificacion_ventas.py`, con `hubo_avance` y `segundos_a_reaccion` **ausente cuando no hubo reacción**. No es una reacción instantánea: es que no la hubo
-- [ ] T046 [US3] Implementar el flujo conjunto en `dags/lib/hecho_nutricion_tasks.py` y `dags/etl/dag_hecho_nutricion.py`: los dos hechos se cargan juntos
-- [ ] T047 [US3] Registrar el DAG y las dos tablas en `dags/tests/test_dag_integrity.py` y `dags/tests/test_sin_datos_sensibles.py`
+- [X] T043 [US3] Crear `hecho_interaccion_demo` y `hecho_notificacion_ventas` en `dags/lib/ddl.py` según `data-model.md` §2.5 y §2.6. ⚠️ **Sin `metadata`** —campo libre— y **sin `estado_envio`**, que ningún código escribe
+- [X] T044 [US3] Implementar `dags/lib/hechos/hecho_interaccion_demo.py`
+- [X] T045 [US3] ⚠️ Implementar `dags/lib/hechos/hecho_notificacion_ventas.py`, con `hubo_avance` y `segundos_a_reaccion` **ausente cuando no hubo reacción**. No es una reacción instantánea: es que no la hubo
+- [X] T046 [US3] Implementar el flujo conjunto en `dags/lib/hecho_nutricion_tasks.py` y `dags/etl/dag_hecho_nutricion.py`: los dos hechos se cargan juntos
+- [X] T047 [US3] Registrar el DAG y las dos tablas en `dags/tests/test_dag_integrity.py` y `dags/tests/test_sin_datos_sensibles.py`
 
 ### Las consultas
 
-- [ ] T048 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_intensidad_demo.sql`
-- [ ] T049 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_secciones_visitadas.sql` con `top`
-- [ ] T050 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_efectividad_nutricion.sql`, devolviendo **dos filas** —con demo y sin demo—, cada una con su denominador
-- [ ] T051 [US3] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot03_latencia_reaccion.sql`: los avisos **sin reacción** se cuentan en `sin_reaccion` y **quedan fuera de la mediana**
-- [ ] T052 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_reglas_disparo.sql`
+- [X] T048 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_intensidad_demo.sql`
+- [X] T049 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_secciones_visitadas.sql` con `top`
+- [X] T050 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_efectividad_nutricion.sql`, devolviendo **dos filas** —con demo y sin demo—, cada una con su denominador
+- [X] T051 [US3] ⚠️ Escribir `dags/lib/consultas/ventas_crm/ot03_latencia_reaccion.sql`: los avisos **sin reacción** se cuentan en `sin_reaccion` y **quedan fuera de la mediana**
+- [X] T052 [P] [US3] Escribir `dags/lib/consultas/ventas_crm/ot03_reglas_disparo.sql`
 
 ### Los endpoints
 
-- [ ] T053 [US3] Exponer los cinco endpoints de OT03 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `urls.py`
+- [X] T053 [US3] Exponer los cinco endpoints de OT03 en `backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py` y `urls.py`
 
 ### Pruebas
 
-- [ ] T054 [US3] ⚠️ **Prueba de que un aviso ignorado no mejora la latencia** en `dags/tests/test_ot03_latencia.py`, con datos sintéticos: una notificación sin ningún avance posterior queda **fuera de la mediana**. Contada como cero, **los avisos ignorados mejorarían el indicador** — al revés de la realidad
-- [ ] T055 [US3] ⚠️ **Prueba de «no hubo» frente a «hubo y no se usó»** en `dags/tests/test_ot03_vacio.py`: sin demos devuelve `data: []`; con demos sin interacciones devuelve filas en cero. Son conclusiones opuestas sobre el producto (SC-009)
-- [ ] T056 [P] [US3] Prueba de la efectividad de la nutrición en `dags/tests/test_ot03_efectividad.py`: dos grupos, **cada uno con su denominador** (FR-024)
-- [ ] T057 [P] [US3] Prueba de que ningún informe de OT03 devuelve **identidad del prospecto** en `dags/tests/test_ot03_sin_identidad.py`
+- [X] T054 [US3] ⚠️ **Prueba de que un aviso ignorado no mejora la latencia** en `dags/tests/test_ot03_latencia.py`, con datos sintéticos: una notificación sin ningún avance posterior queda **fuera de la mediana**. Contada como cero, **los avisos ignorados mejorarían el indicador** — al revés de la realidad
+- [X] T055 [US3] ⚠️ **Prueba de «no hubo» frente a «hubo y no se usó»** en `dags/tests/test_ot03_vacio.py`: sin demos devuelve `data: []`; con demos sin interacciones devuelve filas en cero. Son conclusiones opuestas sobre el producto (SC-009)
+- [X] T056 [P] [US3] Prueba de la efectividad de la nutrición en `dags/tests/test_ot03_efectividad.py`: dos grupos, **cada uno con su denominador** (FR-024)
+- [X] T057 [P] [US3] Prueba de que ningún informe de OT03 devuelve **identidad del prospecto** en `dags/tests/test_ot03_sin_identidad.py`
 
 **Checkpoint**: los 13 informes disponibles.
 
@@ -233,13 +233,13 @@ prospectos con demo de prospectos sin demo, cada grupo con su denominador.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T058 [P] Prueba de que **todo porcentaje viene con su denominador** en `dags/tests/test_ventas_crm_denominador.py` (FR-030)
-- [ ] T059 [P] Prueba de que **un período vacío devuelve cero filas** y no una fila de ceros, en `dags/tests/test_ventas_crm_periodo_vacio.py` (FR-031)
-- [ ] T060 ⚠️ **Prueba de crecimiento aditivo** en `dags/tests/test_crecimiento_ventas_crm.py`: tras añadir dos dimensiones y cuatro hechos, **las cifras de Emergencias y Red Operativa no cambian** (SC-010)
-- [ ] T061 Ejecutar `cd backend && python -m pytest -q` y verificar que ninguna suite existente se movió
-- [ ] T062 Recorrer `quickstart.md` de principio a fin, con especial atención a §2.1 (convertido ≠ perdido), §2.2 (el estancado) y §2.7 (sin coste)
-- [ ] T063 Anotar en `decisiones-pendientes.md` que **el coste por canal no existe en el sistema**, que el informe entrega solo la parte medible del BSC de adquisición, y que **`Dim_Prospecto.activo` mezcla convertido con perdido** en la capa operativa
-- [ ] T064 Documentar en `.specify/docs/changelog.md` y actualizar el estado de los 13 informes en `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md`, **anotando allí el defecto de `activo`** para que otros departamentos no lo repitan
+- [X] T058 [P] Prueba de que **todo porcentaje viene con su denominador** en `dags/tests/test_ventas_crm_denominador.py` (FR-030)
+- [X] T059 [P] Prueba de que **un período vacío devuelve cero filas** y no una fila de ceros, en `dags/tests/test_ventas_crm_periodo_vacio.py` (FR-031)
+- [X] T060 ⚠️ **Prueba de crecimiento aditivo** en `dags/tests/test_crecimiento_ventas_crm.py`: tras añadir dos dimensiones y cuatro hechos, **las cifras de Emergencias y Red Operativa no cambian** (SC-010)
+- [X] T061 Ejecutar `cd backend && python -m pytest -q` y verificar que ninguna suite existente se movió
+- [X] T062 Recorrer `quickstart.md` de principio a fin, con especial atención a §2.1 (convertido ≠ perdido), §2.2 (el estancado) y §2.7 (sin coste)
+- [X] T063 Anotar en `decisiones-pendientes.md` que **el coste por canal no existe en el sistema**, que el informe entrega solo la parte medible del BSC de adquisición, y que **`Dim_Prospecto.activo` mezcla convertido con perdido** en la capa operativa
+- [X] T064 Documentar en `.specify/docs/changelog.md` y actualizar el estado de los 13 informes en `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md`, **anotando allí el defecto de `activo`** para que otros departamentos no lo repitan
 
 ---
 

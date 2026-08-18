@@ -7,6 +7,304 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-18 — Capa estratégica: docs al día y backend OE4 (D4)
+
+**D4 — Índices OE1/OE2/OE5 y `acceso-estrategico.md`.** Seguí­an diciendo que el táctico no
+existía y que `Gerente` no estaba en código. El sustrato de compuestos **sí está**; `ROL_GERENTE`
+y `ROLES_DEMO` id 23 también. `contrato-informes-estrategicos.md` §10 recontado.
+
+**Código OE4.** Nueve GET `/informes-estrategicos/oe4/<informe>`; seis bloqueados 404.
+Columnas `distancia_millas` y `condicion_clima` en `hecho_accidente`. Permiso partido:
+expediente vs inteligencia vendible. Frontend de OE4 sigue aplazado.
+
+---
+
+## 2026-08-18 — Specs tácticas que mentían el estado (D1, D2, D3)
+
+**D1 — Índices de listados simples.** Seis departamentos (`Cuentas-Clientes`, `Ventas-CRM`,
+`Suscripciones-Facturacion`, `Red-Operativa`, `Soporte-Cliente`, `Emergencias`) declaraban
+frontend «aplazado deliberadamente» y backend «solo spec». El código ya servía listados
+(`backend/apps/*/views/informes_*.py` y `frontend/src/app/modules/*/informes/`). Se actualizaron
+los índices `informes-tacticos-simples.md`. Partners ya decía la verdad. Ventas, Suscripciones y
+Red Operativa no tienen carpeta Speckit `frontend/`; el índice apunta al módulo Angular.
+
+**D2 — `acceso-tactico.md` §7.** Afirmaba que faltaba crear los seis roles en `Dim_Rol`. Están en
+`ROLES_DEMO` (ids 17–22) y en `roles_tacticos.py`. `Gerente` es id 23 (capa estratégica). Analítica
+sigue sin módulo táctico.
+
+**D3 — `Status: Draft` en specs ya construidas.** Backend y frontend de `informes-tacticos-simples`
+(donde existía spec de capa) y backends de `informes-compuestos-modelo` que el índice ya daba por
+hechos (más el frontend de Ventas CRM) pasaron a `Implemented`.
+
+Causa: el código avanzó y los índices no. Efecto verificado: grep de «Aplazado deliberadamente» y
+`Status: Draft` en esos árboles queda vacío. No hay cambio de comportamiento.
+
+---
+
+## 2026-08-18 — Catálogo Dim_Rol: Gerente (tablero estratégico)
+
+Alcance: `backend/scripts/_demo_seed_common.py`, `backend/tests/regression/test_credenciales_demo_consistentes.py`,
+`.specify/docs/actors.md`.
+
+`Gerente` ya existía en `roles_tacticos.py` y en los permisos de OE1–OE6, pero no tenía fila en
+`Dim_Rol`. Sin esa fila ningún usuario podía acumularlo. Se siembra como `idrol` 23. Las seis
+autoridades tácticas (17–22) ya estaban; no se toca la decisión de que Cuentas no tenga autoridad
+de negocio propia.
+
+---
+
+## 2026-08-18 — Capa frontend de compuestos Cuentas y Clientes (ciclo `/speckit-implement`)
+
+Alcance: `frontend/src/app/modules/cuentas-clientes/gestion/`, `frontend/src/app/app.routes.ts`,
+`frontend/src/app/shared/layout/nav-links.ts`,
+`specs/002-tactico/Cuentas-Clientes/informes-compuestos-modelo/frontend/`.
+
+Tres pantallas Z (`ciclo`, `incorporacion`, `acceso`). Dos guards: Administrador en ciclo e
+incorporación; Director Tecnológico solo en acceso. Ocupación con cobertura, embudo con etapas
+en cero, concurrencia por solape, roles vacíos si no hay política. Listados, gestión de cuenta
+e incorporación operativa no se tocaron. Rebuild Docker aplazado a petición.
+
+---
+
+## 2026-08-18 — Capa frontend de compuestos Partners y API (ciclo `/speckit-implement`)
+
+Alcance: `frontend/src/app/modules/partners/gestion/`, `frontend/src/app/app.routes.ts`,
+`frontend/src/app/shared/layout/nav-links.ts`,
+`specs/002-tactico/Partners-API/informes-compuestos-modelo/frontend/`.
+
+Sin hallazgo de spec vs. código: tres pantallas Z (`consumo`, `incorporacion`, `entrega`),
+guard propio (Director Tecnológico / Admin), trío p95/media/muestras en el mismo bloque,
+`meta.nota_muestras` declarado. Listados, consola y portal no se tocaron ni se retiraron.
+El Partner y el Desarrollador de APIs no ven los enlaces de gestión.
+
+---
+
+## 2026-08-17 — Capa backend de compuestos Partners y API (ciclo `/speckit-implement`)
+
+Alcance: `specs/002-tactico/Partners-API/informes-compuestos-modelo/backend/`,
+`dags/lib/dimensiones/dim_{partner,credencial_api,version_contrato}.py`,
+`dags/lib/hechos/{hecho_llamada_api,hecho_cambio_acceso}.py`,
+`dags/lib/consultas/partners/` (13 SQL),
+`dags/etl/dag_hecho_{llamada_api,cambio_acceso}.py`,
+`backend/apps/informes_tacticos/` (permiso, servicio, vistas, envelope).
+
+Los 13 compuestos en alcance de OT08/OT09/OT10. Una sola fuente de consumo (el
+detalle); `Fact_APIIntegracion` no se carga. Sin IP, sin hash, sin contacto, sin
+ejecutor. p95 al consultar con `muestras` y `percentil_fiable`. Los dos
+endpoints ya construidos en `apps/partners` **no se tocan**. La latencia del
+modelo diferirá de la de esos endpoints **a propósito** (ellos dan solo media).
+
+Se añadió `hecho_factura.tipo` (columna aditiva) para separar excedente de
+ingreso base sin recrear el hecho de Suscripciones.
+
+`informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` no está en este
+workspace. El estado queda en
+`specs/002-tactico/Partners-API/informes-compuestos-modelo/informes-compuestos-modelo.md`.
+
+---
+
+## 2026-08-17 — Capa backend de compuestos Cuentas y Clientes (ciclo `/speckit-implement`)
+
+Alcance: `specs/002-tactico/Cuentas-Clientes/informes-compuestos-modelo/backend/`,
+`dags/lib/dimensiones/dim_{cliente,usuario_organizacion,etapa_onboarding,rol}.py`,
+`dags/lib/hechos/{hecho_sesion,hecho_onboarding}.py`,
+`dags/lib/consultas/cuentas/` (9 SQL),
+`dags/etl/dag_hecho_{sesion,onboarding}.py`,
+`backend/apps/informes_tacticos/` (permiso, servicio, vistas, envelope).
+
+Los 9 compuestos de OT17/OT04/OT18 sobre el modelo. `dim_cliente` queda **ampliada**
+(no recreada) por su departamento dueño: seis columnas de cohorte, baja, etapa
+derivada, onboarding completo y resultado de solicitud. El embudo parte del
+catálogo explícito; la duración de sesión es nula sin cierre; la concurrencia
+es solape de intervalos; sin token ni identidad. El Director Tecnológico entra
+solo a OT18.
+
+Al crear `hecho_onboarding`, ClickHouse 24.8 rechazó `ORDER BY (..., orden_etapa)` porque
+`orden_etapa` es `Nullable`. El `data-model.md` se corrigió a `ORDER BY (fecha, idcliente,
+idonboarding)`. No se activó `allow_nullable_key`.
+
+`informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` no está en este
+workspace (ruta en `.gitignore`). El estado de los 9 informes queda en
+`specs/002-tactico/Cuentas-Clientes/informes-compuestos-modelo/informes-compuestos-modelo.md`.
+
+---
+
+## 2026-08-17 — Capa frontend de compuestos Soporte al Cliente (ciclo `/speckit-implement`)
+
+Alcance: `frontend/src/app/modules/soporte-cliente/gestion/`, `frontend/src/app/app.routes.ts`,
+`frontend/src/app/shared/layout/nav-links.ts`,
+`specs/002-tactico/Soporte-Cliente/informes-compuestos-modelo/frontend/`.
+
+Sin hallazgo de spec vs. código: tres pantallas Z (`cumplimiento`, `cola`, `tendencias`),
+guard propio (Gerente / agente / Admin), par cumplimiento/cobertura en el mismo bloque,
+`meta.acotado_a` declarado. Listados, cola del agente y dashboard operativo no se tocaron
+ni se retiraron.
+
+**F1 (quickstart, 2026-08-17):** la clave del agente en `frontend/quickstart.md` decía
+`Demo1234!`; el seed canónico es `password123` (`backend/scripts/_demo_seed_common.py`).
+El login real con `lucia.vera.soporte@demo.tsi.com` / `password123` entra. Corregido el
+quickstart. No es un defecto de las pantallas Z.
+
+**B1 (ClickHouse, 2026-08-17):** los GET de los 9 compuestos responden 500 porque ClickHouse
+devuelve 404 sobre `tsi_tactico` (tablas/SQL del modelo de Soporte). La UI pinta `error` por
+zona, no 0 %. No es un fallo de esta capa frontend; hace falta el DAG/modelo cargado.
+
+---
+
+## 2026-08-17 — Capa backend de compuestos Soporte al Cliente (ciclo `/speckit-implement`)
+
+Alcance: `specs/002-tactico/Soporte-Cliente/informes-compuestos-modelo/backend/`,
+`dags/lib/dimensiones/dim_{sla_config,servicio,estado_soporte}.py`,
+`dags/lib/hechos/{sla_vigente,hecho_ticket,hecho_accion_ticket}.py`,
+`dags/lib/consultas/soporte/` (9 SQL), `dags/etl/dag_hecho_soporte.py`,
+`backend/apps/informes_tacticos/` (permiso, servicio, vistas).
+
+Los 9 compuestos de OT19/OT20 sobre el modelo: SLA vigente al crear el ticket (sin
+`versionado.py`), cobertura BSC en la misma fila, centinelas `0` → ausencia, sin texto de
+ticket ni nombre de agente. El tablero de cola operativo **no se retira** (decisión #20).
+`informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` y `decisiones-pendientes.md`
+no están en este workspace.
+
+---
+
+## 2026-08-17 — Capa frontend de compuestos Suscripciones (ciclo `/speckit-implement`)
+
+Alcance: `frontend/src/app/modules/suscripciones/gestion/`, `frontend/src/app/app.routes.ts`,
+`frontend/src/app/shared/layout/nav-links.ts`,
+`specs/002-tactico/Suscripciones-Facturacion/informes-compuestos-modelo/frontend/tasks.md`,
+`specs/002-tactico/Suscripciones-Facturacion/informes-compuestos-modelo/informes-compuestos-modelo.md`.
+
+Sin hallazgo de spec vs. código: tres pantallas Z (`cobro`, `movimientos`, `catalogo`),
+dos guards (Financiero / Estrategia), `meta.mes` declarado, sin columna de llamadas ni
+enlace a métodos de pago. Los listados `/suscripciones/informes` y el catálogo de planes
+no se tocaron.
+
+---
+
+## 2026-08-17 — Suscripciones compuestos: los 13 informes sobre el modelo analítico
+
+Alcance: `specs/002-tactico/Suscripciones-Facturacion/informes-compuestos-modelo/backend/`,
+`dags/lib/dimensiones/dim_{plan,cliente}.py`,
+`dags/lib/hechos/hecho_{suscripcion,factura,solicitud_cambio_plan}.py`,
+`dags/lib/consultas/suscripciones/` (13 SQL),
+`dags/etl/dag_hecho_{suscripcion,facturacion}.py`,
+`backend/apps/informes_tacticos/services/suscripciones_compuestos_service.py`,
+`backend/apps/informes_tacticos/views/suscripciones_compuestos_views.py`.
+
+### La causa
+
+El departamento no tocaba el modelo analítico. Hacían falta dos dimensiones
+conformadas, tres hechos y trece consultas para que MRR, ingresos, renovación,
+movimientos y NRR dejen de no tener fuente.
+
+### Cinco defectos del origen que no fallan
+
+1. **`activo = true` en una Cancelada** inflaría el MRR. El modelo lee
+   `estado_derivado`; ninguna consulta nombra `activo`.
+2. **`motivocancelacion` poblado en Activa** no se copia: el motivo solo entra
+   si el estado dice que canceló.
+3. **Vigencia invertida** se marca (`vigencia_inconsistente`) y no se corrige
+   ni se descarta: sigue contando como ingreso.
+4. **`idplan_programado = 0`** se guarda nulo, no como un plan.
+5. **Notas de crédito** restan vía `monto_con_signo`; sumar `monto_total`
+   inflaría los ingresos.
+
+`dim_cliente` es **conformada**: Cuentas y Clientes la ampliará, no la recreará.
+Sin identificador fiscal, sin token, sin últimos dígitos. `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` no está en este workspace.
+
+La autoridad está **repartida**: Financiero → OT06+OT07; Estrategia → OT05.
+Ninguno cubre la materia del otro.
+
+---
+
+## 2026-08-17 — Capa frontend de compuestos Ventas-CRM (ciclo `/speckit-implement`)
+
+Alcance: `frontend/src/app/modules/ventas-crm/gestion/`, `frontend/src/app/app.routes.ts`,
+`frontend/src/app/shared/layout/nav-links.ts`,
+`specs/002-tactico/Ventas-CRM/informes-compuestos-modelo/frontend/tasks.md`,
+`specs/002-tactico/Ventas-CRM/informes-compuestos-modelo/informes-compuestos-modelo.md`.
+
+Sin hallazgo de spec vs. código: las tres pantallas Z (`embudo`, `captacion`, `nutricion`)
+pintan `meta.acotado_a` del envelope, excluyen `GerenteCuentasPublicas` y no titulan CAC.
+Los listados `/ventas-crm/informes` y el pipeline no se tocaron.
+
+---
+
+## 2026-08-17 — Hallazgo (B17). ClickHouse no pone NULL en el LEFT JOIN de OT02/OT03
+
+Alcance: `dags/lib/consultas/ventas_crm/ot02_{carga_por_ejecutivo,permanencia_por_etapa,pipeline_ponderado}.sql`,
+`dags/lib/consultas/ventas_crm/ot03_efectividad_nutricion.sql`,
+`specs/002-tactico/Ventas-CRM/informes-compuestos-modelo/backend/contracts/catalogo-consultas.md`.
+
+### La causa
+
+ClickHouse rellena un LEFT JOIN sin coincidencia con el **valor por defecto del tipo**, no con
+NULL. `ifNull(etapa_en_corte, etapa_actual)` no cae a la dimensión cuando no hay transiciones
+(`''` no es NULL). `d.idprospecto IS NULL` marca a todo el mundo como `con_demo` porque el
+Int32 ausente llega como `0`. Además, `fechahora <=` en el `ON` del JOIN de conversiones
+revienta con `INVALID_JOIN_ON_EXPRESSION` en 24.8.
+
+### El efecto verificado
+
+Con el stack táctico arriba: el estancado sin transiciones no salía en `abiertos` (SC-004);
+`con_demo.denominador` era 2 en un escenario de 1+1; `ot02_carga_por_ejecutivo` no ejecutaba.
+El pipeline no filtraba `fecha_registro <= hasta`, así que un período anterior al origen
+seguía listando los 10 prospectos de 2026.
+Tras `nullIf` / `IN (SELECT …)` y la desigualdad en `WHERE`, y con el período vacío en
+`1999-01-01` (un corte sobre `dim_prospecto` no puede usar 2098: los 10 prospectos de 2026
+siguen abiertos), `pytest dags/tests/test_ot0{1,2,3}*.py` verde.
+
+---
+
+## 2026-08-17 — Ventas y CRM compuestos: los 13 informes sobre el modelo analítico
+
+Alcance: `specs/002-tactico/Ventas-CRM/informes-compuestos-modelo/backend/`,
+`dags/lib/hechos/hecho_{transicion_embudo,asignacion_prospecto,interaccion_demo,notificacion_ventas}.py`,
+`dags/lib/consultas/ventas_crm/` (13 SQL),
+`dags/etl/dag_hecho_{ciclo_prospecto,nutricion}.py`,
+`backend/apps/informes_tacticos/services/ventas_crm_compuestos_service.py`,
+`backend/apps/informes_tacticos/views/ventas_crm_compuestos_views.py`.
+
+### La causa
+
+El departamento no tocaba ninguna tabla del modelo. Hacían falta dos dimensiones
+(ya en fase 2) y **cuatro hechos** para servir OT01–OT03 y cubrir CU-T03 y CU-T04,
+los dos casos de uso tácticos que ningún informe del proyecto cubría.
+
+### Tres trampas que no fallan
+
+1. **`Dim_Prospecto.activo` mezcla convertido con perdido.** De los tres con
+   `activo = false`, dos se convirtieron y uno se perdió. El modelo lee
+   `desenlace`; ninguna de las 13 consultas nombra `activo`.
+2. **La permanencia sin tramo abierto deja fuera a los estancados** —justo a
+   quienes el informe existe para encontrar— y los presenta como los más rápidos.
+3. **Un aviso ignorado contado como latencia cero mejora el indicador.**
+   `hubo_avance = 0` y `segundos_a_reaccion` ausente quedan fuera de la mediana.
+
+### Lo que no entra
+
+Identidad y contacto del prospecto, notas de transición, metadata de demo,
+`estado_envio` (nadie la escribe) y **ninguna columna de coste**, ni vacía.
+El informe de convertidos por canal declara en `nota_indicador` que es la parte
+medible del CAC. `pesos_etapa` viaja en `meta.filtros` como convención del
+informe, no como política.
+
+### El catálogo de OT
+
+La ruta `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` **no está
+en el repositorio**. El estado de los 13 informes queda en este changelog y en
+`tasks.md` (T014–T064). El defecto de `activo` se anota también en
+`decisiones-pendientes.md` #43, para que otros departamentos no lo copien.
+
+### Verificación
+
+Pruebas de texto del catálogo (T014–T016), acotamiento con `acotado_a` (T017),
+constructor de los cuatro hechos, y pruebas contra ClickHouse en partición
+`209912` para permanencia, embudo, carga histórica, motivos, canales, nutrición,
+denominador, periodo vacío y crecimiento aditivo.
+
+---
+
 ## 2026-08-16 — Partners y API: cinco listados tácticos en pantalla (FR-014a + `entorno`)
 
 Alcance: `specs/002-tactico/Partners-API/informes-tacticos-simples/frontend/`,

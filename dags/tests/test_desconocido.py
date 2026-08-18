@@ -67,8 +67,10 @@ class TestFilasDesconocidas:
             # Ventas y CRM. `dim_prospecto` no la necesita: un prospecto
             # sin canal cae en la fila desconocida del canal, no en una suya.
             "dim_canal",
-            "dim_canal",
             "dim_condado_vecino",
+            "dim_plan",
+            "dim_cliente",
+            "dim_partner",
         }
 
     def test_todas_se_etiquetan_igual(self):

@@ -17,14 +17,25 @@ from lib.clickhouse_http_client import insert_rows, query_clickhouse
 from lib.ddl import ensure_modelo_analitico
 from lib.dimensiones import (
     dim_canal,
+    dim_cliente,
     dim_condado_vecino,
+    dim_estado_soporte,
+    dim_etapa_onboarding,
     dim_geografia,
+    dim_credencial_api,
     dim_origen_despacho,
+    dim_partner,
+    dim_plan,
     dim_prospecto,
     dim_region,
+    dim_rol,
+    dim_servicio,
     dim_severidad,
+    dim_sla_config,
     dim_tiempo,
     dim_unidad,
+    dim_usuario_organizacion,
+    dim_version_contrato,
 )
 from lib.dimensiones.desconocido import FILAS_DESCONOCIDAS
 from lib.etl_modelo import cargar, guardar, ruta
@@ -46,7 +57,11 @@ MARGEN_DIAS = 400
 DIMENSIONES = (
     "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
     "dim_unidad", "dim_region", "dim_canal", "dim_prospecto",
-    "dim_condado_vecino",
+    "dim_condado_vecino", "dim_plan", "dim_cliente",
+    "dim_sla_config", "dim_servicio", "dim_estado_soporte",
+    "dim_usuario_organizacion", "dim_etapa_onboarding",
+    "dim_rol", "dim_usuario_rol",
+    "dim_partner", "dim_credencial_api", "dim_version_contrato",
 )
 
 
@@ -73,6 +88,29 @@ def extract(ts: str, **_) -> None:
         guardar(filas, ruta(ts, "extract", _prefijo(f"vecino_{nombre}")))
 
     guardar(dim_prospecto.extraer(), ruta(ts, "extract", _prefijo("prospectos")))
+    guardar(dim_plan.extraer(), ruta(ts, "extract", _prefijo("planes")))
+    guardar(dim_sla_config.extraer(), ruta(ts, "extract", _prefijo("sla_config")))
+    guardar(dim_servicio.extraer(), ruta(ts, "extract", _prefijo("servicios")))
+    guardar(dim_estado_soporte.extraer(), ruta(ts, "extract", _prefijo("estados_soporte")))
+    catalogo_clientes = dim_cliente.extraer()
+    guardar(catalogo_clientes["clientes"], ruta(ts, "extract", _prefijo("clientes_dim")))
+    guardar(catalogo_clientes["metodos"], ruta(ts, "extract", _prefijo("metodos_pago")))
+    guardar(catalogo_clientes.get("onboarding", []), ruta(ts, "extract", _prefijo("onboarding_dim")))
+
+    pertenencia = dim_usuario_organizacion.extraer()
+    guardar(pertenencia["usuarios"], ruta(ts, "extract", _prefijo("usuarios_org")))
+    guardar(pertenencia["pertenencia"], ruta(ts, "extract", _prefijo("pertenencia_org")))
+
+    roles = dim_rol.extraer()
+    guardar(roles["roles"], ruta(ts, "extract", _prefijo("roles")))
+    guardar(roles["asignaciones"], ruta(ts, "extract", _prefijo("usuario_rol")))
+
+    guardar(dim_partner.extraer(), ruta(ts, "extract", _prefijo("partners")))
+    creds = dim_credencial_api.extraer()
+    guardar(creds["credenciales"], ruta(ts, "extract", _prefijo("credenciales_api")))
+    guardar(creds["bitacora"], ruta(ts, "extract", _prefijo("bitacora_acceso")))
+    versiones_contrato = dim_version_contrato.extraer()
+    guardar(versiones_contrato["versiones"], ruta(ts, "extract", _prefijo("versiones_contrato")))
 
     for nombre, filas in dim_region.extraer().items():
         guardar(filas, ruta(ts, "extract", _prefijo(f"region_{nombre}")))
@@ -161,6 +199,73 @@ def transform(ts: str, **_) -> None:
     guardar(
         dim_prospecto.construir(leido("prospectos"), canales, ahora),
         ruta(ts, "transform", _prefijo("dim_prospecto")),
+    )
+    guardar(
+        dim_plan.construir(leido("planes"), ahora)
+        + [FILAS_DESCONOCIDAS["dim_plan"](ahora)],
+        ruta(ts, "transform", _prefijo("dim_plan")),
+    )
+    guardar(
+        dim_cliente.construir(
+            {
+                "clientes": leido("clientes_dim"),
+                "metodos": leido("metodos_pago"),
+                "onboarding": leido("onboarding_dim"),
+            },
+            ahora,
+        )
+        + [FILAS_DESCONOCIDAS["dim_cliente"](ahora)],
+        ruta(ts, "transform", _prefijo("dim_cliente")),
+    )
+    guardar(
+        dim_usuario_organizacion.construir(
+            {"usuarios": leido("usuarios_org"), "pertenencia": leido("pertenencia_org")},
+            ahora,
+        ),
+        ruta(ts, "transform", _prefijo("dim_usuario_organizacion")),
+    )
+    guardar(
+        dim_etapa_onboarding.construir([], ahora),
+        ruta(ts, "transform", _prefijo("dim_etapa_onboarding")),
+    )
+    guardar(
+        dim_rol.construir_roles(leido("roles"), ahora),
+        ruta(ts, "transform", _prefijo("dim_rol")),
+    )
+    guardar(
+        dim_rol.construir_asignaciones(leido("usuario_rol"), leido("roles"), ahora),
+        ruta(ts, "transform", _prefijo("dim_usuario_rol")),
+    )
+    guardar(
+        dim_sla_config.construir(leido("sla_config"), ahora),
+        ruta(ts, "transform", _prefijo("dim_sla_config")),
+    )
+    guardar(
+        dim_servicio.construir(leido("servicios"), ahora),
+        ruta(ts, "transform", _prefijo("dim_servicio")),
+    )
+    guardar(
+        dim_estado_soporte.construir(leido("estados_soporte"), ahora),
+        ruta(ts, "transform", _prefijo("dim_estado_soporte")),
+    )
+    guardar(
+        dim_partner.construir(leido("partners"), ahora)
+        + [FILAS_DESCONOCIDAS["dim_partner"](ahora)],
+        ruta(ts, "transform", _prefijo("dim_partner")),
+    )
+    guardar(
+        dim_credencial_api.construir(
+            {"credenciales": leido("credenciales_api"), "bitacora": leido("bitacora_acceso")},
+            ahora,
+        ),
+        ruta(ts, "transform", _prefijo("dim_credencial_api")),
+    )
+    guardar(
+        dim_version_contrato.construir(
+            {"versiones": leido("versiones_contrato"), "servicios": leido("servicios")},
+            ahora,
+        ),
+        ruta(ts, "transform", _prefijo("dim_version_contrato")),
     )
 
     versiones_region = dim_region.construir(

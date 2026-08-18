@@ -11,8 +11,8 @@ apuntada por `.specify/feature.json`.
 ## Por qué OE4 va después de OE6
 
 Es el **segundo objetivo con sustrato**. Sus quince informes se apoyan casi enteros en
-`hecho_accidente` y `hecho_evidencia`, que Emergencias ya cargó y verificó. OE1, OE2 y OE5 necesitan
-hechos de Suscripciones, Ventas, Cuentas, Partners y Soporte que **no existen todavía** en el almacén.
+`hecho_accidente` y `hecho_evidencia`, que Emergencias ya cargó y verificó. Los compuestos tácticos
+de los siete departamentos **ya están** (2026-08-18); OE2 tiene plan; OE1 y OE5 siguen en spec.
 
 ## Los quince informes
 
@@ -45,7 +45,7 @@ tablas que no existen; E4-14 lo impide la regla de idempotencia del modelo.
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | **activa** — spec redactada |
+| **Backend** | [`backend/`](./backend/) | **implementado** (9 publicados, 6 → 404) |
 | Frontend | *(pendiente)* | aplazada |
 
 ## Lo que hay que saber antes de tocar este módulo

@@ -10,9 +10,14 @@ from rest_framework.permissions import BasePermission
 
 from core.auth.roles_tacticos import (
     AUTORIDAD_EMERGENCIAS,
+    AUTORIDAD_SOPORTE,
     AUTORIDAD_VENTAS_CRM,
     AUTORIDAD_RED_OPERATIVA_CRECIMIENTO,
     AUTORIDAD_RED_OPERATIVA_VALIDACION,
+    AUTORIDAD_SUSCRIPCIONES_CATALOGO,
+    AUTORIDAD_SUSCRIPCIONES_FINANZAS,
+    AUTORIDAD_CUENTAS_ACCESOS_TECNICOS,
+    AUTORIDAD_PARTNERS_API,
 )
 
 ROLE_OPERADOR = "Operador"
@@ -147,3 +152,116 @@ class VentasCrmCompuestosPermission(BasePermission):
         return bool(roles & AUTORIDAD_VENTAS_CRM) or bool(
             roles & {ROLE_ADMIN, ROLE_GERENTE_VENTAS}
         )
+
+
+#: Materia → roles que la gobiernan. Ver `SuscripcionesCompuestosPermission`.
+AUTORIDAD_SUSCRIPCIONES_POR_MATERIA = {
+    "finanzas": AUTORIDAD_SUSCRIPCIONES_FINANZAS,
+    "catalogo": AUTORIDAD_SUSCRIPCIONES_CATALOGO,
+}
+
+
+class SuscripcionesCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Suscripciones (FR-038, FR-039).
+
+    ⚠️ **La autoridad está repartida, y esto es lo que la reparte.**
+
+    El **Director Financiero** gobierna facturación, cobro y mora. El **Director
+    de Estrategia** gobierna el catálogo y los precios. Cada uno entra **a su
+    materia y no a la del otro**: admitir a las dos autoridades del departamento
+    y quedarse tranquilo daría a cada uno acceso a la materia ajena, sin síntoma.
+
+    El **Administrador** entra a las dos, con su acotamiento operativo.
+
+    Un informe **sin materia declarada no lo ve nadie**.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+
+        from apps.informes_tacticos.services.suscripciones_compuestos_service import (
+            SuscripcionesCompuestosService,
+        )
+
+        materia = SuscripcionesCompuestosService().materia_de(view.kwargs.get("informe", ""))
+        if materia is None:
+            return False
+
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_SUSCRIPCIONES_POR_MATERIA[materia]) or ROLE_ADMIN in roles
+
+
+#: Rol operativo del agente de soporte. Entra **acotado a sus tickets**.
+ROLE_AGENTE_SOPORTE = "Soporte"
+
+
+class SoporteCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Soporte al Cliente (FR-030 a FR-033).
+
+    * El **Gerente de Éxito del Cliente** es la autoridad: ve el departamento
+      entero, sin acotamiento por titularidad.
+    * El **agente** ve **sus propios tickets**. El acotamiento lo aplica la
+      vista, no esta clase.
+    * Un **cliente** no entra.
+
+    ⚠️ **La exención no alcanza al dato sensible.** Que el gerente vea el
+    departamento entero no le da asunto, descripción, mensajes ni notas
+    internas: esas columnas no están en el modelo.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_SOPORTE) or bool(
+            roles & {ROLE_ADMIN, ROLE_AGENTE_SOPORTE}
+        )
+
+
+class CuentasCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Cuentas y Clientes (FR-030).
+
+    El **Administrador** cubre los nueve. El **Director Tecnológico** cubre
+    **solo OT18** (acceso). Un informe de ciclo de vida o incorporación no
+    lo ve: su autoridad aquí no alcanza a esas materias.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+
+        from apps.informes_tacticos.services.cuentas_compuestos_service import (
+            MATERIA_ACCESO,
+            CuentasCompuestosService,
+        )
+
+        materia = CuentasCompuestosService().materia_de(view.kwargs.get("informe", ""))
+        if materia is None:
+            return False
+
+        roles = set(getattr(user, "roles", []))
+        if ROLE_ADMIN in roles:
+            return True
+        if materia == MATERIA_ACCESO:
+            return bool(roles & AUTORIDAD_CUENTAS_ACCESOS_TECNICOS)
+        return False
+
+
+class PartnersCompuestosPermission(BasePermission):
+    """Acceso a los informes compuestos de Partners y API (FR-034).
+
+    El **Director Tecnológico** y el **Administrador** entran. Un rol de
+    **partner** no: son cifras comparadas de todos los partners.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        roles = set(getattr(user, "roles", []))
+        return bool(roles & AUTORIDAD_PARTNERS_API) or ROLE_ADMIN in roles
+

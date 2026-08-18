@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-15
 
-**Status**: Draft
+**Status**: Implemented
 
 **Depends-on**: [`../backend/spec.md`](../backend/spec.md) y su contrato OpenAPI. Esta capa
 **MUST NOT** redefinir reglas de negocio, filtros ni contratos REST.

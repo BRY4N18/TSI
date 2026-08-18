@@ -85,6 +85,17 @@ class TestCredencialesDemoConsistentes:
         # resuelvan el idrol de forma no determinista.
         assert not repetidos, f"Roles duplicados en el catálogo compartido: {sorted(repetidos)}"
 
+    def test_las_autoridades_departamentales_estan_en_dim_rol(self):
+        from core.auth.roles_tacticos import ROL_GERENTE, TODAS_LAS_AUTORIDADES
+        from _demo_seed_common import ROLES_DEMO
+
+        nombres = {nombre for nombre, _ in ROLES_DEMO.values()}
+        faltan = set(TODAS_LAS_AUTORIDADES) | {ROL_GERENTE}
+        faltan -= nombres
+        assert not faltan, (
+            f"Autoridades en roles_tacticos.py que Dim_Rol aún no siembra: {sorted(faltan)}"
+        )
+
     def test_el_fixture_e2e_usa_cuentas_del_dominio_demo(self):
         # Arrange
         contenido = FIXTURE_E2E.read_text(encoding="utf-8")

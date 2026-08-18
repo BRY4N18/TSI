@@ -1,0 +1,272 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8">
+  @if (definicion(); as def) {
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Gestión · Partners y API
+        </p>
+        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+          {{ def.titulo }}
+        </h1>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
+      </div>
+    </header>
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        data-testid="zona-heroe"
+        data-bloque-vista
+      >
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          {{ def.heroe.titulo }}
+        </p>
+        @switch (cargaHeroe().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              (click)="reintentar(def.heroe.informes[0])"
+            >
+              Reintentar
+            </button>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @case ('sin_dato') {
+            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary" data-testid="heroe-sin-dato">
+              sin dato
+            </p>
+          }
+          @default {
+            @if (idPantalla() === 'consumo') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-3 p-0" data-testid="trio-latencia">
+                @for (fila of cargaHeroe().data; track texto(fila['endpoint_path'])) {
+                  <li>
+                    <p class="m-0 text-sm font-semibold text-text-primary">
+                      {{ texto(fila['endpoint_path']) }}
+                    </p>
+                    <p
+                      class="m-0 mt-1 text-3xl font-bold tabular-nums text-text-primary"
+                      data-testid="heroe-cifra"
+                    >
+                      {{ num(fila['latencia_p95_ms']) | number: '1.0-1' }}
+                      <span class="text-base font-medium">ms p95</span>
+                    </p>
+                    <p class="m-0 mt-1 text-sm text-text-secondary">
+                      media {{ num(fila['latencia_media_ms']) | number: '1.0-1' }} ms ·
+                      {{ num(fila['muestras']) | number }} muestras
+                      @if (noFiable(fila)) {
+                        <span data-testid="marca-no-fiable"> · no fiable</span>
+                      }
+                    </p>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'incorporacion') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0" data-testid="adopcion-versiones">
+                @for (fila of cargaHeroe().data; track texto(fila['servicio']) + texto(fila['version'])) {
+                  <li class="text-sm">
+                    <span class="font-semibold text-text-primary">
+                      {{ texto(fila['servicio']) }} {{ texto(fila['version']) }}
+                    </span>
+                    <span class="ml-2 text-text-secondary">
+                      {{ pct(num(fila['pct'])) }} · {{ num(fila['llamadas']) | number }} llamadas
+                    </span>
+                  </li>
+                }
+              </ul>
+              <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="version-derivada">
+                La versión se deriva del endpoint; el log no la registra.
+              </p>
+            }
+            @if (idPantalla() === 'entrega') {
+              @if (filaIntegracion(); as fila) {
+                <p
+                  class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                  data-testid="heroe-cifra"
+                >
+                  {{ pct(num(fila['pct'])) }}
+                </p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  {{ num(fila['con_integracion']) | number }} de
+                  {{ num(fila['clientes_totales']) | number }} clientes · meta
+                  {{ pct(num(fila['meta'])) }}
+                </p>
+              }
+            }
+          }
+        }
+        @if (notaMuestras()) {
+          <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="zona-nota-muestras">
+            {{ notaMuestras() }}
+          </p>
+        }
+      </article>
+
+      <div class="flex flex-col gap-3 lg:col-span-5" data-bloque-vista>
+        <div data-testid="zona-periodo">
+          <app-periodo-selector (cambio)="onPeriodoChange($event)" />
+        </div>
+        @if (idPantalla() === 'consumo') {
+          <p class="m-0 text-xs text-text-secondary" data-testid="nota-distinta-operativo">
+            Esta latencia no es la media del reporte operativo ni de «Mi consumo».
+          </p>
+        }
+      </div>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        data-testid="zona-visual"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        @switch (cargaVisual().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'consumo') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['clase_resultado']) + texto(fila['codigo_http'])) {
+                  <li>
+                    <div class="mb-1 flex justify-between text-sm">
+                      <span class="text-text-secondary">
+                        {{ texto(fila['clase_resultado']) }} · {{ texto(fila['codigo_http']) }}
+                      </span>
+                      <span class="font-semibold tabular-nums text-text-primary">
+                        {{ num(fila['llamadas']) | number }} · {{ pct(num(fila['pct'])) }}
+                      </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                      <div
+                        class="h-full rounded-md bg-accent-primary"
+                        [style.width.%]="(num(fila['pct']) ?? 0) * 100"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'incorporacion') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['partner']) + texto(fila['motivo_inactividad'])) {
+                  <li class="text-sm" data-testid="fila-motivo">
+                    <span class="font-semibold text-text-primary">{{ texto(fila['motivo_inactividad']) }}</span>
+                    <span class="ml-2 text-text-secondary">
+                      {{ texto(fila['partner']) }} · {{ num(fila['credenciales']) | number }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'entrega') {
+              @let maxExp = maxDe(cargaVisual().data, 'expedientes');
+              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['cliente']) + texto(fila['canal'])) {
+                  <li data-testid="fila-canal">
+                    <div class="mb-1 flex justify-between text-sm">
+                      <span class="text-text-secondary">
+                        {{ texto(fila['canal']) }} · {{ texto(fila['cliente']) }}
+                      </span>
+                      <span class="font-semibold text-text-primary">
+                        {{ num(fila['expedientes']) | number }}
+                      </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
+                      <div
+                        class="h-full rounded-md bg-accent-primary"
+                        [style.width.%]="((num(fila['expedientes']) ?? 0) / maxExp) * 100"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        data-testid="zona-lectura"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        @switch (cargaLectura().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'consumo') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track texto(fila['partner'])) {
+                  <li class="text-sm" data-testid="fila-partner">
+                    <span class="text-text-primary">{{ texto(fila['partner']) }}</span>
+                    <span class="ml-2 text-text-secondary">
+                      {{ num(fila['llamadas']) | number }} llamadas ·
+                      {{ pct(num(fila['pct_error'])) }} error
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'incorporacion') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaLectura().data; track texto(fila['partner'])) {
+                  <li class="text-sm" data-testid="fila-tiempo">
+                    <span class="text-text-primary">{{ texto(fila['partner']) }}</span>
+                    <span class="ml-2 text-text-secondary">
+                      {{ texto(fila['etapa']) }}
+                      @if (num(fila['en_proceso']) === 1) {
+                        · en proceso
+                      } @else if (num(fila['dias']) !== null) {
+                        · {{ num(fila['dias']) | number }} días
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'entrega') {
+              @if (filaIntegracion(); as fila) {
+                <p class="m-0 mt-3 text-sm text-text-secondary" data-testid="implicacion-cien">
+                  Un 100 % contaría solo a quienes ya tienen partner
+                  ({{ num(fila['con_integracion']) | number }} de
+                  {{ num(fila['clientes_totales']) | number }}). El denominador son todos los
+                  clientes.
+                </p>
+              }
+            }
+          }
+        }
+      </article>
+
+      @if (def.apoyoPlegado) {
+        <div class="lg:col-span-12" data-bloque-vista>
+          <app-apoyo-plegable-partners [bloques]="bloquesApoyo()" />
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="m-0 text-sm text-text-secondary">Pantalla no encontrada.</p>
+  }
+</div>

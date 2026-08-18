@@ -18,8 +18,8 @@ no admite corte temporal ni desglose por agente—. Los otros ocho son construcc
 
 | Capa | Ruta | Estado |
 |------|------|--------|
-| **Backend** | [`backend/`](./backend/) | activa |
-| **Frontend** | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **hecha** |
+| **Frontend** | [`frontend/`](./frontend/) | **hecha** |
 
 ## Lo que hay que saber antes de tocar este departamento
 
@@ -40,3 +40,8 @@ indicador BSC.
 |---|---|
 | [`../informes-tacticos-simples/`](../informes-tacticos-simples/) | Los 6 listados llanos |
 | **`informes-compuestos-modelo/`** *(este)* | Los 9 informes agregados |
+
+**Tablero de cola operativo:** este módulo entrega el equivalente corregido
+(`/informes-tacticos/soporte/tablero-cola`) y **deja el original sirviendo** (`GET /soporte/dashboard`).
+Su retirada sigue dependiendo de la decisión #20; `decisiones-pendientes.md` no está en este
+workspace (misma nota que en Suscripciones).

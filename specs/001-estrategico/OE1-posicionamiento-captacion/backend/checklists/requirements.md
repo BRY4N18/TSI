@@ -27,9 +27,9 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [ ] ⏸ **Ready for `/speckit-plan`** — **NO.** Ver abajo
+- [x] **Ready for `/speckit-plan`** — sustrato táctico cargado (2026-08-18)
 
-**15 / 16**, y el que falta **no se arregla escribiendo**.
+**16 / 16.** El ítem de `/plan` quedó listo al cargar el sustrato táctico (2026-08-18). E1-05/07/08 siguen sin fuente: eso no bloquea planificar los diez construibles.
 
 ---
 
