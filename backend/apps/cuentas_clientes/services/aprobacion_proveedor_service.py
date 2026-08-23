@@ -12,7 +12,11 @@ from apps.cuentas_clientes.services.onboarding_notificacion_service import (
     OnboardingNotificacionService,
 )
 from core.pinot.tiempo import ahora_ms
+from apps.cuentas_clientes.services.onboarding_service import ETAPAS_OBLIGATORIAS
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
+from core.repositories.cuentas_clientes.onboarding_repository import (
+    OnboardingRepository,
+)
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 
 ESTADO_PENDIENTE = "Pendiente_Aprobación"
@@ -35,12 +39,14 @@ class AprobacionProveedorService:
         access: OnboardingAccessService | None = None,
         notificacion: OnboardingNotificacionService | None = None,
         audit: AuditService | None = None,
+        onboarding_repo: OnboardingRepository | None = None,
     ):
         self.cliente_repo = cliente_repo or ClienteRepository()
         self.user_repo = user_repo or UserRepository()
         self.access = access or OnboardingAccessService()
         self.notificacion = notificacion or OnboardingNotificacionService()
         self.audit = audit or AuditService()
+        self.onboarding_repo = onboarding_repo or OnboardingRepository()
 
     def listar_solicitudes(
         self, *, roles: list[str], estado: str = ESTADO_PENDIENTE
@@ -101,6 +107,14 @@ class AprobacionProveedorService:
             )
             if not updated:
                 raise AprobacionProveedorError("Cuenta de cliente no encontrada")
+            # ⚠️ **Aquí arranca el onboarding, y aquí se declara qué hay que
+            # recorrer** (decisión #45). Sin estas filas, `Fact_Onboarding` solo
+            # recibía etapas completadas y el embudo daba 100 % de finalización:
+            # las que nadie hizo no existían. Ahora una etapa que sigue en
+            # `completado = False` **es** el abandono observado, sin inventar un
+            # umbral de inactividad.
+            self.onboarding_repo.iniciar_etapas(cliente_id, ETAPAS_OBLIGATORIAS)
+
             self.audit.log_event(
                 event_type="aprobacion_proveedor",
                 user_id=user_id,

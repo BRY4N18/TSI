@@ -42,6 +42,81 @@ sembrados. Eso ya no aplica: ver la entrada siguiente.
 
 ---
 
+## 2026-08-23 — Los cuatro que quedaban abiertos: si la acción existe, el instante se puede sellar
+
+La observación que desbloqueó tres de los cuatro fue del usuario: **«cuando se
+desactiva una región, ¿no sería el caso?»**. Sí lo era. Yo había concluido que el
+sistema «no registra» esas fechas; lo cierto es que **las acciones existían y
+nadie sellaba el instante**. Es el mismo patrón que ya se había aplicado a la
+suspensión de suscripciones.
+
+### `casos-activos-al-despublicar` — resuelto
+
+El informe exige `inicio_es_real = 1`, y `versionado.decidir_version` solo lo
+concede si **quien llama aporta el instante**. `dim_region` no lo aportaba porque
+el origen guardaba el estado presente y lo sobrescribía.
+
+`Dim_RegionOperativa` gana `fechaestadoregion`, y **el repositorio la sella al
+cambiar `estadoregion`** — no los servicios: hay dos que despublican
+(`despublicacion_automatica_service` y `reevaluacion_region_service`) y el que se
+añada mañana lo hereda sin acordarse. Solo cuando el estado cambia de verdad:
+reescribirla en cada actualización convertiría «desde cuándo está despublicada»
+en «cuándo se tocó por última vez».
+
+Verificado de punta a punta despublicando por la vía real: la versión nueva abre
+con `inicio_es_real = 1` y el informe devuelve **1 fila, 4 casos activos, 3
+graves**, con la fecha real.
+
+### #45 — el abandono de onboarding, resuelto sin inventar umbrales
+
+El bloqueo declarado era «hay que decidir qué cuenta como abandono: ¿inactividad
+de N días?». **No hacía falta decidir eso.** `Fact_Onboarding` ya tenía la
+columna `completado` y nadie escribía nunca `False`: las etapas que nadie hacía
+sencillamente no existían, y por eso el embudo daba 100 %.
+
+Al aprobar la cuenta —que es cuando el onboarding arranca— se declaran las tres
+obligatorias con `completado = False`. A partir de ahí **una etapa que sigue en
+`False` es el abandono observado**. Sin umbral, sin inferencia.
+
+`hecho_onboarding` cambia de grano —de «etapa completada» a «etapa del
+onboarding»— y gana `completada`, con su migración: `CREATE TABLE IF NOT EXISTS`
+no añade columnas a una tabla que ya existe. `dias_desde_alta` queda **ausente**
+en las no completadas: no hay días hasta algo que no ocurrió.
+
+### #46 — la versión, ahora sí declarable por el partner
+
+Se añade la cabecera `X-TSI-API-Version`. **Solo lo declarado por el partner
+llega con `version_es_derivada = 0`**; lo leído del path se sigue guardando —así
+la fila conserva la versión que era cierta cuando ocurrió— pero marcado como
+derivado, porque lo es.
+
+⚠️ Esto **corrige un juicio mío anterior**: había puesto `0` a todo lo guardado,
+incluida la versión sacada del path. Guardarla antes no la convierte en un hecho
+declarado, y la distinción es justo lo que el indicador de adopción necesita.
+
+### `idsession` — cerrado también para varios procesos
+
+La marca en memoria no cubría el multiproceso. El reparto pasa a un SQLite
+propio con `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`: **reservar y leer
+son la misma operación**, así que dos workers no pueden recibir el mismo número.
+
+⛔ **No es la base de datos del dominio.** Es un fichero de contadores, se puede
+borrar sin perder nada de negocio y al arrancar se resiembra desde el `MAX()` de
+Pinot. Si SQLite falla, se cae al reparto en memoria: un contador indisponible
+no puede dejar al sistema sin poder crear nada.
+
+### Otra prueba que pasaba por accidente
+
+`test_ot13_retirada` daba «0 despublicaciones medidas» **porque ninguna región
+tenía `inicio_es_real = 1`** — la condición que este cambio elimina. Al sellarse
+la primera, el contador subió a 1 sin que nada se hubiera roto. Base propia, como
+`test_ot17_antiguedad` la semana pasada. Es la tercera prueba de esta serie que
+se apoyaba en un defecto para pasar.
+
+**Pruebas:** `pytest apps tests` 4 350 · `ng test` 1 408.
+
+---
+
 ## 2026-08-23 — Los tres pendientes de fondo: identificadores, reactivación y las decisiones de agosto
 
 ### 1. `idsession` derivado de `MAX()` — y con él, otros 46 sitios

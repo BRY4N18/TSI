@@ -518,7 +518,17 @@ def ensure_hecho_sesion() -> None:
 
 
 def ensure_hecho_onboarding() -> None:
-    """Transacción, grano una etapa **completada**. El abandono no está aquí."""
+    """Transacción, grano **una etapa del onboarding de un cliente**.
+
+    ⚠️ El grano era «una etapa **completada**» y por eso el abandono no estaba
+    aquí: el origen solo publicaba filas completadas y un embudo calculado sobre
+    lo observado daba **100 % de finalización** (decisión #45).
+
+    Desde el 2026-08-23 el origen declara las etapas obligatorias al aprobar la
+    cuenta, con `completado = False`, y esta tabla las recibe. `completada`
+    distingue las dos cosas: **una etapa que llegó y sigue en 0 es el abandono
+    observado**, sin inventar un umbral de inactividad.
+    """
     execute_clickhouse(
         """
         CREATE TABLE IF NOT EXISTS hecho_onboarding (
@@ -530,6 +540,7 @@ def ensure_hecho_onboarding() -> None:
             idetapa         Nullable(Int32),
             etapa           String,
             orden_etapa     Nullable(UInt8),
+            completada      UInt8,
             dias_desde_alta Nullable(Int32),
             cargado_en      DateTime
         ) ENGINE = MergeTree()
@@ -1387,6 +1398,18 @@ def ensure_columnas_nuevas_dimensiones() -> None:
         )
 
 
+def ensure_columnas_nuevas_hecho_onboarding() -> None:
+    """`completada` se sumo despues de crear la tabla (decision #45).
+
+    ⚠️ Hace falta porque `CREATE TABLE IF NOT EXISTS` **no migra nada**: en un
+    entorno con la tabla ya creada, la columna nueva no aparece sola y la carga
+    falla al insertar.
+    """
+    execute_clickhouse(
+        "ALTER TABLE hecho_onboarding ADD COLUMN IF NOT EXISTS completada UInt8 DEFAULT 1"
+    )
+
+
 def ensure_columnas_nuevas_hecho_factura() -> None:
     """Partners necesita `tipo` para separar excedente de ingreso base."""
     for nombre, tipo in COLUMNAS_ANADIDAS_HECHO_FACTURA:
@@ -1470,4 +1493,5 @@ def ensure_modelo_analitico() -> None:
     # Después de los `CREATE`, porque migra una tabla que aquellos dan por hecha.
     ensure_columnas_nuevas_hecho_accidente()
     ensure_columnas_nuevas_hecho_factura()
+    ensure_columnas_nuevas_hecho_onboarding()
     ensure_columnas_nuevas_dimensiones()

@@ -2929,6 +2929,12 @@
         "dataType": "LONG",
         "format": "1:MILLISECONDS:EPOCH",
         "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechaestadoregion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
       }
     ],
     "primaryKeyColumns": [

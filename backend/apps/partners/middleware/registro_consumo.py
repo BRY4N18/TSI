@@ -76,12 +76,36 @@ class RegistroConsumoMiddleware:
             codigohttp=respuesta.status_code,
             latencia_ms=latencia_ms,
             iporigen=self._ip_cliente(request),
-            version_contrato=self._version_del_path(request.path),
+            version_contrato=self._version_declarada(request),
         )
 
     #: `/api/v1/...` -> `v1`. Es la misma forma que el modelo analítico deducía
     #: al cargar; lo que cambia es **cuándo** se resuelve.
     _VERSION = re.compile(r"^/api/(v\d+)/")
+
+    #: Cabecera con la que un partner **declara** contra qué versión integra.
+    #: Es lo único que convierte la versión en un hecho en vez de una lectura
+    #: del path: `Dim_CredencialAPI` no guarda ninguna versión de contrato.
+    CABECERA_VERSION = "HTTP_X_TSI_API_VERSION"
+
+    @classmethod
+    def _version_declarada(cls, request) -> str | None:
+        """La versión que el partner declara, y si no, la del path.
+
+        ⚠️ **Las dos no valen lo mismo, y el modelo lo distingue**: solo la
+        declarada llega con `version_es_derivada = 0`. La del path se guarda
+        igualmente —así una fila conserva la versión que era cierta cuando
+        ocurrió la llamada, aunque el path cambie de forma después— pero sigue
+        marcada como derivada, porque lo es.
+
+        El prefijo `declarada:` es la marca que el cargador lee. Se eligió un
+        prefijo y no una columna aparte para no volver a tocar el esquema de una
+        tabla que recibe **todas** las peticiones.
+        """
+        declarada = (request.META.get(cls.CABECERA_VERSION) or "").strip()
+        if declarada:
+            return f"declarada:{declarada}"
+        return cls._version_del_path(request.path)
 
     @classmethod
     def _version_del_path(cls, path: str) -> str | None:

@@ -18,6 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.base_propia import base_propia, vaciar  # noqa: F401,E402
 from tests.almacen import ejecutar_red_operativa, requiere_modelo  # noqa: E402
 
 from lib.clickhouse_http_client import execute_clickhouse, query_clickhouse  # noqa: E402
@@ -51,7 +52,19 @@ def _insertar(filas: list[dict]) -> None:
 
 
 @pytest.fixture
-def limpio():
+def limpio(base_propia):  # noqa: F811
+    """⚠️ **Base propia, y no es cosmético.**
+
+    `borrar()` solo quita la región de prueba, así que estas pruebas convivían
+    con las regiones reales. Pasaban **por accidente**: ninguna llevaba
+    `inicio_es_real = 1` —el cargador no lo producía— y por eso
+    «despublicaciones medidas» siempre daba 0.
+
+    El 2026-08-23 el origen empezó a sellar el instante del cambio de estado
+    (`region_operativa_repository`), una región real pasó a tener su
+    despublicación fechada, y el contador subió a 1 sin que nada se hubiera
+    roto. Sobre una base vacía la prueba vuelve a medir lo que dice medir.
+    """
     def borrar():
         execute_clickhouse(
             f"ALTER TABLE dim_region DELETE WHERE idregionoperativa = {REGION} "

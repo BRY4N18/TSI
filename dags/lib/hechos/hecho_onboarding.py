@@ -1,6 +1,10 @@
 """`hecho_onboarding`: transacción, grano **una etapa completada**.
 
-El origen no registra abandonos. Solo se copian filas con `completado`.
+⚠️ **El abandono ya se puede medir** (decision #45). El origen solo publicaba
+etapas completadas, asi que un embudo sobre lo observado daba 100 % de
+finalizacion. Desde el 2026-08-23 declara las obligatorias al aprobar la cuenta
+con `completado = False`, y aqui se copian **las dos**: una etapa que llego y
+sigue sin completar **es** el abandono observado, sin umbral inventado.
 """
 
 from __future__ import annotations
@@ -68,13 +72,14 @@ def construir(
     clientes = {int(c["idcliente"]): c for c in datos.get("clientes", [])}
     filas = []
     for f in datos.get("onboarding", []):
-        if not _es_completado(f.get("completado")):
-            continue
+        completada = _es_completado(f.get("completado"))
         cid = f.get("id_cliente")
         etapa = f.get("etapa")
         if cid is None or not etapa:
             continue
         cid = int(cid)
+        # Completada: cuando se completo. Pendiente: cuando se declaro, que es
+        # el momento en que el cliente **llego** a esa etapa.
         cuando = _momento(f.get("fecha_completado")) or _momento(f.get("fecha_actualizacion"))
         if cuando is None:
             continue
@@ -91,7 +96,10 @@ def construir(
             "idetapa": orden_de(etapa),
             "etapa": str(etapa).strip(),
             "orden_etapa": orden_de(etapa),
-            "dias_desde_alta": dias,
+            "completada": 1 if completada else 0,
+            # ⚠️ Ausente si no se completo: no hay «dias hasta» algo que no
+            # ocurrio, y un 0 se leeria como «la hizo el mismo dia».
+            "dias_desde_alta": dias if completada else None,
             "cargado_en": cargado,
         })
     return filas

@@ -101,6 +101,61 @@ class TestAprobacionProveedorService:
             creada["admin_local_id"], creada["idcliente"]
         )
 
+    def test_aprobar_declara_las_etapas_de_onboarding_pendientes(
+        self, mock_pinot, mock_kafka
+    ):
+        """⚠️ #45: el abandono era invisible porque no había de qué ausentarse.
+
+        `Fact_Onboarding` solo recibía filas `completado = True`, así que un
+        embudo sobre lo observado daba **100 % de finalización**. Al aprobar se
+        declaran las obligatorias en `False`: una que siga así **es** el abandono
+        observado, sin inventar un umbral de inactividad.
+        """
+        from apps.cuentas_clientes.services.onboarding_service import (
+            ETAPAS_OBLIGATORIAS,
+        )
+        from core.repositories.cuentas_clientes.onboarding_repository import (
+            OnboardingRepository,
+        )
+
+        created = self._solicitud(nit="810999888-6", gmail="etapas@tsi.com")
+        AprobacionProveedorService().decidir(
+            user_id=1,
+            roles=["Administrador"],
+            cliente_id=created["idcliente"],
+            decision="aprobar",
+        )
+
+        repo = OnboardingRepository()
+        for etapa in ETAPAS_OBLIGATORIAS:
+            fila = repo.find_etapa(created["idcliente"], etapa)
+            assert fila is not None, f"la etapa '{etapa}' no se declaró"
+            assert fila["completado"] is False
+
+    def test_rechazo_no_declara_etapas(self, mock_pinot, mock_kafka):
+        """Una solicitud rechazada no empieza ningún onboarding."""
+        from apps.cuentas_clientes.services.onboarding_service import (
+            ETAPAS_OBLIGATORIAS,
+        )
+        from core.repositories.cuentas_clientes.onboarding_repository import (
+            OnboardingRepository,
+        )
+
+        created = self._solicitud(nit="810999888-5", gmail="sinetapas@tsi.com")
+        AprobacionProveedorService().decidir(
+            user_id=1,
+            roles=["Administrador"],
+            cliente_id=created["idcliente"],
+            decision="rechazar",
+            motivo="documentacion incompleta",
+        )
+
+        repo = OnboardingRepository()
+        assert all(
+            repo.find_etapa(created["idcliente"], e) is None
+            for e in ETAPAS_OBLIGATORIAS
+        )
+
     def test_rechazar_requires_motivo(self, mock_pinot, mock_kafka):
         # Arrange
         created = self._solicitud()

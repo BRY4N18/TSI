@@ -27,26 +27,32 @@ Se sigue consultando Pinot para que un proceso recién arrancado continúe donde
 lo dejó el anterior. Lo que añade es que **dentro del proceso la secuencia no
 retrocede**, aunque Pinot vaya por detrás.
 
-⚠️ Lo que este módulo NO resuelve, y hay que saberlo
------------------------------------------------------
-La marca vive en el proceso. Con **dos procesos escribiendo a la vez** —varios
-workers de gunicorn, o dos réplicas del contenedor— cada uno llevaría su propia
-cuenta y volverían a colisionar. Hoy el backend corre como un solo proceso
-(`manage.py runserver`), así que la garantía es real; el día que se despliegue
-con varios workers, deja de serlo.
+El contador es **durable y compartido entre procesos**
+-------------------------------------------------------
+La marca en memoria sola no bastaría: con varios workers de gunicorn cada uno
+llevaría su cuenta y volverían a colisionar. Por eso el reparto se hace sobre un
+SQLite propio (`secuencias.sqlite3`) con un `UPDATE ... RETURNING` atómico: dos
+procesos que pidan a la vez reciben números distintos porque SQLite serializa la
+escritura.
 
-La solución completa es un contador **durable y transaccional** —una secuencia en
-un relacional, o identificadores que no necesiten leer nada, como el UUID que ya
-usa `Fact_Factura.id_factura`—. Las dos son decisiones de arquitectura: la
-primera introduce un almacén relacional que este proyecto evita a propósito, y la
-segunda exige cambiar el tipo de la clave en decenas de esquemas de Pinot. Está
-anotado en `decisiones-pendientes.md`.
+⚠️ **No es la base de datos del dominio.** El proyecto guarda su dominio en
+Pinot a propósito y aquí no se cambia nada de eso: este fichero contiene una
+tabla de contadores, es infraestructura, y puede borrarse sin perder ningún dato
+de negocio — al arrancar se resiembra desde el `MAX()` de Pinot.
+
+⛔ **Si SQLite falla, no se interrumpe la escritura**: se cae al reparto en
+memoria, que sigue siendo correcto dentro del proceso. Un contador indisponible
+no puede dejar al sistema sin poder crear nada.
 """
 
 from __future__ import annotations
 
+import sqlite3
 import threading
+from pathlib import Path
 from typing import Any, Protocol
+
+from django.conf import settings
 
 
 class _Consultable(Protocol):
@@ -78,9 +84,46 @@ def siguiente_id(pinot: _Consultable, tabla: str, columna: str) -> int:
         # ⚠️ El `max` de los dos es el punto entero del módulo: cuando Pinot va
         # por detrás, `maximo` retrocede y sin esto volveríamos a repartir un id
         # ya usado.
-        siguiente = max(maximo, entregado) + 1
+        piso = max(maximo, entregado)
+        siguiente = _reservar_durable(tabla, columna, piso)
+        if siguiente is None:
+            siguiente = piso + 1
         _ALTOS[(tabla, columna)] = siguiente
         return siguiente
+
+
+def _ruta_contador() -> Path:
+    return Path(getattr(settings, "BASE_DIR", ".")) / "secuencias.sqlite3"
+
+
+def _reservar_durable(tabla: str, columna: str, piso: int) -> int | None:
+    """Reserva el siguiente número en el contador compartido, o `None` si falla.
+
+    El `MAX(...)` deja el contador por encima de lo que Pinot ya tiene visible:
+    si otro proceso reservó mientras tanto, gana el contador; si la tabla creció
+    por fuera —una carga masiva, un seed—, gana Pinot.
+
+    ⚠️ `RETURNING` hace que reservar y leer sean **la misma operación**. Leer y
+    luego escribir dejaría exactamente la ventana que este módulo existe para
+    cerrar, solo que entre procesos en vez de contra Pinot.
+    """
+    clave = f"{tabla}.{columna}"
+    try:
+        with sqlite3.connect(_ruta_contador(), timeout=5.0, isolation_level=None) as cx:
+            cx.execute("PRAGMA journal_mode=WAL")
+            cx.execute(
+                "CREATE TABLE IF NOT EXISTS secuencias ("
+                "clave TEXT PRIMARY KEY, valor INTEGER NOT NULL)"
+            )
+            fila = cx.execute(
+                "INSERT INTO secuencias(clave, valor) VALUES(?, ?) "
+                "ON CONFLICT(clave) DO UPDATE SET valor = MAX(valor, ?) + 1 "
+                "RETURNING valor",
+                (clave, piso + 1, piso),
+            ).fetchone()
+        return int(fila[0]) if fila else None
+    except Exception:
+        return None
 
 
 def _maximo_en_pinot(pinot: _Consultable, tabla: str, columna: str) -> int:
@@ -115,3 +158,8 @@ def reiniciar_para_pruebas() -> None:
     """
     with _CERROJO:
         _ALTOS.clear()
+        try:
+            with sqlite3.connect(_ruta_contador(), timeout=5.0, isolation_level=None) as cx:
+                cx.execute("DROP TABLE IF EXISTS secuencias")
+        except Exception:
+            pass

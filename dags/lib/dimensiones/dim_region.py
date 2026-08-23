@@ -45,6 +45,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from lib.clickhouse_http_client import query_clickhouse
 from lib.dimensiones.versionado import INICIO_DESCONOCIDO, decidir_version
+from lib.hechos.comun import a_datetime
 from lib.pinot_http_client import query_pinot
 
 LIMITE = 500_000
@@ -54,7 +55,8 @@ ATRIBUTOS_VERSIONADOS_REGION = ("estado_ciclo_vida",)
 
 #: ⚠️ `estadoregion` de **esta** tabla es el ciclo de vida.
 CONSULTA_REGIONES = f"""
-    SELECT idregionoperativa, nombreregion, estadoregion, idestado
+    SELECT idregionoperativa, nombreregion, estadoregion, idestado,
+           fechaestadoregion
     FROM Dim_RegionOperativa
     WHERE activo = true
     LIMIT {LIMITE}
@@ -115,6 +117,11 @@ def aplanar(
                 "estado_geo": geo_por_id.get(idgeo),
                 # El país no está en el origen de regiones. Ausente, no inventado.
                 "pais": None,
+                # ⚠️ Desde cuándo está en ese estado. Lo sella el origen al
+                # cambiarlo (`region_operativa_repository.update`). Es lo que
+                # convierte la versión en un cambio **observado** en vez de
+                # «desde que empezamos a mirar». Ver `construir`.
+                "_instante_estado": region.get("fechaestadoregion"),
             }
         )
     return filas
@@ -147,17 +154,45 @@ def construir(
     # histórica de tres hechos ya en producción.
     filas: list[dict] = []
     for fila in aplanar(regiones, estados_geo, relacion_geo):
+        vigente = por_clave.get(fila["idregionoperativa"])
+        instante = _instante_observado(fila.pop("_instante_estado", None), vigente)
         resultado = decidir_version(
             fila,
-            por_clave.get(fila["idregionoperativa"]),
+            vigente,
             clave_negocio="idregionoperativa",
             atributos=ATRIBUTOS_VERSIONADOS_REGION,
             ahora=ahora,
             campo_sk="sk_region",
+            instante_observado=instante,
         )
         filas.extend(resultado.filas)
     _verificar_sin_inicio_real(filas)
     return [_serializar(f) for f in filas]
+
+
+def _instante_observado(
+    marca: Any, vigente: Mapping[str, Any] | None
+) -> datetime | None:
+    """El instante real del cambio de estado, o nada.
+
+    ⚠️ **La primera versión de una región nunca lo lleva**, aunque el origen
+    traiga la marca: se sabe cuándo entró en el estado *actual*, no cuándo entró
+    en el que tenía antes de que empezáramos a mirar. Abrir la primera versión
+    en esa fecha dejaría sin cubrir todo lo anterior, y `_verificar_sin_inicio_real`
+    lo rechaza por eso mismo (T006).
+
+    A partir de la segunda, la marca **sí** es la fecha del cambio observado:
+    `region_operativa_repository` la sella al cambiar `estadoregion`.
+    """
+    if vigente is None or marca in (None, "", 0):
+        return None
+    try:
+        valor = int(marca)
+    except (TypeError, ValueError):
+        return None
+    if valor <= 0:
+        return None
+    return a_datetime(valor)
 
 
 def _verificar_sin_inicio_real(filas: Iterable[Mapping[str, Any]]) -> None:

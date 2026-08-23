@@ -69,5 +69,39 @@ class OnboardingRepository:
         self.kafka.publish(self.TOPIC, payload)
         return payload
 
+    def iniciar_etapas(self, id_cliente: int, etapas: list[str]) -> list[dict[str, Any]]:
+        """Deja constancia de las etapas que el cliente **tiene que** recorrer.
+
+        ⚠️ **El abandono es una ausencia, y hasta ahora no había de qué ausentarse**
+        (decisión #45). `Fact_Onboarding` solo recibía filas `completado = True`,
+        así que un embudo calculado sobre lo observado daba **100 % de
+        finalización**: las etapas que nadie hizo no existían.
+
+        Al arrancar el onboarding se escriben las tres con `completado = False`.
+        A partir de ahí, una etapa que sigue en `False` **es** el abandono
+        observado — sin inventar un umbral de inactividad, que era lo que
+        convertía esto en una decisión de negocio.
+
+        Idempotente: una etapa que ya tiene fila —completada o no— no se toca.
+        Reescribirla borraría una finalización real.
+        """
+        creadas = []
+        for etapa in etapas:
+            if self.find_etapa(id_cliente, etapa):
+                continue
+            payload = {
+                "id_onboarding": self._next_id(),
+                "id_cliente": id_cliente,
+                "etapa": etapa,
+                "completado": False,
+                # ⚠️ Sin fecha: no se ha completado. El centinela de Pinot lo
+                # dirá, y el modelo ya trata el 0 como ausencia.
+                "fecha_completado": None,
+                "fecha_actualizacion": ahora_ms(),
+            }
+            self.kafka.publish(self.TOPIC, payload)
+            creadas.append(payload)
+        return creadas
+
     def _next_id(self) -> int:
         return siguiente_id(self.pinot, "Fact_Onboarding", "id_onboarding")

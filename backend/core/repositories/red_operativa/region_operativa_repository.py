@@ -73,11 +73,33 @@ class RegionOperativaRepository:
         return payload
 
     def update(self, idregionoperativa: int, data: dict[str, Any]) -> dict[str, Any] | None:
+        """Actualiza la región y **sella el instante si cambia su estado**.
+
+        ⚠️ `fechaestadoregion` dice **desde cuándo** la región está en el estado
+        que tiene. Hasta el 2026-08-23 no existía, y la consecuencia llegaba
+        lejos: `dim_region` no podía abrir sus versiones con una fecha real
+        —`inicio_es_real` era `0` en las ocho filas— y el informe de casos
+        activos al despublicar, que filtra `WHERE despublicada_en IS NOT NULL`,
+        **no podía devolver una sola fila**. El origen guardaba el estado
+        presente y lo sobrescribía sin dejar rastro de cuándo cambió.
+
+        Se sella aquí, en el repositorio, y no en los servicios que despublican:
+        hay dos —`despublicacion_automatica_service` y
+        `reevaluacion_region_service`— y el que se añada mañana lo heredará sin
+        acordarse.
+
+        ⛔ **Solo cuando el estado cambia de verdad.** Reescribir la fecha en
+        cada actualización —un cambio de nombre, por ejemplo— convertiría «desde
+        cuándo está despublicada» en «cuándo se tocó por última vez».
+        """
         existing = self.find_by_id(idregionoperativa)
         if not existing:
             return None
         now = ahora_ms()
         payload = {**existing, **data, "fecha_actualizacion": now}
+        estado_nuevo = data.get("estadoregion")
+        if estado_nuevo is not None and estado_nuevo != existing.get("estadoregion"):
+            payload["fechaestadoregion"] = now
         self.kafka.publish(self.TOPIC, payload)
         return payload
 

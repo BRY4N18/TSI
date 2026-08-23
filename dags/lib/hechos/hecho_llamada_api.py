@@ -77,6 +77,9 @@ def derivar_contrato(path: str) -> tuple[str | None, str | None]:
     return m.group(2), m.group(1).lower()
 
 
+PREFIJO_DECLARADA = "declarada:"
+
+
 def _texto(valor):
     """`None` ante ausencia y ante los centinelas de Pinot para STRING."""
     if valor is None:
@@ -151,8 +154,17 @@ def construir(
         # siguen deduciendo del path, con la marca puesta: el riesgo declarado
         # —que un cambio de forma del path reinterprete llamadas viejas sin
         # fallar— solo desaparece para las nuevas.
-        version_guardada = _texto(l.get("version_contrato"))
-        version = version_guardada or version_del_path
+        guardada = _texto(l.get("version_contrato"))
+        # ⚠️ **Declarada y guardada no son lo mismo.** El origen guarda siempre
+        # una version —asi la fila conserva la que era cierta cuando ocurrio la
+        # llamada, aunque el path cambie de forma despues— pero solo lleva el
+        # prefijo `declarada:` cuando el **partner** la mando por cabecera. Esa
+        # es la unica que no es una lectura del path.
+        declarada = None
+        if guardada and guardada.startswith(PREFIJO_DECLARADA):
+            declarada = guardada[len(PREFIJO_DECLARADA):] or None
+            guardada = declarada
+        version = guardada or version_del_path
         try:
             codigo = int(l.get("codigohttp") or 0)
         except (TypeError, ValueError):
@@ -178,7 +190,7 @@ def construir(
             "latencia_ms": latencia,
             "servicio": servicio,
             "version_contrato": version,
-            "version_es_derivada": 0 if version_guardada else 1,
+            "version_es_derivada": 0 if declarada else 1,
             "cargado_en": cargado,
         })
     return filas

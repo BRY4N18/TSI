@@ -6,7 +6,7 @@ import threading
 
 import pytest
 
-from core.pinot.secuencia import reiniciar_para_pruebas, siguiente_id
+from core.pinot.secuencia import _ALTOS, reiniciar_para_pruebas, siguiente_id
 
 
 class PinotCongelado:
@@ -100,6 +100,35 @@ class TestLaSecuenciaNoRetrocede:
             h.join()
 
         assert len(set(obtenidos)) == 50
+
+    def test_dos_procesos_when_piden_a_la_vez_no_colisionan(self):
+        """⚠️ El caso que la marca en memoria **no** cubría.
+
+        Con varios workers de gunicorn cada proceso llevaría su propia cuenta y
+        volverían a repartir el mismo id. El contador durable lo cierra: se
+        simula el segundo proceso vaciando la memoria —que es lo que ve un
+        proceso recién arrancado— y comprobando que **no repite**.
+        """
+        pinot = PinotCongelado(100)
+
+        del_primero = [siguiente_id(pinot, "Fact_Session", "idsession") for _ in range(3)]
+        # Otro proceso: memoria vacía, mismo contador en disco.
+        _ALTOS.clear()
+        del_segundo = [siguiente_id(pinot, "Fact_Session", "idsession") for _ in range(3)]
+
+        assert not set(del_primero) & set(del_segundo)
+        assert del_segundo == [104, 105, 106]
+
+    def test_contador_caido_when_no_se_puede_usar_sigue_repartiendo(self, monkeypatch):
+        """⛔ Un contador indisponible no puede dejar al sistema sin crear nada."""
+        import core.pinot.secuencia as sec
+
+        monkeypatch.setattr(sec, "_reservar_durable", lambda *a, **k: None)
+        pinot = PinotCongelado(7)
+
+        ids = [siguiente_id(pinot, "Dim_Rol", "idrol") for _ in range(3)]
+
+        assert ids == [8, 9, 10]
 
     @pytest.mark.parametrize("nombre", ["Dim_Rol; DROP TABLE x", "id-rol", ""])
     def test_nombre_raro_when_llega_se_rechaza(self, nombre):
