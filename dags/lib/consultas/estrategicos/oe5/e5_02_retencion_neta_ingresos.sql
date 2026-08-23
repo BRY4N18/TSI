@@ -43,17 +43,28 @@ SELECT
     round(ifNull((SELECT contraccion FROM movimientos), 0), 2) AS contraccion,
     round(ifNull((SELECT churn FROM bajas), 0), 2) AS churn,
     count() AS recuento,
+    -- Las dos ramas del `if` deben tener un tipo comun. `mrr` es Decimal(38,2)
+    -- —es dinero— asi que la division devuelve Decimal, y la rama nula es
+    -- Float64: ClickHouse no encuentra supertipo y rechaza la consulta entera
+    -- con «no supertype for types Float64, Decimal(38,2)».
+    --
+    -- El NRR es un **ratio**, no un importe, asi que Float64 es su tipo natural
+    -- y se convierte la division. Hacerlo al reves —CAST(NULL AS Decimal)—
+    -- tambien compilaria, pero arrastraria precision decimal a un numero que no
+    -- la necesita.
     if(
         sum(c.mrr) = 0,
         CAST(NULL AS Nullable(Float64)),
-        round(
-            (
-                sum(c.mrr)
-                + ifNull((SELECT expansion FROM movimientos), 0)
-                - ifNull((SELECT contraccion FROM movimientos), 0)
-                - ifNull((SELECT churn FROM bajas), 0)
-            ) / sum(c.mrr),
-            4
+        toFloat64(
+            round(
+                (
+                    sum(c.mrr)
+                    + ifNull((SELECT expansion FROM movimientos), 0)
+                    - ifNull((SELECT contraccion FROM movimientos), 0)
+                    - ifNull((SELECT churn FROM bajas), 0)
+                ) / sum(c.mrr),
+                4
+            )
         )
     ) AS nrr
 FROM cohorte AS c

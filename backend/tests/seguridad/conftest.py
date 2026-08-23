@@ -46,17 +46,36 @@ USUARIO_B = 99
 
 
 @pytest.fixture(autouse=True)
-def _pinot_en_memoria(mock_pinot, mock_kafka):
-    """Obligatoria en todo el paquete. Ver la nota 1 del módulo.
+def _pinot_en_memoria(request):
+    """Obligatoria en todo el paquete **salvo en las pruebas de integración**.
+
+    ⚠️ La exclusión no es un detalle. `autouse=True` alcanza a todo el paquete,
+    incluidas las suites marcadas `integration` — que existen precisamente para
+    hablar con motores reales. Con el mock puesto, `test_reconciliacion_integracion`
+    comparaba el almacén en memoria contra ClickHouse y reportaba discrepancias
+    inventadas: «100 en origen» eran las filas sembradas por esta misma fixture,
+    no las de Pinot.
+
+    Una prueba de integración silenciosamente mockeada es el peor de los dos
+    mundos: no prueba la integración y además miente sobre lo que encontró.
 
     Siembra además los dos tenants: `Dim_Partner`, `Fact_Reclamo`, `Fact_Factura`
     y `Dim_Prospecto` están **vacíos** en el store raíz, así que sin esto el `404`
     es cierto y la prueba no demuestra nada sobre aislamiento (T078).
     """
+    if request.node.get_closest_marker("integration"):
+        # No se piden `mock_pinot`/`mock_kafka` como parametros: pedirlos los
+        # activaria igualmente, porque una fixture parchea al construirse. Se
+        # resuelven de forma perezosa solo cuando hacen falta.
+        yield None
+        return
+
     from conftest import PINOT_STORE
 
+    mock = request.getfixturevalue("mock_pinot")
+    request.getfixturevalue("mock_kafka")
     datos_dos_tenants.sembrar(PINOT_STORE)
-    return mock_pinot
+    yield mock
 
 
 #: Un actor por materia. Probar IDOR exige **el rol correcto y el tenant

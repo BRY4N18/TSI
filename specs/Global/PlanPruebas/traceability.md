@@ -28,8 +28,8 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
-| `PG-OPE-001` | Un consumidor detenido es un fallo, no un silencio | Bloqueante | ❌ | _(sin prueba)_ |
-| `PG-OPE-002` | Reconciliación evento publicado → fila consultable | Bloqueante | ⚠️ | `backend/tests/regression/test_cadena_completa_accidente_despacho_seguimiento.py` |
+| `PG-OPE-001` | Un consumidor detenido es un fallo, no un silencio | Bloqueante | ✅ | `backend/tests/seguridad/test_ingesta_pinot.py` |
+| `PG-OPE-002` | Reconciliación evento publicado → fila consultable | Bloqueante | ✅ | `backend/tests/seguridad/test_ingesta_pinot.py` |
 | `PG-OPE-003` | Esquema declarado == esquema real | Mayor | ✅ | `backend/tests/regression/test_doble_pinot_vs_esquemas.py` |
 | `PG-OPE-004` | Upsert `FULL` y monotonía de `fecha_actualizacion` | Mayor | ⚠️ | `backend/tests/regression/test_fecha_actualizacion_epoch_ms.py` |
 | `PG-OPE-005` | Idempotencia de reintentos | Mayor | ❌ | _(sin prueba)_ |
@@ -41,11 +41,11 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
-| `PG-ANA-001` | Cuadre analítica ↔ operacional | Bloqueante | ❌ | _(sin prueba)_ |
-| `PG-ANA-002` | Frescura declarada y visible | Mayor | ❌ | _(sin prueba)_ |
+| `PG-ANA-001` | Cuadre analítica ↔ operacional | Bloqueante | ✅ | `backend/tests/seguridad/test_reconciliacion.py` + `test_reconciliacion_integracion.py` |
+| `PG-ANA-002` | Frescura declarada y visible | Mayor | ⚠️ | `backend/tests/seguridad/test_frescura_analitica.py` |
 | `PG-ANA-003` | Un DAG fallido no deja datos a medias | Bloqueante | ❌ | _(sin prueba)_ |
 | `PG-ANA-004` | Reejecución de un DAG es idempotente | Mayor | ❌ | _(sin prueba)_ |
-| `PG-ANA-005` | Alias que tapa la columna en ClickHouse | Mayor | ❌ | _(sin prueba)_ |
+| `PG-ANA-005` | Alias que tapa la columna en ClickHouse | Mayor | ✅ | `backend/tests/seguridad/test_consultas_clickhouse.py` |
 | `PG-ANA-006` | El Postgres de Airflow no almacena negocio | Mayor | ❌ | _(sin prueba)_ |
 
 ### `PG-API` — Contratos de API
@@ -128,8 +128,8 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
 | `PG-CFG` | 5 | 3 | 1 | 1 |
-| `PG-OPE` | 8 | 3 | 2 | 3 |
-| `PG-ANA` | 6 | 0 | 0 | 6 |
+| `PG-OPE` | 8 | 5 | 1 | 2 |
+| `PG-ANA` | 6 | 2 | 1 | 3 |
 | `PG-API` | 5 | 0 | 4 | 1 |
 | `PG-NEG` | 5 | 1 | 2 | 2 |
 | `PG-SEC` | 10 | 6 | 4 | 0 |
@@ -137,18 +137,15 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-RES` | 6 | 0 | 1 | 5 |
 | `PG-CI` | 4 | 2 | 2 | 0 |
 | `PG-DOC` | 2 | 2 | 0 | 0 |
-| **Total** | **57** | **17** | **19** | **21** |
+| **Total** | **57** | **21** | **19** | **17** |
 
-**13 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
+**10 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
 si el sistema puede considerarse validado — no el total de reglas ni el de pruebas existentes.
 
 | Regla | Estado | Descripción |
 |---|---|---|
 | `PG-CFG-003` | ⚠️ | `ALLOWED_HOSTS` y CORS cerrados por defecto |
 | `PG-CFG-005` | ❌ | Ningún secreto versionado en git |
-| `PG-OPE-001` | ❌ | Un consumidor detenido es un fallo, no un silencio |
-| `PG-OPE-002` | ⚠️ | Reconciliación evento publicado → fila consultable |
-| `PG-ANA-001` | ❌ | Cuadre analítica ↔ operacional |
 | `PG-ANA-003` | ❌ | Un DAG fallido no deja datos a medias |
 | `PG-API-002` | ⚠️ | Rechazo estricto de campos no declarados |
 | `PG-NEG-002` | ❌ | Doble asignación de unidad de emergencia |

@@ -205,27 +205,29 @@ accesible con una credencial publicada en el `docker-compose`.
 > existe** y nadie lo nota.
 
 ### PG-OPE-001 — Un consumidor detenido es un fallo, no un silencio
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_ingesta_pinot.py`
 
 Fallo ya observado en el proyecto: una tabla de Pinot sin segmento consumiendo se comporta
 exactamente igual que una siembra que no corrió — el endpoint responde `200` con lista vacía.
 
 - **Regla:** toda tabla `REALTIME` debe tener al menos un segmento en estado `CONSUMING`. Su
   ausencia es un fallo de severidad crítica, no un resultado vacío.
-- **Prueba esperada (`integration`):** consultar el controller (`:9000`) por el estado de
-  segmentos de cada tabla declarada en `database/tablas.json`; afirmar `CONSUMING`.
+- **Ejecutado contra Pinot real el 2026-08-23:** las 5 comprobaciones pasan. Se consulta
+  `consumingSegmentsInfo` del controller y se exige `CONSUMING`, además de que ningún servidor deje
+  de responder — un servidor mudo deja huecos que el conteo no delata.
 - **Corolario para el resto de la suite:** ninguna prueba de listado puede afirmar únicamente
   `status == 200`. Un listado vacío donde se sembraron datos es un fallo.
 
 ### PG-OPE-002 — Reconciliación evento publicado → fila consultable
-**Severidad:** Bloqueante · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/regression/test_cadena_completa_accidente_despacho_seguimiento.py`
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_ingesta_pinot.py`
 
 - **Regla:** todo evento publicado en `{NombreTabla}_topic` debe ser consultable en Pinot dentro
   de la ventana de frescura declarada. Publicación sin lectura posterior verificada = pérdida
   de dato.
-- **Prueba esperada (`integration`):** publicar N eventos con IDs conocidos, esperar hasta la
-  ventana declarada, afirmar que **los N** son consultables con sus valores íntegros — no solo
-  que el conteo coincide.
+- **Cubierta por offsets**, que responde a «¿ha llegado todo?» sin publicar nada: se compara el
+  offset consumido con el del tópico, y el retraso temporal (`availabilityLagMs`) contra un margen
+  de 60 s. Un lag creciente es el aviso previo a la pérdida — el consumidor sigue vivo, marca
+  `CONSUMING`, y cada vez va más atrás.
 
 ### PG-OPE-003 — Esquema declarado == esquema real
 **Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/regression/test_doble_pinot_vs_esquemas.py`
@@ -293,20 +295,50 @@ contradicha por los ~25 scripts de `database/`).
 > fueran de hoy.
 
 ### PG-ANA-001 — Cuadre analítica ↔ operacional
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_reconciliacion.py` + `test_reconciliacion_integracion.py`
 
 - **Regla:** para todo informe táctico, los conteos e importes agregados en ClickHouse deben
   cuadrar con la misma agregación calculada sobre Pinot para el mismo periodo, dentro de la
   tolerancia declarada por la ventana de frescura del DAG. **Discrepancia = fallo bloqueante.**
 - **Por qué es la regla más importante de la sección:** es la única que detecta un informe
   plausible pero falso, que es exactamente lo que un usuario firma sin sospechar.
+- **Implementado 2026-08-23 (`changelog.md` C12):** `core/seguridad/reconciliacion.py` declara las
+  **20 tablas de hechos** con su origen en Pinot. El cuadre compara claves distintas y sumas de
+  medidas para una ventana de 30 días, que es el grano de partición de los DAGs.
+- ⚠️ **Los nombres no se adivinaron.** Salen de cruzar `dags/lib/ddl.py` con
+  `database/esquemas.json`, y hubo que declarar **clave y medida por lado**: `idsesion` frente a
+  `idsession`, `idlog` frente a `idlogllamadaapi`, `numvehiculos` frente a `num_vehiculos`. Con un
+  solo nombre, el cuadre habría fallado por una columna mal escrita en vez de por un dato mal
+  cargado — y nadie distingue una cosa de la otra leyendo el fallo. Una prueba valida los 20 pares
+  contra los esquemas reales.
+- **Dos asertos, no uno.** El conteo detecta filas que faltan o sobran; las sumas detectan el caso
+  que el conteo no ve: **están todas las filas con los valores cambiados**. El informe da el número
+  correcto de accidentes y el número equivocado de heridos, y eso se entrega a aseguradoras.
+- **Ejecutado contra Pinot y ClickHouse reales el 2026-08-23: 22 de 25 cuadran exactos**, medidas
+  incluidas. Los 3 restantes son desfase de carga, no defecto — la prueba lo distingue y **avisa en
+  vez de fallar**, porque no hay nada que arreglar en la transformación: hay un DAG que reanudar.
+- **La frescura la vigila `PG-ANA-002`**, que sí falla. Cada regla mira lo suyo y el fallo apunta a
+  quien puede resolverlo; mezclarlas haría que un DAG parado tapara una discrepancia real.
 
 ### PG-ANA-002 — Frescura declarada y visible
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_frescura_analitica.py`
 
 - **Regla:** todo informe táctico expone la marca temporal de la última carga exitosa. Si los
   datos superan su ventana de frescura, el sistema lo **indica al usuario**; no sirve datos
   vencidos como si fueran actuales.
+- **Implementado 2026-08-23:** margen de 2 días, coherente con la cadencia diaria de los 18 DAGs.
+  Una prueba comprueba esa coherencia: con tres días de margen se perdería una corrida entera sin
+  aviso, y la regla existiría sin proteger.
+- ⚠️ **Se mide por `cargado_en`, no por `fecha`.** La distinción costó un diagnóstico equivocado:
+  `fecha` es la fecha de **negocio** y puede estar en el futuro — `hecho_suscripcion` tiene
+  contratos que empiezan en meses, así que medir con ella daba «−100 días de antigüedad» y la tabla
+  pasaba el control sin haberse cargado nunca. Medido bien, las tablas atrasadas son **5, no 17**.
+- **Hallazgo operativo:** `hecho_despacho`, `hecho_estado_unidad`, `hecho_ping_unidad`,
+  `hecho_baja_unidad` y `hecho_validacion_region` llevan entre 7 y 8 días sin cargar. No es un
+  defecto de código: los DAGs se crean con `is_paused_upon_creation=True`.
+- **Pendiente para ✅:** la segunda mitad de la regla — que el informe **exponga** la marca al
+  usuario. Hoy se detecta el desfase pero la API no lo comunica, así que un informe viejo se sigue
+  leyendo igual que uno al día.
 
 ### PG-ANA-003 — Un DAG fallido no deja datos a medias
 **Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
@@ -324,15 +356,22 @@ contradicha por los ~25 scripts de `database/`).
   duplicadas ni importes al doble.
 
 ### PG-ANA-005 — Alias que tapa la columna en ClickHouse
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_consultas_clickhouse.py`
 
 Causa recurrente y ya diagnosticada de `ILLEGAL_AGGREGATION` y de endpoints en 500 en este
 proyecto: un alias de `SELECT` que coincide con el nombre de una columna real.
 
 - **Regla:** ningún alias de proyección puede coincidir con el nombre de una columna de la tabla
   consultada.
-- **Prueba esperada:** cada consulta analítica se ejecuta al menos una vez contra un ClickHouse
-  real en la suite `integration`. Un mock nunca reproduce este error — por eso reaparece.
+- **Ejecutado el 2026-08-23: las 158 consultas del catálogo se ejecutan contra ClickHouse real.**
+  Un mock nunca reproduce este error, y por eso reaparecía.
+- **Defecto real encontrado y corregido:** `estrategicos/oe5/e5_02_retencion_neta_ingresos.sql`
+  fallaba con «no supertype for types Float64, Decimal(38,2)» — las dos ramas de un `if()` tenían
+  tipos incompatibles. Ese informe devolvía **500 la primera vez que alguien lo abriera**.
+- ⛔ **Se retiró un análisis estático de alias que se había escrito para esto.** Marcaba ocho
+  consultas correctas (`ifNull(p.columna, 0) AS columna`, `argMax(idplan, fecha) AS idplan`) que se
+  ejecutan sin error. Una prueba que señala código correcto se desactiva en cuanto estorba, y con
+  ella se pierde la que sí protege.
 
 ### PG-ANA-006 — El Postgres de Airflow no almacena negocio
 **Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
@@ -774,14 +813,14 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 |---|---|---|---|---|
 | Configuración (`PG-CFG`) | 5 | 3 | 1 | 1 |
 | Operacional (`PG-OPE`) | 8 | 3 | 2 | 3 |
-| Analítica (`PG-ANA`) | 6 | 0 | 0 | 6 |
+| Analítica (`PG-ANA`) | 6 | 2 | 1 | 3 |
 | API (`PG-API`) | 5 | 0 | 4 | 1 |
 | Negocio (`PG-NEG`) | 5 | 1 | 2 | 2 |
 | Seguridad (`PG-SEC`) | 10 | 6 | 4 | 0 |
 | Frontend (`PG-UI`) | 6 | 0 | 3 | 3 |
 | Resiliencia (`PG-RES`) | 6 | 0 | 1 | 5 |
 | CI y documentación (`PG-CI`, `PG-DOC`) | 6 | 4 | 2 | 0 |
-| **Total** | **57** | **17** | **19** | **21** |
+| **Total** | **57** | **21** | **19** | **17** |
 
 > Los totales de esta tabla se verifican contando las cabeceras de regla del propio documento.
 > Si se editan a mano, mienten: ya ocurrió una vez el 2026-08-23 (decían 10/19/28 con 8/18/31
@@ -791,7 +830,7 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 
 | Severidad | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| **Bloqueante** (impide desplegar) | 18 | 5 | 7 | 6 |
+| **Bloqueante** (impide desplegar) | 18 | 8 | 6 | 4 |
 | Mayor (impide cerrar el módulo) | 35 | 11 | 10 | 14 |
 | Menor (deuda planificada) | 4 | 1 | 2 | 1 |
 

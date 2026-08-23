@@ -84,6 +84,19 @@ jobs:
         working-directory: backend
         run: pytest tests/seguridad/test_inyeccion_integracion.py -m integration -q
 
+      # PG-ANA-001: el cuadre analítica ↔ operacional. Necesita ClickHouse
+      # ADEMÁS de Pinot, y que los DAGs hayan cargado al menos una vez — con las
+      # tablas vacías el cuadre es cierto y no demuestra nada, así que la suite
+      # tiene un control que lo detecta en vez de reportar verde.
+      - name: Levantar el stack analítico
+        run: docker compose -f docker/docker-compose.tactico.yml up -d
+
+      - name: Cuadre analítica ↔ operacional (PG-ANA-001)
+        working-directory: backend
+        env:
+          CLICKHOUSE_URL: http://localhost:8123
+        run: pytest tests/seguridad/test_reconciliacion_integracion.py -m integration -q
+
       # Los logs de los contenedores son lo único que explica un fallo de
       # ingesta: el test solo puede decir "no llegó el dato", no por qué.
       - name: Logs de infraestructura
@@ -92,4 +105,6 @@ jobs:
 
       - name: Apagar infraestructura
         if: always()
-        run: docker compose -f docker/docker-compose.infraestructura.yml down -v
+        run: |
+          docker compose -f docker/docker-compose.tactico.yml down -v || true
+          docker compose -f docker/docker-compose.infraestructura.yml down -v

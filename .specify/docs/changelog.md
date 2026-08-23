@@ -7,6 +7,150 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-23 — C13: la infraestructura estaba levantada, y con ella cayeron cinco reglas
+
+**El cambio de contexto.** Docker tenía todo corriendo —Pinot, Kafka, ClickHouse, Airflow—. Las
+suites de integración se saltaban porque usan los nombres de red de Docker (`pinot-broker`,
+`tactico-clickhouse`) y desde el host están en `localhost`. Con las variables de entorno correctas,
+once reglas dejaron de estar bloqueadas.
+
+### Primero: las pruebas de integración estaban mockeadas
+
+`_pinot_en_memoria` tiene `autouse=True` y alcanzaba **también a las suites `integration`**.
+`test_reconciliacion_integracion` comparaba el almacén en memoria contra ClickHouse y reportaba
+discrepancias inventadas: el «100 en origen» eran las filas que esa misma fixture sembraba.
+
+Una prueba de integración silenciosamente mockeada es el peor de los dos mundos: no prueba la
+integración **y además miente sobre lo que encontró**. Afectaba igual a `test_inyeccion_integracion`
+(C8), que por tanto tampoco probaba nada.
+
+### `PG-ANA-001` → ✅ · 22 de 25 cuadran exactos
+
+Contra motores reales, incluidas las sumas de heridos, víctimas y montos. Los 3 restantes son
+desfase de carga y **avisan en vez de fallar**: no hay nada que arreglar en la transformación, hay
+un DAG que reanudar.
+
+Corregido un mapeo propio: `hecho_evidencia` guarda **fotos y notas en la misma tabla** y se
+cuadraba solo contra `Dim_EvidenciaFoto`, dando «sobran 49» — que parece un duplicado y era otra
+cosa dentro. Partido en dos correspondencias por tipo.
+
+### `PG-ANA-002` → ⚠️ · y una corrección de diagnóstico
+
+Primera medida: 17 tablas desactualizadas. **Era falso.** Medía por `fecha`, que es la fecha de
+**negocio** y puede estar en el futuro — `hecho_suscripcion` tiene contratos que empiezan en meses,
+así que daba «−100 días de antigüedad» y pasaba el control sin haberse cargado nunca.
+
+Existe `cargado_en` en todas las tablas: el instante real de la corrida. Medido bien, las tablas
+atrasadas son **5, no 17**: `hecho_despacho`, `hecho_estado_unidad`, `hecho_ping_unidad`,
+`hecho_baja_unidad` y `hecho_validacion_region`, entre 7 y 8 días.
+
+### `PG-OPE-001` y `PG-OPE-002` → ✅
+
+Se consulta `consumingSegmentsInfo` del controller: estado `CONSUMING`, servidores que responden,
+offsets consumidos frente al tópico y retraso temporal. **Todo correcto** en la instancia actual.
+
+La reconciliación evento→fila se resuelve **por offsets**, que responde a «¿ha llegado todo?» sin
+publicar nada. Un lag creciente es el aviso previo a la pérdida: el consumidor sigue vivo, marca
+`CONSUMING`, y cada vez va más atrás.
+
+### `PG-ANA-005` → ✅ · **defecto real corregido**
+
+Las **158 consultas** del catálogo se ejecutan contra ClickHouse real.
+`estrategicos/oe5/e5_02_retencion_neta_ingresos.sql` fallaba con «no supertype for types Float64,
+Decimal(38,2)»: las dos ramas de un `if()` tenían tipos incompatibles. **Ese informe devolvía 500 la
+primera vez que alguien lo abriera**, y ninguna prueba rápida podía verlo.
+
+Corregido convirtiendo la división a `Float64` — el NRR es un ratio, no un importe, así que es su
+tipo natural.
+
+⛔ **Se retiró un análisis estático de alias** escrito para esta misma regla. Marcaba ocho consultas
+correctas (`ifNull(p.columna, 0) AS columna`, `argMax(idplan, fecha) AS idplan`) que se ejecutan sin
+error. Una prueba que señala código correcto se desactiva en cuanto estorba, y con ella se pierde
+la que sí protege.
+
+**Dos falsos positivos más del arnés, corregidos antes de reportarlos:** `{mes:String}` viaja como
+«YYYY-MM» y `{granularidad:String}` como «mes»; con valores genéricos el motor rechazaba por el
+**valor**, no por la consulta.
+
+**Archivos tocados.**
+
+- `backend/core/seguridad/reconciliacion.py` — claves y medidas por lado, `filtro_analitico`,
+  frescura por `cargado_en`.
+- `backend/tests/seguridad/conftest.py` — el mock no alcanza a `integration`.
+- `backend/tests/seguridad/test_frescura_analitica.py`, `test_ingesta_pinot.py`,
+  `test_consultas_clickhouse.py` *(nuevos)*.
+- `dags/lib/consultas/estrategicos/oe5/e5_02_retencion_neta_ingresos.sql` — el defecto de tipos.
+- `.github/workflows/integracion.yml`.
+
+**Trazabilidad.** `PG-ANA-001`, `PG-OPE-001`, `PG-OPE-002`, `PG-ANA-005` → ✅; `PG-ANA-002` → ⚠️.
+Plan: **21 ✅ · 19 ⚠️ · 17 ❌**; bloqueantes abiertas de 13 a **10**.
+
+---
+
+## 2026-08-23 — C12: cuadre analítica ↔ operacional (PG-ANA-001)
+
+La regla más importante de la capa analítica: la única que detecta **un informe plausible pero
+falso**. ClickHouse es derivada; si un DAG carga de menos, la consulta responde igual de rápido, el
+informe se pinta igual de bien y los números son otros. Nadie recibe un error — alguien firma un
+documento.
+
+**Lo construido.** `core/seguridad/reconciliacion.py` declara las **20 tablas de hechos** con su
+origen en Pinot y genera el SQL de ambos lados. El cuadre compara claves distintas y sumas de
+medidas sobre una ventana de 30 días, que es el grano de partición de los DAGs.
+
+### El trabajo real estuvo en los nombres, no en la lógica
+
+La primera versión tenía **un solo campo `clave`**, dando por hecho que ambos lados la llamarían
+igual. No es así:
+
+| Analítica (ClickHouse) | Operacional (Pinot) |
+|---|---|
+| `hecho_sesion.idsesion` | `Fact_Session.idsession` |
+| `hecho_llamada_api.idlog` | `Fact_LogLlamadaAPI.idlogllamadaapi` |
+| `hecho_onboarding.idonboarding` | `Fact_Onboarding.id_onboarding` |
+| `num_vehiculos` | `numvehiculos` |
+
+Con un solo nombre, el cuadre habría fallado por **una columna mal escrita en vez de por un dato
+mal cargado**, y nadie distingue una cosa de la otra leyendo el fallo. Se corrigió a clave y medida
+**por lado**, y los 20 pares salen de cruzar `dags/lib/ddl.py` con `database/esquemas.json` — no de
+adivinar.
+
+Una prueba valida los 20 contra los esquemas reales, y encontró seis medidas mal declaradas antes
+de que llegaran a ejecutarse.
+
+### Dos asertos, no uno
+
+El **conteo** detecta filas que faltan o sobran. Las **sumas** detectan el caso que el conteo no
+ve: están todas las filas con los valores cambiados. El informe da el número correcto de accidentes
+y el número equivocado de heridos, y eso se entrega a aseguradoras.
+
+### Antienvejecimiento
+
+- Una prueba compara `CORRESPONDENCIAS` con las `hecho_*` de `ddl.py`: **una tabla nueva sin cuadre
+  queda señalada**. Al escribirla marcó 17 de 20 sin declarar, que era el estado real.
+- La suite de integración incluye un control que **falla si ninguna tabla tiene datos**: sin él,
+  con los almacenes vacíos cada cuadre se saltaría y el informe diría verde sin comparar nada.
+- Otra prueba comprueba que la ventana de 30 días es la misma en epoch-ms y en `Date`. Un día de
+  desfase basta para que un mes con carga diaria no cuadre nunca, y se buscaría un fallo en el ETL
+  que no existe.
+
+**Efecto verificado.** Suite rápida de seguridad: **681 passed**. La de integración se salta con
+mensaje explícito sin los motores levantados, en vez de pasar en vacío.
+
+**Archivos tocados.**
+
+- `backend/core/seguridad/reconciliacion.py` *(nuevo)* — 20 correspondencias y generación de SQL.
+- `backend/tests/seguridad/test_reconciliacion.py` *(nuevo)* — 13 pruebas rápidas.
+- `backend/tests/seguridad/test_reconciliacion_integracion.py` *(nuevo)* — el cuadre real.
+- `.github/workflows/integracion.yml` — levanta el stack `tactico` y ejecuta el cuadre.
+
+⚠️ **Estado honesto: ⚠️ Parcial, no ✅.** El cuadre está **construido, no ejecutado**. Hasta que
+corra con ambos motores y los DAGs cargados, no ha comparado un solo número real.
+
+**Trazabilidad.** `PG-ANA-001` → ⚠️ Parcial. Plan: 17 ✅ · 20 ⚠️ · 20 ❌.
+
+---
+
 ## 2026-08-23 — C11: las cuatro reglas baratas, y una compuerta de cobertura al 90 %
 
 Cuatro reglas que no requerían infraestructura ni decisiones. Suben las cubiertas de 13 a 17.
