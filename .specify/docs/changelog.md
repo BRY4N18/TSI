@@ -42,6 +42,58 @@ sembrados. Eso ya no aplica: ver la entrada siguiente.
 
 ---
 
+## 2026-08-23 — Los 5 fallos que llamé «previos» tres veces, y el embudo que seguía mintiendo
+
+### Los 5 de `test_pinot_client_limit` no eran ambientales
+
+Los di por previos tres veces —y lo eran, en el sentido de que no los causé yo—
+pero **eran un defecto real y arreglable**, no ruido. La causa:
+
+`apps/*/tests/performance/test_informes_latencia.py` capturaba
+`original = PinotClient.query` **mientras `mock_pinot` estaba activo**, es decir
+capturaba el mock, y lo instalaba con `monkeypatch.setattr`. Al deshacerse,
+`monkeypatch` reinstalaba **ese mock**. Si su teardown corría después del de
+`mock_pinot` —el orden depende de por qué fixture llega cada uno—,
+`PinotClient.query` quedaba con el mock puesto **para el resto de la sesión**, y
+las pruebas que verifican que el cliente añade `LIMIT` dejaban de ver ninguna
+petición HTTP.
+
+Por eso fallaban solo junto a `accidentes`, `partners` y `soporte_cliente`, y
+solo a veces. Sustituido por `with patch.object(...)`, que sale al terminar el
+cuerpo de la prueba, antes que cualquier fixture. **Ya no se deselecciona nada.**
+
+### El embudo de abandono seguía dando 100 %
+
+Declarar las etapas pendientes no bastaba: `ot04_embudo_abandono` contaba
+**llegadas** por etapa y encadenaba cada una con la anterior. Con las pendientes
+cargadas, un cliente que llegó y no hizo nada contaba como que superó las tres.
+
+La consulta pasa a medir **dentro de la etapa** —`superaron / llegaron`, usando
+`completada`— en vez de comparar con el paso previo. La cadena solo era correcta
+mientras toda llegada implicara una superación, que era justo lo que este cambio
+dejó de ser cierto.
+
+Medido con una cuenta aprobada por la vía real y sin completar nada: **75 % de
+superación y 1 detenido en cada etapa**, donde antes salía 100 % y cero.
+
+### El contador de identificadores era 60 veces más lento de lo necesario
+
+`test_escrituras_sostenidas_por_segundo` falló en la suite completa. Podía ser
+carga de la máquina —aislado daba 174/s contra un umbral de 50— pero **medirlo
+en vez de suponerlo** destapó un coste real que yo había introducido: abrir la
+conexión, el `PRAGMA` y el `CREATE TABLE IF NOT EXISTS` **en cada reserva**
+costaban **2,4 ms por identificador**, 409 ids/s.
+
+Reutilizando la conexión: **0,04 ms**, 24 946 ids/s. Sesenta veces mejor, con la
+misma garantía. La conexión se suelta si queda inservible, para no arrastrar un
+error para siempre.
+
+> **Lección.** «Pasa aislado, luego es del entorno» es una conclusión cómoda y
+> fue falsa dos veces hoy: una escondía un parche que no se deshacía, la otra un
+> coste que yo mismo había metido.
+
+---
+
 ## 2026-08-23 — Los cuatro que quedaban abiertos: si la acción existe, el instante se puede sellar
 
 La observación que desbloqueó tres de los cuatro fue del usuario: **«cuando se
