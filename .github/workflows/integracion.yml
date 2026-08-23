@@ -1,0 +1,95 @@
+# Tests de integración con infraestructura real — PG-CI-001.
+#
+# Separado de ci.yml porque levanta Zookeeper + Kafka + los tres procesos de
+# Pinot: son minutos de arranque antes del primer test, y encadenarlo a cada
+# push haría el ciclo inservible. `testing.md §Integración Continua` ya preveía
+# esta cadencia semanal.
+#
+# Es el único sitio donde se ejecutan las reglas que un mock no puede probar:
+# PG-OPE-001 (segmentos CONSUMING), PG-OPE-002 (reconciliación evento → fila) y
+# PG-ANA-005 (alias que tapa la columna en ClickHouse — un mock nunca reproduce
+# ese error, y por eso reaparece).
+
+name: Integración
+
+on:
+  schedule:
+    # Lunes 04:00 UTC. Un fallo aparece al empezar la semana, no el viernes.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: integracion
+  cancel-in-progress: false
+
+jobs:
+  integracion:
+    name: pytest -m integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DJANGO_DEBUG: "true"
+      TSI_ENV: "test"
+      KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+      PINOT_BROKER_URL: http://localhost:8099
+      PINOT_CONTROLLER_URL: http://localhost:9000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # El orden de arranque lo define infrastructure.md §2 y lo respeta el
+      # propio compose (zookeeper → kafka → controller → broker → server).
+      - name: Levantar infraestructura
+        run: docker compose -f docker/docker-compose.infraestructura.yml up -d
+
+      # Esperar al broker no basta: PG-OPE-001 exige que las tablas estén
+      # consumiendo. Un broker vivo con tablas sin segmento CONSUMING responde
+      # 200 con listas vacías, y la suite entera pasaría en verde sin datos.
+      - name: Esperar a que Pinot acepte consultas
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:9000/health > /dev/null; then
+              echo "Controller vivo tras ${i}0s."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Pinot no respondió en 10 minutos."
+          exit 1
+
+      - name: Sembrar catálogos y tablas
+        working-directory: backend
+        run: python ../database/seed_catalogos.py
+
+      - name: pytest -m integration
+        working-directory: backend
+        run: pytest -m integration -q
+
+      # Las pruebas que un mock NO puede hacer: la inyección solo se demuestra
+      # contra el motor real, porque el doble de Pinot acepta cualquier SQL.
+      # Se comprobó introduciendo una inyección real y las 497 pruebas rápidas
+      # siguieron en verde (changelog.md C8).
+      - name: Inyección contra motores reales (PG-SEC-005)
+        working-directory: backend
+        run: pytest tests/seguridad/test_inyeccion_integracion.py -m integration -q
+
+      # Los logs de los contenedores son lo único que explica un fallo de
+      # ingesta: el test solo puede decir "no llegó el dato", no por qué.
+      - name: Logs de infraestructura
+        if: failure()
+        run: docker compose -f docker/docker-compose.infraestructura.yml logs --tail=200
+
+      - name: Apagar infraestructura
+        if: always()
+        run: docker compose -f docker/docker-compose.infraestructura.yml down -v

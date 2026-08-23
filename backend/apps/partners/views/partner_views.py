@@ -16,6 +16,7 @@ from apps.partners.permissions import (
     EsDesarrolladorAPIs,
     EsPartnerOGestor,
     PropiedadPartnerError,
+    es_gestor,
     verificar_propiedad,
 )
 from apps.partners.services.audit_partner_service import AuditPartnerService
@@ -33,6 +34,7 @@ from apps.partners.services.registro_partner_service import (
 )
 from apps.soporte_cliente.services.cliente_lookup_service import ClienteLookupService
 from core.api.response_envelope import error_response, success_response
+from core.seguridad.denegacion import respuesta_no_visible
 from core.pinot.client import PinotClient
 from core.repositories.partners.partner_repository import PartnerRepository
 from core.repositories.partners.plan_read_repository import PlanReadRepository
@@ -139,6 +141,13 @@ class PartnerDetalleView(APIView):
         try:
             detalle = servicio.detalle(int(idpartner))
         except ConsultaPartnerError as exc:
+            # Un `not_found` del servicio llegaba como 404 **antes** de comprobar
+            # la propiedad, y la comprobacion devolvia 403 despues: la pareja
+            # 404/403 delataba que partners existen (PG-SEC-001, T018).
+            if getattr(exc, "code", None) == "not_found":
+                return respuesta_no_visible(
+                    es_gestor(request), detalle_gestor="Partner no encontrado"
+                )
             return _fallo(exc)
         try:
             verificar_propiedad(request, detalle)
@@ -146,9 +155,11 @@ class PartnerDetalleView(APIView):
             AuditPartnerService().log_denegacion(
                 idpartner=int(idpartner), idusuario=idusuario_de(request), motivo=str(exc)
             )
-            return error_response(
-                "forbidden", str(exc), "propiedad_partner", status_code=status.HTTP_403_FORBIDDEN
-            )
+            # Mismo cuerpo que la rama «no existe» de arriba, a proposito: el
+            # motivo real queda en el registro de auditoria, no en la respuesta.
+            # Un `code` distinto —`propiedad_partner` frente a `acceso_denegado`—
+            # delata la existencia aunque el 403 coincida (PG-SEC-001).
+            return respuesta_no_visible(es_gestor(request))
         return success_response(detalle)
 
 

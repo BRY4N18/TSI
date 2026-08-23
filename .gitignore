@@ -73,3 +73,14 @@ frontend/chrome/
 # Notas de trabajo locales (no se versionan)
 /decisiones-pendientes.md
 /REVISION-SRS-ESTADO.md
+
+# Claves y material criptografico (PG-CFG-005)
+# jwt_private.pem firma los tokens de sesion: versionarlo permite a cualquiera
+# con acceso al repositorio emitir credenciales validas.
+backend/config/keys/
+*.pem
+!*public*.pem
+
+# Artefactos de SQLite que dejan las corridas de pytest
+*.sqlite3-shm
+*.sqlite3-wal

@@ -29,6 +29,18 @@ DE_CRECIMIENTO = sorted(i for i, m in MATERIAS.items() if m == MATERIA_CRECIMIEN
 DE_VALIDACION = sorted(i for i, m in MATERIAS.items() if m == MATERIA_VALIDACION)
 
 
+@pytest.fixture(autouse=True)
+def _pinot_en_memoria(mock_pinot, mock_kafka):
+    """Sin esto, `JWTSessionAuthentication` valida la sesion contra un Pinot real.
+
+    En la suite no hay ninguno levantado: la peticion espera a que venza el
+    timeout de red y la excepcion acaba traducida en `AuthenticationFailed`, es
+    decir un 401 donde el test espera 403 o 404. El sintoma enganya porque
+    parece un fallo de permisos y es de infraestructura.
+    """
+    return mock_pinot
+
+
 def _concede(roles, informe):
     """¿El permiso deja pasar a estos roles para este informe?
 

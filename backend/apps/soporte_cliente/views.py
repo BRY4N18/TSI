@@ -18,6 +18,7 @@ from apps.soporte_cliente.permissions import (
 )
 from apps.soporte_cliente.services.catalogo_servicio_service import CatalogoServicioService
 from apps.soporte_cliente.services.cliente_lookup_service import ClienteLookupService
+from core.seguridad.denegacion import resolver_o_denegar
 from apps.soporte_cliente.services.comentar_ticket_service import ComentarTicketService
 from apps.soporte_cliente.services.configurar_sla_service import ConfigurarSLAService
 from apps.soporte_cliente.services.confirmar_cierre_service import ConfirmarCierreService
@@ -134,15 +135,24 @@ class TicketDetalleView(APIView):
 
     def get(self, request: Request, id_reclamo: int) -> Response:
         reclamo = ReclamoRepository().find_by_id(id_reclamo)
-        if not reclamo:
-            return error_response("not_found", "Ticket no encontrado", "404", status_code=404)
-
         roles = set(getattr(request.user, "roles", []))
         es_solo_cliente = es_solo_reportador(roles)
-        if es_solo_cliente:
-            idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
-            if idcliente != reclamo.get("idcliente"):
-                return error_response("forbidden", "Ticket no pertenece al cliente", "403", status_code=403)
+
+        # Un ticket inexistente y uno ajeno responden **igual** al cliente: si
+        # difieren, iterando ids se deduce que tickets existen en el sistema sin
+        # llegar a ver ninguno (PG-SEC-001). El agente de soporte, que atiende
+        # tickets de cualquier cliente, conserva el 404 preciso.
+        denegacion = resolver_o_denegar(
+            reclamo,
+            pertenece=lambda r: (
+                ClienteLookupService().resolve_idcliente(request.user.idusuario)
+                == r.get("idcliente")
+            ),
+            es_gestor=not es_solo_cliente,
+            detalle_gestor="Ticket no encontrado",
+        )
+        if denegacion is not None:
+            return denegacion
 
         historial = ComentarTicketService().listar_para_rol(
             id_reclamo, ocultar_notas_internas=es_solo_cliente

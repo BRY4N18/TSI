@@ -13,6 +13,7 @@ from apps.cuentas_clientes.services.business_rbac_service import (
     ForbiddenRBACError,
 )
 from apps.cuentas_clientes.services.user_management_service import (
+    DatosInvalidosError,
     ForbiddenUserManagementError,
     UserManagementError,
     UserManagementService,
@@ -42,6 +43,13 @@ class UserListCreateView(APIView):
             user = service.create_user(request.data, admin_roles=request.user.roles)
         except ForbiddenUserManagementError:
             return error_response("forbidden", "Privilegios insuficientes", "403", status_code=403)
+        except DatosInvalidosError as exc:
+            # 400, no 409: el cuerpo esta mal formado, no hay conflicto que
+            # resolver. Antes esto llegaba aqui como KeyError -> 500.
+            return error_response(
+                "bad_request", str(exc), "validation_error",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         except UserManagementError as exc:
             return error_response("conflict", str(exc), "409", status_code=status.HTTP_409_CONFLICT)
         return success_response(user, status_code=status.HTTP_200_OK)

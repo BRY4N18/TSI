@@ -20,6 +20,11 @@ from apps.accidentes.services.nota_campo_service import NotaCampoService
 from apps.accidentes.services.sincronizar_evidencia_service import (
     SincronizarEvidenciaService,
 )
+from core.seguridad.validacion_archivos import (
+    ArchivoDemasiadoGrandeError,
+    ArchivoInvalidoError,
+    validar_imagen,
+)
 from core.api.response_envelope import error_response, success_response
 from core.auth.permissions import IsAuthenticated401
 from core.storage.blob_storage_service import BlobTooLargeError
@@ -53,6 +58,18 @@ class SubirEvidenciaFotoView(APIView):
         if not archivo:
             return error_response("bad_request", "archivo requerido", "400", status_code=400)
 
+        contenido = archivo.read()
+        # El tipo se comprueba por los **bytes**, no por `archivo.content_type`:
+        # esa cabecera la envia el cliente, asi que validar con ella es
+        # preguntarle al fichero si es peligroso (PG-SEC-006).
+        try:
+            validar_imagen(contenido, nombre=archivo.name or "")
+        except ArchivoDemasiadoGrandeError as exc:
+            return error_response("payload_too_large", str(exc), "413", status_code=413)
+        except ArchivoInvalidoError as exc:
+            # El mensaje no dice que tipo se detecto: ver contrato C5.
+            return error_response("bad_request", str(exc), "tipo_no_permitido", status_code=400)
+
         fechahora = request.data.get("fechahora")
         fechahora_int = int(fechahora) if fechahora else None
 
@@ -60,7 +77,7 @@ class SubirEvidenciaFotoView(APIView):
             data = EvidenciaFotoService().subir(
                 idaccidente=idaccidente,
                 idusuario=request.user.idusuario,
-                archivo=archivo.read(),
+                archivo=contenido,
                 content_type=archivo.content_type or "image/jpeg",
                 fechahora=fechahora_int,
             )

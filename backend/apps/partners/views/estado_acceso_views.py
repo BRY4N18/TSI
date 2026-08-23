@@ -33,7 +33,9 @@ from apps.partners.domain_constants import (
 from apps.partners.permissions import (
     EsAdministrador,
     EsPartnerOGestor,
+    PartnerInexistenteError,
     PropiedadPartnerError,
+    resolver_partner_visible,
     verificar_propiedad,
 )
 from apps.partners.services.evaluacion_mora_service import EvaluacionMoraService
@@ -66,13 +68,15 @@ class EstadoAccesoView(APIView):
 
     def get(self, request, idpartner: int):
         partner = PartnerRepository().find_by_id(int(idpartner))
-        if not partner:
+        try:
+            # Un id inexistente y uno ajeno son indistinguibles salvo para un
+            # gestor: separarlos deja un oraculo de enumeracion (PG-SEC-001).
+            partner = resolver_partner_visible(request, partner)
+        except PartnerInexistenteError as exc:
             return error_response(
-                "not_found", "Partner no encontrado", "not_found",
+                "not_found", str(exc), "not_found",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
-        try:
-            verificar_propiedad(request, partner)
         except PropiedadPartnerError as exc:
             return error_response(
                 "forbidden", str(exc), "propiedad_partner",

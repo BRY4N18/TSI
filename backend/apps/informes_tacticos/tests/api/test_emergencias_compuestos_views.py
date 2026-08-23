@@ -14,6 +14,18 @@ from core.jwt_utils import create_access_token
 BASE = "/api/v1/informes-tacticos/emergencias"
 
 
+@pytest.fixture(autouse=True)
+def _pinot_en_memoria(mock_pinot, mock_kafka):
+    """Sin esto, `JWTSessionAuthentication` valida la sesion contra un Pinot real.
+
+    En la suite no hay ninguno levantado: la peticion espera a que venza el
+    timeout de red y la excepcion acaba traducida en `AuthenticationFailed`, es
+    decir un 401 donde el test espera 403 o 404. El sintoma enganya porque
+    parece un fallo de permisos y es de infraestructura.
+    """
+    return mock_pinot
+
+
 def _cliente(roles):
     api = APIClient()
     api.credentials(
@@ -87,6 +99,12 @@ class TestElConjuntoPublicado:
 
 @pytest.mark.integration
 class TestElEndpointPublicado:
+    # Consulta ClickHouse real: sin el stack `tactico` levantado, la peticion
+    # revienta con ConnectionError *antes* de devolver respuesta, asi que el
+    # `pytest.skip` de mas abajo nunca llega a evaluarse. Por la definicion de
+    # markers de `testing.md`, una prueba que necesita infraestructura real es
+    # de integracion. Ver decisiones-pendientes.md #50.
+    @pytest.mark.integration
     def test_responde_con_la_forma_del_contrato(self, director):
         respuesta = director.get(
             f"{BASE}/completitud-campos-criticos", {"desde": "2026-01-01", "hasta": "2026-12-31"}
@@ -105,6 +123,12 @@ class TestElEndpointPublicado:
         for fila in cuerpo["data"]:
             assert set(fila) == {"periodo", "casos", "completos", "pct_completitud"}
 
+    # Consulta ClickHouse real: sin el stack `tactico` levantado, la peticion
+    # revienta con ConnectionError *antes* de devolver respuesta, asi que el
+    # `pytest.skip` de mas abajo nunca llega a evaluarse. Por la definicion de
+    # markers de `testing.md`, una prueba que necesita infraestructura real es
+    # de integracion. Ver decisiones-pendientes.md #50.
+    @pytest.mark.integration
     def test_sin_rango_usa_los_ultimos_treinta_dias(self, director):
         respuesta = director.get(f"{BASE}/completitud-campos-criticos")
         if respuesta.status_code != 200:
@@ -143,6 +167,11 @@ class TestErroresDeEntrada:
 
 
 class TestPermisos:
+    # Aunque solo comprueba el permiso, el `GET` concedido sigue camino hasta la
+    # consulta y necesita ClickHouse. Recuperar esta cobertura en la suite
+    # rapida pide una fixture `mock_clickhouse` equivalente a `mock_pinot`, que
+    # hoy no existe. Ver decisiones-pendientes.md #50.
+    @pytest.mark.integration
     def test_entra_la_autoridad_del_departamento(self):
         assert _cliente(["DirectorOperaciones"]).get(
             f"{BASE}/completitud-campos-criticos"

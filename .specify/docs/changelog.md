@@ -7,6 +7,583 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-23 — C10: degradación selectiva ante caída del almacén de sesión
+
+**Confirmada por el responsable** la lista de 9 rutas de `research.md` §R5.1. Cierra `PG-SEC-003`.
+
+**El problema.** Validar una sesión son dos pasos con propiedades distintas:
+`verify_access_token` es criptografía pura sin E/S y funciona con el almacén caído; solo
+`is_active` depende de infraestructura. El código anterior las trataba igual —ambas terminaban en
+excepción— y por tanto era **fail-closed universal**: una caída de Redis dejaba fuera también a la
+cadena crítica. Nadie despachaba una ambulancia mientras Redis no respondiera.
+
+**La regla implementada:**
+
+| Situación | Fuera de la cadena | En la cadena |
+|---|---|---|
+| Sesión revocada (`is_active` → `False`) | `401` | **`401` también** |
+| No se puede comprobar (`is_active` lanza) | `401` | Degradar y continuar |
+
+⚠️ **La distinción que hace que esto sea seguro:** «revocada» y «no puedo comprobar si está
+revocada» son cosas distintas. Degradar ante una caída es una concesión al Principio IX; dejar
+entrar a quien se le retiró el acceso **a propósito** no lo es — ahí no hay dilema de seguridad
+física, solo un acceso revocado. Una nueva excepción `AlmacenSesionNoDisponible` separa ambos casos.
+
+**Lo que se sacrifica, dicho explícitamente:** durante una caída, un token robado y revocado hace
+minutos sigue sirviendo **en esas nueve rutas** hasta expirar. Ventana acotada por la vigencia del
+token, y queda **registrada en WARNING**: sin esa línea, el periodo en que se admitieron sesiones
+sin verificar no constaría en ninguna parte y no sería auditable después.
+
+**Dónde vive la decisión.** La cadena crítica se resuelve en `JWTSessionAuthentication`, el único
+punto que conoce la ruta; el servicio recibe la decisión ya tomada en vez de importar el enrutador
+para inspeccionarla.
+
+**Efecto verificado — las dos mitades, por separado.**
+
+- Desactivando la degradación: falla `test_con_el_almacen_caido_la_cadena_critica_sigue_operativa`.
+- Degradando **también** las sesiones revocadas (el error clásico al implementar esto): falla
+  `test_una_sesion_revocada_se_deniega_TAMBIEN_en_la_cadena_critica`.
+
+Ambas comprobaciones importan: la primera verifica que la excepción existe, la segunda que **no se
+ha ensanchado**. 20 pruebas en total.
+
+**Antienvejecimiento.** `test_la_lista_de_la_cadena_critica_no_crece_sin_que_nadie_lo_note` fija el
+número en 9. Cada ruta añadida amplía la ventana de riesgo, y cada añadido parece razonable por
+separado — sin el aserto, la excepción se ensancharía poco a poco sin revisión.
+
+**Archivos tocados.**
+
+- `backend/core/seguridad/cadena_critica.py` *(nuevo)* — las 9 rutas y el criterio.
+- `backend/apps/cuentas_clientes/services/session_validation_service.py` — `degradable`,
+  `AlmacenSesionNoDisponible`, registro en WARNING.
+- `backend/apps/cuentas_clientes/authentication.py` — resuelve la cadena por `request.path`.
+- `backend/tests/seguridad/test_integridad_jwt.py` — la prueba de línea base **dividida en cinco**,
+  como quedó anotado en C6 que debía hacerse.
+
+**Trazabilidad.** `PG-SEC-003` → ✅. `decisiones-pendientes.md` #52 (la de T031) cerrada.
+
+---
+
+## 2026-08-23 — C9: las cuatro reglas P2 de seguridad, cerradas
+
+**Contexto.** US6–US9 de `Endurecimiento-Seguridad`: límite de tasa, subida de archivos,
+cabeceras/CSP y aislamiento de la demo. Cierra el bloque `PG-SEC-*` salvo lo que depende de
+infraestructura real o de una decisión pendiente.
+
+### `PG-SEC-004` — Límite de tasa (✅)
+
+Había **cinco** throttles declarados y **ninguno con prueba**. Un throttle sin verificar es peor
+que no tenerlo: figura en la configuración, se cuenta como control existente al evaluar el riesgo,
+y nadie comprueba que DRF lo aplique.
+
+11 pruebas. Se comprobó de verdad que superar el cupo devuelve `429` (15 peticiones contra un cupo
+de 10/min). La suite se parametriza sobre el registro real, y una prueba recorre `apps/` buscando
+subclases de `SimpleRateThrottle` para que un throttle nuevo sin prueba **rompa la suite**.
+
+Se incluye una prueba que impide «arreglar» el sistema añadiendo un `429` por cuota **mensual** de
+partner: `RN-APM-002` dice que el cupo mensual no bloquea, se factura. Sería romper una regla de
+negocio deliberada creyendo reforzar la seguridad.
+
+### `PG-SEC-006` — Subida de archivos (✅) — **vulnerabilidad corregida**
+
+`SubirEvidenciaFotoView` tomaba el tipo de `archivo.content_type`, una cabecera **que envía el
+cliente**. Validar con ella es preguntarle al fichero si es peligroso: un ejecutable renombrado a
+`.jpg` y anunciado como `image/jpeg` entraba sin más.
+
+Nuevo `core/seguridad/validacion_archivos.py` con `puremagic`: valida por **bytes mágicos**, aplica
+el techo de tamaño antes que el formato, y sanea el nombre. 20 pruebas.
+
+El mensaje de error **no dice qué tipo se detectó** (contrato C5): «se esperaba una imagen» basta
+para el usuario legítimo; «se detectó un ejecutable PE» le confirma al atacante que la detección
+funciona y por dónde va.
+
+### `PG-SEC-008` — Cabeceras y CSP (✅)
+
+`frontend/nginx.conf` **no declaraba ninguna cabecera de seguridad**: Django las enviaba en `/api/`
+y la aplicación Angular quedaba descubierta. Es el error natural, porque al probar la API se ve
+todo correcto.
+
+Añadidas las tres que no dependen de HTTPS más una CSP con `script-src 'self'` —sin
+`unsafe-inline`, que es donde la directiva protege de verdad— y `frame-ancestors 'none'`.
+
+⚠️ **Todas con `always`.** Sin ese modificador nginx omite `add_header` en 4xx y 5xx: el navegador
+la recibe en el camino feliz, una revisión manual la ve, y desaparece justo en las respuestas que
+un atacante provoca a propósito. Hay una prueba dedicada a ese modificador.
+
+### `PG-SEC-010` — Aislamiento de la demo (✅)
+
+Un token de demo lo obtiene **cualquier visitante** que rellene el formulario de prospecto, sin que
+nadie apruebe nada. 9 pruebas confirman que no abre ningún endpoint de negocio, que no lleva
+`roles` ni `session_id` con los que autorizar, y que las dos familias usan algoritmos y secretos
+distintos — así que filtrar el secreto de la demo no permite firmar credenciales del sistema.
+
+### T069/T070 — el pipeline
+
+- `ci.yml`: la suite de seguridad corre en el job `configuracion`, **no** en `backend`, para que un
+  fallo de seguridad se distinga de uno funcional de un vistazo. Mezclarlos hace que el segundo
+  tape al primero.
+- `integracion.yml`: `test_inyeccion_integracion.py` contra motores reales.
+- **SC-002 verificado a mano**: añadiendo un endpoint con identificador, la suite **falla**.
+
+**Efecto verificado.** Suite de seguridad: **596 → 652 passed**. `apps/accidentes` tras conectar la
+validación de subidas: 367 passed.
+
+**Archivos tocados.**
+
+- `backend/core/seguridad/validacion_archivos.py` *(nuevo)*.
+- `backend/apps/accidentes/views/evidencia_views.py` — validación por bytes.
+- `frontend/nginx.conf` — cabeceras y CSP.
+- `backend/tests/seguridad/test_throttles.py`, `test_subida_archivos.py`, `test_cabeceras.py`,
+  `test_aislamiento_demo.py` *(nuevos)* — 56 pruebas.
+- `.github/workflows/ci.yml`, `integracion.yml`.
+
+**Trazabilidad.** `PG-SEC-004`, `PG-SEC-006`, `PG-SEC-008`, `PG-SEC-010` → ✅.
+
+---
+
+## 2026-08-23 — C8: la suite de inyección no detectaba inyecciones
+
+**Contexto.** US4 de `Endurecimiento-Seguridad` (`PG-SEC-005`). La superficie de mayor riesgo del
+sistema: informes con filtros dinámicos y `ORDER BY` variable, donde la parametrización estándar
+no aplica.
+
+### Lo que el código ya hacía bien
+
+Revisión de `core/repositories/**` y `core/clickhouse/client.py`:
+
+- Los `WHERE` usan parámetros con nombre (`%(campo)s`) y un diccionario aparte.
+- ClickHouse liga **del lado del servidor** con tipos declarados (`{desde:Date}` → `param_desde`),
+  la forma más segura de las disponibles.
+- El `ORDER BY` se compone de nombres de columna que son **constantes de código** más un
+  `ASC`/`DESC` derivado de un booleano: `parse_dir` solo admite `asc` o `desc` y devuelve un
+  `NamedTuple`, así que ninguna cadena del usuario alcanza la sentencia.
+
+**Ninguna vulnerabilidad de inyección encontrada.**
+
+### El hallazgo: la suite que lo comprobaba no comprobaba nada
+
+Escrita la suite rápida —62 parámetros × 8 cargas × 70 endpoints, unas 34.700 peticiones— dio
+**499 passed**. Para verificar que detecta lo que dice, se introdujo una vulnerabilidad real: que
+`parse_dir` metiera la entrada cruda en el `ORDER BY`, que es el descuido exacto que cometería un
+desarrollador con prisa.
+
+**Las 497 pruebas siguieron en verde.**
+
+La causa: el doble de Pinot de `conftest.py` **no analiza SQL**, hace coincidencia de patrones
+sobre la cadena. Acepta igual una consulta correcta que una inyectada, así que ninguna carga puede
+tener efecto observable.
+
+> Lo irónico es que `research.md` §R7 y la tarea T048 ya lo decían por escrito —«un mock acepta
+> cualquier SQL; solo el motor real revela si la carga alteró la sentencia»— y aun así la suite se
+> construyó contra mocks. Escribir la advertencia no basta: hay que **comprobar que la prueba falla
+> cuando debe**.
+
+### Un segundo fallo, del mismo tipo
+
+Los nombres de los parámetros de filtro estaban **adivinados**. La suite probaba `orden` cuando el
+real es `dir`, y por tanto tocaba parámetros que ningún endpoint lee. Se sustituyeron por los **62
+extraídos del código** con `grep query_params.get(`. Adivinar nombres es la forma silenciosa de no
+probar nada: la suite pasa, el informe dice «cubierto», y la superficie sigue intacta.
+
+### Corrección
+
+1. `test_inyeccion.py` **declara su límite en la cabecera**: comprueba robustez y discreción —que
+   nada devuelva `500` ni mensajes del motor—, **no** ausencia de inyección.
+2. `test_inyeccion_integracion.py` *(nuevo)*, marcado `integration`: contra Pinot real, comparando
+   el **conjunto devuelto** frente a la consulta legítima. Si la carga se interpretara como SQL, el
+   número de filas cambiaría.
+
+**Efecto verificado.** Suite rápida de seguridad: **596 passed**. La de integración se salta con
+mensaje explícito si Pinot no está levantado, en vez de pasar en vacío.
+
+**Archivos tocados.**
+
+- `backend/tests/seguridad/test_inyeccion.py` *(nuevo)* — 499 pruebas, con su límite declarado.
+- `backend/tests/seguridad/test_inyeccion_integracion.py` *(nuevo)* — 6 pruebas `integration`.
+
+**Trazabilidad.** `PG-SEC-005` (⚠️ Parcial: la verificación real espera a `integracion.yml`).
+
+---
+
+## 2026-08-23 — C7: `POST /usuarios` reventaba con 500 ante un cuerpo incompleto
+
+**Contexto.** US5 de `Endurecimiento-Seguridad` (`PG-SEC-007`, datos sensibles en logs y
+respuestas). Lo buscado era una fuga de información; lo encontrado fue el camino que la haría
+posible.
+
+**Causa.** `UserListCreateView.post` pasaba `request.data` **en crudo** a
+`UserManagementService.create_user`, que hacía `data["gmail"]` sin comprobar nada. Un cuerpo sin
+ese campo lanzaba `KeyError` → **500**.
+
+El `500` importa más de lo que parece: es **el único camino que no pasa por
+`custom_exception_handler`**, porque `drf_exception_handler` devuelve `None` para las excepciones
+que no son de DRF. Es decir, la única respuesta del sistema sobre la que no hay ninguna garantía de
+qué muestra. Con `DEBUG=true` —el valor por defecto hasta el arreglo C1 de esta misma jornada—
+habría enseñado el traceback completo.
+
+**Corrección.** Validación de campos obligatorios (`nombres`, `apellidos`, `gmail`) en el
+**servicio**, no en la vista, para que cualquier otro llamador quede cubierto. Error propio
+`DatosInvalidosError` → **400**.
+
+La distinción entre `DatosInvalidosError` (400) y `UserManagementError` (409) es deliberada:
+«falta el correo» y «el correo ya está registrado» son cosas distintas. Meterlas en la misma
+excepción habría devuelto 409 a un cuerpo malformado, que es engañoso para el cliente.
+
+**Efecto verificado.** `apps/cuentas_clientes` + suite de seguridad: **801 passed**. Retirando la
+validación, 4 pruebas vuelven a fallar. Las tres cargas que antes daban `500` ahora dan `400`.
+
+**Lo que la suite confirmó que ya estaba bien.** Los logs **no** escriben datos personales, tokens
+ni coordenadas de accidentes en claro, y las respuestas de error no revelan traceback, nombres de
+tabla ni SQL. No hizo falta el filtro de enmascarado que el plan preveía (T042): se verificó que no
+es necesario en vez de añadirlo por si acaso.
+
+**Archivos tocados.**
+
+- `backend/apps/cuentas_clientes/services/user_management_service.py` — `DatosInvalidosError` y
+  validación de obligatorios.
+- `backend/apps/cuentas_clientes/views/user_role_views.py` — traducción a 400.
+- `backend/tests/seguridad/test_datos_sensibles.py` *(nuevo)* — 11 pruebas.
+
+⚠️ **Deuda declarada.** La validación cubre `POST /usuarios`. **No se auditaron los demás endpoints
+de escritura**, y el patrón —`request.data` en crudo hacia un servicio que indexa por clave— puede
+repetirse. Es trabajo de `PG-API-004`, que sigue ❌ Pendiente.
+
+**Trazabilidad.** `PG-SEC-007` (⚠️ Parcial) y `PG-API-004` de `specs/Global/PlanPruebas/spec.md`.
+
+---
+
+## 2026-08-23 — C6: el JWT resiste, pero las pruebas no medían el mérito propio
+
+**Contexto.** US3 de `specs/Global/Endurecimiento-Seguridad/` (`PG-SEC-003`, integridad del JWT).
+Hasta ahora se probaba que un token **válido** funciona —la mitad fácil, la que no tiene riesgo—.
+Faltaba comprobar que los inválidos **no** funcionan.
+
+**Resultado: el sistema aguanta.** Las seis variantes adversariales (firma alterada, `alg: none`,
+algoritmo distinto de RS256, expirado, claims manipulados, emisor ajeno) reciben `401`, y una
+sesión revocada tampoco entra aunque su token siga criptográficamente impecable. Ninguna corrección
+de código fue necesaria: 14 pruebas nuevas, 0 vulnerabilidades.
+
+### El hallazgo está en las pruebas, no en el sistema
+
+Al comprobar que la suite detecta lo que dice detectar —debilitando `verify_access_token` para
+admitir `HS256` y `none`— **las 12 primeras seguían en verde**.
+
+El motivo: **PyJWT se defiende solo**. Se niega a usar una clave asimétrica como secreto HMAC,
+también del lado de la verificación, así que la confusión de algoritmo falla por la biblioteca y no
+por la configuración del proyecto. El ataque no funciona, pero **no por nada que haga TSI**: un
+cambio de biblioteca, una versión anterior o una clave simétrica reabrirían la puerta **sin que
+ninguna prueba se quejara**.
+
+Se añadieron dos pruebas sobre la configuración propia —lo único bajo control del proyecto— que sí
+fallan al debilitarla:
+
+- que `verify_access_token` restrinja `algorithms` a `settings.JWT_ALGORITHM`;
+- que un token de otro algoritmo se rechace **por el algoritmo** (`InvalidAlgorithmError`) y no por
+  una firma inválida casual, que también daría `401` pero por accidente.
+
+> Es la tercera vez en la sesión que una suite verde resulta no estar midiendo nada (ver C3 y C5).
+> El patrón común: **verificar que la prueba falla cuando debe** es más informativo que verla pasar.
+
+### T031 — la disyuntiva fail-closed / fail-open también era falsa
+
+`SessionValidationService.validate_token_and_session` son **dos pasos con propiedades distintas**:
+`verify_access_token` es criptografía pura sin E/S y funciona con el almacén caído; solo
+`session_repo.is_active` depende de infraestructura. Plantearlo como «denegar todo o admitir todo»
+daba por perdida la autenticación entera cuando solo se pierde **la comprobación de revocación**.
+
+Decisión propuesta: **degradación selectiva**. Una sesión revocada se deniega **siempre**, cadena
+crítica incluida. Un almacén *inaccesible* deniega fuera de la cadena crítica y degrada al paso
+criptográfico dentro de ella. Con criterio estricto —«su denegación retrasa la llegada de ayuda a
+una persona»— la lista es de **9 rutas**, no de las 46 del módulo de emergencias.
+
+⚠️ **No implementada:** toca la cadena crítica y la constitución exige justificación explícita de
+Safety (Principio IX) y Reliability (II) antes. Pendiente de confirmación del responsable
+(T036–T038). Detalle en `research.md` §R5.1.
+
+**Efecto verificado.** `pytest -m "not integration"`: **4239 passed, 0 failed** (venía de 4226).
+Suite de seguridad: 87 passed.
+
+**Archivos tocados.**
+
+- `backend/tests/seguridad/test_integridad_jwt.py` *(nuevo)* — 14 pruebas.
+- `specs/Global/Endurecimiento-Seguridad/research.md` — §R5.1 con la decisión y las 9 rutas.
+
+**Deuda declarada.** La prueba `test_con_el_almacen_caido_hoy_se_deniega` documenta el
+comportamiento **actual** (fail-closed universal) como línea base. Al implementar la degradación
+debe **dividirse en dos** —`401` fuera de la cadena, acceso dentro— y no modificarse: cambiarla sin
+más borraría la verificación de que el resto del sistema sigue cerrado.
+
+**Trazabilidad.** `PG-SEC-003` (⚠️ Parcial) de `specs/Global/PlanPruebas/spec.md`.
+
+---
+
+## 2026-08-23 — C5: la suite de aislamiento encuentra dos oráculos más, uno fuera de Partners
+
+**Contexto.** Implementación de US1 de `specs/Global/Endurecimiento-Seguridad/` (`PG-SEC-001`).
+El objetivo era construir la suite transversal de aislamiento multi-tenant sobre el inventario de
+rutas, no sobre una lista escrita a mano.
+
+### Primero, un fallo de la propia suite
+
+La primera ejecución reportó **82 passed** y parecía buena noticia. No lo era: el actor era un
+`PartnerIntegracion`, rol que **no alcanza la mayoría de los 92 endpoints con identificador**.
+Recibía `403` en 29 de 31 rutas, pero por **autorización vertical, no por tenencia**. La suite
+pasaba en verde sin haber ejercitado el aislamiento ni una vez.
+
+Un `403` por rol y un `403` por tenencia son idénticos desde fuera, y solo el segundo dice algo
+sobre IDOR. Corregido con **detección de vacuidad**: antes de afirmar nada, la suite comprueba si
+el actor alcanza su **propio** recurso en esa ruta; si tampoco, marca `NO EJERCITADA`. Y emite un
+informe de cobertura real al terminar, para que el número verde no se confunda con protección.
+
+De «82 passed» a «2 de 92 ejercitadas» — el punto de partida honesto. Tras sembrar dos tenants y
+añadir cinco actores por materia (T078), **13 de 155**.
+
+### Las dos vulnerabilidades
+
+**V1 — `GET /api/v1/soporte/tickets/{id_reclamo}`.** Módulo que nadie había revisado; es la prueba
+de que el enfoque transversal funciona. `403` = el ticket existe pero es de otro cliente,
+`404` = no existe. Un cliente iterando ids deduce qué tickets existen en todo el sistema sin ver
+ninguno.
+
+**V2 — `GET /api/v1/partners/{idpartner}`.** Vista que la corrección manual de C4 no alcanzó: allí
+se arreglaron `estado_acceso_views` y `metricas_views`. Aquí el `404` venía del **servicio**
+(`ConsultaPartnerService`), la variante que T018 predijo. Tuvo **dos capas**: al igualar los
+códigos a `403`, el **cuerpo** seguía delatando (`code: propiedad_partner` frente a
+`acceso_denegado`). La segunda solo apareció al arreglar la primera.
+
+> **Lección:** igualar el código HTTP no basta. Mientras el cuerpo difiera, el oráculo sigue
+> abierto. El motivo real vive ahora en el registro de auditoría, no en la respuesta.
+
+**Efecto verificado.** Suite de seguridad: 73 passed, 0 fallos. `apps/partners` + `apps/soporte_cliente`:
+948 passed. Ambas vulnerabilidades vuelven a fallar si se revierte la corrección.
+
+**Archivos tocados.**
+
+- `backend/core/seguridad/inventario_rutas.py` *(nuevo)* — recorrido del `URLResolver`: 234 rutas,
+  92 con identificador.
+- `backend/core/seguridad/denegacion.py` *(nuevo)* — `resolver_o_denegar` y `respuesta_no_visible`,
+  la decisión única que impide que las dos ramas diverjan al editarse por separado.
+- `backend/apps/soporte_cliente/views.py` — V1.
+- `backend/apps/partners/views/partner_views.py` — V2.
+- `backend/tests/seguridad/` *(nuevo)* — suite, fixtures de dos tenants, cinco actores por materia
+  y `HALLAZGOS.md`.
+- `backend/requirements.txt`, `backend/pytest.ini` — `puremagic` y marker `seguridad`.
+
+⚠️ **Deuda declarada.** 142 de 155 combinaciones siguen **sin ejercitar**: son superficie *sin
+examinar*, no superficie limpia. Requieren sembrar accidentes, despacho y red operativa. Anotado
+como continuación de T078.
+
+**Trazabilidad.** `PG-SEC-001` (sigue ⚠️ Parcial) de `specs/Global/PlanPruebas/spec.md`.
+
+---
+
+## 2026-08-23 — C4: un partner podía enumerar el padrón de partners ajenos
+
+**Causa.** Las vistas de `apps/partners/views/` resolvían el partner y cortaban con
+`404 Partner no encontrado` **antes** de comprobar la propiedad; solo después devolvían `403` si
+resultaba ajeno. Para un Partner de integración eso es un oráculo de enumeración: iterando
+`idpartner` distingue «no existe» (404) de «existe y no es tuyo» (403), y con eso deduce cuántos
+partners hay y en qué rangos de id — es decir, qué competidores son clientes de TSI — sin llegar a
+ver un solo dato.
+
+⛔ **`verificar_propiedad` no era la culpable**, pese a lo que sugería una primera lectura: unifica
+ambos casos a `403`. El oráculo lo creaba el corte previo de la vista.
+
+**La disyuntiva 403-vs-404 era falsa.** El comentario que había en `metricas_views.py` —«que el
+partner no exista no es un problema de permisos»— tenía razón en su eje, y el requisito de
+seguridad tenía razón en el suyo. Es el conflicto Seguridad ↔ Idoneidad Funcional del mecanismo de
+desempate de la constitución, y aquí no hace falta sacrificar ninguno porque **depende de quién
+pregunta**:
+
+- **Gestor** (Administrador, Desarrollador de APIs): opera sobre cualquier partner, así que un
+  `404` no le revela nada que no pueda consultar. Conserva el diagnóstico preciso.
+- **No gestor**: «no existe» y «no es tuyo» devuelven la misma respuesta con el mismo cuerpo.
+
+**Fuga adicional encontrada de paso.** Los mensajes diferían («Partner no encontrado» vs «El
+partner no pertenece al cliente autenticado») y las vistas vuelcan `str(exc)` en `detail`: un texto
+distinto filtra la existencia por el cuerpo **aunque el código HTTP sea 403 en ambos casos**.
+Unificados en `DENEGACION_UNIFICADA`.
+
+**Efecto verificado.** 11 pruebas nuevas; reintroduciendo la vulnerabilidad fallan 6. Las 744
+pruebas de `apps/partners/` siguen pasando. **Sin romper contratos**: `403` y `404` ya estaban
+declarados en los OpenAPI; solo cambia cuál recibe un no gestor ante un id inexistente.
+
+**Archivos tocados.**
+
+- `backend/apps/partners/permissions.py` — `resolver_partner_visible()`, `PartnerInexistenteError`,
+  `DENEGACION_UNIFICADA`; mensajes unificados en `verificar_propiedad`.
+- `backend/apps/partners/views/estado_acceso_views.py`, `metricas_views.py` — usan el helper.
+- `backend/apps/partners/tests/unit/test_no_enumeracion_partners.py` *(nuevo)*.
+
+⚠️ **Deuda declarada.** (1) El camino «no existe» retorna antes de consultar el cliente, así que
+responde más rápido: queda un canal temporal de menor ancho de banda. (2) Siete servicios
+(`consulta_partner_service`, `emitir_credencial_service`, `metricas_consumo_service`,
+`promocion_produccion_service`, `reactivar_partner_service`, `suspender_partner_service`,
+`asignar_plan_acceso_service`) lanzan `not_found` por su cuenta; hay que revisar si un no gestor
+puede alcanzarlos con un id ajeno. Ambos flecos son trabajo de US1 de `Endurecimiento-Seguridad`.
+
+**Trazabilidad.** `PG-SEC-001` de `specs/Global/PlanPruebas/spec.md` (avanza a ⚠️ Parcial) ·
+`decisiones-pendientes.md` #51 (cerrada).
+
+---
+
+## 2026-08-23 — C3: 42 pruebas de permisos que fallaban por una fixture ausente
+
+**Causa.** `apps/informes_tacticos/tests/api/test_permisos_red_operativa.py` y
+`test_emergencias_compuestos_views.py` fallaban 21 veces cada uno, todos con `401` donde el test
+esperaba `403` o `404`. La causa no era de permisos: a ambos ficheros les faltaba la fixture
+
+```python
+@pytest.fixture(autouse=True)
+def _pinot_en_memoria(mock_pinot, mock_kafka):
+    return mock_pinot
+```
+
+que sí tienen sus vecinos `test_permisos_cuentas.py` y `test_permisos_partners.py`. Sin ella,
+`JWTSessionAuthentication` valida la sesión contra un Pinot **real** que en la suite no está
+levantado: la petición espera a que venza el timeout de red y la excepción acaba traducida en
+`AuthenticationFailed`, es decir un `401`.
+
+El síntoma engaña por partida doble. Parece un fallo de autorización —y llevó a plantear una
+decisión de diseño sobre `401` vs `403` que no existía— cuando es de infraestructura de pruebas.
+La pista real era el tiempo: 67 s para 26 pruebas, frente a 1,5 s de las que sí tenían la fixture.
+
+**Efecto verificado.** Los dos ficheros pasan de **42 fallos en ~130 s** a **80 passed en 2,45 s**.
+Retiradas las dos exclusiones `--deselect` del job `backend` de `.github/workflows/ci.yml`, con lo
+que el pipeline queda sin deuda declarada.
+
+**Tres pruebas aparte, marcadas `integration`.** `test_responde_con_la_forma_del_contrato`,
+`test_sin_rango_usa_los_ultimos_treinta_dias` y `test_entra_la_autoridad_del_departamento`
+consultan un ClickHouse real (`tactico-clickhouse:8123`). Las dos primeras ya llevaban un
+`pytest.skip("el modelo analítico no está disponible")` que **nunca llegaba a evaluarse**: la
+conexión lanza `ConnectionError` antes de que haya respuesta que inspeccionar. Por la definición
+de markers de `testing.md`, una prueba que necesita infraestructura real es de integración.
+
+⚠️ La tercera es un test de **permisos** que solo necesitaba ClickHouse porque el `GET` concedido
+sigue camino hasta la consulta. Marcarla `integration` saca esa cobertura de la suite rápida:
+recuperarla pide una fixture `mock_clickhouse` equivalente a `mock_pinot`, que hoy no existe.
+Anotado en `decisiones-pendientes.md` #50.
+
+**Archivos tocados.**
+
+- `backend/apps/informes_tacticos/tests/api/test_permisos_red_operativa.py` — fixture.
+- `backend/apps/informes_tacticos/tests/api/test_emergencias_compuestos_views.py` — fixture y 3
+  markers `integration`.
+- `.github/workflows/ci.yml` — retiradas ambas exclusiones y el paso informativo asociado.
+- `specs/Global/PlanPruebas/traceability.md` *(nuevo)* — trazabilidad de las 57 reglas, generada
+  desde el `spec.md` y no escrita a mano.
+
+**Lección trasladable.** Una prueba lenta que falla por red es indistinguible de una prueba que
+falla por lógica, y el mensaje de error apunta al sitio equivocado. Conviene sospechar del
+**tiempo de ejecución** antes que del aserto. `PG-CI-003` del plan global cubre esto.
+
+**Trazabilidad.** `PG-CI-003` de `specs/Global/PlanPruebas/spec.md`.
+
+---
+
+## 2026-08-23 — C2: el pipeline de CI, y las dos cosas que destapó al encenderlo
+
+**Causa.** `testing.md` daba la integración continua por «(Futuro)» desde su redacción. El
+repositorio tiene 674 pruebas de backend y 250 de frontend cuya ejecución dependía de que alguien
+se acordara de lanzarlas. Una suite que no corre sola no protege: es documentación de intenciones.
+
+**Qué se montó.**
+
+- `.github/workflows/ci.yml` — 6 jobs. `rapidas` (`pytest -m unit`, ~15 s) en cada push;
+  `configuracion`, `estatico`, `backend` con cobertura, `frontend` y `dependencias` en PR y `main`.
+- `.github/workflows/integracion.yml` — `pytest -m integration` semanal (lunes 04:00 UTC) con
+  Kafka + Pinot reales levantados desde `docker/docker-compose.infraestructura.yml`.
+
+Separados a propósito: la infraestructura tarda minutos en arrancar antes del primer test, y
+encadenarla a cada push haría el ciclo de retroalimentación inservible. Cuando esperar el CI
+cuesta, se empieza a hacer push sin esperarlo.
+
+**Los dos hallazgos del propio montaje** — que es exactamente para lo que sirve encender una
+compuerta que nunca había estado encendida:
+
+1. **`manage.py check --deploy` falló con 5 advertencias de seguridad reales:** `SECURE_HSTS_SECONDS`
+   sin declarar, `SECURE_SSL_REDIRECT` apagado, y las cookies de sesión y CSRF sin `Secure`.
+   Corregidas en `config/settings.py`, condicionadas a entorno no local — activarlas siempre
+   dejaría el login inservible en el servidor de desarrollo, que corre sobre HTTP plano. HSTS se
+   declara explícito (1 año) en vez de heredar el default `0`: una política HSTS mal puesta es
+   difícil de revertir, porque el navegador la recuerda aunque el servidor deje de enviarla.
+
+2. **42 pruebas fallan**, repartidas por igual entre
+   `apps/informes_tacticos/tests/api/test_permisos_red_operativa.py` (21) y
+   `test_emergencias_compuestos_views.py` (21). Todas por lo mismo: la petición llega sin
+   autenticar y devuelve `401` donde el test espera `403` o `404`. **Preexistentes** — verificado
+   con `git stash` sobre los dos ficheros: fallan igual sin los cambios de este día.
+
+   Que sean exactamente 21 y 21 con el mismo síntoma apunta a **una causa compartida** —
+   probablemente el helper que construye el cliente autenticado en esa app— y no a 42 defectos
+   sueltos. Resolverlo requiere además decidir si un rol autenticado sin acceso debe recibir 401 o
+   403, decisión que no corresponde tomar dentro de «montar el pipeline»: ver
+   `decisiones-pendientes.md` **#50**. Excluidas del gate con **caducidad 2026-09-23**, con un paso
+   informativo no bloqueante que las sigue ejecutando en cada run.
+
+**Efecto verificado.** `check --deploy` con entorno de producción pasa limpio
+(`no issues (0 silenced)`); `manage.py check` local sigue sin cambios; `pytest -m unit` da
+206 passed en 15 s; las guardas de configuración, 22 passed. Ambos workflows validados como YAML.
+
+**Archivos tocados.**
+
+- `.github/workflows/ci.yml`, `.github/workflows/integracion.yml` *(nuevos)*.
+- `backend/config/settings.py` — bloque de cabeceras y cookies de seguridad (PG-SEC-008).
+- `backend/tests/test_configuracion_segura.py` — 2 pruebas más (22 en total).
+- `decisiones-pendientes.md` — entrada #50.
+
+**Deuda declarada en el propio workflow.** Ruff, ESLint y Prettier corren con `|| true`: no se han
+pasado nunca sobre este árbol y hacerlos bloqueantes de golpe dejaría el pipeline en rojo desde el
+primer run, que es la forma más rápida de que se ignore. Retirar los `|| true` cuando el árbol
+esté limpio (`PG-CI-004`).
+
+**Trazabilidad.** `PG-CI-001`, `PG-CFG-004`, `PG-SEC-009` (✅); `PG-SEC-008`, `PG-CI-004`
+(⚠️ parcial) de `specs/Global/PlanPruebas/spec.md`.
+
+---
+
+## 2026-08-23 — C1: los secretos de despliegue no tenían guarda, solo buenas intenciones
+
+**Causa.** Cada credencial de `config/settings.py` se lee con `os.environ.get(VAR, default)` y
+el default es cómodo para desarrollo. Si un despliegue olvidaba exportar la variable, el sistema
+**arrancaba igual**: `DJANGO_SECRET_KEY` con `django-insecure-dev-only-change-in-production`
+(cualquiera con acceso al repositorio podía firmar sesiones válidas) y `CLICKHOUSE_PASSWORD`
+con `tactico`, la misma contraseña que aparece en el `docker-compose`. No fallaba nada — quedaba
+abierto en silencio, que es la peor forma de fallar. `DJANGO_DEBUG`, además, tiene default
+`true`: un despliegue sin la variable devuelve el traceback completo con settings y fragmentos
+de entorno al navegador en cada excepción.
+
+La guarda ya existía, pero solo para los dos secretos de la demo interactiva
+(`apps/ventas_crm/demo_tokens.py:34`). El patrón era bueno; el alcance, no.
+
+**Efecto verificado.** Con `DJANGO_DEBUG=false TSI_ENV=production`, `manage.py check` ahora
+aborta enumerando los cuatro secretos sin configurar en un solo mensaje. Con la configuración
+local de siempre sigue arrancando sin cambios (`System check identified no issues`). Se comprobó
+que la prueba detecta la ausencia de guarda: retirando `CLICKHOUSE_PASSWORD` del registro,
+`test_registro_cubre_todos_los_defaults_sensibles_de_settings` falla nombrándolo.
+
+**Archivos tocados.**
+
+- `backend/core/config/secretos.py` *(nuevo)* — registro central `DEFAULTS_INSEGUROS` y las
+  guardas `verifica_secretos`, `verifica_debug`, `verifica_hosts`.
+- `backend/config/settings.py` — invocación de las tres guardas al final, con los valores ya
+  resueltos.
+- `backend/tests/test_configuracion_segura.py` *(nuevo)* — 20 pruebas parametrizadas sobre el
+  registro, más la prueba antienvejecimiento que analiza `settings.py` y falla si aparece un
+  secreto con default sin dar de alta.
+- `.gitignore` — `backend/config/keys/` no estaba ignorado (aunque tampoco llegó a versionarse):
+  un `git add -A` habría commiteado `jwt_private.pem`, la clave que firma los tokens de sesión.
+
+**Decisión de diseño.** Se conservó el default `true` de `DJANGO_DEBUG` en vez de invertirlo a
+`false`. Invertirlo protege solo al despliegue que ya olvidó configurar su entorno, y a cambio
+rompe todo arranque local sin `.env`. La guarda por `TSI_ENV` cubre el mismo riesgo sin volver
+hostil el desarrollo.
+
+**Trazabilidad.** `PG-CFG-001`, `PG-CFG-002` (✅ Cubierta), `PG-CFG-003` (⚠️ Parcial — falta la
+mitad de CORS) y `PG-CFG-005` (parcial) de `specs/Global/PlanPruebas/spec.md` §3.
+
+---
+
 ## 2026-08-22 — Tres módulos tácticos de frontend que no tenían spec
 
 Red Operativa, Suscripciones y Facturación, y Ventas y CRM tenían la capa de frontend de

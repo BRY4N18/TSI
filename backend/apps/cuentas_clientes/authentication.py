@@ -10,6 +10,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from apps.cuentas_clientes.services.session_validation_service import (
     SessionValidationService,
 )
+from core.seguridad.cadena_critica import es_cadena_critica
 
 
 @dataclass
@@ -43,8 +44,15 @@ class JWTSessionAuthentication(BaseAuthentication):
         if not token:
             return None
 
+        # La cadena critica se resuelve **aqui** y no en el servicio porque este
+        # es el unico punto que conoce la ruta. El servicio recibe una decision
+        # ya tomada, en vez de importar el enrutador para inspeccionarla.
+        degradable = es_cadena_critica(getattr(request, "path", ""))
+
         try:
-            claims = self.session_validator.validate_token_and_session(token)
+            claims = self.session_validator.validate_token_and_session(
+                token, degradable=degradable
+            )
         except Exception as exc:
             raise AuthenticationFailed("Token invalido o credenciales invalidas") from exc
 

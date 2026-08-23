@@ -16,6 +16,18 @@ class UserManagementError(Exception):
     """User management operation failed."""
 
 
+class DatosInvalidosError(UserManagementError):
+    """Entrada malformada. Se traduce a 400, no a 409.
+
+    Existe separada de `UserManagementError` porque el conflicto de negocio
+    («correo ya registrado») y la entrada malformada («falta el correo») son
+    cosas distintas: la primera es 409, la segunda 400. Sin la distincion,
+    `data["gmail"]` sobre un payload incompleto lanzaba `KeyError` y la peticion
+    terminaba en **500** — el unico camino que no pasa por el manejador central y
+    por tanto el unico sin garantias sobre lo que muestra (PG-SEC-007).
+    """
+
+
 class ForbiddenUserManagementError(UserManagementError):
     """Caller lacks Administrator role."""
 
@@ -53,8 +65,20 @@ class UserManagementService:
         user["roles"] = self.role_repo.get_user_roles(user_id)
         return user
 
+    #: Campos sin los que `UserRepository.create` no puede construir la fila.
+    CAMPOS_OBLIGATORIOS = ("nombres", "apellidos", "gmail")
+
     def create_user(self, data: dict, *, admin_roles: list[str]) -> dict:
         self._require_admin(admin_roles)
+
+        if not isinstance(data, dict):
+            raise DatosInvalidosError("El cuerpo debe ser un objeto JSON")
+        faltantes = [c for c in self.CAMPOS_OBLIGATORIOS if not data.get(c)]
+        if faltantes:
+            raise DatosInvalidosError(
+                f"Faltan campos obligatorios: {', '.join(faltantes)}"
+            )
+
         if self.user_repo.find_by_gmail(data["gmail"]):
             raise UserManagementError("Correo ya registrado")
 

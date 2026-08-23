@@ -84,6 +84,49 @@ def es_gestor_informes(request) -> bool:
     return bool(_roles(request) & ROLES_GESTORES_INFORMES)
 
 
+class PartnerInexistenteError(Exception):
+    """El partner del path no existe. Solo se traduce a 404 para un gestor."""
+
+
+#: Cuerpo unico de denegacion para quien no es gestor. Que sea **el mismo texto**
+#: en «no existe» y en «no es tuyo» es el requisito, no un descuido de redaccion.
+DENEGACION_UNIFICADA = "El partner no pertenece al cliente autenticado"
+
+
+def resolver_partner_visible(request, partner: dict[str, Any] | None) -> dict[str, Any]:
+    """Devuelve el partner, o deniega sin revelar si existe.
+
+    Por que existe esta funcion (PG-SEC-001, decisiones-pendientes #51): las
+    vistas cortaban con `404 Partner no encontrado` antes de comprobar la
+    propiedad, y solo despues devolvian `403` si el partner era ajeno. Para un
+    Partner de integracion eso es un **oraculo de enumeracion**: iterando ids
+    distingue «no existe» (404) de «existe y no es tuyo» (403), y con eso deduce
+    cuantos partners hay y en que rangos — sin llegar a ver un solo dato.
+
+    La separacion era deliberada y su razon era buena (`metricas_views.py`: «que
+    el partner no exista no es un problema de permisos»). El conflicto real es
+    claridad semantica contra no filtrar existencia, y se resuelve **segun quien
+    pregunta**, no sacrificando uno de los dos:
+
+    - **Gestor** (Administrador, Desarrollador de APIs): opera sobre cualquier
+      partner, asi que un 404 no le revela nada que no pueda consultar. Conserva
+      el diagnostico preciso.
+    - **No gestor**: «no existe» y «no es tuyo» producen la **misma** respuesta,
+      con el mismo cuerpo.
+
+    Lanza `PartnerInexistenteError` (-> 404, solo gestores) o
+    `PropiedadPartnerError` (-> 403).
+    """
+    if partner is None:
+        if es_gestor(request):
+            raise PartnerInexistenteError("Partner no encontrado")
+        # Para el resto, un id inexistente se responde igual que uno ajeno.
+        raise PropiedadPartnerError(DENEGACION_UNIFICADA)
+
+    verificar_propiedad(request, partner)
+    return partner
+
+
 def verificar_propiedad(
     request,
     partner: dict[str, Any] | None,
@@ -102,7 +145,12 @@ def verificar_propiedad(
     para que sea imposible ignorar el resultado por descuido.
     """
     if partner is None:
-        raise PropiedadPartnerError("Partner no encontrado")
+        # Mismo texto que la denegacion por propiedad ajena, a proposito: las
+        # vistas vuelcan `str(exc)` en `detail`, asi que un mensaje distinto
+        # filtraria la existencia por el cuerpo aunque el codigo sea 403 en
+        # ambos casos (PG-SEC-001). Para distinguirlos siendo gestor, usar
+        # `resolver_partner_visible`.
+        raise PropiedadPartnerError(DENEGACION_UNIFICADA)
     if es_gestor(request):
         return
 
@@ -114,7 +162,7 @@ def verificar_propiedad(
 
     idcliente_token = (lookup or ClienteLookupService()).resolve_idcliente(int(idusuario))
     if idcliente_token is None or int(partner.get("idcliente", -1)) != int(idcliente_token):
-        raise PropiedadPartnerError("El partner no pertenece al cliente autenticado")
+        raise PropiedadPartnerError(DENEGACION_UNIFICADA)
 
 
 # ── Informes tacticos ────────────────────────────────────────────────────────

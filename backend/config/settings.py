@@ -361,3 +361,47 @@ LOGGING = {
         },
     },
 }
+
+
+# --- Cabeceras y cookies de seguridad (PG-SEC-008) ---
+# Solo se activan fuera de desarrollo: SECURE_SSL_REDIRECT y las cookies
+# `Secure` exigen HTTPS, y el servidor local corre sobre HTTP plano — activarlas
+# siempre dejaria el login inservible en desarrollo.
+_ES_LOCAL = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+
+if not _ES_LOCAL:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    # 1 anio. Se declara explicitamente en vez de heredar el default (0) porque
+    # HSTS mal configurado es dificil de revertir: el navegador recuerda la
+    # politica aunque el servidor deje de enviarla.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # El despliegue corre detras de nginx (frontend/nginx.conf), que termina TLS.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+# --- Guardas de configuracion de despliegue (PG-CFG-001/002/003) ---
+# Se ejecutan al final, con todos los valores ya resueltos. Un secreto que
+# conserva su valor de desarrollo fuera de local aborta el arranque en vez de
+# dejar el sistema abierto en silencio. Ver core/config/secretos.py y
+# specs/Global/PlanPruebas/spec.md seccion 3.
+from core.config import secretos as _secretos  # noqa: E402
+
+_secretos.verifica_debug(DEBUG)
+_secretos.verifica_hosts(ALLOWED_HOSTS)
+_secretos.verifica_secretos(
+    {
+        "DJANGO_SECRET_KEY": SECRET_KEY,
+        "CLICKHOUSE_PASSWORD": CLICKHOUSE_PASSWORD,
+        "DEMO_GRANT_SECRET": DEMO_GRANT_SECRET,
+        "DEMO_SESSION_SECRET": DEMO_SESSION_SECRET,
+    }
+)

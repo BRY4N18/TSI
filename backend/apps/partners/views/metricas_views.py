@@ -18,7 +18,9 @@ from rest_framework.views import APIView
 from apps.partners.permissions import (
     EsDesarrolladorAPIs,
     EsPartnerOGestor,
+    PartnerInexistenteError,
     PropiedadPartnerError,
+    resolver_partner_visible,
     verificar_propiedad,
 )
 from apps.partners.services.metricas_consumo_service import (
@@ -138,16 +140,18 @@ class ConsolaLogsView(APIView):
 
         # Un partner solo ve SUS registros; los gestores, los de cualquiera.
         partner = PartnerRepository().find_by_id(idpartner)
-        if partner is None:
-            # 404, no 403: que el partner no exista no es un problema de
-            # permisos, y `verificar_propiedad` confunde los dos casos al
-            # tratar `None` como propiedad ajena.
+        try:
+            # El diagnostico preciso (404 «no existe») se conserva **para el
+            # gestor**, que opera sobre cualquier partner y a quien no le revela
+            # nada. Para un Partner de integracion, «no existe» y «no es tuyo»
+            # se responden igual: distinguirlos le permitiria enumerar el padron
+            # ajeno iterando ids (PG-SEC-001, decisiones-pendientes #51).
+            partner = resolver_partner_visible(request, partner)
+        except PartnerInexistenteError as exc:
             return error_response(
-                "not_found", "Partner no encontrado", "not_found",
+                "not_found", str(exc), "not_found",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
-        try:
-            verificar_propiedad(request, partner)
         except PropiedadPartnerError as exc:
             return error_response(
                 "forbidden", str(exc), "propiedad_partner",

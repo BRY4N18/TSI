@@ -1,0 +1,275 @@
+# Integración continua — PG-CI-001 de specs/Global/PlanPruebas/spec.md
+#
+# `testing.md §Integración Continua` mantiene la autoridad sobre QUÉ se ejecuta en
+# cada etapa; este archivo lo implementa y añade las compuertas de seguridad que
+# declara el plan global (PG-CFG-004, PG-CFG-005, PG-SEC-009, PG-CI-004).
+#
+# Diseño en dos velocidades, deliberado: `rapidas` corre en cada push y debe
+# terminar en pocos minutos — si el ciclo de retroalimentación es lento, se
+# empieza a hacer push sin esperarlo y el pipeline deja de proteger. Lo caro
+# (cobertura completa, frontend, auditorías) corre en PR y en `main`.
+#
+# Los tests marcados `integration` NO corren aquí: necesitan Kafka + Pinot reales.
+# Van en integracion.yml, semanal y bajo demanda.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un push nuevo sobre la misma rama cancela el run anterior: no tiene sentido
+# gastar minutos validando un commit que ya quedó atrás.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "20"
+  # El backend arranca en modo local durante el CI: las guardas de PG-CFG-001/002
+  # exigirían secretos reales, que no deben existir en un runner público.
+  DJANGO_DEBUG: "true"
+  TSI_ENV: "test"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Etapa rápida — cada push. Objetivo: minutos, no decenas de minutos.
+  # ---------------------------------------------------------------------------
+  rapidas:
+    name: Tests unitarios (backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: pytest -m unit
+        working-directory: backend
+        run: pytest -m unit -q
+
+  # ---------------------------------------------------------------------------
+  # Configuración y secretos — PG-CFG-004, PG-CFG-005.
+  # Barato y de severidad máxima: es la mejor relación coste/beneficio del plan.
+  # ---------------------------------------------------------------------------
+  configuracion:
+    name: Configuración y secretos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks necesita el historial completo: un secreto retirado del árbol
+          # sigue siendo un secreto filtrado mientras viva en algún commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # PG-CFG-001/002/003: las guardas propias del proyecto.
+      - name: Guardas de configuración
+        working-directory: backend
+        run: pytest tests/test_configuracion_segura.py -q
+
+      # El bloque adversarial completo (PG-SEC-*). Va en este job y no en
+      # `backend` para que un fallo de seguridad se distinga de un fallo
+      # funcional de un vistazo: son dos clases de problema con dos urgencias
+      # distintas, y mezclarlos hace que la segunda tape a la primera.
+      - name: Suite de seguridad
+        working-directory: backend
+        run: pytest tests/seguridad/ -q -m "not integration"
+
+      # PG-CFG-004: chequeo nativo de despliegue de Django. Una advertencia
+      # (cookie insegura, HSTS ausente, X-Frame-Options) rompe el build.
+      #
+      # Se ejecuta con la configuración de un despliegue REAL, no con la de
+      # desarrollo: con DJANGO_DEBUG=true, `check --deploy` silencia justo las
+      # comprobaciones que interesan y el paso pasaría siempre sin mirar nada.
+      - name: manage.py check --deploy
+        working-directory: backend
+        env:
+          DJANGO_DEBUG: "false"
+          TSI_ENV: "production"
+          DJANGO_ALLOWED_HOSTS: "ci.invalid"
+          DJANGO_SECRET_KEY: ${{ github.sha }}-ci-solo-para-el-chequeo-de-deploy
+          CLICKHOUSE_PASSWORD: ci-clickhouse-${{ github.run_id }}
+          DEMO_GRANT_SECRET: ci-demo-grant-secret-min-32-chars-xx
+          DEMO_SESSION_SECRET: ci-demo-session-secret-min-32-chars
+        run: python manage.py check --deploy --fail-level WARNING
+
+      # PG-CFG-005: ningún secreto versionado, ni en el árbol ni en el historial.
+      - name: Escaneo de secretos
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: La clave privada JWT no está versionada
+        run: |
+          if git ls-files --error-unmatch backend/config/keys/jwt_private.pem 2>/dev/null; then
+            echo "::error::jwt_private.pem está versionado. Firma los tokens de sesión (PG-CFG-005)."
+            exit 1
+          fi
+          echo "OK: jwt_private.pem no está versionado."
+
+  # ---------------------------------------------------------------------------
+  # Análisis estático — PG-CI-004.
+  # ---------------------------------------------------------------------------
+  estatico:
+    name: Lint y formato
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Ruff
+        run: |
+          pip install ruff
+          ruff check backend dags ETL || true
+          ruff format --check backend || true
+        # NOTA: `|| true` es temporal y deliberado. Ruff no se ha pasado nunca
+        # sobre este árbol; convertirlo en bloqueante hoy dejaría el pipeline en
+        # rojo desde el primer run, que es la forma más rápida de que se ignore.
+        # Retirar los `|| true` en cuanto el árbol esté limpio — ver PG-CI-004.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: ESLint y Prettier
+        working-directory: frontend
+        run: |
+          npm ci
+          npx eslint src --max-warnings=0 || true
+          npx prettier --check "src/**/*.{ts,html,css,json}" || true
+        # Mismo criterio temporal que Ruff.
+
+  # ---------------------------------------------------------------------------
+  # Suite completa de backend con cobertura — PR y main.
+  # PG-CI-002: la cobertura es compuerta, no informe.
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend completo + cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: rapidas
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # `--strict-markers` ya está en pytest.ini; un marker mal escrito falla aquí
+      # en vez de silenciar el test que pretendía marcar.
+      #
+      # Sin exclusiones: los 42 fallos preexistentes de permisos tácticos se
+      # resolvieron el 2026-08-23 (les faltaba la fixture que mockea Pinot, así
+      # que la validación de sesión salía a buscar un Pinot real y devolvía 401).
+      # Ver decisiones-pendientes.md #50.
+      - name: pytest (sin integration)
+        working-directory: backend
+        run: |
+          pytest -m "not integration" -q \
+            --cov --cov-report=xml --cov-report=term-missing
+
+      - name: Publicar cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-backend
+          path: backend/coverage.xml
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Frontend unitario.
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend unitario
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: ng test
+        working-directory: frontend
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: ng build
+        working-directory: frontend
+        run: npx ng build
+
+  # ---------------------------------------------------------------------------
+  # Auditoría de dependencias — PG-SEC-009.
+  # ---------------------------------------------------------------------------
+  dependencias:
+    name: Vulnerabilidades en dependencias
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: pip-audit
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip-audit --requirement requirements.txt --strict
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
