@@ -7,6 +7,74 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-23 — C11: las cuatro reglas baratas, y una compuerta de cobertura al 90 %
+
+Cuatro reglas que no requerían infraestructura ni decisiones. Suben las cubiertas de 13 a 17.
+
+### `PG-OPE-007` — Pinot es de solo lectura (✅)
+
+Análisis estático, **no prueba de comportamiento**, y la elección importa: un `INSERT` contra
+Pinot no falla de forma observable en una suite con mocks —el doble acepta cualquier SQL, como
+demostró C8—. Lo comprobable es que la sentencia **no esté escrita en el árbol**.
+
+Resultado: **ninguna violación**. El sistema respeta el canal único de Kafka.
+
+Una sola excepción, enumerada a mano: `core/pinot/secuencia.py` escribe contra un **SQLite local**
+porque Pinot no sabe entregar identificadores únicos bajo concurrencia. Hay una prueba que verifica
+que **sigue siendo SQLite**: una exclusión que ya no se comprueba es peor que no tener regla,
+porque aparenta cobertura.
+
+⚠️ La primera versión del patrón daba **falsos positivos** —capturaba docstrings que empiezan por
+«Create a signed token…»—. Se afinó exigiendo la sintaxis completa (`INSERT INTO`, `DELETE FROM`,
+`UPDATE … SET`). No es cosmético: una prueba con falsos positivos se desactiva en cuanto estorba,
+y entonces deja de proteger.
+
+### `PG-CI-002` — Cobertura como compuerta (✅)
+
+Medida real: **93 %**. La compuerta se fija en **90**, no en el 80 de `testing.md`, a propósito:
+al 80 se podrían perder trece puntos en silencio, que es justo lo que la regla quiere impedir. El
+plan puede ser más estricto que la autoridad si lo justifica (§0.1), y queda justificado en el
+propio workflow.
+
+### `PG-DOC-002` — Coherencia documental (✅)
+
+`infrastructure.md` §3 rotulaba a Pinot como «Base de datos analítica», contradiciendo a su propio
+§1 y confundiéndolo con ClickHouse — que sí lo es y **ni siquiera aparecía en la tabla del stack**.
+Corregido, y añadida la fila de ClickHouse marcada como derivada.
+
+`testing.md` daba el E2E por «futuro» con Cypress, cuando el repositorio usa **Playwright** con 4
+suites desde hace tiempo. Corregidos la pirámide, la tabla de herramientas y los comandos.
+
+Ambas correcciones dejan anotado **qué decía antes**: una deriva silenciosamente arreglada se
+repite, porque nadie sabe que existió.
+
+### `PG-DOC-001` — El plan no puede mentir sobre sí mismo (✅)
+
+Seis pruebas sobre el propio `spec.md`: que toda regla tenga los cuatro campos, que ningún ID se
+repita, que **una regla ✅ apunte a una prueba que existe**, que el recuento de la tabla coincida
+con las reglas, que la trazabilidad no divergía, y que toda bloqueante abierta diga qué le falta.
+
+La motivación es concreta: la tabla de cobertura ya se desvió dos veces del contenido durante esta
+misma jornada. Es el fallo que el plan denuncia en el sistema —afirmar cobertura sin comprobarla—
+cometido dentro del propio plan.
+
+**Y funcionó de inmediato:** al marcar las cuatro reglas como ✅, la prueba falló señalando que la
+tabla decía 13 y las reglas eran 17. Se corrigió recontando desde el documento.
+
+**Efecto verificado.** Las cuatro pruebas detectan lo que dicen: se introdujo un `INSERT` contra
+Pinot y `test_pinot_solo_lectura` lo señaló.
+
+**Archivos tocados.**
+
+- `backend/tests/seguridad/test_pinot_solo_lectura.py`, `test_coherencia_plan.py` *(nuevos)*.
+- `.github/workflows/ci.yml` — `--cov-fail-under=90`.
+- `.specify/docs/infra/infrastructure.md`, `.specify/docs/architecture/testing.md`.
+
+**Trazabilidad.** `PG-OPE-007`, `PG-CI-002`, `PG-DOC-001`, `PG-DOC-002` → ✅.
+Plan global: **17 ✅ · 19 ⚠️ · 21 ❌**; bloqueantes abiertas de 14 a **13**.
+
+---
+
 ## 2026-08-23 — C10: degradación selectiva ante caída del almacén de sesión
 
 **Confirmada por el responsable** la lista de 9 rutas de `research.md` §R5.1. Cierra `PG-SEC-003`.

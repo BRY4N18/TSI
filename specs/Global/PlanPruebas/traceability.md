@@ -34,7 +34,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-OPE-004` | Upsert `FULL` y monotonía de `fecha_actualizacion` | Mayor | ⚠️ | `backend/tests/regression/test_fecha_actualizacion_epoch_ms.py` |
 | `PG-OPE-005` | Idempotencia de reintentos | Mayor | ❌ | _(sin prueba)_ |
 | `PG-OPE-006` | Límite de resultados explícito en toda consulta | Mayor | ✅ | `backend/tests/regression/test_pinot_client_limit.py` |
-| `PG-OPE-007` | Pinot es de solo lectura desde Django | Bloqueante | ❌ | _(sin prueba)_ |
+| `PG-OPE-007` | Pinot es de solo lectura desde Django | Bloqueante | ✅ | `backend/tests/seguridad/test_pinot_solo_lectura.py` |
 | `PG-OPE-008` | Borrado lógico en el camino de la API | Mayor | ❌ | _(sin prueba)_ |
 
 ### `PG-ANA` — Capa analítica — ClickHouse, Airflow, ETL
@@ -110,7 +110,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
 | `PG-CI-001` | Pipeline de integración continua | Bloqueante | ✅ | `.github/workflows/ci.yml`, `.github/workflows/integracion.yml` |
-| `PG-CI-002` | Cobertura como compuerta, no como informe | Mayor | ❌ | _(sin prueba)_ |
+| `PG-CI-002` | Cobertura como compuerta, no como informe | Mayor | ✅ | `.github/workflows/ci.yml` (`--cov-fail-under=90`) |
 | `PG-CI-003` | Cero pruebas intermitentes o desactivadas | Mayor | ⚠️ | `.github/workflows/ci.yml` (sin exclusiones) |
 | `PG-CI-004` | Análisis estático | Menor | ⚠️ | `.github/workflows/ci.yml` (job `estatico`) |
 
@@ -118,8 +118,8 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
-| `PG-DOC-001` | Toda regla nueva nace con estado | Mayor | ❌ | _(sin prueba)_ |
-| `PG-DOC-002` | Coherencia del rol de Pinot en la documentación | Menor | ❌ | _(sin prueba)_ |
+| `PG-DOC-001` | Toda regla nueva nace con estado | Mayor | ✅ | `backend/tests/seguridad/test_coherencia_plan.py` |
+| `PG-DOC-002` | Coherencia del rol de Pinot en la documentación | Menor | ✅ | `.specify/docs/infra/infrastructure.md` §3 (corregido) |
 
 ---
 
@@ -128,18 +128,18 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
 | `PG-CFG` | 5 | 3 | 1 | 1 |
-| `PG-OPE` | 8 | 2 | 2 | 4 |
+| `PG-OPE` | 8 | 3 | 2 | 3 |
 | `PG-ANA` | 6 | 0 | 0 | 6 |
 | `PG-API` | 5 | 0 | 4 | 1 |
 | `PG-NEG` | 5 | 1 | 2 | 2 |
 | `PG-SEC` | 10 | 6 | 4 | 0 |
 | `PG-UI` | 6 | 0 | 3 | 3 |
 | `PG-RES` | 6 | 0 | 1 | 5 |
-| `PG-CI` | 4 | 1 | 2 | 1 |
-| `PG-DOC` | 2 | 0 | 0 | 2 |
-| **Total** | **57** | **13** | **19** | **25** |
+| `PG-CI` | 4 | 2 | 2 | 0 |
+| `PG-DOC` | 2 | 2 | 0 | 0 |
+| **Total** | **57** | **17** | **19** | **21** |
 
-**14 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
+**13 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
 si el sistema puede considerarse validado — no el total de reglas ni el de pruebas existentes.
 
 | Regla | Estado | Descripción |
@@ -148,7 +148,6 @@ si el sistema puede considerarse validado — no el total de reglas ni el de pru
 | `PG-CFG-005` | ❌ | Ningún secreto versionado en git |
 | `PG-OPE-001` | ❌ | Un consumidor detenido es un fallo, no un silencio |
 | `PG-OPE-002` | ⚠️ | Reconciliación evento publicado → fila consultable |
-| `PG-OPE-007` | ❌ | Pinot es de solo lectura desde Django |
 | `PG-ANA-001` | ❌ | Cuadre analítica ↔ operacional |
 | `PG-ANA-003` | ❌ | Un DAG fallido no deja datos a medias |
 | `PG-API-002` | ⚠️ | Rechazo estricto de campos no declarados |

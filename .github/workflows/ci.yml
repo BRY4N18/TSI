@@ -202,11 +202,23 @@ jobs:
       # resolvieron el 2026-08-23 (les faltaba la fixture que mockea Pinot, así
       # que la validación de sesión salía a buscar un Pinot real y devolvía 401).
       # Ver decisiones-pendientes.md #50.
+      # PG-CI-002: la cobertura es COMPUERTA, no informe. Publicar el porcentaje
+      # sin bloquear no cambia el comportamiento de nadie.
+      #
+      # El umbral es 90 y no el 80 de `testing.md` a propósito. La medida real el
+      # 2026-08-23 fue **93 %**: una compuerta al 80 permitiría perder trece
+      # puntos en silencio, que es justo lo que la regla quiere impedir. El plan
+      # global puede ser más estricto que la autoridad si lo justifica (§0.1), y
+      # esta es la justificación.
+      #
+      # Si el umbral estorba porque la cobertura baja de forma legítima, se
+      # **baja con una nota explicando por qué** — nunca se retira.
       - name: pytest (sin integration)
         working-directory: backend
         run: |
           pytest -m "not integration" -q \
-            --cov --cov-report=xml --cov-report=term-missing
+            --cov --cov-report=xml --cov-report=term-missing \
+            --cov-fail-under=90
 
       - name: Publicar cobertura
         if: always()

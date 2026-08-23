@@ -17,7 +17,7 @@ Esta documentación es referenciada por la [Constitución del proyecto](/specify
 
 ```
          /\
-        /E2E\           <-- Playwright (futuro): ~5-10 tests
+        /E2E\           <-- Playwright: 4 suites en e2e/tests/
        /------\
       /  API   \        <-- pytest + DRF TestClient: ~180 tests
      /----------\
@@ -40,6 +40,7 @@ Esta documentación es referenciada por la [Constitución del proyecto](/specify
 | Middleware | 70% | Media |
 | Frontend — Unitario (componentes, servicios) | ≥ 80% | Alta |
 | Frontend — End-to-end (flujos críticos) | Cubrir camino crítico | Alta |
+| **Reglas adversariales** (`PG-*`) | Ver `specs/Global/PlanPruebas/traceability.md` | Crítica |
 | **Total sistema** | **80%** | Constitucional |
 
 ## Stack de Testing
@@ -53,7 +54,7 @@ Esta documentación es referenciada por la [Constitución del proyecto](/specify
 | `cryptography` | >=42.0 | Generación de JWT RS256 para tests |
 | Jasmine | — | Test runner unitario frontend (Angular) |
 | Karma | — | Ejecutor de tests frontend en navegador |
-| Cypress | — | Tests end-to-end frontend (futuro) |
+| Playwright | — | Tests end-to-end frontend. **Ya en uso**: `e2e/playwright.config.ts` y 4 suites en `e2e/tests/`. Hasta 2026-08-23 esta tabla decía «Cypress (futuro)», que nunca llegó a usarse |
 | Locust / k6 | — | Pruebas de carga y performance de endpoints críticos |
 
 ## Marcadores de Tests (markers)
@@ -135,8 +136,8 @@ pytest -m integration -v
 # Frontend — Tests unitarios (Jasmine + Karma)
 ng test
 
-# Frontend — Tests end-to-end (Cypress)
-npx cypress run
+# Frontend — Tests end-to-end (Playwright, desde e2e/)
+npx playwright test
 ```
 
 ## Thresholds de Rendimiento

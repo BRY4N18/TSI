@@ -45,9 +45,9 @@ TSI tiene **dos almacenes de datos con roles distintos**, y confundirlos invalid
 Consecuencia normativa: **un dato que solo existe en ClickHouse y no en Pinot es un dato
 corrupto**, no un dato nuevo. Toda regla de la sección 5 se apoya en esto.
 
-> **Deriva documental detectada (a corregir):** `infrastructure.md` §3 rotula a Pinot como
-> "Base de datos analítica", cuando su propio §1 y este plan lo tratan como el canal
-> **operacional**. Ver `PG-DOC-002`.
+> **Deriva documental corregida el 2026-08-23** (`PG-DOC-002`): `infrastructure.md` §3 rotulaba a
+> Pinot como "Base de datos analítica", contradiciendo a su propio §1. Ya dice **operacional**, y
+> se añadió la fila de ClickHouse que faltaba.
 
 ---
 
@@ -256,12 +256,16 @@ exactamente igual que una siembra que no corrió — el endpoint responde `200` 
   silenciosamente incompleto.
 
 ### PG-OPE-007 — Pinot es de solo lectura desde Django
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_pinot_solo_lectura.py`
 
 - **Regla:** ninguna ruta de código de Django emite `INSERT`/`UPDATE`/`DELETE` contra Pinot. El
   único canal de escritura es Kafka.
-- **Prueba esperada (estática):** análisis del árbol de repositorios que falle ante cualquier
-  sentencia de escritura fuera del productor Kafka.
+- **Cubierta 2026-08-23 por análisis estático**, y no por comportamiento: un `INSERT` contra Pinot
+  no falla de forma observable con mocks —el doble acepta cualquier SQL, como demostró `PG-SEC-005`
+  (`changelog.md` C8)—. Lo comprobable es que la sentencia **no esté escrita en el árbol**.
+- **Una sola excepción**, enumerada a mano: `core/pinot/secuencia.py` escribe contra un **SQLite
+  local**, no contra Pinot. Hay una prueba que verifica que sigue siendo SQLite: una exclusión que
+  ya no se comprueba es peor que no tener regla, porque aparenta cobertura.
 
 ### PG-OPE-008 — Borrado lógico en el camino de la API
 **Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
@@ -712,10 +716,13 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
   desaparezca del radar.
 
 ### PG-CI-002 — Cobertura como compuerta, no como informe
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `.github/workflows/ci.yml` (`--cov-fail-under=90`)
 
 - **Regla:** los umbrales de `testing.md §Cobertura Objetivo` **fallan el build** al no
   alcanzarse. Publicar el porcentaje sin bloquear no cambia el comportamiento de nadie.
+- **Implementado 2026-08-23** con `--cov-fail-under=90`. El umbral es 90 y no el 80 de `testing.md`
+  a propósito: la medida real fue **93 %**, y una compuerta al 80 permitiría perder trece puntos en
+  silencio. Este plan puede ser más estricto que la autoridad si lo justifica (§0.1).
 
 ### PG-CI-003 — Cero pruebas intermitentes o desactivadas
 **Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** `.github/workflows/ci.yml` (sin exclusiones)
@@ -743,19 +750,21 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
   olvido.
 
 ### PG-DOC-001 — Toda regla nueva nace con estado
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_coherencia_plan.py`
 
 - **Regla:** ninguna regla se añade a este plan sin ID, severidad, estado y prueba. Una regla en
   `❌ Pendiente` con severidad `Bloqueante` debe tener entrada en `decisiones-pendientes.md`.
 
 ### PG-DOC-002 — Coherencia del rol de Pinot en la documentación
-**Severidad:** Menor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Menor · **Estado:** ✅ Cubierta · **Prueba:** `.specify/docs/infra/infrastructure.md` §3 (corregido)
 
-- **Regla:** `infrastructure.md §3` rotula a Pinot como "Base de datos analítica", en
-  contradicción con su propio §1 y con este plan, que lo tratan como el almacén **operacional**
-  (la capa analítica es ClickHouse). Corregir el rótulo. Igualmente, `testing.md` menciona
-  Cypress y da E2E por "futuro", cuando el repositorio ya usa **Playwright** con
-  `playwright.config.ts` y 4 suites en `e2e/tests/`.
+- **Corregido 2026-08-23.** `infrastructure.md §3` rotulaba a Pinot como «Base de datos
+  analítica», contradiciendo a su propio §1 y confundiéndolo con ClickHouse. Ahora dice
+  **operacional**, y se añadió la fila de ClickHouse que faltaba, marcada como **derivada**.
+- **Corregido también:** `testing.md` daba el E2E por «futuro» con Cypress, cuando el repositorio
+  usa **Playwright** con 4 suites desde hace tiempo. La pirámide y los comandos ya lo reflejan.
+- Ambas correcciones dejan anotado **qué decía antes**: una deriva silenciosamente arreglada se
+  repite, porque nadie sabe que existió.
 
 ---
 
@@ -764,15 +773,15 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 | Área | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
 | Configuración (`PG-CFG`) | 5 | 3 | 1 | 1 |
-| Operacional (`PG-OPE`) | 8 | 2 | 2 | 4 |
+| Operacional (`PG-OPE`) | 8 | 3 | 2 | 3 |
 | Analítica (`PG-ANA`) | 6 | 0 | 0 | 6 |
 | API (`PG-API`) | 5 | 0 | 4 | 1 |
 | Negocio (`PG-NEG`) | 5 | 1 | 2 | 2 |
 | Seguridad (`PG-SEC`) | 10 | 6 | 4 | 0 |
 | Frontend (`PG-UI`) | 6 | 0 | 3 | 3 |
 | Resiliencia (`PG-RES`) | 6 | 0 | 1 | 5 |
-| CI y documentación (`PG-CI`, `PG-DOC`) | 6 | 1 | 2 | 3 |
-| **Total** | **57** | **13** | **19** | **25** |
+| CI y documentación (`PG-CI`, `PG-DOC`) | 6 | 4 | 2 | 0 |
+| **Total** | **57** | **17** | **19** | **21** |
 
 > Los totales de esta tabla se verifican contando las cabeceras de regla del propio documento.
 > Si se editan a mano, mienten: ya ocurrió una vez el 2026-08-23 (decían 10/19/28 con 8/18/31
@@ -782,19 +791,17 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 
 | Severidad | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| **Bloqueante** (impide desplegar) | 18 | 4 | 7 | 7 |
-| Mayor (impide cerrar el módulo) | 35 | 9 | 10 | 16 |
-| Menor (deuda planificada) | 4 | 0 | 2 | 2 |
+| **Bloqueante** (impide desplegar) | 18 | 5 | 7 | 6 |
+| Mayor (impide cerrar el módulo) | 35 | 11 | 10 | 14 |
+| Menor (deuda planificada) | 4 | 1 | 2 | 1 |
 
-**15 de las 18 reglas bloqueantes siguen sin cobertura completa.** Ese es el número que decide si
+**13 de las 18 reglas bloqueantes siguen sin cobertura completa.** Ese es el número que decide si
 el sistema puede considerarse validado, no el 8/57 de la tabla anterior:
 
-`PG-CFG-003` · `PG-CFG-005` · `PG-OPE-001` · `PG-OPE-002` · `PG-OPE-007` · `PG-ANA-001` ·
-`PG-ANA-003` · `PG-API-002` · `PG-NEG-002` · `PG-SEC-001` · `PG-SEC-002` · `PG-SEC-003` ·
-`PG-SEC-005` · `PG-SEC-007` · `PG-RES-002`
+`PG-CFG-003` · `PG-CFG-005` · `PG-OPE-001` · `PG-OPE-002` · `PG-ANA-001` · `PG-ANA-003` · `PG-API-002` · `PG-NEG-002` · `PG-SEC-001` · `PG-SEC-002` · `PG-SEC-005` · `PG-SEC-007` · `PG-RES-002`
 
 **Lectura honesta:** 674 pruebas de backend y 250 de frontend cubren bien el comportamiento
-funcional de cada módulo, pero solo 8 de 57 reglas adversariales están cubiertas de extremo a
+funcional de cada módulo, pero solo 17 de 57 reglas adversariales están cubiertas de extremo a
 extremo. **La suite actual demuestra que el sistema hace lo que debe; casi no demuestra que no
 haga lo que no debe.** Esa es la brecha que este plan existe para cerrar.
 
