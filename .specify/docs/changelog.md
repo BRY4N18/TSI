@@ -42,6 +42,54 @@ sembrados. Eso ya no aplica: ver la entrada siguiente.
 
 ---
 
+## 2026-08-23 — Segundo estado geográfico: arregla la atribución, y destapa que el bloqueo era otro
+
+`database/seed_segundo_estado_geografico.py` siembra un estado —Veracruz— con su
+condado, ciudad, dos calles, **una sola región** y cuatro accidentes abiertos.
+
+**Lo que sí arregla.** `dim_geografia` dejaba la región del condado **ausente a
+propósito** mientras un estado tuviera varias regiones: elegir una daría «una
+cifra que nadie cuestiona porque no parece rota». Con las tres regiones anteriores
+compartiendo `idestado = 1`, **ningún condado tenía región**. Ahora
+`Boca del Río → Costa Oriente` es inequívoco, y se nota:
+`cobertura-flota-por-region` nombra una región real en vez de solo «Sin región
+asignada», y `condados-cobertura-critica` ve el condado nuevo.
+
+Va en **dos fases** porque la despublicación es un cambio observado: la región
+nace en `Producción`, se carga, se despublica y se vuelve a cargar. Sembrarla
+despublicada de golpe no habría abierto una segunda versión.
+
+### ⛔ Y aun así `casos-activos-al-despublicar` sigue vacío
+
+**Mi diagnóstico anterior estaba mal.** Dije que el bloqueo era el estado
+geográfico único; era necesario arreglarlo, pero no era el bloqueo.
+
+El informe filtra `WHERE despublicada_en IS NOT NULL`, y esa fecha solo existe si
+la versión de la región lleva **`inicio_es_real = 1`** — la marca que distingue
+«se sabe cuándo ocurrió el cambio» de «es desde que empezamos a mirar».
+`versionado.decidir_version` exige que **quien llama aporte el instante**, y ese
+instante solo puede salir de una tabla de historial del origen.
+
+`dim_region.construir` no lo aporta, y **no puede**: nada historiza cuándo se
+despublicó una región. `Dim_ValidacionRegion` guarda `Aprobada`/`Rechazada` —el
+resultado de validar, no una despublicación— y `Dim_RegionOperativaEstadoRegion`
+es una tabla de enlace que se sobrescribe, no un historial. Comprobado: **las 8
+filas de `dim_region` llevan `inicio_es_real = 0`**, y siempre lo llevarán.
+
+Es la misma clase que la reactivación de suscripciones: **el informe pide un dato
+que el sistema no registra**. Y como con `roles-incompatibles`, la salida no es
+técnica — o el origen empieza a historizar el estado de la región, o el informe
+se retira. Anotado en `decisiones-pendientes.md`.
+
+⚠️ **Relajar el filtro sería la salida equivocada.** Sin `inicio_es_real`,
+`despublicada_en` diría «desde que empezamos a mirar» y el informe presentaría esa
+fecha como el día de la despublicación. La marca existe precisamente para impedir
+eso.
+
+`pytest dags` → 1 134 passed, 74 skipped.
+
+---
+
 ## 2026-08-23 — Cierre de la capa táctica: de 88 a 92 informes con datos
 
 Los 6 informes compuestos que seguían vacíos tenían **cuatro causas distintas**, y
