@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.suscripciones.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class SolicitudCambioPlanRepository:
@@ -22,10 +23,7 @@ class SolicitudCambioPlanRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idsolicitud) AS max_id FROM Fact_Solicitud_Cambio_Plan", {}
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_Solicitud_Cambio_Plan", "idsolicitud")
 
     def find_by_id(self, idsolicitud: int) -> dict[str, Any] | None:
         rows = self.pinot.query(

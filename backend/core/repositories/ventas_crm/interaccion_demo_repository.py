@@ -8,6 +8,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class InteraccionDemoRepository:
@@ -50,5 +51,4 @@ class InteraccionDemoRepository:
         )
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idinteraccion) AS max_id FROM Fact_Interaccion_Demo")
-        return int((rows[0].get("max_id") or 0) if rows else 0) + 1
+        return siguiente_id(self.pinot, "Fact_Interaccion_Demo", "idinteraccion")

@@ -5,6 +5,7 @@ from typing import Any
 from django.conf import settings
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class PipelineRepository:
@@ -18,5 +19,4 @@ class PipelineRepository:
     def list_by_prospecto(self, idprospecto: int) -> list[dict[str, Any]]:
         return list(self.pinot.query("SELECT * FROM Fact_Pipeline WHERE id_prospecto = %(id)s ORDER BY id_transicion", {"id": idprospecto}) or [])
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(id_transicion) AS max_id FROM Fact_Pipeline")
-        return int((rows[0].get("max_id") or 0) if rows else 0) + 1
+        return siguiente_id(self.pinot, "Fact_Pipeline", "id_transicion")

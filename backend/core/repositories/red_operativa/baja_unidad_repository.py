@@ -9,6 +9,7 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class BajaUnidadRepository:
@@ -44,6 +45,4 @@ class BajaUnidadRepository:
         return payload
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idbajaunidad) AS max_id FROM Fact_BajaUnidad")
-        max_id = rows[0].get("max_id") if rows else 0
-        return int(max_id or 0) + 1
+        return siguiente_id(self.pinot, "Fact_BajaUnidad", "idbajaunidad")

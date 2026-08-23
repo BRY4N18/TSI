@@ -7,6 +7,7 @@ from typing import Any
 from django.conf import settings
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class ProspectoRepository:
@@ -56,5 +57,4 @@ class ProspectoRepository:
         return int((rows[0].get("count") or 0) if rows else 0)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idprospecto) AS max_id FROM Dim_Prospecto")
-        return int((rows[0].get("max_id") or 0) if rows else 0) + 1
+        return siguiente_id(self.pinot, "Dim_Prospecto", "idprospecto")

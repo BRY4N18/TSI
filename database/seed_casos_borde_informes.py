@@ -53,6 +53,7 @@ UNIDAD_SIN_CONDADO = 9101
 CLIENTE_DADO_DE_BAJA = 929001
 FACTURA_EN_DISPUTA = "b0rde0001-0000-4000-8000-000000000001"
 SUSCRIPCION_SUSPENDIDA = 979001
+SUSCRIPCION_REACTIVADA = 979002
 
 #: Literales canonicos, importados de donde los define el codigo y **no
 #: reescritos aqui**: una spec que citaba literales inventados ya dejo listados
@@ -283,18 +284,34 @@ def suscripcion_suspendida():
     una suscripcion viva la sacaria del MRR y de la cartera, y este seed no
     debe mover cifras de negocio para llenar una pantalla.
 
-    ⚠️ **La reactivacion seguira en cero**, y no por falta de datos:
-    `hecho_suscripcion` fija `fecha_suspension` y `fecha_reactivacion` a `None`
-    sin derivarlas de nada. No hay de donde: `Fact_Suscripcion` es una foto del
-    estado actual y no existe historial de suspensiones. Sembrar mas filas no
-    lo arregla — hace falta decidir de donde sale ese hecho.
+    Se siembran **dos**: una que sigue suspendida y otra que ya volvio. Sin la
+    segunda, `reactivadas` seria cero y no se distinguiria «nadie vuelve» de «el
+    indicador no sabe contar vueltas» — que es como estuvo hasta el 2026-08-23,
+    cuando `fecha_reactivacion` estaba fijada a `None` en el cargador.
     """
-    return [{
-        "id_suscripcion": SUSCRIPCION_SUSPENDIDA,
+    reactivada = {
+        **_suscripcion_base(SUSCRIPCION_REACTIVADA),
+        "estado": "Activa",
+        # El par completo: se suspendio hace 40 dias y volvio hace 12.
+        "fechasuspension": NOW_MS - 40 * DIA_MS,
+        "fechareactivacion": NOW_MS - 12 * DIA_MS,
+    }
+    suspendida = {
+        **_suscripcion_base(SUSCRIPCION_SUSPENDIDA),
+        "estado": ESTADO_SUSCRIPCION_SUSPENDIDA,
+        "fechasuspension": NOW_MS - 25 * DIA_MS,
+        # Sigue fuera: sin fecha de vuelta, y **ausente no es cero**.
+        "fechareactivacion": -9223372036854775808,
+    }
+    return [suspendida, reactivada]
+
+
+def _suscripcion_base(id_suscripcion):
+    return {
+        "id_suscripcion": id_suscripcion,
         "idcliente": CLIENTE_FACTURA,
         "idplan": 1,
         "nivel": "Basico",
-        "estado": ESTADO_SUSCRIPCION_SUSPENDIDA,
         "precio": 49.0,
         "periodicidad": "Mensual",
         "renovacionautomatica": False,
@@ -307,7 +324,7 @@ def suscripcion_suspendida():
         "carga_lote_habilitada": False,
         "activo": True,
         "fecha_actualizacion": NOW_MS,
-    }]
+    }
 
 
 # ── Ventas y CRM ─────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.accidentes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class EvidenciaFotoRepository:
@@ -19,11 +20,7 @@ class EvidenciaFotoRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idevidenciafoto) AS max_id FROM Dim_EvidenciaFoto",
-            {},
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Dim_EvidenciaFoto", "idevidenciafoto")
 
     def list_by_accidente(
         self,

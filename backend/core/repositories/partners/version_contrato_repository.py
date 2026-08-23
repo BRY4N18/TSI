@@ -20,6 +20,7 @@ from apps.partners.domain_constants import (
 )
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class VersionContratoRepository:
@@ -34,10 +35,7 @@ class VersionContratoRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idversion) AS max_id FROM Dim_VersionContratoAPI LIMIT 1", {}
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Dim_VersionContratoAPI", "idversion")
 
     # --- Lecturas -----------------------------------------------------------
 

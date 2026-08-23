@@ -25,6 +25,7 @@ from apps.partners.domain_constants import (
 )
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 _TIPOS_SUSPENSION = frozenset({CAMBIO_SUSPENSION_AUTOMATICA, CAMBIO_SUSPENSION_MANUAL})
 
@@ -45,10 +46,7 @@ class HistorialAccesoRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idhistorial) AS max_id FROM Fact_HistorialAccesoPartner LIMIT 1", {}
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_HistorialAccesoPartner", "idhistorial")
 
     # --- Lecturas -----------------------------------------------------------
 

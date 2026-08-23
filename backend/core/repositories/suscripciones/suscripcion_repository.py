@@ -11,9 +11,11 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.suscripciones.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 TZ = ZoneInfo("America/Guayaquil")
-ESTADOS = frozenset({"Activa", "Suspendida", "Cancelada"})
+ESTADO_CANCELADA = "Cancelada"
+ESTADOS = frozenset({"Activa", "Suspendida", ESTADO_CANCELADA})
 
 
 class SuscripcionRepository:
@@ -27,8 +29,7 @@ class SuscripcionRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(id_suscripcion) AS max_id FROM Fact_Suscripcion", {})
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_Suscripcion", "id_suscripcion")
 
     @staticmethod
     def add_calendar_month(dt: datetime) -> datetime:
@@ -125,6 +126,7 @@ class SuscripcionRepository:
         if "estado" in changes and changes["estado"] not in ESTADOS:
             raise ValueError(f"estado inválido: {changes['estado']}")
         payload = {**current, **changes, "fecha_actualizacion": self._now_ms()}
+        payload = _coherente(payload, cambios=changes)
         self.kafka.publish(self.TOPIC, payload)
         return payload
 
@@ -149,3 +151,59 @@ class SuscripcionRepository:
                 "renovacionautomatica": False,
             },
         )
+
+
+# ── Invariantes al escribir (decisión #44) ───────────────────────────────────
+
+#: Las tres formas de «sin motivo» que llegaron a convivir en el origen: nulo,
+#: cadena vacía y la cadena literal `'null'`. El modelo analítico las unificaba a
+#: ausencia **al leer**; unificarlas también al escribir evita que la cuarta
+#: aparezca el día que alguien añada otra.
+SIN_MOTIVO = ("", "null", "None")
+
+
+def _sin_motivo(valor: Any) -> str | None:
+    if valor is None:
+        return None
+    texto = str(valor).strip()
+    return None if texto in SIN_MOTIVO else texto
+
+
+def _coherente(payload: dict[str, Any], *, cambios: dict[str, Any]) -> dict[str, Any]:
+    """Impide escribir las incoherencias que el modelo analítico ya sorteaba.
+
+    ⚠️ **Tres de los cinco defectos de la decisión #44 se atajan aquí**, en el
+    único punto por el que pasa todo cambio de estado. El modelo los rodeaba al
+    leer —`motivo_cancelacion` solo si canceló, `vigencia_inconsistente`, motivo
+    unificado a ausente— y eso sigue estando bien: lo que faltaba era dejar de
+    producirlos.
+
+    ⛔ **No se toca `activo`.** Una `Cancelada` con `activo = true` **no** es un
+    defecto: RN-017 mantiene la suscripción activa hasta `fecha_fin` para que el
+    cliente use lo que pagó. El modelo lo sabe y por eso `estado_derivado` no
+    mira `activo`. «Corregirlo» aquí rompería una regla de negocio.
+    """
+    salida = dict(payload)
+
+    # 1. Motivo de cancelación sin cancelación. El origen llegó a tener una
+    #    `Activa` con motivo `'prueba fin de ciclo'`: quien leyera el motivo sin
+    #    mirar el estado la contaría como baja.
+    if salida.get("estado") != ESTADO_CANCELADA:
+        salida["motivocancelacion"] = None
+        salida["fechacancelacion"] = None
+    else:
+        salida["motivocancelacion"] = _sin_motivo(salida.get("motivocancelacion"))
+
+    # 2. Vigencia invertida. Se valida **solo si el cambio toca las fechas**: una
+    #    fila histórica ya invertida no puede bloquear una suspensión o un cobro
+    #    —el origen sigue cobrándola y descartarla perdería un ingreso real—,
+    #    pero tampoco hay motivo para dejar escribir una nueva.
+    if "fecha_inicio" in cambios or "fecha_fin" in cambios:
+        inicio, fin = salida.get("fecha_inicio"), salida.get("fecha_fin")
+        if isinstance(inicio, int) and isinstance(fin, int) and 0 < fin < inicio:
+            raise ValueError(
+                "vigencia invertida: fecha_fin es anterior a fecha_inicio "
+                f"({fin} < {inicio})"
+            )
+
+    return salida

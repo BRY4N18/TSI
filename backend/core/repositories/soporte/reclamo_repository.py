@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.soporte.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class ReclamoRepository:
@@ -19,8 +20,7 @@ class ReclamoRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(id_reclamo) AS max_id FROM Fact_Reclamo", {})
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_Reclamo", "id_reclamo")
 
     def _resolve_idestadosoporte(self, nombre: str | None) -> int | None:
         """RN-TIC-007 — `idestadosoporte` y `estado` (denormalizado) deben ser consistentes."""

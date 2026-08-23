@@ -31,7 +31,7 @@ CONSULTA_SUSCRIPCIONES = f"""
     SELECT id_suscripcion, idcliente, idplan, precio, periodicidad, nivel,
            severidades_desbloqueadas, estado, renovacionautomatica,
            motivocancelacion, fechacancelacion, fecha_inicio, fecha_fin,
-           idplan_programado
+           idplan_programado, fechasuspension, fechareactivacion
     FROM Fact_Suscripcion
     LIMIT {LIMITE}
 """
@@ -201,8 +201,16 @@ def construir(
                 if altas.get(sid) and inicio_origen and inicio_origen != altas[sid]
                 else None
             ),
-            "fecha_suspension": None,
-            "fecha_reactivacion": None,
+            # ⚠️ Estaban **fijadas a `None` en codigo**: el origen no las
+            # guardaba y el informe de suspension y reactivacion no podia contar
+            # ni una. Desde el 2026-08-23 `mora_suscripcion_service` sella las
+            # dos al suspender y al regularizar, asi que ya hay algo que leer.
+            #
+            # `_momento` devuelve ausente ante el centinela de Pinot, que es lo
+            # correcto: una suscripcion que nunca se suspendio no tiene fecha de
+            # suspension, y un cero seria 1970.
+            "fecha_suspension": texto_fecha(_momento(s.get("fechasuspension"))),
+            "fecha_reactivacion": texto_fecha(_momento(s.get("fechareactivacion"))),
             "fecha_cancelacion": texto_fecha(_momento(s.get("fechacancelacion"))),
             "estado_derivado": estado,
             "motivo_cancelacion": _motivo_si_cancelo(estado, s.get("motivocancelacion")),

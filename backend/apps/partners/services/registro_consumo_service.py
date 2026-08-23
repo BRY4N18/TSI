@@ -77,6 +77,7 @@ class RegistroConsumoService:
         latencia_ms: float,
         idservicio: int = ID_SERVICIO_DATOS,
         iporigen: str | None = None,
+        version_contrato: str | None = None,
     ) -> dict[str, Any]:
         """Registra la peticion. **Nunca lanza**: devuelve que se escribio.
 
@@ -94,6 +95,7 @@ class RegistroConsumoService:
                 codigohttp=codigohttp,
                 latenciams=latencia_ms,
                 iporigen=iporigen,
+                version_contrato=version_contrato,
             )
             escrito["log"] = True
         except Exception:  # noqa: BLE001 — el registro no puede tumbar la respuesta

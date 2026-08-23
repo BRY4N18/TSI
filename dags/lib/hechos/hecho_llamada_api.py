@@ -23,7 +23,7 @@ LIMITE = 500_000
 #: `iporigen` **no se selecciona**.
 CONSULTA_LLAMADAS = f"""
     SELECT idlogllamadaapi, idpartner, idcredencialapi, endpoint,
-           metodohttp, codigohttp, latenciams, fechallamada
+           metodohttp, codigohttp, latenciams, fechallamada, version_contrato
     FROM Fact_LogLlamadaAPI
     LIMIT {LIMITE}
 """
@@ -75,6 +75,14 @@ def derivar_contrato(path: str) -> tuple[str | None, str | None]:
     if not m:
         return None, None
     return m.group(2), m.group(1).lower()
+
+
+def _texto(valor):
+    """`None` ante ausencia y ante los centinelas de Pinot para STRING."""
+    if valor is None:
+        return None
+    texto = str(valor).strip()
+    return None if texto in ("", "null") else texto
 
 
 def clase_resultado(codigo: int) -> str:
@@ -135,7 +143,16 @@ def construir(
             cid_i = None
         cred = creds.get(cid_i, {}) if cid_i is not None else {}
         path = normalizar_path(l.get("endpoint"))
-        servicio, version = derivar_contrato(path)
+        servicio, version_del_path = derivar_contrato(path)
+        # ⚠️ **Se prefiere la que el origen guardo** (#46). Desde el 2026-08-23
+        # el middleware la resuelve en el instante de la llamada y la escribe en
+        # `Fact_LogLlamadaAPI.version_contrato`, asi que esas filas conservan la
+        # version que era cierta entonces. Las anteriores no la traen y se
+        # siguen deduciendo del path, con la marca puesta: el riesgo declarado
+        # —que un cambio de forma del path reinterprete llamadas viejas sin
+        # fallar— solo desaparece para las nuevas.
+        version_guardada = _texto(l.get("version_contrato"))
+        version = version_guardada or version_del_path
         try:
             codigo = int(l.get("codigohttp") or 0)
         except (TypeError, ValueError):
@@ -161,7 +178,7 @@ def construir(
             "latencia_ms": latencia,
             "servicio": servicio,
             "version_contrato": version,
-            "version_es_derivada": 1,
+            "version_es_derivada": 0 if version_guardada else 1,
             "cargado_en": cargado,
         })
     return filas

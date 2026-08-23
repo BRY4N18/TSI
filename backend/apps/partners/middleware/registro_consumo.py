@@ -23,6 +23,7 @@ import time
 
 from apps.partners.authentication import PartnerAPIUser
 from apps.partners.services.registro_consumo_service import RegistroConsumoService
+import re
 
 logger = logging.getLogger("tsi.partners.consumo")
 
@@ -75,7 +76,23 @@ class RegistroConsumoMiddleware:
             codigohttp=respuesta.status_code,
             latencia_ms=latencia_ms,
             iporigen=self._ip_cliente(request),
+            version_contrato=self._version_del_path(request.path),
         )
+
+    #: `/api/v1/...` -> `v1`. Es la misma forma que el modelo analítico deducía
+    #: al cargar; lo que cambia es **cuándo** se resuelve.
+    _VERSION = re.compile(r"^/api/(v\d+)/")
+
+    @classmethod
+    def _version_del_path(cls, path: str) -> str | None:
+        """La versión de contrato que sirvió esta petición, o ausente.
+
+        ⚠️ Ausente y no `'desconocida'`: una ruta que no encaja con el patrón no
+        es una versión rara, es que no la sabemos. El modelo ya distingue las
+        dos cosas y rellenar aquí borraría la diferencia.
+        """
+        m = cls._VERSION.match(path or "")
+        return m.group(1) if m else None
 
     @staticmethod
     def _ip_cliente(request) -> str | None:

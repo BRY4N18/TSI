@@ -9,6 +9,7 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.pinot.tiempo import SIN_FECHA, ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class UserRepository:
@@ -85,6 +86,4 @@ class UserRepository:
         return self.update(user_id, {"activo": False})
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idusuario) AS max_id FROM Dim_Usuarios")
-        max_id = rows[0].get("max_id") if rows else 0
-        return int(max_id or 0) + 1
+        return siguiente_id(self.pinot, "Dim_Usuarios", "idusuario")

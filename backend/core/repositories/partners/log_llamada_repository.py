@@ -26,6 +26,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 # `iporigen` es INT (IPv4 numerica) conforme al esquema existente, no STRING.
 SIN_IP = 0
@@ -43,10 +44,7 @@ class LogLlamadaRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        filas = self.pinot.query(
-            "SELECT MAX(idlogllamadaapi) AS max_id FROM Fact_LogLlamadaAPI LIMIT 1", {}
-        )
-        return int(filas[0]["max_id"] or 0) + 1 if filas else 1
+        return siguiente_id(self.pinot, "Fact_LogLlamadaAPI", "idlogllamadaapi")
 
     @staticmethod
     def ip_a_entero(ip: str | None) -> int:
@@ -77,6 +75,7 @@ class LogLlamadaRepository:
         latenciams: float,
         iporigen: str | int | None = None,
         fechallamada: int | None = None,
+        version_contrato: str | None = None,
     ) -> dict[str, Any]:
         """Registra una peticion, se haya atendido o no.
 
@@ -94,6 +93,22 @@ class LogLlamadaRepository:
             "codigohttp": int(codigohttp),
             "latenciams": float(latenciams),
             "iporigen": ip,
+            # ⚠️ **La versión se guarda en el instante de la llamada** (#46).
+            # El log no la traía y el modelo la deducía del path al cargar, con
+            # `version_es_derivada = 1`. El riesgo declarado era: «el día que el
+            # path cambie de forma, la derivación no fallará, devolverá otra
+            # cosa» — y reinterpretaría llamadas viejas con las reglas nuevas.
+            # Guardándola aquí, cada fila conserva la versión que era cierta
+            # cuando ocurrió.
+            #
+            # ⛔ Sigue saliendo del path: **no** es que el partner la declare.
+            # Para eso haría falta que la pidiera por cabecera o que la
+            # credencial estuviera ligada a una versión de contrato, y hoy
+            # `Dim_CredencialAPI` no guarda ninguna de las dos cosas.
+            # ⚠️ Cadena vacía, **no `None`**: esta tabla no publica nulos —el
+            # esquema de Pinot no los tiene y el resto de columnas usan
+            # centinela—. El cargador trata `''` y `'null'` como ausencia.
+            "version_contrato": version_contrato or "",
             "fechallamada": fechallamada if fechallamada is not None else ahora,
             "fecha_actualizacion": ahora,
         }

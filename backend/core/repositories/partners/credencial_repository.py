@@ -14,6 +14,7 @@ from django.conf import settings
 from apps.partners.domain_constants import NUNCA_EXPIRA
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class CredencialRepository:
@@ -28,10 +29,7 @@ class CredencialRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idcredencial) AS max_id FROM Dim_CredencialAPI LIMIT 1", {}
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Dim_CredencialAPI", "idcredencial")
 
     # --- Lecturas -----------------------------------------------------------
 

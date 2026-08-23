@@ -29,6 +29,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.partners.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 ENTORNOS_VALIDOS = ("Sandbox", "Producción")
 
@@ -55,10 +56,7 @@ class ApiIntegracionRepository:
         return int(datetime.now(timezone.utc).timestamp() * 1000)
 
     def _next_id(self) -> int:
-        filas = self.pinot.query(
-            "SELECT MAX(idapiintegracion) AS max_id FROM Fact_APIIntegracion LIMIT 1", {}
-        )
-        return int(filas[0]["max_id"] or 0) + 1 if filas else 1
+        return siguiente_id(self.pinot, "Fact_APIIntegracion", "idapiintegracion")
 
     @staticmethod
     def _exigir_entorno(entorno: str | None) -> str:

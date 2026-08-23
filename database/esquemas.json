@@ -484,6 +484,18 @@
         "dataType": "LONG",
         "format": "1:MILLISECONDS:EPOCH",
         "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechasuspension",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
+      },
+      {
+        "name": "fechareactivacion",
+        "dataType": "LONG",
+        "format": "1:MILLISECONDS:EPOCH",
+        "granularity": "1:MILLISECONDS"
       }
     ],
     "primaryKeyColumns": [
@@ -3351,6 +3363,10 @@
       {
         "name": "iporigen",
         "dataType": "INT"
+      },
+      {
+        "name": "version_contrato",
+        "dataType": "STRING"
       }
     ],
     "metricFieldSpecs": [

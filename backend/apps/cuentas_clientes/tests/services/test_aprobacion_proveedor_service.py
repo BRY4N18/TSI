@@ -82,6 +82,25 @@ class TestAprobacionProveedorService:
         guardado = ClienteRepository().find_by_id(created["idcliente"])
         assert not guardado.get("fecha_inicio_contrato")
 
+    def test_autorregistro_vincula_al_admin_con_su_organizacion(
+        self, mock_pinot, mock_kafka
+    ):
+        """⚠️ #45: la cobertura de pertenencia era del 9,5 % — 2 de 21 usuarios.
+
+        Esta vía creaba la cuenta y su administrador local **sin escribir el
+        vínculo**: la pertenencia se resolvía solo por el respaldo
+        `admin_local_id`, y el modelo analítico no podía afirmar ocupación real.
+        """
+        from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+            CuentaUsuarioRepository,
+        )
+
+        creada = self._solicitud(nit="810999888-7", gmail="vinculo@tsi.com")
+
+        assert CuentaUsuarioRepository().es_miembro(
+            creada["admin_local_id"], creada["idcliente"]
+        )
+
     def test_rechazar_requires_motivo(self, mock_pinot, mock_kafka):
         # Arrange
         created = self._solicitud()

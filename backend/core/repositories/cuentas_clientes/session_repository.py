@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 # Valores canónicos de `Fact_Session.estadosession`. Estaban como literales
 # sueltos dentro de los métodos; se nombran aquí por la misma razón que en
@@ -125,6 +126,4 @@ class SessionRepository:
         return count
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idsession) AS max_id FROM Fact_Session")
-        max_id = rows[0].get("max_id") if rows else 0
-        return int(max_id or 0) + 1
+        return siguiente_id(self.pinot, "Fact_Session", "idsession")

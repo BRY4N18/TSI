@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.soporte.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class HistorialTicketRepository:
@@ -19,8 +20,7 @@ class HistorialTicketRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(id_historial) AS max_id FROM Fact_Historial_Ticket", {})
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_Historial_Ticket", "id_historial")
 
     def list_by_ticket(self, id_reclamo: int) -> list[dict[str, Any]]:
         rows = self.pinot.query(

@@ -19,6 +19,7 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.pinot.tiempo import ahora_ms
 from core.repositories.red_operativa.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 ESTADO_EN_VALIDACION = "En_Validación"
 
@@ -81,6 +82,4 @@ class RegionOperativaRepository:
         return payload
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idregionoperativa) AS max_id FROM Dim_RegionOperativa")
-        max_id = rows[0].get("max_id") if rows else 0
-        return int(max_id or 0) + 1
+        return siguiente_id(self.pinot, "Dim_RegionOperativa", "idregionoperativa")

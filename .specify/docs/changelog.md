@@ -42,6 +42,84 @@ sembrados. Eso ya no aplica: ver la entrada siguiente.
 
 ---
 
+## 2026-08-23 — Los tres pendientes de fondo: identificadores, reactivación y las decisiones de agosto
+
+### 1. `idsession` derivado de `MAX()` — y con él, otros 46 sitios
+
+Cuarenta y siete repositorios calculaban su identificador siguiente con
+`SELECT MAX(id) + 1` sobre tablas **upsert**. Pinot ingiere de forma asíncrona
+**siempre**, así que todo lo creado en esa ventana recibía el mismo id y se
+sobrescribía. El 2026-08-23 **34 inicios de sesión recibieron el id 985**: el
+login devolvía `200` y la petición siguiente `401`.
+
+`core/pinot/secuencia.py` mantiene en el proceso la marca más alta entregada por
+tabla y devuelve `max(MAX_en_pinot, ultimo_entregado) + 1`. Se sigue leyendo
+Pinot para que un proceso recién arrancado continúe donde quedó el anterior; lo
+que se añade es que **dentro del proceso la secuencia no retrocede**. Un fallo de
+lectura no interrumpe la escritura: devuelve 0 y manda la marca en memoria.
+
+⚠️ **No resuelve el caso multiproceso.** Con varios workers cada uno llevaría su
+cuenta. Hoy el backend corre como un solo proceso (`runserver`), así que la
+garantía es real; con gunicorn multi-worker deja de serlo. La solución completa
+—contador durable, o UUID como ya usa `Fact_Factura`— es decisión de
+arquitectura y sigue anotada.
+
+Se añadió `reset_secuencia_ids` autouse en `conftest`: la marca vive en el módulo
+y sin limpiarla una prueba que crea tres sesiones deja a la siguiente empezando
+en 4. **Nueve pruebas** nuevas, incluida la de 50 hilos simultáneos.
+
+### 2. La reactivación de suscripciones ya se puede contar
+
+`hecho_suscripcion` publicaba `fecha_suspension` y `fecha_reactivacion`
+**fijadas a `None` en código**: no había de dónde sacarlas. Ahora
+`Fact_Suscripcion` tiene `fechasuspension` y `fechareactivacion`, y
+`mora_suscripcion_service` las sella en los dos puntos de transición que ya
+existían — al suspender por factura fallida y al regularizar.
+
+Medido: el informe pasa de `reactivadas: 0` estructural a **`reactivadas: 1`**,
+y la ventana de agosto distingue correctamente la reactivación (11-ago) de la
+suspensión (29-jul).
+
+### 3. Las tres decisiones de agosto
+
+**#44 — cinco defectos del origen de Suscripciones.** Tres se atajan ahora en
+`update()`, el único punto por el que pasa todo cambio de estado: el motivo de
+cancelación se borra si el estado no es `Cancelada`, la vigencia invertida se
+rechaza **cuando el cambio toca las fechas** —una fila histórica ya invertida no
+puede bloquear una suspensión: el origen sigue cobrándola— y las tres formas de
+«sin motivo» se unifican a ausencia.
+
+⛔ **Los otros dos no son defectos.** `activo = true` en una `Cancelada` es
+**RN-017**: la suscripción sigue viva hasta `fecha_fin` porque el cliente usa lo
+que pagó, y por eso `estado_derivado` no mira `activo`. Y `idplan_programado = 0`
+es el centinela de «sin cambio» que Pinot obliga a usar al no tener NULL.
+«Corregir» cualquiera de los dos rompería algo que funciona.
+
+**#45 — cobertura de pertenencia al 9,5 %.** El autorregistro creaba la cuenta y
+su administrador local **sin escribir el vínculo**: la pertenencia se resolvía
+solo por el respaldo `admin_local_id`, y de ahí los 2 vínculos para 21 usuarios.
+`autorregistro_proveedor_service` ahora vincula. El respaldo se conserva para las
+cuentas anteriores.
+
+**#46 — el log de API no registra la versión.** `Fact_LogLlamadaAPI` gana
+`version_contrato`, que el middleware resuelve **en el instante de la llamada**.
+El cargador la prefiere y marca `version_es_derivada = 0` en esas filas; las
+anteriores se siguen deduciendo del path con la marca en 1.
+
+⚠️ **Esto no convierte la versión en un dato declarado por el partner.** Sigue
+saliendo del path: para que fuera un hecho haría falta que el partner la pidiera
+por cabecera o que la credencial estuviera ligada a una versión, y hoy
+`Dim_CredencialAPI` no guarda ninguna de las dos. Lo que sí desaparece es el
+riesgo que la decisión señalaba —«el día que el path cambie de forma, la
+derivación devolverá otra cosa»—: cada fila conserva la versión que era cierta
+cuando ocurrió.
+
+⛔ **La zona sigue fuera, y a propósito.** «Un parámetro mal leído y una consulta
+fuera de zona se verían igual, y una de las dos es una acusación de
+incumplimiento.» Eso no ha cambiado.
+
+---
+
 ## 2026-08-23 — Segundo estado geográfico: arregla la atribución, y destapa que el bloqueo era otro
 
 `database/seed_segundo_estado_geografico.py` siembra un estado —Veracruz— con su

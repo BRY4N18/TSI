@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 from core.jwt_utils import create_access_token
 from core.pinot.client import PinotClient
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import reiniciar_para_pruebas as reiniciar_secuencia
 
 
 # --- In-memory Pinot store for tests ---
@@ -3625,6 +3626,23 @@ def reset_pinot_store():
     """Reset in-memory Pinot data between tests."""
     _reset_pinot_store()
     yield
+
+
+@pytest.fixture(autouse=True)
+def reset_secuencia_ids():
+    """Olvida la marca alta de identificadores entre pruebas.
+
+    ⚠️ `core.pinot.secuencia` guarda **en el módulo** el id más alto entregado
+    por tabla: es lo que impide repartir el mismo id dos veces mientras Pinot
+    ingiere. Esa memoria sobrevive a `_reset_pinot_store`, así que sin esta
+    limpieza una prueba que crea tres sesiones deja a la siguiente empezando en
+    4, y las que afirman «la primera es la 1» fallan **según el orden de
+    colección** — que es exactamente el tipo de fallo que no se reproduce
+    aislado.
+    """
+    reiniciar_secuencia()
+    yield
+    reiniciar_secuencia()
 
 
 @pytest.fixture(autouse=True)

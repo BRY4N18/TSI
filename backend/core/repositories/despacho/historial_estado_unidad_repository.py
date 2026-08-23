@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.accidentes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 ESTADO_ACTIVA = "Activa"
 ESTADO_OCUPADA = "Ocupada"
@@ -42,14 +43,7 @@ class HistorialEstadoUnidadRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            """
-            SELECT MAX(idhistorialestadosunidadesemergencias) AS max_id
-            FROM Fact_HistorialEstadoUnidad
-            """,
-            {},
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_HistorialEstadoUnidad", "idhistorialestadosunidadesemergencias")
 
     def list_by_unidad(
         self,

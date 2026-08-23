@@ -12,6 +12,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.accidentes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 TIPOS_IMPLICADO = frozenset({"Peaton", "Pasajero", "Testigo", "Otro"})
 ESTADOS_IMPLICADO = frozenset({"Ileso", "Lesionado", "Fallecido", "Desconocido"})
@@ -43,11 +44,7 @@ class ImplicadoRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idimplicado) AS max_id FROM Dim_Implicado",
-            {},
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Dim_Implicado", "idimplicado")
 
     def find_by_id(self, idimplicado: int) -> dict[str, Any] | None:
         rows = self.pinot.query(

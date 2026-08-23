@@ -10,6 +10,9 @@ from apps.cuentas_clientes.services.onboarding_notificacion_service import (
     OnboardingNotificacionService,
 )
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
+from core.repositories.cuentas_clientes.cuenta_usuario_repository import (
+    CuentaUsuarioRepository,
+)
 from core.repositories.cuentas_clientes.credential_repository import (
     CredentialRepository,
 )
@@ -36,6 +39,7 @@ class AutorregistroProveedorService:
         role_repo: RoleRepository | None = None,
         notificacion: OnboardingNotificacionService | None = None,
         audit: AuditService | None = None,
+        cuenta_usuario_repo: CuentaUsuarioRepository | None = None,
     ):
         self.cliente_repo = cliente_repo or ClienteRepository()
         self.user_repo = user_repo or UserRepository()
@@ -43,6 +47,7 @@ class AutorregistroProveedorService:
         self.role_repo = role_repo or RoleRepository()
         self.notificacion = notificacion or OnboardingNotificacionService()
         self.audit = audit or AuditService()
+        self.cuenta_usuario_repo = cuenta_usuario_repo or CuentaUsuarioRepository()
 
     def autorregistrar(self, *, data: dict[str, Any], ip_address: str | None = None) -> dict[str, Any]:
         razon_social = str(data.get("razon_social", "")).strip()
@@ -99,6 +104,16 @@ class AutorregistroProveedorService:
                 "estado": ESTADO_PENDIENTE,
             }
         )
+
+        # ⚠️ **El administrador local también es miembro de su organización** (#45).
+        # Hasta el 2026-08-23 esta vía creaba la cuenta y su admin sin escribir
+        # una sola fila en `Dim_Usuario_Cliente`: la pertenencia se resolvía solo
+        # por el respaldo `admin_local_id`, y por eso el modelo analítico medía
+        # una cobertura de pertenencia del 9,5 % — 2 vínculos para 21 usuarios.
+        #
+        # El respaldo sigue existiendo para las cuentas anteriores; lo que se
+        # arregla es dejar de producir cuentas nuevas sin vínculo.
+        self.cuenta_usuario_repo.vincular(user["idusuario"], cliente["idcliente"])
 
         self.audit.log_event(
             event_type="autorregistro_proveedor",

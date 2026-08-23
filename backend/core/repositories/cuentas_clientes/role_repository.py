@@ -9,6 +9,7 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class RoleRepository:
@@ -123,19 +124,10 @@ class RoleRepository:
         return rows[0] if rows else None
 
     def _next_user_role_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idusuariorol) AS max_id FROM Dim_Usuario_Rol"
-        )
-        max_id = rows[0].get("max_id") if rows else 0
-        try:
-            actual = int(max_id or 0)
-        except (TypeError, ValueError):
-            actual = 0
-        # Las filas huérfanas que quedaron con Integer.MIN_VALUE no deben arrastrar
-        # el contador a negativo.
-        return max(actual, 0) + 1
+        # Las filas huérfanas que quedaron con Integer.MIN_VALUE no deben
+        # arrastrar el contador a negativo. `siguiente_id` ya lo garantiza: parte
+        # de `max(maximo, entregado)` con `entregado` a 0 como mínimo.
+        return siguiente_id(self.pinot, "Dim_Usuario_Rol", "idusuariorol")
 
     def _next_role_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idrol) AS max_id FROM Dim_Rol")
-        max_id = rows[0].get("max_id") if rows else 0
-        return (max_id or 0) + 1
+        return siguiente_id(self.pinot, "Dim_Rol", "idrol")

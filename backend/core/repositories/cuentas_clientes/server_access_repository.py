@@ -9,6 +9,7 @@ from django.conf import settings
 from core.pinot.client import PinotClient
 from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class ServerAccessRepository:
@@ -133,11 +134,7 @@ class ServerAccessRepository:
         return [row["rolservidor"] for row in roles]
 
     def _next_server_user_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idusuariosservidor) AS max_id FROM Dim_UsuariosServidor")
-        max_id = rows[0].get("max_id") if rows else 0
-        return (max_id or 0) + 1
+        return siguiente_id(self.pinot, "Dim_UsuariosServidor", "idusuariosservidor")
 
     def _next_server_role_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idrolservidor) AS max_id FROM Dim_RolesServidor")
-        max_id = rows[0].get("max_id") if rows else 0
-        return (max_id or 0) + 1
+        return siguiente_id(self.pinot, "Dim_RolesServidor", "idrolservidor")

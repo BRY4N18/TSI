@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.accidentes.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 # Fact_AccidenteTipoEstadoAccidente no guarda el nombre del estado como STRING:
 # guarda idtipoestadoincidente (FK a Dim_TipoEstadoAccidente). Los IDs deben
@@ -34,11 +35,7 @@ class EstadoAccidenteRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query(
-            "SELECT MAX(idaccidentetipoestadoaccidente) AS max_id FROM Fact_AccidenteTipoEstadoAccidente",
-            {},
-        )
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Fact_AccidenteTipoEstadoAccidente", "idaccidentetipoestadoaccidente")
 
     def get_current_estado(self, idaccidente: str) -> str | None:
         rows = self.pinot.query(

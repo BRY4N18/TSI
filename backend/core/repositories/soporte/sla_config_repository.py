@@ -9,6 +9,7 @@ from django.conf import settings
 
 from core.pinot.client import PinotClient
 from core.repositories.soporte.kafka_writer import KafkaWriter
+from core.pinot.secuencia import siguiente_id
 
 
 class SLAConfigRepository:
@@ -19,8 +20,7 @@ class SLAConfigRepository:
         self.kafka = kafka or KafkaWriter()
 
     def _next_id(self) -> int:
-        rows = self.pinot.query("SELECT MAX(idslaconfig) AS max_id FROM Dim_SLAConfig", {})
-        return int(rows[0]["max_id"] or 0) + 1 if rows else 1
+        return siguiente_id(self.pinot, "Dim_SLAConfig", "idslaconfig")
 
     def list(self) -> list[dict[str, Any]]:
         return self.pinot.query("SELECT * FROM Dim_SLAConfig", {})
