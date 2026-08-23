@@ -42,6 +42,171 @@ sembrados. Eso ya no aplica: ver la entrada siguiente.
 
 ---
 
+## 2026-08-23 — Cierre de la capa táctica: de 88 a 92 informes con datos
+
+Los 6 informes compuestos que seguían vacíos tenían **cuatro causas distintas**, y
+solo una era «no hay caso». Corregido lo que era corregible; queda uno.
+
+### `fecha_inicio_contrato` no se escribía nunca *(3 pantallas)*
+
+Las 8 cuentas reales tenían el centinela, así que `dim_cliente.fecha_alta` y
+`cohorte_alta` salían nulas y **antigüedad media, churn por cohorte y tasa de
+aprobación** no podían devolver nada. El cargador estaba bien; el campo no se
+escribía por la única vía de alta viva —`CU-O01` está retirado— porque
+`autorregistro_proveedor_service` lo pasa como opcional y nadie lo manda.
+
+**Decisión del usuario: la fecha de inicio es la aprobación.** Se sella en
+`aprobacion_proveedor_service` al aprobar, y no al completar el onboarding: la
+relación contractual nace con la aprobación, y el onboarding es la puesta en
+marcha de una cuenta que **ya** es cliente y puede quedarse a medias sin deshacer
+el contrato. El rechazo no sella nada — hay prueba de ambas cosas.
+
+`update_estado` acepta ahora la fecha y **nunca pisa un valor previo con `None`**:
+una reactivación no debe reescribir la fecha del contrato original.
+
+**Relleno de las cuentas anteriores** (`database/migra_fecha_inicio_contrato.py`).
+No existe ninguna fecha de aprobación guardada —`fecha_creacion` también es
+centinela en todas—, así que se usa **el inicio de la primera suscripción**: la
+primera evidencia de que la cuenta operaba comercialmente. ⚠️ Es un sustituto, y
+la antigüedad saldrá **por defecto, nunca por exceso**; se prefiere eso a inventar
+`today()`, que daría antigüedad cero a cuentas de dos años. Las cuentas **sin
+suscripción no reciben fecha**: una rechazada nunca empezó un contrato, y ponerle
+uno la metería en la antigüedad media como si fuera cliente. 6 rellenadas, 1
+dejada (`Ambulancias del Pacífico`, rechazada-anulada).
+
+### `roles-incompatibles`: retirado
+
+**Decisión del usuario: sobra.** Recibía los pares de roles incompatibles por
+parámetro y **ninguna pantalla los enviaba** —hay hasta una prueba que afirmaba
+que iba nulo—, así que su consulta devolvía cero filas **por construcción,
+siempre**. Retirado de punta a punta: consulta SQL, mapa del servicio, parámetro
+de la vista, catálogo del frontend, la zona de la pantalla y sus pruebas.
+
+La zona de **lectura** pasa a ser opcional: Acceso se quedó sin ella, y repetir
+`concurrencia-sesiones` por cuarta vez sería relleno, no información. Pedirlo
+ahora responde `403`, igual que cualquier informe inexistente.
+
+⚠️ La prueba de que «ningún informe de Cuentas publica `idusuario`» tenía a
+`ot18_roles_incompatibles` como **única excepción**. Al retirarse, la excepción
+desaparece y la regla queda sin agujeros.
+
+### `suspension-reactivacion`: sembrada la suspensión, la reactivación no se deriva
+
+`hecho_suscripcion` solo tenía `vigente` y `cancelada`. Se sembró una suscripción
+`Suspendida` —fila **nueva**, no el cambio de estado de una viva: suspender una
+existente la sacaría del MRR y de la cartera, y un seed no debe mover cifras de
+negocio para llenar una pantalla—. Ya devuelve fila.
+
+⚠️ **`reactivadas` seguirá en cero, y no por falta de datos**:
+`hecho_suscripcion` fija `fecha_suspension` y `fecha_reactivacion` a `None` sin
+derivarlas de nada, y no hay de dónde — `Fact_Suscripcion` es una foto del estado
+actual y no existe historial de suspensiones. Anotado como decisión pendiente.
+
+### `casos-activos-al-despublicar`: sigue vacío, y por diseño
+
+`dim_geografia` deja la región del condado **ausente a propósito** cuando el
+estado tiene más de una región: hoy todas comparten `idestado = 1`, y atribuirlas
+a una sola daría «una cifra que nadie cuestiona porque no parece rota». Con un
+solo estado geográfico en el sistema, ningún accidente puede atribuirse a la
+región despublicada. **No es un defecto** y no se arregla sembrando más regiones:
+haría falta un segundo estado con su condado, que es fabricar geografía y no lo
+hago sin decirlo.
+
+### Resultado
+
+**92 de 93 informes compuestos devuelven datos** (eran 88 de 94; uno se retiró).
+
+`pytest apps` → 4 316 passed, 6 skipped. `ng test` → 1 408 SUCCESS.
+
+> **Una prueba que pasaba por accidente.** `test_ot17_antiguedad` sembraba su
+> cliente y medía la mediana, pero `limpiar_cuentas()` **no vacía
+> `dim_cliente`**: convivía con las cuentas reales y pasaba solo porque ninguna
+> tenía `fecha_alta`. Al rellenarlas, una `aseguradora` real entró en la mediana
+> y la bajó de 234 a 14 días sin que nada se hubiera roto. Se le dio **base
+> propia**, el patrón que ya usan otras cinco pruebas del modelo.
+
+---
+
+## 2026-08-23 — Las cuatro pantallas secas de Ventas: sembrada la nutrición del prospecto
+
+`Fact_Interaccion_Demo` y `Fact_NotificacionVentas` estaban **a cero en Pinot** —no
+solo en el modelo analítico: nadie había escrito nunca en ellas—, así que
+`hecho_interaccion_demo` y `hecho_notificacion_ventas` salían vacíos y cuatro
+pantallas de gestión no tenían nada que pintar: `intensidad-demo`,
+`secciones-visitadas`, `reglas-disparo` y `latencia-reaccion`.
+
+`database/seed_nutricion_ventas.py` siembra 21 interacciones en 5 sesiones de demo y
+5 avisos al ejecutivo. Idempotente.
+
+**El vocabulario no se inventa.** `tipo_evento` sale de
+`ingesta_interaccion_demo_service.TIPOS`, las reglas y sus canales de
+`reglas_demo_catalog`, y `precios` es la sección que dispara ambas. Sembrar valores
+que el sistema no produce convierte el fixture en una afirmación sobre datos que
+nadie escribe — es el error del `"09:30"` de `hora_fin`.
+
+**El aviso ignorado importa más que el atendido.** El cargador deriva la reacción
+como el primer avance de etapa posterior al aviso, y si no hay ninguno deja
+`segundos_a_reaccion` **ausente** con `hubo_avance = 0`: contarlo como latencia cero
+haría que los avisos que nadie atendió *mejoraran* el indicador. Se sembraron las dos
+caras —3 atendidos, 2 ignorados— porque sin ignorados esa regla no se ejerce. Los
+avisos se anclan a las **transiciones reales** de cada prospecto, no a fechas
+inventadas, para que la latencia sembrada sea exactamente la que sale.
+
+⚠️ **Ninguna interacción va sin sección.** La consulta tiene un `ifNull(nullIf(...))`
+defensivo, pero la ingesta **exige** sección y hasta el inicio de sesión escribe
+`'demo'`: una fila sin sección no puede existir. Dejar esa rama sin ejercitar es
+honesto; fabricarla sería inventar un caso imposible.
+
+**Resultado, medido contra la API y en pantalla:**
+
+| Pantalla | Resultado |
+|---|---|
+| `intensidad-demo` | 5 empresas con 8 / 5 / 4 / 3 / 1 eventos y 4 / 3 / 3 / 2 / 1 secciones |
+| `secciones-visitadas` | demo 9, precios 6, cobertura 4, integraciones 2 |
+| `reglas-disparo` | dos reglas con **tasas distintas**: 0.6667 y 0.5 |
+| `latencia-reaccion` | 5 avisos, 3 con reacción, **2 sin**, mediana 3 600 s → «1.0 h» |
+
+### Dos defectos que solo se vieron con datos delante
+
+**`reglas-disparo` calculaba la tasa de acierto y no llegaba a ninguna pantalla.** El
+plegable de apoyo mostraba «2 reglas disparadas» y nada más — el número menos
+interesante, cuando la pregunta es *cuál funciona*. Se añadió el desglose por regla
+siguiendo el patrón que ya usaba `carga-por-ejecutivo` en el mismo componente. Con la
+fuente vacía el hueco era invisible.
+
+**«1 eventos · 1 secciones».** Singular sin resolver en la intensidad por empresa,
+visible en cuanto hubo un prospecto con un solo evento. Corregido.
+
+`ng test` → 1 408 SUCCESS.
+
+> **Nota de proceso.** Al añadir el desglose rompí el build dos veces: primero metí
+> **backticks** dentro de un template literal de TypeScript, y luego usé el pipe
+> `number` en un componente que no lo importa. Las dos las cazó `ng test` antes de
+> tocar el navegador.
+
+### El entorno, que costó más que el cambio
+
+**El build del frontend fallaba en silencio.** `docker compose build` moría con
+`rpc error: EOF` durante `ng build`: 8 GB de RAM para 13 contenedores no dan para la
+compilación de producción de Angular. Peor, **yo mismo lo oculté**: filtré la salida
+con `| grep | tail`, así que el `exit 0` que leía era el del `tail` y no el del build.
+Dos «reconstrucciones» seguidas no reconstruyeron nada y el contenedor siguió sirviendo
+el bundle de las 02:33. Se resolvió parando Airflow durante la compilación.
+
+**Pinot volvió a detener la ingesta, esta vez en las 79 tablas.** Y con un efecto que
+la primera vez no se vio: `Fact_Session` quedó congelada, y como `SessionRepository`
+calcula el id nuevo con `MAX(idsession) + 1` **leyendo de Pinot**, cada login reutilizaba
+el id `985` y se pisaba a sí mismo. El login devolvía `200` y el token siguiente daba
+`401`. `resumeConsumption` no bastó: el servidor tenía el consumidor en `NOT_CONSUMING`
+con 34 registros de retraso y el segmento nuevo **sin asignar**. Hizo falta reiniciar
+`pinot-server`; entonces recuperó de 984 a 1 115 sesiones de golpe.
+
+> ⚠️ **`idsession` derivado de `MAX()` sobre Pinot es frágil** y no es cosa de este
+> cambio: cualquier retraso de ingesta hace que dos sesiones compartan id en una tabla
+> upsert, y la segunda borra a la primera. Anotado en `decisiones-pendientes.md`.
+
+---
+
 ## 2026-08-22 — «Cambio programado» pintaba `[object Object]`: aplanado en el backend
 
 El listado `suscripciones` devolvía `cambio_programado: {plan, se_aplica_el}`, un objeto

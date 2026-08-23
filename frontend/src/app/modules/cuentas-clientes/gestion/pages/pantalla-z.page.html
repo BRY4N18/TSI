@@ -223,69 +223,74 @@
         }
       </article>
 
-      <article
-        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
-        data-testid="zona-lectura"
-        data-bloque-vista
-      >
-        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
-        @switch (cargaLectura().estado) {
-          @case ('carga') {
-            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
-          }
-          @case ('error') {
-            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
-          }
-          @case ('vacio') {
-            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
-          }
-          @default {
-            @if (idPantalla() === 'ciclo') {
-              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
-                @for (fila of cargaLectura().data; track texto(fila['idcliente'])) {
-                  <li class="text-sm" data-testid="fila-riesgo">
-                    <span class="text-text-primary">{{
-                      texto(fila['cuenta']) || 'Cuenta #' + texto(fila['idcliente'])
-                    }}</span>
-                    <span class="ml-2 text-text-secondary">
-                      @if (num(fila['sin_actividad_conocida']) === 1) {
-                        <span data-testid="sin-actividad-conocida">sin actividad conocida</span>
-                      } @else {
-                        {{ num(fila['dias_sin_actividad']) | number }} días
-                      }
-                    </span>
-                  </li>
-                }
-              </ul>
+      <!-- ⚠️ La zona de lectura es **opcional** desde el 2026-08-23: al retirarse
+           `roles-incompatibles`, Acceso se quedó sin ella. Repetir aquí
+           `concurrencia-sesiones` por cuarta vez sería relleno. -->
+      @if (def.lectura; as lectura) {
+        <article
+          class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+          data-testid="zona-lectura"
+          data-bloque-vista
+        >
+          <h2 class="m-0 text-base font-semibold text-text-primary">{{ lectura.titulo }}</h2>
+          @switch (cargaLectura().estado) {
+            @case ('carga') {
+              <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
             }
-            @if (idPantalla() === 'incorporacion') {
-              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
-                @for (fila of cargaLectura().data; track texto(fila['tipo_organizacion']) + texto(fila['periodo'])) {
-                  <li class="text-sm">
-                    <span class="text-text-primary">{{ texto(fila['tipo_organizacion']) }}</span>
-                    <span class="ml-2 text-text-secondary">
-                      {{ pct(num(fila['pct'])) }} · {{ num(fila['aprobadas']) | number }} /
-                      {{ num(fila['solicitudes']) | number }}
-                    </span>
-                  </li>
-                }
-              </ul>
+            @case ('error') {
+              <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
             }
-            @if (idPantalla() === 'acceso') {
-              <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
-                @for (fila of cargaLectura().data; track texto(fila['idusuario']) + texto(fila['par_declarado'])) {
-                  <li class="text-sm" data-testid="fila-rol">
-                    <span class="text-text-primary">{{ texto(fila['idusuario']) }}</span>
-                    <span class="ml-2 text-text-secondary">
-                      {{ texto(fila['rol_a']) }} · {{ texto(fila['rol_b']) }}
-                    </span>
-                  </li>
-                }
-              </ul>
+            @case ('vacio') {
+              <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            }
+            @default {
+              @if (idPantalla() === 'ciclo') {
+                <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                  @for (fila of cargaLectura().data; track texto(fila['idcliente'])) {
+                    <li class="text-sm" data-testid="fila-riesgo">
+                      <span class="text-text-primary">{{
+                        texto(fila['cuenta']) || 'Cuenta #' + texto(fila['idcliente'])
+                      }}</span>
+                      <span class="ml-2 text-text-secondary">
+                        @if (num(fila['sin_actividad_conocida']) === 1) {
+                          <span data-testid="sin-actividad-conocida">sin actividad conocida</span>
+                        } @else {
+                          {{ num(fila['dias_sin_actividad']) | number }} días
+                        }
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+              @if (idPantalla() === 'incorporacion') {
+                <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                  @for (fila of cargaLectura().data; track texto(fila['tipo_organizacion']) + texto(fila['periodo'])) {
+                    <li class="text-sm">
+                      <span class="text-text-primary">{{ texto(fila['tipo_organizacion']) }}</span>
+                      <span class="ml-2 text-text-secondary">
+                        {{ pct(num(fila['pct'])) }} · {{ num(fila['aprobadas']) | number }} /
+                        {{ num(fila['solicitudes']) | number }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+              @if (idPantalla() === 'acceso') {
+                <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                  @for (fila of cargaLectura().data; track texto(fila['idusuario']) + texto(fila['par_declarado'])) {
+                    <li class="text-sm" data-testid="fila-rol">
+                      <span class="text-text-primary">{{ texto(fila['idusuario']) }}</span>
+                      <span class="ml-2 text-text-secondary">
+                        {{ texto(fila['rol_a']) }} · {{ texto(fila['rol_b']) }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
             }
           }
-        }
-      </article>
+        </article>
+      }
 
       @if (def.apoyoPlegado) {
         <div class="lg:col-span-12" data-bloque-vista>

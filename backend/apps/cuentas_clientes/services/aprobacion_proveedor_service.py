@@ -11,6 +11,7 @@ from apps.cuentas_clientes.services.onboarding_access_service import (
 from apps.cuentas_clientes.services.onboarding_notificacion_service import (
     OnboardingNotificacionService,
 )
+from core.pinot.tiempo import ahora_ms
 from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
 
@@ -81,10 +82,22 @@ class AprobacionProveedorService:
         admin_local_id = int(cliente.get("admin_local_id") or 0)
 
         if decision_norm == "aprobar":
+            # ⚠️ **La aprobación es el inicio del contrato.** Hasta el 2026-08-23
+            # nadie escribía `fecha_inicio_contrato` por esta vía —la única viva,
+            # porque CU-O01 está retirado— y las 8 cuentas reales lo tenían en el
+            # centinela. Sin esa fecha, `dim_cliente.fecha_alta` y `cohorte_alta`
+            # salen nulas y tres informes de gestión de Cuentas no pueden devolver
+            # nada: antigüedad media, churn por cohorte y tasa de aprobación.
+            #
+            # Se sella aquí y no al completar el onboarding porque la relación
+            # contractual nace con la aprobación: el onboarding es la puesta en
+            # marcha de una cuenta que **ya** es cliente, y puede quedarse a medias
+            # sin que eso deshaga el contrato.
             updated = self.cliente_repo.update_estado(
                 cliente_id,
                 estado=ESTADO_ACTIVO,
                 estado_onboarding="Pendiente",
+                fecha_inicio_contrato=ahora_ms(),
             )
             if not updated:
                 raise AprobacionProveedorError("Cuenta de cliente no encontrada")

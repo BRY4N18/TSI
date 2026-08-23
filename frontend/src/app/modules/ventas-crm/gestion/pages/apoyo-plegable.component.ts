@@ -53,6 +53,24 @@ export interface BloqueApoyo {
                     {{ nota }}
                   </p>
                 }
+                @if (bloque.informe === 'reglas-disparo') {
+                  <!-- ⚠️ El resumen dice cuántas reglas se dispararon, que es lo
+                       menos interesante: la pregunta es **cuál funciona**. El
+                       backend calcula la tasa de acierto por regla y no llegaba a
+                       ninguna pantalla. Con la fuente vacía no se notaba. -->
+                  <ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0">
+                    @for (fila of bloque.carga.data; track texto(fila['regla_disparada'])) {
+                      <li class="text-sm text-text-secondary" data-testid="regla-disparo">
+                        {{ texto(fila['regla_disparada']) }}
+                        · {{ num(fila['avisos']) ?? 0 }} avisos
+                        · {{ num(fila['con_reaccion']) ?? 0 }} con reacción
+                        @if (tasaAcierto(fila); as tasa) {
+                          · {{ tasa }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
                 @if (bloque.informe === 'carga-por-ejecutivo') {
                   <ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0">
                     @for (fila of bloque.carga.data; track texto(fila['idejecutivo'])) {
@@ -80,6 +98,19 @@ export class ApoyoPlegableComponent {
   readonly textoVacio = computed(() => mensajeVacio(this.alcance()));
 
   readonly num = num;
+
+  /** Tasa de acierto ya formateada, o `null` si el informe no la trae.
+   *
+   * Se calcula aquí y no con el pipe `number` porque este componente no lo
+   * importa —el resto de sus cifras salen crudas de `num`— y añadir el pipe
+   * solo para esta línea le daría una dependencia que no necesita.
+   */
+  tasaAcierto(fila: Record<string, unknown>): string | null {
+    const valor = num(fila['tasa_acierto']);
+    return valor === null || valor === undefined
+      ? null
+      : `${(valor * 100).toFixed(1)} %`;
+  }
   readonly texto = texto;
 
   notaDe(bloque: BloqueApoyo): string {

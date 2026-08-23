@@ -7,6 +7,7 @@ from apps.cuentas_clientes.services.aprobacion_proveedor_service import (
 from apps.cuentas_clientes.services.autorregistro_proveedor_service import (
     AutorregistroProveedorService,
 )
+from core.repositories.cuentas_clientes.cliente_repository import ClienteRepository
 
 
 @pytest.mark.service
@@ -42,6 +43,44 @@ class TestAprobacionProveedorService:
         # Assert
         assert result["estado"] == "Activo"
         assert result["estado_onboarding"] == "Pendiente"
+
+    def test_aprobar_sella_la_fecha_de_inicio_de_contrato(self, mock_pinot, mock_kafka):
+        """⚠️ La aprobación **es** el inicio del contrato.
+
+        Sin esta escritura, `Dim_Cliente.fecha_inicio_contrato` se queda en el
+        centinela por la única vía de alta viva, `dim_cliente.fecha_alta` sale
+        nula y tres informes de gestión de Cuentas no pueden devolver nada:
+        antigüedad media, churn por cohorte y tasa de aprobación.
+        """
+        created = self._solicitud(nit="810999888-9", gmail="ana.sella@tsi.com")
+        repo = ClienteRepository()
+        assert not repo.find_by_id(created["idcliente"]).get("fecha_inicio_contrato")
+
+        AprobacionProveedorService().decidir(
+            user_id=1,
+            roles=["Administrador"],
+            cliente_id=created["idcliente"],
+            decision="aprobar",
+        )
+
+        guardado = repo.find_by_id(created["idcliente"])
+        assert guardado["fecha_inicio_contrato"]
+        assert isinstance(guardado["fecha_inicio_contrato"], int)
+
+    def test_rechazo_no_sella_fecha_de_contrato(self, mock_pinot, mock_kafka):
+        """Una solicitud rechazada no tiene contrato que empezar."""
+        created = self._solicitud(nit="810999888-8", gmail="beto.no@tsi.com")
+
+        AprobacionProveedorService().decidir(
+            user_id=1,
+            roles=["Administrador"],
+            cliente_id=created["idcliente"],
+            decision="rechazar",
+            motivo="documentacion incompleta",
+        )
+
+        guardado = ClienteRepository().find_by_id(created["idcliente"])
+        assert not guardado.get("fecha_inicio_contrato")
 
     def test_rechazar_requires_motivo(self, mock_pinot, mock_kafka):
         # Arrange

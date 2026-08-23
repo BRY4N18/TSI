@@ -45,7 +45,10 @@ export interface DefinicionPantalla {
   materia: Materia;
   heroe: ZonaDefinicion;
   visual: ZonaDefinicion;
-  lectura: ZonaDefinicion;
+  /** Opcional: la pantalla de Acceso se quedó sin zona de lectura al retirarse
+   *  `roles-incompatibles`, y rellenarla repitiendo `concurrencia-sesiones` por
+   *  cuarta vez sería relleno, no información. */
+  lectura?: ZonaDefinicion;
   apoyo?: ZonaDefinicion;
   apoyoPlegado?: boolean;
 }

@@ -53,8 +53,11 @@ def _apariciones(texto: str, tabla: str) -> list[bool]:
 
 def test_el_catalogo_no_esta_vacio():
     assert INFORMES, "el catálogo de Cuentas está vacío"
-    assert len(INFORMES) == 9, (
-        f"se esperaban 9 consultas y hay {len(INFORMES)}: {INFORMES}"
+    # ⚠️ Eran 9. `ot18_roles_incompatibles` se retiró el 2026-08-23: recibía los
+    # pares de roles incompatibles por parámetro y **ninguna pantalla los
+    # enviaba**, así que su consulta devolvía cero filas por construcción.
+    assert len(INFORMES) == 8, (
+        f"se esperaban 8 consultas y hay {len(INFORMES)}: {INFORMES}"
     )
 
 
@@ -91,11 +94,12 @@ def test_idusuario_solo_en_roles(informe):
         a.lower()
         for a in re.findall(r"\bAS\s+([A-Za-z_][A-Za-z0-9_]*)", cuerpo(informe), re.I)
     }
-    if informe == "ot18_roles_incompatibles":
-        assert "idusuario" in identificadores(cuerpo(informe))
-        return
+    # ⚠️ La excepción era `ot18_roles_incompatibles`, el único informe que podía
+    # publicar `idusuario`. Se retiró el 2026-08-23 —nunca pudo devolver una
+    # fila: los pares de roles llegaban por parámetro y ninguna pantalla los
+    # enviaba— así que **ya no hay excepción**: ningún informe publica la clave.
     assert "idusuario" not in aliases, (
-        f"'{informe}' publica idusuario: solo el informe de roles puede"
+        f"'{informe}' publica idusuario, y ningun informe de Cuentas puede"
     )
 
 

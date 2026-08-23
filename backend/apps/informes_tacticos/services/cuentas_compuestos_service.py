@@ -42,7 +42,6 @@ CATALOGO: dict[str, str] = {
     "embudo-abandono": "ot04_embudo_abandono",
     "tasa-aprobacion": "ot04_tasa_aprobacion",
     "concurrencia-sesiones": "ot18_concurrencia_sesiones",
-    "roles-incompatibles": "ot18_roles_incompatibles",
 }
 
 MATERIAS: dict[str, str] = {
@@ -54,7 +53,6 @@ MATERIAS: dict[str, str] = {
     "embudo-abandono": MATERIA_INCORPORACION,
     "tasa-aprobacion": MATERIA_INCORPORACION,
     "concurrencia-sesiones": MATERIA_ACCESO,
-    "roles-incompatibles": MATERIA_ACCESO,
 }
 
 INFORMES_COBERTURA = frozenset({"usuarios-vs-tope", "cuentas-en-riesgo"})
@@ -112,7 +110,6 @@ class CuentasCompuestosService:
             "hasta": periodo.hasta,
             "mes_cohorte": extra.get("mes_cohorte") or "",
             "dias_inactividad": extra.get("dias_inactividad", 90),
-            "pares": extra.get("pares_incompatibles") or "",
         }
         filas = self._repositorio.ejecutar(
             consulta, departamento=DEPARTAMENTO, parametros=parametros

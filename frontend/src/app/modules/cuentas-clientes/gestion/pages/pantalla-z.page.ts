@@ -52,7 +52,7 @@ export class PantallaZPage {
 
   readonly cargaHeroe = computed(() => this.cargaDe(this.definicion()?.heroe.informes[0]));
   readonly cargaVisual = computed(() => this.cargaDe(this.definicion()?.visual.informes[0]));
-  readonly cargaLectura = computed(() => this.cargaDe(this.definicion()?.lectura.informes[0]));
+  readonly cargaLectura = computed(() => this.cargaDe(this.definicion()?.lectura?.informes[0]));
 
   readonly bloquesApoyo = computed<BloqueApoyo[]>(() => {
     const def = this.definicion();

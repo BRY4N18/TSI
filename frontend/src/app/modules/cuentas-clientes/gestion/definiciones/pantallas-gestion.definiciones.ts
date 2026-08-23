@@ -1,6 +1,11 @@
 import { DefinicionPantalla } from '../models/informes-compuestos.types';
 
-/** Los 9 slugs que el backend publica. */
+/** Los 8 slugs que el backend publica.
+ *
+ * ⚠️ Eran 9. `roles-incompatibles` se retiró el 2026-08-23: recibía los pares de
+ * roles incompatibles por parámetro y **ninguna pantalla los enviaba**, así que
+ * su consulta devolvía cero filas por construcción, siempre.
+ */
 export const PUBLICADOS_UI: readonly string[] = [
   'churn-por-cohorte',
   'antiguedad-media',
@@ -10,7 +15,6 @@ export const PUBLICADOS_UI: readonly string[] = [
   'embudo-abandono',
   'tasa-aprobacion',
   'concurrencia-sesiones',
-  'roles-incompatibles',
 ];
 
 export const SLOTS_CICLO = [
@@ -26,7 +30,7 @@ export const SLOTS_INCORPORACION = [
   'tasa-aprobacion',
 ] as const;
 
-export const SLOTS_ACCESO = ['concurrencia-sesiones', 'roles-incompatibles'] as const;
+export const SLOTS_ACCESO = ['concurrencia-sesiones'] as const;
 
 export const PANTALLAS: Record<string, DefinicionPantalla> = {
   ciclo: {
@@ -62,7 +66,6 @@ export const PANTALLAS: Record<string, DefinicionPantalla> = {
       titulo: 'Concurrencia máxima por solape',
     },
     visual: { informes: ['concurrencia-sesiones'], titulo: 'Franjas horarias' },
-    lectura: { informes: ['roles-incompatibles'], titulo: 'Roles incompatibles' },
     apoyo: { informes: ['concurrencia-sesiones'], titulo: 'Duración y sesiones abiertas' },
     apoyoPlegado: true,
   },
@@ -79,7 +82,7 @@ export function informesDe(def: DefinicionPantalla): string[] {
   const slugs = [
     ...def.heroe.informes,
     ...def.visual.informes,
-    ...def.lectura.informes,
+    ...(def.lectura?.informes ?? []),
     ...(def.apoyo?.informes ?? []),
   ];
   return [...new Set(slugs)];

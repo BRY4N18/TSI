@@ -192,8 +192,9 @@
                   <li class="text-sm" data-testid="intensidad-empresa">
                     <span class="text-text-primary">{{ fila.empresa }}</span>
                     <span class="ml-2 text-text-secondary">
-                      {{ fila.eventos | number }} eventos ·
-                      {{ fila.secciones_distintas | number }} secciones
+                      {{ fila.eventos | number }} {{ fila.eventos === 1 ? 'evento' : 'eventos' }} ·
+                      {{ fila.secciones_distintas | number }}
+                      {{ fila.secciones_distintas === 1 ? 'sección' : 'secciones' }}
                     </span>
                   </li>
                 }

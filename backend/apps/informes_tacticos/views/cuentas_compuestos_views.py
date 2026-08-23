@@ -59,7 +59,4 @@ def _leer_parametros(query_params) -> dict[str, Any]:
         if valor < 1:
             raise ValueError("'dias_inactividad' debe ser mayor que cero.")
         extra["dias_inactividad"] = valor
-    pares = query_params.get("pares_incompatibles")
-    if pares is not None:
-        extra["pares_incompatibles"] = str(pares)
     return extra

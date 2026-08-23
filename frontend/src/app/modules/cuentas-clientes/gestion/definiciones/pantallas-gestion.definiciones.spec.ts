@@ -26,13 +26,17 @@ describe('Definiciones de pantallas de Cuentas', () => {
     expect(informesDe(PANTALLAS['acceso']).sort()).toEqual([...SLOTS_ACCESO].sort());
     expect(PANTALLAS['acceso'].heroe.informes).toEqual(['concurrencia-sesiones']);
     expect(PANTALLAS['acceso'].visual.informes).toEqual(['concurrencia-sesiones']);
-    expect(PANTALLAS['acceso'].lectura.informes).toEqual(['roles-incompatibles']);
+    // ⚠️ Acceso **no tiene zona de lectura**: `roles-incompatibles` se retiró el
+    // 2026-08-23 porque no podía devolver una fila —los pares de roles llegaban
+    // por parámetro y ninguna pantalla los enviaba—. Rellenarla con
+    // `concurrencia-sesiones` por cuarta vez sería relleno, no información.
+    expect(PANTALLAS['acceso'].lectura).toBeUndefined();
   });
 
-  it('las_tres_pantallas_when_se_unen_citan_exactamente_los_9_una_vez', () => {
+  it('las_tres_pantallas_when_se_unen_citan_exactamente_los_8_una_vez', () => {
     const citados = Object.values(PANTALLAS).flatMap((p) => informesDe(p));
     expect([...new Set(citados)].sort()).toEqual([...PUBLICADOS_UI].sort());
-    expect(new Set(citados).size).toBe(9);
+    expect(new Set(citados).size).toBe(8);
   });
 
   it('ningun_slug_de_listados_when_se_revisa', () => {

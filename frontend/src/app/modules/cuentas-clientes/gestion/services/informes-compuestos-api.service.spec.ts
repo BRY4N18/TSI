@@ -31,7 +31,6 @@ describe('InformesCompuestosApiService (Cuentas)', () => {
     expect(req.request.params.get('hasta')).toBe('2026-08-16');
     expect(req.request.params.get('dias_inactividad')).toBeNull();
     expect(req.request.params.get('mes_cohorte')).toBeNull();
-    expect(req.request.params.get('pares_incompatibles')).toBeNull();
     req.flush({ data: { resultados: [] }, meta: {} });
   });
 

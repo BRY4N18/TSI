@@ -104,10 +104,20 @@ class ClienteRepository:
         *,
         estado: str,
         estado_onboarding: str | None = None,
+        fecha_inicio_contrato: int | None = None,
     ) -> dict[str, Any] | None:
+        """Cambia el estado de la cuenta y, si se indica, sella el inicio del contrato.
+
+        ⚠️ `fecha_inicio_contrato` **solo se escribe cuando llega**, y nunca se
+        pisa un valor previo con `None`: `update` fusiona sobre la fila
+        existente, así que omitir la clave conserva lo que hubiera. Una
+        reactivación no debe reescribir la fecha del contrato original.
+        """
         data: dict[str, Any] = {"estado": estado}
         if estado_onboarding is not None:
             data["estado_onboarding"] = estado_onboarding
+        if fecha_inicio_contrato is not None:
+            data["fecha_inicio_contrato"] = fecha_inicio_contrato
         return self.update(cliente_id, data)
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:

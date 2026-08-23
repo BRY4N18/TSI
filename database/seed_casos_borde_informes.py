@@ -52,6 +52,7 @@ VALIDACION_BASE = 9100
 UNIDAD_SIN_CONDADO = 9101
 CLIENTE_DADO_DE_BAJA = 929001
 FACTURA_EN_DISPUTA = "b0rde0001-0000-4000-8000-000000000001"
+SUSCRIPCION_SUSPENDIDA = 979001
 
 #: Literales canonicos, importados de donde los define el codigo y **no
 #: reescritos aqui**: una spec que citaba literales inventados ya dejo listados
@@ -61,6 +62,7 @@ ESTADO_EN_ALERTA = "En_Alerta"
 ESTADO_RECHAZADA = "Rechazada"
 ESTADO_FACTURA_EN_DISPUTA = "En disputa"
 ESTADO_CLIENTE_BAJA = "Dado de baja"
+ESTADO_SUSCRIPCION_SUSPENDIDA = "Suspendida"
 
 #: Cliente y suscripcion reales sobre los que cuelga la factura en disputa.
 CLIENTE_FACTURA = 920003
@@ -270,6 +272,44 @@ def cuenta_dada_de_baja():
     }]
 
 
+def suscripcion_suspendida():
+    """Una suscripcion `Suspendida`, el unico estado que faltaba.
+
+    `hecho_suscripcion` solo tenia `vigente` y `cancelada`, asi que el informe
+    de suspension y reactivacion no devolvia nada. `estado_derivado` lee el
+    estado del origen, de modo que basta con que exista una fila suspendida.
+
+    Es una fila **nueva**, no el cambio de estado de una existente: suspender
+    una suscripcion viva la sacaria del MRR y de la cartera, y este seed no
+    debe mover cifras de negocio para llenar una pantalla.
+
+    ⚠️ **La reactivacion seguira en cero**, y no por falta de datos:
+    `hecho_suscripcion` fija `fecha_suspension` y `fecha_reactivacion` a `None`
+    sin derivarlas de nada. No hay de donde: `Fact_Suscripcion` es una foto del
+    estado actual y no existe historial de suspensiones. Sembrar mas filas no
+    lo arregla — hace falta decidir de donde sale ese hecho.
+    """
+    return [{
+        "id_suscripcion": SUSCRIPCION_SUSPENDIDA,
+        "idcliente": CLIENTE_FACTURA,
+        "idplan": 1,
+        "nivel": "Basico",
+        "estado": ESTADO_SUSCRIPCION_SUSPENDIDA,
+        "precio": 49.0,
+        "periodicidad": "Mensual",
+        "renovacionautomatica": False,
+        "fecha_inicio": NOW_MS - 200 * DIA_MS,
+        "fecha_fin": NOW_MS + 30 * DIA_MS,
+        "fechacancelacion": -9223372036854775808,
+        "motivocancelacion": "null",
+        "idplan_programado": 0,
+        "severidades_desbloqueadas": "[1]",
+        "carga_lote_habilitada": False,
+        "activo": True,
+        "fecha_actualizacion": NOW_MS,
+    }]
+
+
 # ── Ventas y CRM ─────────────────────────────────────────────────────────────
 
 #: ⚠️ Los **tres** formatos que `demo_tokens.py` acepta defensivamente. Sembrar
@@ -347,6 +387,7 @@ def main():
     print("Suscripciones y Facturacion")
     publish("Fact_Factura_topic", factura_en_disputa())
     publish("Dim_Cliente_topic", cuenta_dada_de_baja())
+    publish("Fact_Suscripcion_topic", suscripcion_suspendida())
 
     print("Ventas y CRM")
     publish("Dim_Prospecto_topic", demos_activas())

@@ -189,7 +189,7 @@ describe('PantallaZPage (Cuentas)', () => {
   });
 
   describe('Acceso', () => {
-    it('un_solo_get_de_concurrencia_alimenta_heroe_y_roles_vacios_no_son_multirrol', () => {
+    it('un_solo_get_de_concurrencia_alimenta_heroe_visual_y_apoyo', () => {
       montar('acceso');
       flushTodos('acceso', {
         'concurrencia-sesiones': {
@@ -206,12 +206,16 @@ describe('PantallaZPage (Cuentas)', () => {
           ],
           meta: { nota_solape: 'Una sesión que cruza medianoche cuenta en ambas franjas.' },
         },
-        'roles-incompatibles': { data: [] },
       });
       expect(texto('heroe-cifra')).toContain('8');
       expect(texto('sesiones-iniciadas')).toContain('iniciadas');
       expect(texto('nota-solape')).toContain('medianoche');
-      expect(texto('zona-lectura')).toContain('Sin datos');
+      // ⚠️ Acceso **ya no pinta zona de lectura**: era `roles-incompatibles` y
+      // se retiró. Antes esta línea comprobaba que dijera «Sin datos», que es lo
+      // único que llegó a decir nunca.
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="zona-lectura"]'),
+      ).toBeNull();
       expect(html().toLowerCase()).not.toContain('leaflet');
       expect(html()).not.toContain('nombre');
     });
