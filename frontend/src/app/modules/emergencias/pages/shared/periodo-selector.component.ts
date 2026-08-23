@@ -3,6 +3,14 @@ import { FormsModule } from '@angular/forms';
 
 import { PeriodoParams } from '../../services/models/informes-tacticos.types';
 
+/**
+ * Ventana por defecto, en días. **Tiene que coincidir con la del backend**
+ * (`apps/informes_tacticos/periodo.py::DIAS_POR_DEFECTO`): si difieren, la
+ * pantalla y la API responden cifras distintas para «los últimos 30 días» y
+ * ninguna de las dos parece equivocada.
+ */
+const DIAS_POR_DEFECTO = 30;
+
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -44,11 +52,19 @@ export class PeriodoSelectorComponent implements OnInit {
   hasta = '';
 
   ngOnInit(): void {
+    // ⚠️ `- 29` y no `- 30`: los 30 días **incluyen hoy**, así que el rango es
+    // [hoy-29, hoy]. Restar 30 da 31 días contando ambos extremos, y ese día de
+    // más no se ve — el informe sale, solo que con datos de una jornada extra.
+    //
+    // Importa además porque el backend usa [hoy-29, hoy] para su período por
+    // defecto: con `- 30` la pantalla y la API respondían cifras distintas para
+    // «los últimos 30 días» (492 casos frente a 462), y ninguna de las dos
+    // parecía equivocada.
     const hoy = new Date();
-    const hace30 = new Date(hoy);
-    hace30.setDate(hoy.getDate() - 30);
+    const inicio = new Date(hoy);
+    inicio.setDate(hoy.getDate() - (DIAS_POR_DEFECTO - 1));
     this.hasta = isoDate(hoy);
-    this.desde = isoDate(hace30);
+    this.desde = isoDate(inicio);
     this.emitir();
   }
 

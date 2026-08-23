@@ -440,7 +440,7 @@ Declaración exigida por el Golden Rule de la constitución.
 | **Idoneidad funcional** | ✅ | Los doce salen del catálogo con origen trazado a CU-E08 y al BSC. Cada FR es verificable con una consulta. Las cinco discrepancias del catálogo se corrigen contra el modelo real en vez de heredarse |
 | **Fiabilidad** | ✅ | FR-OE6-002 (versión final) evita la cifra inflada intermitente; FR-OE6-012 impide que un hito ausente se lea como cero |
 | **Eficiencia de desempeño** | ✅ | Regla 7: toda consulta filtra por fecha para descartar particiones. Sin ello, un informe anual se degrada según crece el histórico, sin que nada avise |
-| **Capacidad de interacción** | ⚪ | **No aplica en esta capa.** El frontend está aplazado; la spec de la capa de presentación lo declarará |
+| **Capacidad de interacción** | ⚪ | **No aplica en esta capa.** Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE6-009 y FR-OE6-010: exclusión constitucional del dato sensible aplicada también a la autoridad, y lista blanca de columnas en el repositorio en vez de lista negra |
 | **Compatibilidad** | ✅ | Contrato OpenAPI versionado bajo el envelope común del §2 del contrato estratégico |
 | **Mantenibilidad** | ✅ | El módulo **reutiliza las consultas tácticas** en vez de duplicar la métrica. Dos definiciones de la misma cifra es el defecto que más caro sale de corregir |
@@ -488,6 +488,6 @@ la identidad. No hay trade-off que documentar porque no hay que sacrificar nada.
   las consultas, y cambió — ver la corrección de `FR-OE6-008`.
 - **Los informes compartidos con OE3** (E3-02, E3-10, E3-11, E3-12) **no se implementan aquí**. Se
   referencian; su dueño es OE3.
-- **El frontend queda fuera de alcance.** Ninguna decisión de esta spec asume una pantalla.
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado). Ninguna decisión HTTP de esta spec asume un layout.
 - **`Gerente` todavía no existe como rol sembrado.** Los permisos se escriben contra él igualmente;
   hasta que se siembre, solo `DirectorOperaciones` podrá ejercerlos en la práctica.

@@ -38,9 +38,11 @@ describe('cableado de gestión de Cuentas', () => {
       (l) => l.path === '/cuentas-clientes/gestion/incorporacion',
     );
     const acceso = NAV_LINKS.find((l) => l.path === '/cuentas-clientes/gestion/acceso');
-    expect(ciclo?.roles).toEqual(['Administrador']);
-    expect(incorporacion?.roles).toEqual(['Administrador']);
-    expect(acceso?.roles).toEqual(['DirectorTecnologico', 'Administrador']);
+    // ⚠️ Ciclo e incorporación pasaron del Administrador a su director táctico
+    // propio; el acceso técnico sigue siendo del Director Tecnológico y él solo.
+    expect(ciclo?.roles).toEqual(['DirectorCuentas']);
+    expect(incorporacion?.roles).toEqual(['DirectorCuentas']);
+    expect(acceso?.roles).toEqual(['DirectorTecnologico']);
     expect(ciclo?.roles).not.toContain('DirectorTecnologico');
   });
 

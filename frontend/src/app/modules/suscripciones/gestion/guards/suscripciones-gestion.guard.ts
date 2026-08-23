@@ -9,8 +9,12 @@ import { CanActivateFn, Router } from '@angular/router';
 
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 
-export const ROLES_FINANZAS = ['DirectorFinanciero', 'Administrador'] as const;
-export const ROLES_CATALOGO = ['DirectorEstrategia', 'Administrador'] as const;
+// ⚠️ El `Administrador` **no** está aquí: desde el 2026-08-19 opera el sistema y
+// no lee informes de gestión. El backend ya se lo deniega; dejarlo en el guard
+// haría que el menú y la ruta le prometieran una pantalla que termina en «Acceso
+// denegado», que es peor que no ofrecerla.
+export const ROLES_FINANZAS = ['DirectorFinanciero'] as const;
+export const ROLES_CATALOGO = ['DirectorEstrategia'] as const;
 
 function guardDe(roles: readonly string[]): CanActivateFn {
   return () => {

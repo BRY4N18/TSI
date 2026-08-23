@@ -68,7 +68,7 @@ donde más pesa
 | **I. Idoneidad funcional como contrato** | Los nueve están trazados a CU-E06 y CU-T14/T15. Los seis bloqueados se declaran con prerrequisito. Y se corrigen **tres errores de la propia spec**, dos a favor y uno en contra | ✅ |
 | **II. Fiabilidad operativa** | El módulo mide la calidad del registro, no participa en la operación | ⚪ |
 | **III. Eficiencia en tiempo real** | No toca la ruta crítica. Regla 7, con E4-15 como caso extremo | ✅ |
-| **IV. Capacidad de interacción** | No aplica: frontend aplazado | ⚪ |
+| **IV. Capacidad de interacción** | No aplica en esta capa. Frontend en `../frontend/` (implementado) | ⚪ |
 | **V. Seguridad de la información** | **Es el módulo donde más importa de todo el proyecto**: sus productos se venden a terceros. Un mapa con coordenadas o identidad sería una fuga **con destinatario comercial**. Exclusión aplicada también a `DirectorDatos` | ✅ |
 | **VI. Compatibilidad API-first** | Contrato OpenAPI bajo el envelope común. ⚠️ E4-12 y E4-13 son candidatos a exponerse vía la API de partners, lo que hace su contrato **más sensible al cambio** que el del resto de la capa | ✅ |
 | **VII. Mantenibilidad estructural** | Reutiliza el armazón de OE6, y **retira la última tabla legada** de este dominio. Las dos ampliaciones son columnas, no tablas | ✅ |

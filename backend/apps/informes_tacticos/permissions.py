@@ -16,9 +16,20 @@ from core.auth.roles_tacticos import (
     AUTORIDAD_RED_OPERATIVA_VALIDACION,
     AUTORIDAD_SUSCRIPCIONES_CATALOGO,
     AUTORIDAD_SUSCRIPCIONES_FINANZAS,
+    AUTORIDAD_CUENTAS,
     AUTORIDAD_CUENTAS_ACCESOS_TECNICOS,
     AUTORIDAD_PARTNERS_API,
 )
+
+#: ⚠️ **El `Administrador` no ve informes de gestión.**
+#:
+#: Decisión del 2026-08-19: su papel es **operar el sistema**, no leer la gestión
+#: de los departamentos. Hasta entonces entraba a los 84 informes compuestos
+#: —cada director abre entre 3 y 17— y eso anulaba los dos repartos de autoridad
+#: que este módulo se esfuerza en mantener: en Red Operativa veía crecimiento y
+#: validación, y en Suscripciones finanzas y catálogo.
+#:
+#: Sigue entrando a los **listados simples**, que son trabajo operativo.
 
 ROLE_OPERADOR = "Operador"
 ROLE_ADMIN = "Administrador"
@@ -45,8 +56,24 @@ class EmergenciasCompuestosPermission(BasePermission):
     * El **Director de Operaciones** es la autoridad del departamento. Entra sin
       acotamiento por titularidad: ve el departamento entero, que es de lo que
       responde.
-    * El **responsable operativo** —el `Administrador`— entra **con** su
-      acotamiento, el mismo que ya se le aplica en los listados simples.
+    * El **responsable operativo** —el `Administrador`— entra también, y ve lo
+      mismo que el director.
+
+    ⚠️ **El `Administrador` NO entra acotado, y este endpoint no acota a nadie.**
+
+    Esto afirmaba que entraba limitado por titularidad. Medido el 2026-08-19: el
+    director y el `Administrador` reciben **exactamente las mismas filas**, y
+    `meta.acotado_a` viaja vacío para los dos, porque aquí no hay eje de
+    titularidad — un accidente, una región o una suscripción no tienen «dueño»
+    al que reducir la vista.
+
+    Se corrige el texto y no el código a propósito: describir un control que no
+    existe es peor que no describir ninguno, porque quien lo lee deja de
+    buscarlo. Si el `Administrador` debe ver menos, la vía es **no dejarle
+    abrir** el informe, no un acotamiento que aquí no significa nada.
+
+    Queda como decisión abierta: hoy el `Administrador` puede abrir los 84
+    informes compuestos y cada director entre 3 y 17.
 
     Quien no es ninguno de los dos no entra. El `Operador` sí ve los listados
     simples y **no** ve estos: un listado es su trabajo del día, y un informe
@@ -65,7 +92,7 @@ class EmergenciasCompuestosPermission(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return bool(roles & AUTORIDAD_EMERGENCIAS) or ROLE_ADMIN in roles
+        return bool(roles & AUTORIDAD_EMERGENCIAS)
 
 
 #: Materia → roles que la gobiernan. Ver `RedOperativaCompuestosPermission`.
@@ -88,8 +115,27 @@ class RedOperativaCompuestosPermission(BasePermission):
     tranquilo, y eso daría a cada director acceso a la materia del otro sin que
     nada fallara ni nadie se quejara.
 
-    El **Administrador** entra a las dos, con su acotamiento: es el responsable
-    operativo, y su papel no está repartido.
+    El **Administrador** entra a las dos materias: su papel no está repartido.
+
+    ⚠️ **El `Administrador` NO entra acotado, y este endpoint no acota a nadie.**
+
+    Esto afirmaba que entraba limitado por titularidad. Medido el 2026-08-19: el
+    director y el `Administrador` reciben **exactamente las mismas filas**, y
+    `meta.acotado_a` viaja vacío para los dos, porque aquí no hay eje de
+    titularidad — un accidente, una región o una suscripción no tienen «dueño»
+    al que reducir la vista.
+
+    Se corrige el texto y no el código a propósito: describir un control que no
+    existe es peor que no describir ninguno, porque quien lo lee deja de
+    buscarlo. Si el `Administrador` debe ver menos, la vía es **no dejarle
+    abrir** el informe, no un acotamiento que aquí no significa nada.
+
+    Queda como decisión abierta: hoy el `Administrador` puede abrir los 84
+    informes compuestos y cada director entre 3 y 17.
+
+    ⚠️ Ojo a lo que eso implica **aquí en concreto**: este permiso existe para
+    que ningún director vea la materia del otro, y el `Administrador` las ve las
+    dos. El reparto se sostiene entre directores y no frente a él.
 
     Un informe **sin materia declarada no lo ve nadie**. Es deliberado: la
     alternativa —una materia por defecto— dejaría accesible un informe nuevo a
@@ -116,7 +162,7 @@ class RedOperativaCompuestosPermission(BasePermission):
             return False
 
         roles = set(getattr(user, "roles", []))
-        return bool(roles & AUTORIDAD_POR_MATERIA[materia]) or ROLE_ADMIN in roles
+        return bool(roles & AUTORIDAD_POR_MATERIA[materia])
 
 
 #: Rol operativo del ejecutivo comercial. Entra **acotado a sus prospectos**.
@@ -150,7 +196,7 @@ class VentasCrmCompuestosPermission(BasePermission):
             return False
         roles = set(getattr(user, "roles", []))
         return bool(roles & AUTORIDAD_VENTAS_CRM) or bool(
-            roles & {ROLE_ADMIN, ROLE_GERENTE_VENTAS}
+            roles & {ROLE_GERENTE_VENTAS}
         )
 
 
@@ -171,7 +217,26 @@ class SuscripcionesCompuestosPermission(BasePermission):
     materia y no a la del otro**: admitir a las dos autoridades del departamento
     y quedarse tranquilo daría a cada uno acceso a la materia ajena, sin síntoma.
 
-    El **Administrador** entra a las dos, con su acotamiento operativo.
+    El **Administrador** entra a las dos materias.
+
+    ⚠️ **El `Administrador` NO entra acotado, y este endpoint no acota a nadie.**
+
+    Esto afirmaba que entraba limitado por titularidad. Medido el 2026-08-19: el
+    director y el `Administrador` reciben **exactamente las mismas filas**, y
+    `meta.acotado_a` viaja vacío para los dos, porque aquí no hay eje de
+    titularidad — un accidente, una región o una suscripción no tienen «dueño»
+    al que reducir la vista.
+
+    Se corrige el texto y no el código a propósito: describir un control que no
+    existe es peor que no describir ninguno, porque quien lo lee deja de
+    buscarlo. Si el `Administrador` debe ver menos, la vía es **no dejarle
+    abrir** el informe, no un acotamiento que aquí no significa nada.
+
+    Queda como decisión abierta: hoy el `Administrador` puede abrir los 84
+    informes compuestos y cada director entre 3 y 17.
+
+    ⚠️ Igual que en Red Operativa: el reparto finanzas/catálogo se sostiene entre
+    directores y no frente al `Administrador`, que ve las dos.
 
     Un informe **sin materia declarada no lo ve nadie**.
     """
@@ -190,7 +255,7 @@ class SuscripcionesCompuestosPermission(BasePermission):
             return False
 
         roles = set(getattr(user, "roles", []))
-        return bool(roles & AUTORIDAD_SUSCRIPCIONES_POR_MATERIA[materia]) or ROLE_ADMIN in roles
+        return bool(roles & AUTORIDAD_SUSCRIPCIONES_POR_MATERIA[materia])
 
 
 #: Rol operativo del agente de soporte. Entra **acotado a sus tickets**.
@@ -217,16 +282,33 @@ class SoporteCompuestosPermission(BasePermission):
             return False
         roles = set(getattr(user, "roles", []))
         return bool(roles & AUTORIDAD_SOPORTE) or bool(
-            roles & {ROLE_ADMIN, ROLE_AGENTE_SOPORTE}
+            roles & {ROLE_AGENTE_SOPORTE}
         )
 
 
 class CuentasCompuestosPermission(BasePermission):
     """Acceso a los informes compuestos de Cuentas y Clientes (FR-030).
 
-    El **Administrador** cubre los nueve. El **Director Tecnológico** cubre
-    **solo OT18** (acceso). Un informe de ciclo de vida o incorporación no
-    lo ve: su autoridad aquí no alcanza a esas materias.
+    ⚠️ **La autoridad está repartida por materia**, como en Red Operativa y en
+    Suscripciones:
+
+    * el **Director de Cuentas** responde del **ciclo de vida** de las cuentas y
+      de su **incorporación**;
+    * el **Director Tecnológico** gobierna **solo** la capa de **accesos
+      técnicos** (§5.1). Un informe de churn o de onboarding no lo ve.
+
+    Cada uno entra a su materia y no a la del otro: quien fija los criterios
+    técnicos de acceso no es quien responde de por qué se van los clientes.
+
+    ⚠️ **El `Administrador` ya no entra**, y el cargo nuevo es lo que lo hizo
+    posible. Hasta el 2026-08-19 era la única forma de abrir siete de estos nueve
+    informes, porque el departamento **no tenía autoridad propia**: se leían por
+    ser administrador del sistema, no por responder de ellos. Retirarlo antes de
+    crear el cargo los habría dejado inalcanzables.
+
+    Un informe **sin materia declarada no lo ve nadie**, igual que en los otros
+    departamentos repartidos: una materia por defecto dejaría accesible un
+    informe nuevo a quien no le corresponde, y en silencio.
     """
 
     def has_permission(self, request, view) -> bool:
@@ -244,11 +326,9 @@ class CuentasCompuestosPermission(BasePermission):
             return False
 
         roles = set(getattr(user, "roles", []))
-        if ROLE_ADMIN in roles:
-            return True
         if materia == MATERIA_ACCESO:
             return bool(roles & AUTORIDAD_CUENTAS_ACCESOS_TECNICOS)
-        return False
+        return bool(roles & AUTORIDAD_CUENTAS)
 
 
 class PartnersCompuestosPermission(BasePermission):
@@ -263,5 +343,5 @@ class PartnersCompuestosPermission(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return bool(roles & AUTORIDAD_PARTNERS_API) or ROLE_ADMIN in roles
+        return bool(roles & AUTORIDAD_PARTNERS_API)
 

@@ -93,6 +93,7 @@ class InformesAccesoRepository:
         limit: int = 50,
         orden: Orden = ORDEN_PARTNERS,
         cuenta: int | None = None,
+        idpartner: int | None = None,
         plan: str | None = None,
         activo: bool | None = None,
         con_plan: bool | None = None,
@@ -110,6 +111,9 @@ class InformesAccesoRepository:
         if cuenta is not None:
             condiciones.append("idcliente = %(cuenta)s")
             params["cuenta"] = cuenta
+        if idpartner is not None:
+            condiciones.append("idpartner = %(idpartner)s")
+            params["idpartner"] = idpartner
         if plan is not None:
             condiciones.append("planapi = %(plan)s")
             params["plan"] = plan

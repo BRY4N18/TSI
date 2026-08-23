@@ -48,5 +48,10 @@ class TestQuienSiEntra:
         assert _concede(["DirectorTecnologico"], informe)
 
     @pytest.mark.parametrize("informe", sorted(CATALOGO))
-    def test_administrador_entra(self, informe):
-        assert _concede(["Administrador"], informe)
+    def test_el_administrador_no_lee_gestion(self, informe):
+        """Decisión del 2026-08-19: el `Administrador` opera, no lee gestión.
+
+        Antes entraba a todo. Sigue entrando a los listados simples, que son
+        trabajo operativo; lo que se le retiró es la lectura de gestión.
+        """
+        assert not _concede(["Administrador"], informe)

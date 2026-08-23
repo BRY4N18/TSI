@@ -174,11 +174,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'emergencias',
-        loadChildren: () =>
-          import('./modules/emergencias/emergencias.routes').then((m) => m.EMERGENCIAS_ROUTES),
-      },
-      {
         path: 'despacho',
         loadChildren: () =>
           import('./modules/despacho/despacho.routes').then((m) => m.DESPACHO_ROUTES),
@@ -215,6 +210,31 @@ export const routes: Routes = [
           import('./modules/suscripciones/suscripciones.routes').then(
             (m) => m.SUSCRIPCIONES_ROUTES,
           ),
+      },
+      {
+        path: 'estrategico/oe1',
+        loadChildren: () =>
+          import('./modules/estrategico/oe1/oe1.routes').then((m) => m.OE1_ROUTES),
+      },
+      {
+        path: 'estrategico/oe5',
+        loadChildren: () =>
+          import('./modules/estrategico/oe5/oe5.routes').then((m) => m.OE5_ROUTES),
+      },
+      {
+        path: 'estrategico/oe6',
+        loadChildren: () =>
+          import('./modules/estrategico/oe6/oe6.routes').then((m) => m.OE6_ROUTES),
+      },
+      {
+        path: 'estrategico/oe3',
+        loadChildren: () =>
+          import('./modules/estrategico/oe3/oe3.routes').then((m) => m.OE3_ROUTES),
+      },
+      {
+        path: 'estrategico/oe4',
+        loadChildren: () =>
+          import('./modules/estrategico/oe4/oe4.routes').then((m) => m.OE4_ROUTES),
       },
       {
         path: 'estrategico/oe2',

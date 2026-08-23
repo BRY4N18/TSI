@@ -428,11 +428,44 @@ components:
 
             **Ausente significa que el caso no tiene hora de fin**, que es lo que distingue un cierre
             de un descarte.
-        duracion_minutos: { type: integer, nullable: true }
+        duracion_incidente_minutos:
+          type: integer
+          nullable: true
+          description: |
+            ⚠️ **No es cuánto estuvo abierto el caso**, pese a ir junto a `hora_fin`. Es la
+            duración del incidente que registra quien atiende, y es independiente del cierre:
+            está poblada en 4 203 de 4 254 casos, mientras que `hora_fin` lo está en 3.
+
+            Se llamaba `duracion_minutos` y la columna se rotulaba «Duración (min)», detrás de
+            «Hora de fin»: se leía como el tiempo que el caso permaneció abierto. Renombrada el
+            2026-08-18 (decisión #47).
+
+            **Ausente cuando el origen no la trae.** Pinot no tiene NULL y una columna entera sin
+            valor llega como `0`; un incidente de cero minutos no existe, así que el backend
+            traduce ese `0` a ausencia. Publicarlo como `0` junto a una hora de fin vacía se leía
+            como «cerrado al instante».
         duplicado_de:
           type: string
           nullable: true
           description: Número del caso del que este es duplicado. Presente solo en los fusionados.
+        situacion:
+          type: string
+          enum: [en_curso, cerrado, duplicado, descartado, inconsistente]
+          description: |
+            Desenlace del caso **derivado de los tres hechos de arriba** (`activo`, `hora_fin`,
+            `duplicado_de`), que siguen viajando enteros. Es la misma regla que aplica el filtro
+            `situacion`, en el otro sentido.
+
+            Se añadió el 2026-08-18 (decisión #48) porque la tabla mostraba `activo`, y **cerrado,
+            descartado y duplicado son los tres `activo = false`**: tres filas que ponían «No»
+            significaban cosas distintas, y el filtro ofrecía cuatro situaciones que la tabla no
+            sabía mostrar.
+
+            ⚠️ **`inconsistente` no es un estado del negocio.** Es la señal de que los tres hechos
+            se contradicen —un caso `activo` **con** hora de fin, o `activo` apuntando a otro
+            caso—, es decir de que la exclusividad que garantiza el módulo de fusión dejó de
+            cumplirse. Sin él, la derivación devolvería `en_curso` —`activo` es lo primero que se
+            mira— y esa respuesta sería plausible, estable y falsa. Hoy no hay ninguna fila así.
 
     Despacho:
       type: object

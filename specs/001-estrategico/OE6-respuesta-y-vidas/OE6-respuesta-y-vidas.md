@@ -5,8 +5,9 @@
 **Feature paraguas:** `001-estrategico`
 **Sustrato:** [`specs/002-tactico/modelo-analitico/`](../../002-tactico/modelo-analitico/)
 
-Índice global del módulo (no es una spec Speckit). La feature activa de Speckit es **una capa**,
-apuntada por `.specify/feature.json`.
+Índice global del módulo (no es una spec Speckit).
+
+## Estado: backend **implementado** · frontend **implementado**
 
 ## Por qué OE6 es el piloto de la capa estratégica
 
@@ -47,12 +48,11 @@ estratégica**, no el dominio.
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | **activa** — spec redactada |
-| Frontend | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **implementado** (12 GET) |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** — 4 pantallas Z; 12 slugs; un guard (`DirectorOperaciones` · `Gerente`) |
 
-**Por qué el frontend está aplazado.** Igual que en los módulos tácticos: la ubicación en pantalla no
-condiciona el contrato HTTP, y aquí además está sin decidir si el tablero estratégico es una pantalla
-propia o una vista del tablero existente. Esa decisión es de CU-E01, no de este módulo.
+El tablero integral CU-E01 sigue fuera de este módulo: aquí hay **cuatro pantallas de historia**,
+no un tablero único de los seis OE.
 
 ## Lo que hay que saber antes de tocar este módulo
 

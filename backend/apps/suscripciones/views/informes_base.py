@@ -22,6 +22,13 @@ from core.auth.permissions import IsAuthenticated401
 from core.informes.acotamiento import Acotamiento, resolver_organizacion
 from core.informes.vistas import ListadoBaseView
 from core.informes.pertenencia import ADMIN_LOCAL
+from apps.suscripciones.permissions import (
+    AMPLIOS_CATALOGO,
+    AMPLIOS_FINANZAS,
+    ROLES_INFORMES_ACOTADOS,
+    InformesCatalogoPermission,
+    InformesFinanzasPermission,
+)
 
 
 #: Criterio de pertenencia de este departamento (research D1 de Red Operativa).
@@ -52,3 +59,51 @@ class ListadoSuscripcionesBaseView(ListadoBaseView):
             criterio=CRITERIO_PERTENENCIA,
             cuenta_pedida=cuenta,
         )
+
+
+class CatalogosSuscripcionesView(ListadoSuscripcionesBaseView):
+    """Opciones del desplegable «Cuenta», compartido por los cuatro listados.
+
+    Hereda `acotar()` de la base, así que respeta la pertenencia: quien solo ve
+    su cuenta recibe **una** opción, no el catálogo entero. Publicarlo completo
+    diría qué otras empresas están suscritas.
+
+    ⚠️ **No se instancia directamente.** La autoridad de este departamento está
+    repartida por materia —finanzas y catálogo tienen directores distintos—, así
+    que los roles no pueden declararse aquí: heredar sin declararlos deja
+    `roles_amplios` vacío y **todo el mundo recibe un 400**, que es exactamente
+    lo que pasó al escribirlo. Cada materia tiene su subclase, abajo.
+    """
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+
+        try:
+            acotamiento = self.acotar(request)
+        except Exception as exc:  # noqa: BLE001 — mismo manejo que los listados
+            return self.manejar_peticion_invalida(exc)
+
+        cuentas = (
+            None if acotamiento.titular is None else frozenset({int(acotamiento.titular)})
+        )
+        return success_response(
+            {"cuenta": CatalogosFiltrosRepository().clientes(cuentas)},
+            meta={"acotado_a": acotamiento.alcance},
+        )
+
+
+class CatalogosCatalogoView(CatalogosSuscripcionesView):
+    """Catálogos de la materia **catálogo y precios** (Director de Estrategia)."""
+
+    permission_classes = [IsAuthenticated401, InformesCatalogoPermission]
+    roles_amplios = AMPLIOS_CATALOGO
+    roles_acotados = ROLES_INFORMES_ACOTADOS
+
+
+class CatalogosFinanzasView(CatalogosSuscripcionesView):
+    """Catálogos de la materia **facturación y cobro** (Director Financiero)."""
+
+    permission_classes = [IsAuthenticated401, InformesFinanzasPermission]
+    roles_amplios = AMPLIOS_FINANZAS
+    roles_acotados = ROLES_INFORMES_ACOTADOS

@@ -135,6 +135,7 @@ class SoporteCompuestosService:
             consulta, departamento=DEPARTAMENTO, parametros=parametros
         )
         resultados = [_normalizar_fila(informe, fila) for fila in filas]
+        _poner_nombre_de_agente(resultados)
         declaraciones = _declaraciones_de(informe, resultados, extra, periodo)
         cuerpo: dict[str, Any] = {
             "periodo": _periodo_aplicado(periodo, extra),
@@ -219,3 +220,37 @@ def _declaraciones_de(
         })
 
     return declaraciones
+
+
+def _poner_nombre_de_agente(resultados: list[dict[str, Any]]) -> None:
+    """Añade `agente` (nombre) junto a `id_agente`, en su sitio.
+
+    ⚠️ **La pantalla mostraba «Agente 2» y «Agente 3».** El informe devolvía solo
+    el identificador y la plantilla lo pintaba tal cual, así que el gerente veía
+    números donde tiene que decidir sobre personas.
+
+    No es una exclusión deliberada: la identidad del agente **no** está entre los
+    datos que este departamento oculta —eso es el asunto, la descripción, los
+    mensajes y las notas internas—, y el listado simple de tickets ya resuelve el
+    nombre con este mismo repositorio. Faltaba hacerlo aquí.
+
+    `id_agente` se conserva: quien cruce con otra fuente lo necesita, y un nombre
+    no identifica una fila.
+    """
+    ids = [f.get("id_agente") for f in resultados if f.get("id_agente") is not None]
+    if not ids:
+        return
+
+    from core.repositories.soporte.informes_tickets_repository import (
+        InformesTicketsRepository,
+    )
+
+    nombres = InformesTicketsRepository().nombres_de_usuario(ids)
+    for fila in resultados:
+        ident = fila.get("id_agente")
+        if ident is None:
+            continue
+        # ⚠️ Ausente, **no** «Agente 2»: un identificador que no resuelve es una
+        # anomalía —el agente ya no existe, o la carga se adelantó—, y disfrazarla
+        # de nombre la haría indistinguible de un agente normal.
+        fila["agente"] = nombres.get(int(ident))

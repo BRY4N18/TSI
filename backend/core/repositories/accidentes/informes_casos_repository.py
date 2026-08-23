@@ -46,6 +46,7 @@ from typing import Any, Iterable, Sequence
 
 from core.informes.paginacion import DESC, CampoCursor, Cursor, Orden
 from core.pinot.client import PinotClient
+from core.informes.catalogos import TOPE_CATALOGO, opciones_catalogo
 
 # ⚠️ `idaccidente` es **texto** —el número de caso—, no un entero. El
 # componente por defecto convierte a `int`, y con él un cursor legítimo daría
@@ -193,6 +194,69 @@ class InformesCasosRepository:
             {"ids": ids, "limit": len(ids)},
         )
         return {f["idtiporeportado"]: f.get("tiporeportado") for f in filas}
+
+    def catalogo_severidades(self) -> list[dict]:
+        """Severidades para el desplegable del filtro.
+
+        No se acota por cobertura: es un catálogo de referencia del sistema, no
+        dice nada sobre dónde opera nadie.
+        """
+        filas = self.pinot.query(
+            "SELECT idseveridad, severidad FROM Dim_Severidad LIMIT %(limit)s",
+            {"limit": TOPE_CATALOGO},
+        )
+        return opciones_catalogo(filas, "idseveridad", "severidad")
+
+    def catalogo_tipos_reportados(self) -> list[dict]:
+        """Tipos de reporte para el desplegable. Tampoco se acota."""
+        filas = self.pinot.query(
+            "SELECT idtiporeportado, tiporeportado FROM Dim_TipoReportado "
+            "LIMIT %(limit)s",
+            {"limit": TOPE_CATALOGO},
+        )
+        return opciones_catalogo(filas, "idtiporeportado", "tiporeportado")
+
+
+#: Situación de una fila cuyos tres hechos **se contradicen** entre sí.
+#:
+#: ⚠️ No es un quinto estado del negocio: es la señal de que la garantía en la
+#: que se apoya la derivación dejó de cumplirse.
+SITUACION_INCONSISTENTE = "inconsistente"
+
+
+def situacion_de(*, activo: bool, hora_fin: str | None, duplicado_de: str | None) -> str:
+    """La situación de un caso a partir de sus **tres hechos**.
+
+    Misma regla que `_clausulas_situacion`, en el otro sentido: aquella traduce
+    una situación a condiciones para filtrar; esta traduce los hechos de una fila
+    a su situación para mostrarla. **Las dos tienen que decir lo mismo**, y por
+    eso viven juntas: separarlas es lo que dejaría que una cambiara sin la otra y
+    que el filtro y la columna discreparan sin que nada fallara.
+
+    Sobre los tres hechos la clasificación es **total y excluyente**, así que no
+    hay fila sin situación ni fila con dos.
+
+    ⚠️ **`inconsistente` no sobra.** El servicio documenta —con razón— que un
+    campo derivado «empezaría a mentir el día que cambiara» la garantía de
+    exclusividad, que vive en el módulo de fusión. Este es el caso: un caso
+    `activo` **con** hora de fin, o `activo` apuntando a otro caso, es un origen
+    que se contradice. Lo natural sería devolver `en_curso` —`activo` es lo
+    primero que se mira— y esa respuesta sería plausible, estable y falsa.
+    Devolver `inconsistente` convierte ese día en algo que se ve.
+    """
+    contradictorio = activo and (hora_fin is not None or duplicado_de is not None)
+    if contradictorio:
+        return SITUACION_INCONSISTENTE
+    if activo:
+        return SITUACION_EN_CURSO
+    # El duplicado se reconoce por apuntar a otro caso **sea cual sea** su hora
+    # de fin, igual que en el filtro: si no, un duplicado que conservara hora de
+    # fin se contaría como cerrado y los dos conjuntos dejarían de ser disjuntos.
+    if duplicado_de is not None:
+        return SITUACION_DUPLICADO
+    if hora_fin is not None:
+        return SITUACION_CERRADO
+    return SITUACION_DESCARTADO
 
 
 def _clausulas_situacion(situacion: str | None, params: dict) -> list[str]:

@@ -112,14 +112,28 @@ def construir(
     ahora: datetime,
 ) -> list[dict]:
     """Una fila por prospecto. Lógica pura: no consulta ni escribe."""
-    from lib.dimensiones.dim_canal import normalizar
+    from lib.dimensiones.dim_canal import clave
 
-    por_canal = {c["canal"]: c["idcanal"] for c in canales}
+    # ⚠️ **Se busca por clave de agrupación, no por la grafía publicada.**
+    #
+    # `dim_canal` muestra una sola grafía por canal —la más frecuente— mientras
+    # que el prospecto conserva la suya. Cruzarlos por el texto haría que un
+    # prospecto que escribió «linkedin» no encontrara el canal «LinkedIn» y
+    # cayera en la fila desconocida: **perdería su canal sin que nada fallara**,
+    # y el informe de captación repartiría mal la inversión.
+    por_canal = {clave(c["canal"]): c["idcanal"] for c in canales}
+    # ⚠️ **La columna `canal` que se denormaliza aquí es la que leen los
+    # informes**, no `dim_canal.canal`: `ot01_captacion_por_canal` agrupa por
+    # `p.canal`. Tiene que llevar la **grafía publicada**, no la clave de
+    # agrupación — que está plegada a minúsculas y nunca se muestra. Ponerla
+    # aquí no rompía nada: pintaba «linkedin» y «referido tsi» en el informe de
+    # captación, que es justo lo que se estaba corrigiendo.
+    grafia_por_clave = {clave(c["canal"]): c["canal"] for c in canales}
     version = ahora.strftime("%Y-%m-%d %H:%M:%S")
 
     filas = []
     for p in prospectos:
-        canal = normalizar(p.get("como_nos_conocio"))
+        canal = clave(p.get("como_nos_conocio"))
         filas.append(
             {
                 "idprospecto": p["idprospecto"],
@@ -129,7 +143,7 @@ def construir(
                 # los totales**: llegó igual, y dejarlo fuera haría que los
                 # canales sumaran menos que el embudo.
                 "idcanal": por_canal.get(canal, ID_DESCONOCIDO),
-                "canal": canal or ETIQUETA_DESCONOCIDA,
+                "canal": grafia_por_clave.get(canal) or ETIQUETA_DESCONOCIDA,
                 "etapa_actual": p.get("etapa_actual"),
                 "desenlace": desenlace_de(p),
                 "motivo_inactividad": p.get("motivo_inactividad"),

@@ -31,17 +31,19 @@ function ejecutar(roles: string[], autenticado = true) {
 describe('ventasCrmGestionGuard', () => {
   it('roles_when_se_declaran_no_incluyen_cuentas_publicas', () => {
     expect([...ROLES_GESTION_VENTAS_CRM]).toEqual([
+      // El `Administrador` opera y no lee gestión (2026-08-19).
       'DirectorMarketing',
       'GerenteVentas',
-      'Administrador',
     ]);
     expect((ROLES_GESTION_VENTAS_CRM as readonly string[]).includes('GerenteCuentasPublicas')).toBeFalse();
   });
 
-  it('director_gerente_y_admin_when_entran_pasan', () => {
+  it('director_y_gerente_pasan_pero_el_admin_ya_no', () => {
     expect(ejecutar(['DirectorMarketing'])).toBeTrue();
     expect(ejecutar(['GerenteVentas'])).toBeTrue();
-    expect(ejecutar(['Administrador'])).toBeTrue();
+    const resultadoAdmin = ejecutar(['Administrador']);
+    expect(resultadoAdmin instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdmin)).toContain('access-denied');
   });
 
   it('cuentas_publicas_operador_y_cliente_when_entran_son_denegados', () => {

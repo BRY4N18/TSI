@@ -38,8 +38,11 @@ describe('cableado OE2', () => {
     expect(link?.roles).toEqual(['DirectorTecnologico', 'Gerente', 'DirectorFinanciero']);
   });
 
-  it('partners_gestion_consumo_no_cambio', () => {
+  it('partners_gestion_consumo_sigue_siendo_del_director_tecnologico', () => {
+    // Vigila que el tablero estratégico no se lleve por delante el enlace
+    // táctico de Partners. Lo que sí cambió —el 2026-08-22, y no por OE2— es
+    // que `Administrador` salió de **toda** la capa de gestión.
     const link = NAV_LINKS.find((l) => l.path === '/partners/gestion/consumo');
-    expect(link?.roles).toEqual(['DirectorTecnologico', 'Administrador']);
+    expect(link?.roles).toEqual(['DirectorTecnologico']);
   });
 });

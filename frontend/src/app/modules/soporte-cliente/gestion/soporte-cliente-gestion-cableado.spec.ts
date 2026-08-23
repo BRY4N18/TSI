@@ -7,7 +7,8 @@ import { SOPORTE_CLIENTE_ROUTES } from '../soporte-cliente.routes';
 import { soporteGestionGuard } from './guards/soporte-gestion.guard';
 import { SOPORTE_CLIENTE_GESTION_ROUTES } from './soporte-cliente-gestion.routes';
 
-const ROLES_GESTION = ['GerenteExitoCliente', 'Soporte', 'Administrador'];
+// ⚠️ Sin `Administrador`: la gestión es de la autoridad del departamento.
+const ROLES_GESTION = ['GerenteExitoCliente', 'Soporte'];
 
 describe('cableado de gestión de Soporte al Cliente', () => {
   it('la_app_registra_gestion_aparte_de_los_listados', () => {

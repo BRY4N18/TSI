@@ -29,8 +29,9 @@ const CONTRATO: Record<string, { campos: string[]; rango: boolean }> = {
       'fecha_accidente',
       'activo',
       'hora_fin',
-      'duracion_minutos',
+      'duracion_incidente_minutos',
       'duplicado_de',
+      'situacion',
     ],
     rango: true,
   },
@@ -70,6 +71,17 @@ const CONTRATO: Record<string, { campos: string[]; rango: boolean }> = {
   },
 };
 
+/**
+ * Campos que el backend **devuelve** y la tabla **no pinta a propósito**.
+ *
+ * `activo` es el único, y es deliberado: cerrado, descartado y duplicado son los
+ * tres `activo = false`, así que la columna ponía «No» sobre tres desenlaces
+ * distintos. La sustituye `situacion`, que los separa. El campo se sigue
+ * devolviendo —quien consuma la API tiene los tres hechos enteros— pero pintarlo
+ * junto a `situacion` solo devolvería la ambigüedad que se quitó.
+ */
+const NO_SE_PINTAN = ['activo'];
+
 describe('Definiciones de informes de Emergencias', () => {
   it('catalogo_when_se_declara_tiene_los_cinco_listados', () => {
     expect(INFORMES_EMERGENCIAS_IDS.sort()).toEqual(Object.keys(CONTRATO).sort());
@@ -78,8 +90,18 @@ describe('Definiciones de informes de Emergencias', () => {
   for (const [id, esperado] of Object.entries(CONTRATO)) {
     it(`columnas_when_es_${id}_coinciden_con_el_contrato`, () => {
       const declaradas = INFORMES_EMERGENCIAS[id].columnas.map((c) => c.campo);
+      const mostrables = esperado.campos.filter((c) => !NO_SE_PINTAN.includes(c));
 
-      expect(declaradas.sort()).toEqual([...esperado.campos].sort());
+      expect(declaradas.sort()).toEqual([...mostrables].sort());
+    });
+
+    it(`columnas_when_es_${id}_no_inventan_campos_fuera_del_contrato`, () => {
+      // La dirección que de verdad rompe la pantalla: una columna cuyo campo el
+      // backend no devuelve se pinta «—» en todas las filas, y parece un dato
+      // que falta en el origen en vez de un nombre mal escrito.
+      const declaradas = INFORMES_EMERGENCIAS[id].columnas.map((c) => c.campo);
+
+      expect(declaradas.filter((c) => !esperado.campos.includes(c))).toEqual([]);
     });
 
     it(`rango_when_es_${id}_coincide_con_el_tipo_del_backend`, () => {
@@ -139,24 +161,48 @@ describe('Definiciones de informes de Emergencias', () => {
 
   // ── Los tres hechos, no un estado ────────────────────────────────────────
 
-  describe('el caso no declara un estado calculado', () => {
+  describe('el caso publica su situación, y no la deriva la pantalla', () => {
+    // ⚠️ **Estas dos pruebas cambiaron de sentido el 2026-08-22.** Afirmaban
+    // que `casos` NO llevaba `situacion` y SÍ llevaba `activo`. El argumento de
+    // entonces —no publicar un campo derivado que podría empezar a mentir— era
+    // correcto, pero la conclusión no: la tabla pintaba `activo`, y cerrado,
+    // descartado y duplicado son **los tres** `activo = false`. Tres filas que
+    // ponían «No» significaban cosas distintas, y el filtro ofrecía cuatro
+    // situaciones que la tabla no sabía mostrar. No publicarla no dejaba al
+    // lector sin estado: lo dejaba con uno peor.
+
     it('casos_when_se_declara_no_tiene_columna_estado', () => {
-      // El backend devuelve los hechos y no un estado, porque la exclusividad
-      // entre cerrado, descartado y fusionado la garantiza el módulo de fusión.
-      // Derivar la etiqueta aquí repetiría en el último paso la inferencia que
-      // el backend evitó a propósito.
+      // Sigue sin haber columna «estado»: el estado formal del caso es del
+      // módulo de fusión. `situacion` no es lo mismo — la calcula el backend
+      // con la **misma** regla que ya usaba para filtrar, y devuelve
+      // `inconsistente` cuando los tres hechos se contradicen en vez de elegir
+      // el primero que encaje.
       const campos = INFORMES_EMERGENCIAS['casos'].columnas.map((c) => c.campo);
 
       expect(campos).not.toContain('estado');
-      expect(campos).not.toContain('situacion');
     });
 
-    it('casos_when_se_declara_lleva_los_tres_hechos', () => {
+    it('casos_when_se_declara_lleva_situacion_en_lugar_de_activo', () => {
       const campos = INFORMES_EMERGENCIAS['casos'].columnas.map((c) => c.campo);
 
-      expect(campos).toContain('activo');
+      expect(campos).toContain('situacion');
+      // ⛔ La que causaba el defecto. Si vuelve, vuelve la ambigüedad.
+      expect(campos).not.toContain('activo');
+      // Los otros dos hechos siguen enteros y por separado.
       expect(campos).toContain('hora_fin');
       expect(campos).toContain('duplicado_de');
+    });
+
+    it('situacion_when_se_declara_no_la_deriva_la_pantalla', () => {
+      // Se pinta como enumeración del origen: humanizada al mostrarla, con la
+      // misma regla que las opciones del filtro, para que celda y desplegable
+      // digan lo mismo. Derivarla aquí pondría una segunda copia de la regla,
+      // libre de discrepar con la del filtro sin que nada fallara.
+      const columna = INFORMES_EMERGENCIAS['casos'].columnas.find(
+        (c) => c.campo === 'situacion',
+      );
+
+      expect(columna?.formato).toBe('enumeracion');
     });
 
     it('hora_fin_when_se_declara_se_formatea_como_fecha', () => {

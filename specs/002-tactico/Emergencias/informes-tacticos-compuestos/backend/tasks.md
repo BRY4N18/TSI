@@ -156,7 +156,23 @@ Dos runtimes distintos, sin código compartido entre ellos (plan.md, Structure D
 - [X] T042 [P] Recorrer `quickstart.md` completo (los 6 pasos) sin pasos previos ya ejecutados en memoria, contra el stack `tactico` real
 - [X] T043 [P] Verificar en la UI de Airflow (`http://localhost:8090`) que los 3 DAGs tienen horario diario configurado y que sus últimas corridas están en `success` (FR-010, logs nativos de Airflow — ver data-model.md "Registro de ejecución")
 - [X] T044 Actualizar `../informes-tacticos-compuestos.md` (índice del módulo) marcando la capa backend como completa
-- [ ] T045 Cambiar `.specify/feature.json` → `specs/002-tactico/Emergencias/informes-tacticos-compuestos/frontend` para continuar con la capa UI
+- [~] T045 ~~Cambiar `.specify/feature.json` → `.../informes-tacticos-compuestos/frontend`~~ — **no se ejecuta: el módulo se retiró.**
+
+  ⚠️ Esta tarea apuntaría el flujo de trabajo a la capa UI de un módulo que ya no
+  existe. El diseño de **una tabla materializada por informe** se sustituyó el
+  2026-08-15 por el modelo analítico compartido (decisión #20, opción B):
+  `informe_compuesto_response` se retiró con él —llevaba `materializado` y
+  `ultima_corrida`, que hoy serían siempre `True` y no informarían de nada— y sus
+  flujos y DDL se dieron de baja.
+
+  Lo único que queda son tres tablas con datos residuales de la última corrida
+  —`perdida_senal_gps`, `indice_calidad_historico`, `rendimiento_por_proveedor`—,
+  que **no se borran desde una tarea**: destruir datos no es reversible, y la
+  limpieza es una operación de base. Las pruebas del catálogo las restan
+  explícitamente como «heredadas».
+
+  Lo que sustituyó a este módulo es `informes-compuestos-modelo`, con sus 78
+  tareas de backend y 42 de frontend cerradas.
 
 ---
 

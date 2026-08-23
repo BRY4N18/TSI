@@ -39,6 +39,8 @@ from core.informes.acotamiento import (
     ACOTADO_TODOS,
     Acotamiento,
 )
+from core.api.response_envelope import success_response
+from core.informes.catalogos import TOPE_CATALOGO, CatalogosFiltrosRepository
 from core.informes.envelope import listado_response
 from core.informes.paginacion import parse_dir
 from core.informes.vistas import ERRORES_DE_VALIDACION, FiltroInvalido, ListadoBaseView
@@ -134,6 +136,11 @@ class PartnersView(_ListadoAccesoView):
                 request.query_params, "estado", ESTADOS_PARTNER
             )
             plan = request.query_params.get("plan") or None
+            # ⚠️ Se leía y se **descartaba**: el desplegable «Partner» estaba en
+            # pantalla, el parámetro viajaba, y el listado devolvía todos los
+            # partners igual. `acotar()` lo lee para comprobar propiedad, no
+            # para filtrar, y `acotamiento.titular` es `None` en un gestor.
+            idpartner = self.parse_entero(request.query_params, "partner", minimo=1)
             acotamiento = self.acotar(request)
         except ERRORES_DE_VALIDACION as exc:
             return self.manejar_peticion_invalida(exc)
@@ -147,10 +154,11 @@ class PartnersView(_ListadoAccesoView):
             orden=orden,
             estado=estado,
             plan=plan,
+            idpartner=idpartner,
         )
         return listado_response(
             pagina,
-            {"estado": estado, "plan": plan, "partner": acotamiento.titular},
+            {"estado": estado, "plan": plan, "partner": idpartner},
             acotado_a=acotamiento.alcance,
         )
 
@@ -306,4 +314,82 @@ class AlcanceDatosView(_ListadoContratoView):
             pagina,
             {"cuenta": cuenta, "frecuencia": frecuencia},
             acotado_a=ACOTADO_TODOS,
+        )
+
+
+class _CatalogosBaseView(ListadoBaseView):
+    """Base de los catálogos que pueblan los desplegables de estos listados.
+
+    ⚠️ **Comparten el permiso y el acotamiento de su listado, y no por simetría.**
+    La lista de partners no es una fila del listado, es metadato, así que el
+    acotamiento por propiedad no la cubre sola: hay que aplicarla a mano. Un
+    catálogo completo diría a un partner **quién más integra la plataforma**, y
+    lo diría con su listado devolviendo exactamente lo de siempre.
+    """
+
+    def _permitidos(self, request: Request) -> frozenset[int] | None:
+        """Partners que el solicitante puede ver, o `None` si son todos.
+
+        Un gestor no se acota. A un partner se le resuelve su cuenta con el
+        mismo servicio que usa el listado, y de ahí sus partners: `None` aquí
+        sería el catálogo entero, que es justo lo que no puede ver.
+        """
+        if es_gestor_informes(request):
+            return None
+
+        from apps.soporte_cliente.services.cliente_lookup_service import (
+            ClienteLookupService,
+        )
+
+        idusuario = getattr(request.user, "idusuario", None)
+        idcliente = ClienteLookupService().resolve_idcliente(int(idusuario))
+        if idcliente is None:
+            # Sin cuenta no hay partners suyos: **cero opciones**, no todas.
+            return frozenset()
+
+        from core.repositories.partners.informes_acceso_repository import (
+            InformesAccesoRepository,
+        )
+
+        filas = InformesAccesoRepository().partners(
+            cuenta=int(idcliente), limit=TOPE_CATALOGO
+        )
+        return frozenset(
+            f["idpartner"] for f in filas if f.get("idpartner") is not None
+        )
+
+
+class CatalogosAccesoView(_CatalogosBaseView):
+    """Opciones del filtro «Partner» de los tres listados de acceso."""
+
+    permission_classes = [IsAuthenticated401, InformesAccesoPermission]
+
+    def get(self, request: Request):
+        try:
+            permitidos = self._permitidos(request)
+        except PropiedadPartnerError as exc:
+            return self.manejar_propiedad(exc)
+
+        repo = CatalogosFiltrosRepository()
+        return success_response(
+            {"partner": repo.partners(permitidos)},
+            meta={"acotado_a": ACOTADO_TODOS if permitidos is None else ACOTADO_PROPIOS},
+        )
+
+
+class CatalogosContratoView(_CatalogosBaseView):
+    """Opciones de «Servicio» y «Cuenta» de los dos listados de contrato.
+
+    Solo entran gestores (FR-013), así que no hay acotamiento que aplicar: el
+    alcance de datos describe lo que cada **cliente** tiene contratado, y las
+    versiones gobiernan el ciclo de vida del contrato.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesContratoPermission]
+
+    def get(self, request: Request):
+        repo = CatalogosFiltrosRepository()
+        return success_response(
+            {"servicio": repo.servicios(), "cuenta": repo.clientes(None)},
+            meta={"acotado_a": ACOTADO_TODOS},
         )

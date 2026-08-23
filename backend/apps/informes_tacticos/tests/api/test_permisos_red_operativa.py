@@ -93,12 +93,23 @@ class TestCadaDirectorEntraALaSuya:
         assert _concede(["DirectorTecnologico"], informe)
 
 
-class TestElResponsableOperativoNoEstaRepartido:
+class TestElAdministradorNoLeeGestion:
+    """⚠️ **El reparto por materia también se sostiene frente al `Administrador`.**
+
+    Esto exigía lo contrario: que entrara a las dos materias «porque su papel no
+    está repartido». Medido, eso significaba que el rol que **más** debía
+    respetar el reparto era el único que lo saltaba entero — mientras el Director
+    de Expansión no puede ver validación y el Tecnológico no puede ver
+    crecimiento.
+
+    Decisión del 2026-08-19: el `Administrador` **opera el sistema**, no lee la
+    gestión de los departamentos. Sigue entrando a los listados simples, que son
+    trabajo operativo.
+    """
+
     @pytest.mark.parametrize("informe", sorted(CATALOGO))
-    def test_el_administrador_entra_a_las_dos_materias(self, informe):
-        # Su papel no está repartido: es el responsable operativo del
-        # departamento entero, y entra con su acotamiento.
-        assert _concede(["Administrador"], informe)
+    def test_el_administrador_no_entra_a_ninguna_materia(self, informe):
+        assert not _concede(["Administrador"], informe)
 
 
 class TestQuienNoTieneNadaQueVer:

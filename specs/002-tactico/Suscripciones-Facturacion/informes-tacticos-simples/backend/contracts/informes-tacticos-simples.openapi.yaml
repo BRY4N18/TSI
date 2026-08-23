@@ -321,16 +321,28 @@ components:
         fecha_fin: { type: string, format: date-time, nullable: true }
         motivo_cancelacion: { type: string, nullable: true }
         fecha_cancelacion: { type: string, format: date-time, nullable: true }
-        cambio_programado:
-          type: object
+        cambio_programado_plan:
+          type: string
           nullable: true
           description: |
-            Ausente cuando no hay ningún cambio pendiente. **Nunca se devuelve como un
-            plan con identificador cero**, que es el valor que el modelo guarda para
-            significar «sin cambio».
-          properties:
-            plan: { type: string }
-            se_aplica_el: { type: string, format: date-time }
+            Plan al que se cambiará. `null` cuando no hay ningún cambio pendiente.
+            **Nunca se devuelve como un plan con identificador cero**, que es el valor
+            que el modelo guarda para significar «sin cambio».
+
+            ⚠️ Junto con `cambio_programado_se_aplica_el` sustituye al objeto anidado
+            `cambio_programado: {plan, se_aplica_el}` que declaraba este contrato hasta
+            el 2026-08-22. Anidado, la tabla lo pintaba `[object Object]`: el catálogo
+            de columnas del frontend declara campos escalares. **Las dos claves viajan
+            siempre**, ambas `null` cuando no hay cambio, para que el consumidor no
+            tenga que distinguir «no hay cambio» de «este listado no responde eso».
+        cambio_programado_se_aplica_el:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Fin del ciclo vigente: una reducción aprobada **no se aplica al aprobarse**
+            sino al cerrar el período ya pagado. Sin esta fecha el listado diría que hay
+            un cambio pendiente sin decir cuándo.
 
     Factura:
       type: object
@@ -363,7 +375,22 @@ components:
         plan_solicitado: { type: string }
         estado: { type: string, enum: [Pendiente, Aprobada, Rechazada] }
         motivo: { type: string, nullable: true }
-        dias_espera: { type: integer }
+        minutos_espera:
+          type: integer
+          nullable: true
+          description: |
+            Minutos que la solicitud lleva —o llevó— esperando. En una resuelta
+            se mide hasta su resolución, no hasta hoy.
+
+            ⚠️ **Se publicaba en días (`dias_espera`) y todas las esperas salían
+            `0`.** Las solicitudes reales se resuelven en 5 y 19 minutos: el cero
+            era aritméticamente correcto e inútil, porque no distinguía «resuelta
+            en cinco minutos» de «resuelta en veinte horas». Renombrado el
+            2026-08-19.
+
+            Se publica en la unidad más fina que el origen sostiene y **la
+            pantalla decide cómo leerla** según la magnitud. Truncar al guardar
+            pierde el dato; truncar al mostrar es una decisión reversible.
         resuelta_por: { type: string, nullable: true, description: Ausente mientras siga pendiente. }
         motivo_rechazo: { type: string, nullable: true }
         fecha_solicitud: { type: string, format: date-time }

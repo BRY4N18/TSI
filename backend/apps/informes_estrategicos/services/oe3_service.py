@@ -94,6 +94,9 @@ class ResultadoInforme:
     cobertura: str
     falta: list[str] | None
     alcance: str | None
+    #: Declara que el denominador se cuenta sobre el estado **actual**, no sobre
+    #: el período pedido. `None` cuando el informe no tiene ese sesgo.
+    denominador_actual: str | None = None
 
 
 class Oe3Service:

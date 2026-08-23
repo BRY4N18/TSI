@@ -20,7 +20,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lib.dimensiones.dim_canal import normalizar  # noqa: E402
+from lib.dimensiones.dim_canal import clave, normalizar  # noqa: E402
 from lib.dimensiones.dim_prospecto import (  # noqa: E402
     CONSULTA_PROSPECTOS,
     construir,
@@ -177,13 +177,25 @@ class TestElCanal:
 
         El informe de rendimiento repartiría el mismo canal en varias filas con
         una fracción del volumen cada una, y ninguna parecería importante.
+
+        ⚠️ Convergen por `clave`, no por `normalizar`. Hasta el 2026-08-19 las
+        dos cosas eran la misma función, y para hacerlas converger forzaba el
+        resto a minúscula: en pantalla salían «Linkedin» y «Referido tsi» con el
+        origen diciendo «LinkedIn» y «Referido TSI». Agrupar y mostrar se
+        separaron; lo que esta prueba protege —que no se partan— sigue igual.
         """
-        assert normalizar("  WEB  ") == normalizar("web") == "Web"
+        assert clave("  WEB  ") == clave("web") == clave("Web")
+
+    def test_la_grafia_del_origen_se_conserva_al_mostrar(self):
+        """Lo que se agrupa sin mayúsculas no se muestra sin mayúsculas."""
+        assert normalizar("  LinkedIn  ") == "LinkedIn"
+        assert normalizar("Referido TSI") == "Referido TSI"
 
     def test_el_alias_junta_las_dos_variantes_que_hay_en_los_datos(self):
         # «Web / catálogo planes» y «Web / catálogo de planes» son el mismo canal
         # —falta un «de»— y partido en dos no aparece como el mayor.
         assert normalizar("Web / catálogo planes") == "Web / catálogo de planes"
+        assert clave("Web / catálogo planes") == clave("Web / catálogo de planes")
 
     def test_dos_canales_distintos_no_se_juntan(self):
         """⚠️ El error simétrico, y peor.

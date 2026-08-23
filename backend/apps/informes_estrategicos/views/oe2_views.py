@@ -71,4 +71,5 @@ class Oe2View(APIView):
             cobertura=resultado.cobertura,
             falta=resultado.falta,
             alcance=resultado.alcance,
+            denominador_actual=resultado.denominador_actual,
         )

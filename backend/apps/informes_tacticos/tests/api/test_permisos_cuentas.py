@@ -60,9 +60,39 @@ class TestQuienSiEntra:
     def test_tecnologico_entra_a_ot18(self, informe):
         assert _concede(["DirectorTecnologico"], informe)
 
+    @pytest.mark.parametrize("informe", DE_CICLO + DE_INCORPORACION)
+    def test_el_director_de_cuentas_entra_a_ciclo_e_incorporacion(self, informe):
+        """El cargo que faltaba, creado el 2026-08-19.
+
+        Estos siete informes solo los abría el `Administrador`, porque el
+        departamento no tenía autoridad propia: se leían por ser administrador
+        del sistema, no por responder de ellos.
+        """
+        assert _concede(["DirectorCuentas"], informe)
+
+    @pytest.mark.parametrize("informe", DE_ACCESO)
+    def test_el_director_de_cuentas_no_entra_a_los_accesos_tecnicos(self, informe):
+        """⚠️ El reparto, en el sentido que se olvida.
+
+        Quien responde de por qué se van los clientes no fija los criterios
+        técnicos de acceso. Sin esto, «autoridad del departamento» acabaría
+        significando «todo el departamento».
+        """
+        assert not _concede(["DirectorCuentas"], informe)
+
+    @pytest.mark.parametrize("informe", DE_CICLO + DE_INCORPORACION)
+    def test_el_tecnologico_no_entra_a_ciclo_ni_incorporacion(self, informe):
+        assert not _concede(["DirectorTecnologico"], informe)
+
     @pytest.mark.parametrize("informe", sorted(CATALOGO))
-    def test_el_administrador_entra_a_los_nueve(self, informe):
-        assert _concede(["Administrador"], informe)
+    def test_el_administrador_ya_no_entra_a_ninguno(self, informe):
+        """Opera el sistema; la lectura de gestión es de quien responde.
+
+        Entraba a los nueve, y era la **única** forma de abrir siete de ellos.
+        Retirarlo antes de crear el Director de Cuentas los habría dejado
+        inalcanzables: por eso el orden importaba.
+        """
+        assert not _concede(["Administrador"], informe)
 
     def test_un_cliente_no_entra(self):
         respuesta = _cliente(["Cliente"]).get(f"{BASE}/churn-por-cohorte")

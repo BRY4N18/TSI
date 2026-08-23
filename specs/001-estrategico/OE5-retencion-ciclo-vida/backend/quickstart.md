@@ -95,7 +95,7 @@ Ninguna clave es asunto, mensaje, nota interna, medio de pago o calificación de
 
 ## 3. Lo que este quickstart no cubre
 
-- Frontend (aplazado).
+- Frontend: ver [`../frontend/quickstart.md`](../frontend/quickstart.md) (implementado).
 - NPS real y entregas de informes (E5-01/11).
 - Mix al 100 % (n de demostración).
 - Consumo de E1-06/09/10/11 desde un tablero (otro módulo).

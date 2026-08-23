@@ -27,6 +27,7 @@ from core.repositories.suscripciones.informes_suscripcion_repository import (
 )
 
 DIA_MS = 86_400_000
+MINUTO_MS = 60_000
 ESTADO_PENDIENTE = "Pendiente"
 
 
@@ -97,7 +98,7 @@ def _fila(
         "estado": estado,
         "motivo": cruda.get("motivo"),
         "fecha_solicitud": a_iso(cruda.get("fecha_solicitud")),
-        "dias_espera": _dias_espera(cruda, ahora),
+        "minutos_espera": _minutos_espera(cruda, ahora),
     }
     if estado != ESTADO_PENDIENTE:
         # Solo una solicitud ya resuelta tiene resolutor y fecha de resolución.
@@ -107,15 +108,27 @@ def _fila(
     return fila
 
 
-def _dias_espera(cruda: dict[str, Any], ahora: int) -> int | None:
-    """Días que la solicitud lleva —o llevó— esperando.
+def _minutos_espera(cruda: dict[str, Any], ahora: int) -> int | None:
+    """Minutos que la solicitud lleva —o llevó— esperando.
 
     En una resuelta se mide hasta su resolución, no hasta hoy: si se midiera
     hasta hoy, una solicitud resuelta en un día seguiría acumulando «espera»
     para siempre y la bandeja mentiría sobre el tiempo de respuesta.
+
+    ⚠️ **Se medía en días, y todas las esperas salían `0`.**
+
+    Con `// DIA_MS`, las seis solicitudes del origen —resueltas en 5 y en 19
+    minutos— daban cero. Aritméticamente correcto e inútil: la columna existe
+    para ver cuál tarda, y no distinguía «resuelta en cinco minutos» de
+    «resuelta en veinte horas». Ambas eran «0 días».
+
+    Se publica en minutos, que es la unidad más fina que el origen sostiene, y
+    **la pantalla decide cómo leerla** según la magnitud. Guardar preciso y
+    formatear al mostrar es lo contrario de truncar al guardar: lo truncado no
+    se recupera.
     """
     inicio = a_entero_ms(cruda.get("fecha_solicitud"))
     if inicio is None:
         return None
     fin = a_entero_ms(cruda.get("fecha_resolucion")) or ahora
-    return max(0, (fin - inicio) // DIA_MS)
+    return max(0, (fin - inicio) // MINUTO_MS)

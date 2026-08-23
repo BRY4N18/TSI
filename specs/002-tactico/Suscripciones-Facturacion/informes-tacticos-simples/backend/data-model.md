@@ -47,7 +47,7 @@ el repositorio absorbe.
 - **Tabla:** `Fact_Suscripcion`
 - **Campos:** `id_suscripcion`*, `cuenta`, `plan`, `nivel`, `estado`, `precio`, `periodicidad`,
   `renovacion_automatica`, `fecha_inicio`, `fecha_fin`, `motivo_cancelacion`, `fecha_cancelacion`,
-  `cambio_programado`
+  `cambio_programado_plan`, `cambio_programado_se_aplica_el`
 - **Orden:** `id_suscripcion DESC` · **Cursor:** escalar
 - **Tipo:** estado actual → rechaza el período genérico
 - **Acotado por:** `idcliente`
@@ -64,8 +64,14 @@ el repositorio absorbe.
 | `idplan_programado = 0` | **No hay ningún cambio** — es el valor que el código escribe por defecto |
 
 **Prohibido usar una comprobación de nulidad**: devolvería *todas* las suscripciones como si todas
-tuvieran un cambio pendiente. `cambio_programado` se presenta como **ausencia**, nunca como un plan
-con identificador cero.
+tuvieran un cambio pendiente. El cambio se presenta como **ausencia**, nunca como un plan con
+identificador cero.
+
+⚠️ **Son dos campos planos, no un objeto** (2026-08-22). Hasta esa fecha se devolvía
+`cambio_programado: {plan, se_aplica_el}` y la tabla lo pintaba **`[object Object]`**: el catálogo
+de columnas del frontend declara campos escalares y no recorre objetos. Se aplanó del lado que
+conoce el dato en vez de enseñar a la capa compartida —que sirve a los 32 listados— a recorrer
+objetos arbitrarios. **Las dos claves viajan siempre**, ambas `null` cuando no hay cambio.
 
 **Nota sobre las cancelaciones.** `cancelada_desde` / `cancelada_hasta` filtran la **columna** de
 fecha de cancelación. No son el período genérico del contrato: esta tabla guarda el estado actual de

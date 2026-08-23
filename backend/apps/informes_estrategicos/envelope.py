@@ -24,6 +24,7 @@ def informe_estrategico_response(
     cobertura: str = "completa",
     falta: list[str] | None = None,
     alcance: str | None = None,
+    denominador_actual: str | None = None,
 ) -> Response:
     meta: dict[str, Any] = {
         "periodo": periodo.to_meta(),
@@ -37,4 +38,18 @@ def informe_estrategico_response(
         meta["falta"] = falta
     if alcance:
         meta["alcance"] = alcance
+    # ⚠️ **El denominador no está acotado al período, y hay que decirlo.**
+    #
+    # Algunos informes cuentan el numerador dentro del período y el denominador
+    # sobre el estado de hoy. Pedido enero de 2019, `integraciones-activas`
+    # respondía «3 partners con acceso, 0 % de adopción»: los tres son de hoy, y
+    # en 2019 no existía ninguno. No era «no sabemos», era una cifra inventada
+    # con forma de medición.
+    #
+    # Se declara en vez de corregirse porque acotar el denominador exige
+    # historizar la dimensión y cambiaría lo que el informe mide. Mismo patrón
+    # que `umbral_aplicado` y `medida_exacta_desde`: una convención que no se
+    # puede deducir del número **viaja con el número**.
+    if denominador_actual:
+        meta["denominador_actual"] = denominador_actual
     return success_response(data, meta=meta)

@@ -7,6 +7,7 @@
  */
 
 import { DefinicionListado } from '../../../../shared/informes/informes-listado.types';
+import { opciones } from '../../../../shared/informes/informes-opciones';
 
 export const ESTADOS_PARTNER = [
   'Registrado',
@@ -31,6 +32,11 @@ export const TIPOS_CAMBIO = [
   'revocacion_credencial',
   'desactivacion_por_cascada',
   'aviso_previo_suspension',
+  // ⚠️ **`aviso_previo_expiracion` no es `aviso_previo_suspension`.** Uno avisa
+  // de que caduca el sandbox y el otro de que se suspende el acceso: son
+  // eventos distintos. Faltaba, así que la bitácora tenía un tipo de cambio
+  // real —hay filas con él— que el desplegable no permitía aislar.
+  'aviso_previo_expiracion',
   'suspension_automatica',
   'suspension_manual',
   'reactivacion',
@@ -38,14 +44,11 @@ export const TIPOS_CAMBIO = [
 
 export const ESTADOS_VERSION = ['vigente', 'soportada', 'retirada'] as const;
 
-function opciones(valores: readonly string[]) {
-  return valores.map((valor) => ({ valor, etiqueta: valor }));
-}
-
 const FILTRO_PARTNER = {
   nombre: 'partner',
-  etiqueta: 'Partner (id)',
-  tipo: 'numero' as const,
+  etiqueta: 'Partner',
+  catalogo: 'partner',
+  tipo: 'catalogo' as const,
   ayuda: 'Solo gestores. Un partner no ve este filtro.',
 };
 
@@ -90,7 +93,7 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'partner', etiqueta: 'Partner' },
       { campo: 'nombre_credencial', etiqueta: 'Credencial', principal: true },
-      { campo: 'entorno', etiqueta: 'Entorno' },
+      { campo: 'entorno', etiqueta: 'Entorno', formato: 'enumeracion' },
       { campo: 'activa', etiqueta: 'Activa', formato: 'booleano' },
       { campo: 'fecha_creacion', etiqueta: 'Creada', formato: 'fecha_hora', soloEscritorio: true },
       { campo: 'fecha_expiracion', etiqueta: 'Expira', formato: 'fecha_hora' },
@@ -117,7 +120,7 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'partner', etiqueta: 'Partner' },
       { campo: 'credencial', etiqueta: 'Credencial', soloEscritorio: true },
-      { campo: 'tipo_cambio', etiqueta: 'Tipo', principal: true },
+      { campo: 'tipo_cambio', etiqueta: 'Tipo', principal: true, formato: 'enumeracion' },
       { campo: 'estado_anterior', etiqueta: 'De', soloEscritorio: true },
       { campo: 'estado_nuevo', etiqueta: 'A' },
       { campo: 'motivo', etiqueta: 'Motivo' },
@@ -143,7 +146,7 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'servicio', etiqueta: 'Servicio' },
       { campo: 'version', etiqueta: 'Versión', principal: true },
-      { campo: 'estado', etiqueta: 'Estado' },
+      { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'spec_url', etiqueta: 'Spec', soloEscritorio: true },
       { campo: 'fecha_publicacion', etiqueta: 'Publicada', formato: 'fecha_hora' },
       { campo: 'fecha_retiro', etiqueta: 'Retirada', formato: 'fecha_hora' },
@@ -155,7 +158,7 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
         tipo: 'enumeracion',
         opciones: opciones(ESTADOS_VERSION),
       },
-      { nombre: 'servicio', etiqueta: 'Servicio (id)', tipo: 'numero' },
+      { nombre: 'servicio', etiqueta: 'Servicio', tipo: 'catalogo', catalogo: 'servicio' },
     ],
   },
 
@@ -177,7 +180,7 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
       },
     ],
     filtros: [
-      { nombre: 'cuenta', etiqueta: 'Cuenta (id)', tipo: 'numero' },
+      { nombre: 'cuenta', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'cuenta' },
       { nombre: 'frecuencia', etiqueta: 'Frecuencia', tipo: 'texto' },
     ],
   },

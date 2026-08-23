@@ -47,23 +47,52 @@ ALIAS = {
 }
 
 
-def normalizar(crudo: Any) -> str | None:
-    """El canal en su forma canónica, o `None` si no se registró.
+def limpiar(crudo: Any) -> str | None:
+    """El texto del origen sin espacios sobrantes, o `None` si no se registró.
 
-    Solo espacios y mayúsculas. Ver el docstring del módulo: agrupar canales
-    distintos bajo un mismo nombre es una decisión de negocio, no de carga.
+    **Conserva las mayúsculas tal como se escribieron.** Es la grafía que se
+    muestra; agrupar es otra cosa y la hace `clave`.
     """
     if crudo is None:
         return None
     texto = " ".join(str(crudo).split()).strip()
-    if not texto:
+    return texto or None
+
+
+def clave(crudo: Any) -> str | None:
+    """La clave con la que dos escrituras cuentan como **el mismo canal**.
+
+    Solo sirve para agrupar: no se muestra nunca. Ver `construir`.
+    """
+    texto = limpiar(crudo)
+    if texto is None:
         return None
-    # Capitaliza la primera letra y deja el resto en minúscula: «REDES SOCIALES»
-    # y «redes sociales» convergen sin destruir la legibilidad.
-    canonico = texto[0].upper() + texto[1:].lower()
-    # El alias se aplica **despues** de normalizar espacios y mayusculas, para
-    # que la lista no tenga que repetir cada variante de capitalizacion.
-    return ALIAS.get(canonico, canonico)
+    # El alias se aplica sobre la forma plegada, para que la lista no tenga que
+    # repetir cada variante de capitalización.
+    plegado = texto.casefold()
+    return {k.casefold(): v.casefold() for k, v in ALIAS.items()}.get(plegado, plegado)
+
+
+def normalizar(crudo: Any) -> str | None:
+    """La forma canónica de un canal **aislado**, sin más contexto.
+
+    ⚠️ Devuelve la grafía tal como se escribió, no una capitalización forzada.
+
+    Hasta el 2026-08-19 hacía `texto[0].upper() + texto[1:].lower()`. La
+    intención era buena —«REDES SOCIALES» y «redes sociales» tienen que
+    converger— pero **usaba la misma cadena para agrupar y para mostrar**, y al
+    forzar el resto a minúscula destrozaba los nombres propios: en pantalla
+    salían «Linkedin» y «Referido tsi» cuando el origen dice «LinkedIn» y
+    «Referido TSI».
+
+    Ahora las dos cosas están separadas: `clave` agrupa sin distinguir
+    mayúsculas y esto conserva lo que se escribió. `construir` elige qué grafía
+    representa al grupo cuando hay varias.
+    """
+    texto = limpiar(crudo)
+    if texto is None:
+        return None
+    return ALIAS.get(texto, texto)
 
 
 def construir(
@@ -76,10 +105,30 @@ def construir(
     devuelva las filas — que no está garantizado y haría que el mismo canal
     cambiara de identificador entre dos corridas.
     """
-    canales = sorted({
-        canal for canal in (normalizar(p.get("como_nos_conocio")) for p in prospectos)
-        if canal
-    })
+    from collections import Counter
+
+    # Grafías vistas por clave de agrupación. La clave no se muestra jamás.
+    grafias: dict[str, Counter] = {}
+    for p in prospectos:
+        crudo = p.get("como_nos_conocio")
+        k = clave(crudo)
+        if k is None:
+            continue
+        grafias.setdefault(k, Counter())[normalizar(crudo)] += 1
+
+    # ⚠️ **La grafía que representa al grupo se elige de forma determinista.**
+    #
+    # Lo pedido era «la primera que se vio», pero «primera» depende del orden en
+    # que Pinot devuelva las filas, y ese orden no está garantizado: el mismo
+    # canal se mostraría «LinkedIn» en una corrida y «linkedin» en la siguiente,
+    # y el identificador —que sale del orden alfabético justamente para ser
+    # estable— dejaría de acompañar a un nombre estable.
+    #
+    # Se toma la **más frecuente**, que es la que la gente escribe de verdad, y
+    # se desempata por orden alfabético.
+    canales = sorted(
+        min(cuenta, key=lambda g: (-cuenta[g], g)) for cuenta in grafias.values()
+    )
     version = ahora.strftime("%Y-%m-%d %H:%M:%S")
 
     return [

@@ -68,9 +68,16 @@ export class ApoyoPlegableComponent {
     const evidencias = num(primera['evidencias']);
     const pendientes = num(primera['pendientes']);
     if (bloque.informe === 'latencia-sincronizacion') {
-      const pend = filas.reduce((acc, f) => acc + (num(f['pendientes']) ?? 0), 0);
-      const sync = filas.reduce((acc, f) => acc + (num(f['sincronizadas']) ?? 0), 0);
-      return `${sync} sincronizadas · ${pend} pendientes`;
+      // ⚠️ Esto decía «0 sincronizadas · 50 pendientes», que era **lo contrario**
+      // de la verdad operativa: las 50 están marcadas como sincronizadas en el
+      // origen. Lo que se cuenta es si hay instante con el que medir la
+      // latencia, no si la evidencia llegó.
+      const con = filas.reduce((acc, f) => acc + (num(f['con_instante_sincronia']) ?? 0), 0);
+      const sin = filas.reduce((acc, f) => acc + (num(f['sin_instante_sincronia']) ?? 0), 0);
+      const total = con + sin;
+      return total === 0
+        ? 'sin evidencias en el período'
+        : `latencia medible en ${con} de ${total}`;
     }
     if (bloque.informe === 'completitud-enriquecimiento') {
       const pct = num(primera['pct_enriquecidos']);

@@ -16,7 +16,7 @@ describe('ApoyoPlegableComponent', () => {
         carga: {
           estado: 'dato',
           error: null,
-          data: [{ pendientes: 2, sincronizadas: 8 }],
+          data: [{ sin_instante_sincronia: 2, con_instante_sincronia: 8 }],
           meta: {},
         },
       },
@@ -35,6 +35,9 @@ describe('ApoyoPlegableComponent', () => {
     details.open = true;
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Latencia de sincronización');
-    expect(fixture.nativeElement.textContent).toContain('sincronizadas');
+    // ⚠️ «sincronizadas» ya no: decía «0 sincronizadas · 50 pendientes» sobre
+    // evidencias que el origen marca como sincronizadas. Ahora se declara qué
+    // fracción tiene instante con el que medir la latencia.
+    expect(fixture.nativeElement.textContent).toContain('latencia medible en');
   });
 });

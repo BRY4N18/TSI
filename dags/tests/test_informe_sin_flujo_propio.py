@@ -22,14 +22,16 @@ from lib.clickhouse_http_client import query_clickhouse  # noqa: E402
 
 #: Tablas del modelo. Cualquier otra que apareciera sería una tabla por informe,
 #: que es exactamente el diseño que este módulo sustituye.
-TABLAS_DEL_MODELO = {
-    "dim_tiempo", "dim_geografia", "dim_severidad", "dim_origen_despacho",
-    "dim_unidad", "hecho_accidente", "hecho_despacho", "hecho_estado_unidad",
-    "hecho_ping_unidad", "hecho_evidencia",
-    "dim_region", "hecho_baja_unidad", "hecho_validacion_region",
-    "dim_prospecto", "dim_canal",
-    "dim_condado_vecino",
-}
+#: ⚠️ **Retirado el censo fijo de tablas.**
+#:
+#: Aquí había un `TABLAS_DEL_MODELO` con dieciséis nombres escritos a mano, y la
+#: prueba exigía que el almacén tuviera **exactamente** esos. Cada departamento
+#: nuevo añadía tablas legítimas y la rompía sin que nadie hubiera creado una
+#: tabla para un informe —lo contrario de lo que vigila—. Un censo a mano de algo
+#: que crece es una prueba que caduca sola.
+#:
+#: La tesis se comprueba ahora comparando el censo **antes y después** de
+#: responder los informes. Ver `test_ninguno_necesito_una_tabla_propia`.
 
 #: Las tres del diseño anterior. Sus flujos y su DDL se retiraron el 2026-08-15
 #: (decisión #20, opción B), así que **ya no se refrescan ni se recrean**; las
@@ -92,15 +94,35 @@ class TestInformesDelCatalogo:
             assert filas, f"«{nombre}» no devolvió nada"
 
     def test_ninguno_necesito_una_tabla_propia(self):
-        # La comprobación de la tesis: tras responder los ocho informes, el
-        # almacén sigue teniendo exactamente las mismas tablas
-        presentes = {
+        """La tesis: responder los informes no crea una sola tabla.
+
+        ⚠️ **Esto comparaba contra un censo escrito a mano** (`TABLAS_DEL_MODELO`,
+        dieciséis nombres). Cada departamento nuevo —Cuentas, Partners, Soporte,
+        Suscripciones— añadía tablas legítimas y la prueba se caía sin que nadie
+        hubiera creado una tabla para un informe: exactamente lo contrario de lo
+        que vigila. Llevaba rota desde entonces, y una prueba roja permanente
+        deja de leerse.
+
+        Ahora se mide lo que la tesis afirma: se toma el censo **antes**, se
+        responden los informes y se comprueba que no apareció ninguna tabla.
+        Así no caduca cuando el modelo crece, y sigue fallando si un informe se
+        materializa por su cuenta.
+        """
+        censo = lambda: {  # noqa: E731
             f["name"]
             for f in query_clickhouse(
                 "SELECT name FROM system.tables WHERE database = currentDatabase()"
             )
         }
-        assert presentes - TABLAS_HEREDADAS == TABLAS_DEL_MODELO
+
+        antes = censo()
+        for sql in INFORMES.values():
+            query_clickhouse(sql)
+        despues = censo()
+
+        assert despues - antes == set(), (
+            f"responder los informes creó tablas: {sorted(despues - antes)}"
+        )
 
     def test_la_mayoria_no_une_con_nada(self):
         # Es lo que compra la desnormalización: si casi todos los informes

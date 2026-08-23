@@ -23,6 +23,7 @@ import {
 } from '../models/informes-compuestos.types';
 import { InformesCompuestosApiService } from '../services/informes-compuestos-api.service';
 import { ApoyoPlegableComponent, BloqueApoyo } from './apoyo-plegable.component';
+import { humanizar } from '../../../../shared/informes/informes-opciones';
 
 const VACIA: CargaInforme = {
   estado: 'carga',
@@ -87,6 +88,7 @@ export class PantallaZPage {
 
   readonly num = num;
   readonly texto = texto;
+  readonly humanizar = humanizar;
 
   constructor() {
     this.route.url.pipe(takeUntilDestroyed()).subscribe((segs) => {

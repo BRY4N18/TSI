@@ -1,0 +1,284 @@
+﻿<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8">
+  @if (definicion(); as def) {
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Estratégico · OE4
+        </p>
+        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+          {{ def.titulo }}
+        </h1>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
+        <p class="m-0 mt-2 text-xs text-text-secondary">
+          Lectura de empresa sobre el histórico. No es un mapa, no hay modelo predictivo que
+          mostrar y no habilita a vender ni a entrenar.
+        </p>
+      </div>
+    </header>
+
+    @if (coberturaParcial()) {
+      <p
+        class="m-0 rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-secondary"
+        data-testid="zona-parcial"
+      >
+        Cobertura parcial
+        @if (faltaParcial().length) {
+          · {{ faltaParcial().join(', ') }}
+        }
+      </p>
+    }
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        data-testid="zona-heroe"
+        data-bloque-vista
+      >
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          {{ def.heroe.titulo }}
+        </p>
+        @switch (cargaHeroe().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              (click)="reintentar(def.heroe.informes[0])"
+            >
+              Reintentar
+            </button>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">
+              @if (idPantalla() === 'calidad') {
+                Sin accidentes en este período.
+              } @else {
+                Sin datos en este período.
+              }
+            </p>
+          }
+          @case ('sin_dato') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin dato en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'calidad') {
+              @if (cargaHeroe().data[0]; as fila) {
+                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                  {{ pct(num(fila['indice_consolidado'])) }}
+                </p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  completitud {{ pct(num(fila['pct_completitud'])) }} · descarte
+                  {{ pct(num(fila['pct_descarte'])) }} · fusión
+                  {{ pct(num(fila['pct_fusion'])) }} · evidencia
+                  {{ pct(num(fila['pct_cobertura_evidencia'])) }}
+                </p>
+              }
+            }
+            @if (idPantalla() === 'concentracion') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary">
+                @for (fila of cargaHeroe().data; track texto(fila['zona'])) {
+                  <li>
+                    {{ texto(fila['zona']) }} · {{ num(fila['casos']) | number }} ·
+                    {{ pct(num(fila['pct'])) }}
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'impacto') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary">
+                @for (fila of cargaHeroe().data; track texto(fila['condado']) + texto(fila['severidad'])) {
+                  <li>
+                    {{ texto(fila['condado']) }} · víctimas
+                    {{ num(fila['victimas']) | number }} · con dato
+                    {{ num(fila['casos_con_dato']) | number }} /
+                    {{ num(fila['casos']) | number }}
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'cobertura') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary">
+                @for (fila of cargaHeroe().data; track texto(fila['condado'])) {
+                  <li>
+                    {{ texto(fila['condado']) }} · {{ num(fila['casos']) | number }} /
+                    umbral {{ num(fila['umbral_casos']) | number }}
+                    @if (esSinMasaCritica(fila)) {
+                      · sin masa crítica
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <div class="flex flex-col gap-3 lg:col-span-5" data-bloque-vista data-testid="zona-periodo">
+        <app-periodo-selector (cambio)="onPeriodoChange($event)">
+          <label class="flex flex-col text-xs text-text-secondary">
+            Granularidad
+            <select
+              class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+              [(ngModel)]="granularidad"
+              (change)="onFiltrosChange()"
+            >
+              <option value="mes">Mes</option>
+              <option value="trimestre">Trimestre</option>
+              <option value="anio">Año</option>
+            </select>
+          </label>
+          <label class="flex flex-col text-xs text-text-secondary" data-testid="zona-comparacion">
+            Comparación
+            <select
+              class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+              [(ngModel)]="comparacion"
+              (change)="onFiltrosChange()"
+            >
+              <option value="ninguna">Ninguna</option>
+              <option value="mom">Mes anterior</option>
+              <option value="yoy">Mismo tramo del año anterior</option>
+            </select>
+          </label>
+        </app-periodo-selector>
+        @if (cargaHeroe().meta.comparacion === null && cargaHeroe().meta.motivo_ausencia) {
+          <p class="m-0 text-xs text-text-secondary">
+            Comparación ausente: {{ cargaHeroe().meta.motivo_ausencia }}
+          </p>
+        }
+      </div>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        data-testid="zona-visual"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        @switch (cargaVisual().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'calidad') {
+              @if (cargaVisual().data[0]; as fila) {
+                <p class="m-0 mt-4 text-sm text-text-secondary">
+                  Completitud {{ pct(num(fila['pct_completitud'])) }} ·
+                  {{ num(fila['completos']) | number }} /
+                  {{ num(fila['casos']) | number }} ·
+                  {{ num(fila['campos_comprobados']) | number }} campos
+                </p>
+              }
+            }
+            @if (idPantalla() === 'concentracion') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li class="text-sm text-text-secondary">
+                    {{ texto(fila['franja']) }} · día {{ texto(fila['dia_semana']) }} ·
+                    {{ num(fila['casos']) | number }} casos
+                    @if (texto(fila['cobertura']) === 'parcial' || (num(fila['casos_con_clima']) ?? 0) < 20) {
+                      · clima parcial ({{ num(fila['casos_con_clima']) | number }})
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'impacto') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['condado'])) {
+                  <li class="text-sm text-text-secondary">
+                    {{ texto(fila['condado']) }} · duración
+                    {{ num(fila['duracion_media']) | number: '1.0-1' }}
+                    (n={{ num(fila['casos_con_duracion']) | number }}) · distancia
+                    {{ num(fila['distancia_media']) | number: '1.0-2' }}
+                    (n={{ num(fila['casos_con_distancia']) | number }})
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'cobertura') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['condado'])) {
+                  @if (esSinMasaCritica(fila)) {
+                    <li class="text-sm text-text-secondary">
+                      {{ texto(fila['condado']) }} · sin masa crítica
+                    </li>
+                  }
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        data-testid="zona-lectura"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        @switch (cargaLectura().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'calidad') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary" data-testid="ranking-ausencias">
+                @for (fila of cargaLectura().data; track texto(fila['campo'])) {
+                  <li>
+                    {{ texto(fila['campo']) }} · {{ pct(num(fila['pct_ausencia'])) }}
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'concentracion') {
+              <p class="m-0 mt-3 text-sm text-text-secondary" data-testid="alcance-no-mapa">
+                {{
+                  cargaLectura().meta.alcance ||
+                    'Ranking por nombre de zona. No es un mapa y no usa coordenadas.'
+                }}
+              </p>
+            }
+            @if (idPantalla() === 'impacto') {
+              <p class="m-0 mt-3 text-sm text-text-secondary" data-testid="alcance-denominadores">
+                {{
+                  cargaLectura().meta.alcance ||
+                    'Sin dato de víctimas no es cero víctimas. Distancia nula no es 0 km. Duración y distancia tienen denominadores distintos.'
+                }}
+              </p>
+            }
+            @if (idPantalla() === 'cobertura') {
+              <p class="m-0 mt-3 text-sm text-text-secondary" data-testid="alcance-umbral">
+                {{
+                  cargaLectura().meta.alcance ||
+                    'El umbral se publica en cada fila. Grano: condado, no región.'
+                }}
+              </p>
+            }
+          }
+        }
+      </article>
+
+      @if (def.apoyoPlegado) {
+        <div class="lg:col-span-12" data-bloque-vista>
+          <app-apoyo-plegable-oe4 [bloques]="bloquesApoyo()" />
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="m-0 text-sm text-text-secondary">Pantalla no encontrada.</p>
+  }
+</div>

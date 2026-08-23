@@ -167,8 +167,8 @@ class TestLaLatenciaDeSincronizacion:
         fila = _latencia("foto")
 
         assert fila["evidencias"] == 2
-        assert fila["pendientes"] == 1
-        assert fila["sincronizadas"] == 1
+        assert fila["sin_instante_sincronia"] == 1
+        assert fila["con_instante_sincronia"] == 1
         assert fila["mediana_seg"] == 600, (
             f"la mediana salió {fila['mediana_seg']}: la pendiente entró en el "
             f"cálculo como cero en vez de quedarse fuera"
@@ -183,7 +183,7 @@ class TestLaLatenciaDeSincronizacion:
 
         fila = _latencia("foto")
 
-        assert fila["pendientes"] == 1
+        assert fila["sin_instante_sincronia"] == 1
         assert fila["mediana_seg"] is None, (
             "sin ninguna evidencia sincronizada la mediana es ausente, no cero"
         )
@@ -201,5 +201,5 @@ class TestLaLatenciaDeSincronizacion:
         ])
 
         assert _latencia("foto")["mediana_seg"] == 60
-        assert _latencia("nota")["pendientes"] == 2
+        assert _latencia("nota")["sin_instante_sincronia"] == 2
         assert _latencia("nota")["mediana_seg"] is None

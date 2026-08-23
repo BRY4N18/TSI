@@ -25,11 +25,11 @@ from __future__ import annotations
 from typing import Iterable, Sequence
 
 from core.pinot.client import PinotClient
+from core.informes.catalogos import TOPE_CATALOGO, opciones_catalogo
 
 #: Tope de seguridad por consulta. Un cliente no contrata «todas las zonas» —lo
 #: limita el negocio—, pero un tope evita que un dato corrupto pida el catálogo
 #: entero.
-TOPE_CATALOGO = 10_000
 
 
 class InformesUbicacionRepository:
@@ -128,6 +128,58 @@ class InformesUbicacionRepository:
                 "condado": condado.get("condado") if condado else None,
             }
         return resultado
+
+    def catalogo_condados(self, contratados: frozenset[int] | None) -> list[dict]:
+        """Condados para poblar el desplegable del filtro.
+
+        ⚠️ **`None` y el conjunto vacío no son lo mismo, tampoco aquí.** `None`
+        es el rol interno y devuelve el catálogo completo; un conjunto vacío es
+        el cliente sin zonas contratadas y devuelve **cero condados**, igual que
+        su listado devuelve cero filas.
+
+        Es la misma trampa que documenta `Cobertura`, y en un catálogo es más
+        fácil de pasar por alto: un desplegable no parece un control de acceso.
+        Pero listar los condados ajenos ya dice dónde opera el sistema, y lo diría
+        aunque el listado siguiera vacío.
+        """
+        if contratados is not None and not contratados:
+            return []
+        if contratados is None:
+            filas = self.pinot.query(
+                "SELECT idcondado, condado FROM Dim_Condado LIMIT %(limit)s",
+                {"limit": TOPE_CATALOGO},
+            )
+        else:
+            filas = self.pinot.query(
+                "SELECT idcondado, condado FROM Dim_Condado "
+                "WHERE idcondado IN %(ids)s LIMIT %(limit)s",
+                {"ids": sorted(contratados), "limit": TOPE_CATALOGO},
+            )
+        return opciones_catalogo(filas, "idcondado", "condado")
+
+    def catalogo_ciudades(self, contratados: frozenset[int] | None) -> list[dict]:
+        """Ciudades, acotadas a los condados contratados por la misma razón."""
+        if contratados is not None and not contratados:
+            return []
+        if contratados is None:
+            filas = self.pinot.query(
+                "SELECT idciudad, ciudad, idcondado FROM Dim_Ciudad "
+                "WHERE activo = true LIMIT %(limit)s",
+                {"limit": TOPE_CATALOGO},
+            )
+        else:
+            filas = self.pinot.query(
+                "SELECT idciudad, ciudad, idcondado FROM Dim_Ciudad "
+                "WHERE idcondado IN %(ids)s AND activo = true LIMIT %(limit)s",
+                {"ids": sorted(contratados), "limit": TOPE_CATALOGO},
+            )
+        # Se conserva `idcondado`: dos ciudades pueden llamarse igual, y el
+        # servicio necesita el condado para poder distinguirlas.
+        opciones = opciones_catalogo(filas, "idciudad", "ciudad")
+        condado_por_ciudad = {f.get("idciudad"): f.get("idcondado") for f in filas}
+        for opcion in opciones:
+            opcion["idcondado"] = condado_por_ciudad.get(opcion["id"])
+        return opciones
 
     def zonas_contratadas(self, idcliente: int) -> frozenset[int]:
         """Condados contratados por un cliente.

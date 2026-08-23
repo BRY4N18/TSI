@@ -83,6 +83,30 @@ export class PantallaZPage {
   readonly num = num;
   readonly texto = texto;
 
+  /**
+   * Etiqueta de una fila de «expedientes por canal».
+   *
+   * ⚠️ **`(portal)` no es el nombre de un cliente, es un centinela.** El hecho
+   * de accidentes no trae `idcliente`, así que los expedientes del portal no se
+   * pueden atribuir a nadie y la consulta los agrupa bajo ese literal. Pintado
+   * junto al canal salía «portal · (portal)»: el mismo dato dos veces, y con
+   * pinta de nombre propio.
+   *
+   * ⚠️ En el canal `api`, `cliente` llega como el **identificador en texto**
+   * (`toString(idcliente)` en la consulta), no como razón social. Mientras
+   * `hecho_llamada_api` esté vacío no se ve, pero en cuanto haya datos esta
+   * lista mostrará un número donde se espera un nombre. Se marca como tal para
+   * que no se lea como una empresa llamada «920001».
+   */
+  etiquetaCanal(fila: Record<string, unknown>): string {
+    const canal = texto(fila['canal']);
+    const cliente = texto(fila['cliente']);
+    if (!cliente || cliente === '(portal)') {
+      return canal || '—';
+    }
+    return /^\d+$/.test(cliente) ? `${canal} · cliente #${cliente}` : `${canal} · ${cliente}`;
+  }
+
   constructor() {
     this.route.url.pipe(takeUntilDestroyed()).subscribe((segs) => {
       const id = segs[segs.length - 1]?.path ?? this.route.snapshot.url.at(-1)?.path ?? '';

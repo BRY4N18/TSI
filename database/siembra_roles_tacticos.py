@@ -50,6 +50,7 @@ from apps.cuentas_clientes.services.user_management_service import (  # noqa: E4
     UserManagementService,
 )
 from core.auth.roles_tacticos import (  # noqa: E402
+    ROL_DIRECTOR_CUENTAS,
     ROL_DIRECTOR_DATOS,
     ROL_DIRECTOR_ESTRATEGIA,
     ROL_DIRECTOR_EXPANSION,
@@ -92,6 +93,11 @@ TACTICOS = {
         "Autoridad tactica de Soporte al Cliente",
         "gerente.exito@demo.tsi.com",
         ("Gabriel", "Ledesma"),
+    ),
+    ROL_DIRECTOR_CUENTAS: (
+        "Autoridad tactica de Cuentas y Clientes: ciclo de vida e incorporacion",
+        "director.cuentas@demo.tsi.com",
+        ("Andrea", "Salas"),
     ),
     ROL_DIRECTOR_DATOS: (
         "Autoridad tactica de Analitica e Inteligencia",

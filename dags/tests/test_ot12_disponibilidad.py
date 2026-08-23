@@ -63,8 +63,8 @@ class TestLaDisponibilidadSeMideEnTiempo:
 
         fila = _de("U-BUENA")
 
-        assert fila["pct_disponible"] == 1.0, (
-            f"salió {fila.get('pct_disponible')}: la unidad estuvo activa todo el "
+        assert fila["pct_disponibilidad"] == 1.0, (
+            f"salió {fila.get('pct_disponibilidad')}: la unidad estuvo activa todo el "
             f"período y no cambió de estado nunca"
         )
         assert fila["segundos_medidos"] == DIA
@@ -78,7 +78,7 @@ class TestLaDisponibilidadSeMideEnTiempo:
 
         fila = _de("U-MEDIA")
 
-        assert fila["pct_disponible"] == pytest.approx(0.6, abs=1e-3)
+        assert fila["pct_disponibilidad"] == pytest.approx(0.6, abs=1e-3)
         assert fila["segundos_medidos"] == DIA
 
     def test_el_ultimo_tramo_llega_hasta_el_fin_del_periodo(self, sin_transiciones):
@@ -118,7 +118,7 @@ class TestLaDisponibilidadSeMideEnTiempo:
             transicion(1, unidad="U-CAIDA", estado="Fuera de servicio", hora="00:00:00"),
         ])
 
-        assert _de("U-CAIDA")["pct_disponible"] == 0.0
+        assert _de("U-CAIDA")["pct_disponibilidad"] == 0.0
 
 
 @requiere_modelo
@@ -129,7 +129,7 @@ class TestEnMisionCuentaComoDisponible:
         """
         cargar_transiciones([transicion(1, unidad="U-MISION", estado="En Misión")])
 
-        assert _de("U-MISION")["pct_disponible"] == 1.0
+        assert _de("U-MISION")["pct_disponibilidad"] == 1.0
 
 
 @requiere_modelo

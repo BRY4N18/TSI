@@ -1,9 +1,9 @@
 /**
  * Acceso a los informes tácticos **simples** de Emergencias.
  *
- * Vive aparte de `emergencias-informes.guard.ts`, que protege los workpanels de
- * los informes **agregados**: son dos módulos con roles distintos, y unificarlos
- * mezclaría el acceso a dos cosas que el catálogo separa.
+ * Convivía con `emergencias-informes.guard.ts`, que protegía los workpanels de
+ * los informes **agregados**. Esos tres informes se retiraron el 2026-08-19 y su
+ * guard con ellos, así que este es ahora el único acceso a los listados.
  *
  * ⚠️ **`casos` admite al Cliente; los otros cuatro, no.** El cliente ve los
  * casos **cerrados de sus zonas contratadas** — el backend lo acota—, pero

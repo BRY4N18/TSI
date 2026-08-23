@@ -301,7 +301,7 @@ calcula: **se pregunta**, y el sistema nunca preguntó.
 | **Idoneidad funcional** | ⚠️ | Los nueve propios trazados a CU-E07. **Dos se declaran inmedibles, y uno es el indicador principal.** Se corrige el catálogo: `hecho_reclamo` se llamará `hecho_ticket` |
 | **Fiabilidad** | ✅ | El módulo mide, no participa en la operación |
 | **Eficiencia de desempeño** | ✅ | Regla 7. E5-05 y E5-15 usan ventanas amplias |
-| **Capacidad de interacción** | ⚪ | No aplica: frontend aplazado |
+| **Capacidad de interacción** | ⚪ | No aplica en esta capa. Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE5-003 y FR-OE5-004. La exclusión del texto de los tickets **elimina el problema en vez de resolverlo con un filtro** que alguien podría olvidar al añadir un campo |
 | **Compatibilidad** | ✅ | Contrato OpenAPI bajo el envelope común, cuando se planifique |
 | **Mantenibilidad** | ✅ | **No reimplementa los cuatro informes de OE1.** Es la aplicación más clara de la regla §7 del contrato: el catálogo pide quince y se construyen once |
@@ -340,4 +340,4 @@ cobertura aparente; lo ganado es que no hay dos definiciones de la tasa de renov
   `tiene_compromiso` y `desenlace_sla`; si no los conservara, E5-04 deja de ser calculable.
 - **El armazón de OE6 está construido.**
 - **La muestra mínima se hereda de OE6.** Con 14 tickets y 4 suscripciones, casi todo caerá por debajo.
-- **El frontend queda fuera de alcance.**
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado).

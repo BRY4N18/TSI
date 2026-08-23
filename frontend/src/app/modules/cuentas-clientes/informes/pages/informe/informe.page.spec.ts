@@ -33,6 +33,14 @@ describe('InformeCuentasPage', () => {
     fixture = TestBed.createComponent(InformeCuentasPage);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+
+    // Los listados con filtros de catálogo piden además sus opciones. Se
+    // responde aquí y no en cada prueba porque no es el objeto de ninguna: sin
+    // esto, `http.verify()` fallaría por una petición pendiente en todas.
+    for (const peticion of http.match((r) => r.url.endsWith('/catalogos'))) {
+      peticion.flush({ data: {} });
+    }
+
   }
 
   function peticion(informe: string) {

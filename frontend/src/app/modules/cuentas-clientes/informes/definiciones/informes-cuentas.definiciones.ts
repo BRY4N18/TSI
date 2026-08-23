@@ -10,6 +10,7 @@
  */
 
 import { DefinicionListado } from '../../../../shared/informes/informes-listado.types';
+import { opciones } from '../../../../shared/informes/informes-opciones';
 
 /**
  * ⚠️ **Deuda declarada.** Estos valores los declara el `enum` del contrato de
@@ -29,11 +30,18 @@ const ESTADOS_CUENTA = [
   'Dado de baja',
 ] as const;
 
-const TIPOS_CUENTA = ['Corporativo', 'Proveedor'] as const;
-
-function opciones(valores: readonly string[]) {
-  return valores.map((valor) => ({ valor, etiqueta: valor }));
-}
+/**
+ * ⚠️ Faltaba `Aseguradora`, que sí existe en el origen: el desplegable no dejaba
+ * aislar esas cuentas y devolvía las demás sin avisar de nada.
+ *
+ * ⚠️ El origen guarda **además** `aseguradora` en minúscula, en otra fila. Es el
+ * mismo concepto escrito de dos formas, y el filtro distingue mayúsculas. No se
+ * ofrecen las dos: el desplegable pintaría dos opciones con el mismo texto y
+ * quien eligiera una no sabría cuál está eligiendo — el mismo problema que las
+ * ciudades homónimas. La solución es limpiar el dato en el origen, no duplicar
+ * la opción aquí.
+ */
+const TIPOS_CUENTA = ['Corporativo', 'Proveedor', 'Aseguradora'] as const;
 
 export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
   'solicitudes-alta-pendientes': {
@@ -42,7 +50,7 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
     mensajeVacio: 'No hay solicitudes de alta pendientes.',
     columnas: [
       { campo: 'razon_social', etiqueta: 'Cuenta', principal: true },
-      { campo: 'tipo', etiqueta: 'Tipo' },
+      { campo: 'tipo', etiqueta: 'Tipo', formato: 'enumeracion' },
       { campo: 'fecha_solicitud', etiqueta: 'Solicitada', formato: 'fecha_hora' },
       {
         campo: 'dias_transcurridos',
@@ -93,8 +101,8 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
     mensajeVacio: 'No hay cuentas con ese estado.',
     columnas: [
       { campo: 'razon_social', etiqueta: 'Cuenta', principal: true },
-      { campo: 'tipo', etiqueta: 'Tipo' },
-      { campo: 'estado', etiqueta: 'Estado' },
+      { campo: 'tipo', etiqueta: 'Tipo', formato: 'enumeracion' },
+      { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'estado_onboarding', etiqueta: 'Onboarding', soloEscritorio: true },
       { campo: 'fecha_inicio_contrato', etiqueta: 'Inicio de contrato', formato: 'fecha' },
       { campo: 'propietario', etiqueta: 'Responsable' },
@@ -129,7 +137,7 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
       { campo: 'propietario_nuevo', etiqueta: 'Responsable nuevo' },
       { campo: 'fecha', etiqueta: 'Fecha', formato: 'fecha_hora' },
     ],
-    filtros: [{ nombre: 'idcliente', etiqueta: 'Cuenta (id)', tipo: 'numero' }],
+    filtros: [{ nombre: 'idcliente', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'idcliente' }],
   },
 
   'usuarios-por-rol': {
@@ -157,7 +165,7 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
       { campo: 'navegador', etiqueta: 'Navegador' },
       { campo: 'fecha_inicio', etiqueta: 'Inicio', formato: 'fecha_hora' },
     ],
-    filtros: [{ nombre: 'idusuario', etiqueta: 'Usuario (id)', tipo: 'numero' }],
+    filtros: [{ nombre: 'idusuario', etiqueta: 'Usuario', tipo: 'catalogo', catalogo: 'idusuario' }],
   },
 
   'credenciales-temporales': {

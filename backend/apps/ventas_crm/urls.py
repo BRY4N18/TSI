@@ -8,6 +8,7 @@ from apps.ventas_crm.views.plan_views import PlanListView
 from apps.ventas_crm.views.demo_views import DemoSesionView, DemoInteraccionView
 from apps.ventas_crm.views.notificacion_views import NotificacionVentasListView
 from apps.ventas_crm.views.informes_cartera_views import ProspectosView
+from apps.ventas_crm.views.informes_cartera_views import CatalogosVentasView
 from apps.ventas_crm.views.informes_asignacion_views import ReasignacionesView
 from apps.ventas_crm.views.informes_nutricion_views import (
     DemosActivasView,
@@ -19,9 +20,19 @@ urlpatterns = [
     # Antes que las rutas operativas de `ventas-crm/...`: Django resuelve por
     # orden de declaración y el prefijo vecino ya tiene rutas paramétricas.
     path(
+        "informes/ventas-crm/prospectos/catalogos",
+        CatalogosVentasView.as_view(),
+        name="informes-ventas-prospectos-catalogos",
+    ),
+    path(
         "informes/ventas-crm/prospectos",
         ProspectosView.as_view(),
         name="informes-ventas-prospectos",
+    ),
+    path(
+        "informes/ventas-crm/reasignaciones/catalogos",
+        CatalogosVentasView.as_view(),
+        name="informes-ventas-reasignaciones-catalogos",
     ),
     path(
         "informes/ventas-crm/reasignaciones",
@@ -29,9 +40,19 @@ urlpatterns = [
         name="informes-ventas-reasignaciones",
     ),
     path(
+        "informes/ventas-crm/demos-activas/catalogos",
+        CatalogosVentasView.as_view(),
+        name="informes-ventas-demos-catalogos",
+    ),
+    path(
         "informes/ventas-crm/demos-activas",
         DemosActivasView.as_view(),
         name="informes-ventas-demos-activas",
+    ),
+    path(
+        "informes/ventas-crm/notificaciones-enviadas/catalogos",
+        CatalogosVentasView.as_view(),
+        name="informes-ventas-notificaciones-catalogos",
     ),
     path(
         "informes/ventas-crm/notificaciones-enviadas",

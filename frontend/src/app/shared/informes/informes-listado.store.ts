@@ -19,6 +19,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { InformesListadoService, LIMIT_DEFECTO } from './informes-listado.service';
 import {
   AcotadoA,
+  Catalogos,
   ErrorListado,
   ListadoEnvelope,
   ValoresFiltro,
@@ -51,9 +52,37 @@ export class InformesListadoStore<T = Record<string, unknown>> {
     () => !this.cargando() && this.error() === null && this.filas().length === 0,
   );
 
+  readonly catalogos = signal<Catalogos>({});
+  readonly cargandoCatalogos = signal(false);
+
   configurar(ruta: string, limit = LIMIT_DEFECTO): void {
     this.ruta = ruta;
     this.limit = limit;
+  }
+
+  /**
+   * Carga las opciones de los desplegables de catálogo.
+   *
+   * ⚠️ **Un fallo aquí no rompe el listado.** El catálogo puebla los filtros, no
+   * las filas: si no llega, los desplegables se quedan en «Todos» y la pantalla
+   * sigue sirviendo. Propagarlo a `error` pintaría el estado de error sobre una
+   * tabla que está perfectamente cargada.
+   *
+   * Se deja de cargar en cualquier caso, para que el «Cargando…» no se quede fijo
+   * y prometa unas opciones que ya no van a llegar.
+   */
+  cargarCatalogos(): void {
+    this.cargandoCatalogos.set(true);
+    this.api.catalogos(this.ruta).subscribe({
+      next: (respuesta) => {
+        this.catalogos.set(respuesta.data ?? {});
+        this.cargandoCatalogos.set(false);
+      },
+      error: () => {
+        this.catalogos.set({});
+        this.cargandoCatalogos.set(false);
+      },
+    });
   }
 
   /**

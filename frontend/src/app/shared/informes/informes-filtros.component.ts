@@ -18,9 +18,15 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Output, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { FiltroListado, ValoresFiltro } from './informes-listado.types';
+import {
+  Catalogos,
+  FiltroListado,
+  OpcionCatalogo,
+  ValoresFiltro,
+} from './informes-listado.types';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { LIST_FILTER_CONTROL_CLASS } from '../ui/list-states/list-table.styles';
+import { humanizar } from './informes-opciones';
 
 @Component({
   selector: 'app-informes-filtros',
@@ -49,6 +55,32 @@ import { LIST_FILTER_CONTROL_CLASS } from '../ui/list-states/list-table.styles';
                 <option [ngValue]="null">Todos</option>
                 @for (opcion of filtro.opciones ?? []; track opcion.valor) {
                   <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+                }
+              </select>
+            }
+            @case ('catalogo') {
+              <select
+                [class]="controlClass"
+                [attr.data-testid]="'filtro-' + filtro.nombre"
+                [disabled]="cargandoCatalogos()"
+                [ngModel]="valorDe(filtro.nombre)"
+                [name]="filtro.nombre"
+                (ngModelChange)="cambiar(filtro.nombre, $event)"
+              >
+                <!-- ⚠️ Mientras el catálogo carga se dice que está cargando. Un
+                     desplegable vacío se lee como «no hay condados», que es una
+                     afirmación sobre los datos y no sobre la petición. -->
+                @if (cargandoCatalogos()) {
+                  <option [ngValue]="null">Cargando…</option>
+                } @else {
+                  <option [ngValue]="null">Todos</option>
+                  <!-- Se humaniza igual que las enumeraciones declaradas: hay
+                       catálogos cuyo nombre es el literal del origen
+                       (Escalado_zona, en Dim_OrigenDespacho). Aquí es seguro
+                       porque lo que viaja es el id, no el texto. -->
+                  @for (opcion of opcionesDe(filtro); track opcion.id) {
+                    <option [ngValue]="String(opcion.id)">{{ humanizar(opcion.nombre) }}</option>
+                  }
                 }
               </select>
             }
@@ -153,12 +185,34 @@ export class InformesFiltrosComponent {
   readonly filtros = input.required<FiltroListado[]>();
   /** `false` en los listados de estado actual: el backend rechaza el rango. */
   readonly admiteRango = input(false);
+  /**
+   * Catálogos ya resueltos, por clave. Vacío mientras cargan — y por eso hace
+   * falta `cargandoCatalogos`: «aún no llegó» y «llegó vacío» se ven igual, y
+   * uno es un cliente sin zonas contratadas.
+   */
+  readonly catalogos = input<Catalogos>({});
+  readonly cargandoCatalogos = input(false);
 
   @Output() readonly aplicados = new EventEmitter<ValoresFiltro>();
 
   readonly controlClass = LIST_FILTER_CONTROL_CLASS;
 
   private valores: ValoresFiltro = {};
+
+  /** Alias para poder llamar a `String()` desde la plantilla. */
+  readonly String = String;
+
+  readonly humanizar = humanizar;
+
+  /**
+   * Opciones de un filtro de catálogo.
+   *
+   * Un catálogo que no llegó devuelve lista vacía, no revienta: el desplegable
+   * se queda con «Todos» y el listado sigue siendo usable sin ese filtro.
+   */
+  opcionesDe(filtro: FiltroListado): OpcionCatalogo[] {
+    return this.catalogos()[filtro.catalogo ?? ''] ?? [];
+  }
 
   valorDe(nombre: string): string | number | boolean | null {
     return this.valores[nombre] ?? null;

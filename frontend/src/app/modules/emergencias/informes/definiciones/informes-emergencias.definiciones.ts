@@ -14,6 +14,7 @@
  */
 
 import { DefinicionListado } from '../../../../shared/informes/informes-listado.types';
+import { opciones } from '../../../../shared/informes/informes-opciones';
 
 /** Las cuatro situaciones derivadas de los tres hechos del caso. */
 export const SITUACIONES_CASO = [
@@ -24,10 +25,6 @@ export const SITUACIONES_CASO = [
 ] as const;
 
 export const TIPOS_ESCALADO_NO_APLICA = [] as const;
-
-function opciones(valores: readonly string[]) {
-  return valores.map((valor) => ({ valor, etiqueta: valor }));
-}
 
 export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
   casos: {
@@ -49,19 +46,26 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
       { campo: 'num_victimas', etiqueta: 'Víctimas', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
       { campo: 'num_fallecidos', etiqueta: 'Fallecidos', formato: 'numero', alineacion: 'derecha' },
       { campo: 'fecha_accidente', etiqueta: 'Ocurrido', formato: 'fecha_hora' },
-      // ── Los tres hechos, por separado ──────────────────────────────────────
+      // ── El desenlace, y los hechos de los que sale ─────────────────────────
       //
-      // ⚠️ **No hay columna «estado».** El backend devuelve los hechos y no un
-      // estado calculado, porque la exclusividad entre cerrado, descartado y
-      // fusionado la garantiza el módulo de fusión, no este. Derivar la etiqueta
-      // aquí repetiría en el último paso la inferencia que el backend evitó.
-      { campo: 'activo', etiqueta: 'Activo', formato: 'booleano' },
+      // ⚠️ **`situacion` sustituye a la columna «Activo»**, que era el defecto:
+      // cerrado, descartado y duplicado son **los tres** `activo = false`, así
+      // que tres filas con «No» significaban cosas distintas — y el filtro de
+      // arriba ofrecía cuatro situaciones que la tabla no sabía mostrar.
+      //
+      // No se deriva aquí: la calcula el backend con la misma regla que usa para
+      // filtrar. Hacerlo en el último paso habría puesto una segunda copia de la
+      // regla, libre de discrepar con la del filtro sin que nada fallara.
+      { campo: 'situacion', etiqueta: 'Situación', formato: 'enumeracion' },
       // La columna de origen es `STRING` y guarda epoch-ms como texto, pero el
       // backend la **normaliza a ISO** antes de devolverla — como cualquier otra
       // marca de tiempo de la API. Hasta el 2026-08-15 la devolvía verbatim, y
       // en pantalla salía «1786625595899».
       { campo: 'hora_fin', etiqueta: 'Hora de fin', formato: 'fecha_hora' },
-      { campo: 'duracion_minutos', etiqueta: 'Duración (min)', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
+      // ⚠️ **No mide cuánto estuvo abierto el caso.** Es la duración del
+      // incidente, independiente del cierre; se llamaba «Duración (min)» y, justo
+      // detrás de «Hora de fin», se leía como el tiempo que el caso pasó abierto.
+      { campo: 'duracion_incidente_minutos', etiqueta: 'Duración del incidente (min)', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
       { campo: 'duplicado_de', etiqueta: 'Duplicado de' },
     ],
     filtros: [
@@ -72,10 +76,14 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
         opciones: opciones(SITUACIONES_CASO),
         ayuda: 'Se deriva de los tres hechos del caso, no de un estado guardado.',
       },
-      { nombre: 'severidad', etiqueta: 'Severidad (id)', tipo: 'numero' },
-      { nombre: 'condado', etiqueta: 'Condado (id)', tipo: 'numero' },
-      { nombre: 'ciudad', etiqueta: 'Ciudad (id)', tipo: 'numero' },
-      { nombre: 'tipo_reportado', etiqueta: 'Tipo reportado (id)', tipo: 'numero' },
+      // ⚠️ Antes eran cuatro campos numéricos —«Condado (id)»— y la tabla solo
+      // muestra nombres: no había forma de averiguar el número desde la propia
+      // pantalla. Las opciones las sirve el backend, que además **las acota por
+      // cobertura**: por eso no pueden declararse aquí como una enumeración.
+      { nombre: 'severidad', etiqueta: 'Severidad', tipo: 'catalogo', catalogo: 'severidad' },
+      { nombre: 'condado', etiqueta: 'Condado', tipo: 'catalogo', catalogo: 'condado' },
+      { nombre: 'ciudad', etiqueta: 'Ciudad', tipo: 'catalogo', catalogo: 'ciudad' },
+      { nombre: 'tipo_reportado', etiqueta: 'Tipo reportado', tipo: 'catalogo', catalogo: 'tipo_reportado' },
     ],
   },
 
@@ -87,7 +95,7 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'numero_caso', etiqueta: 'Caso', principal: true },
       { campo: 'unidad', etiqueta: 'Unidad' },
-      { campo: 'origen_despacho', etiqueta: 'Origen' },
+      { campo: 'origen_despacho', etiqueta: 'Origen', formato: 'enumeracion' },
       { campo: 'fecha_despacho', etiqueta: 'Despachada', formato: 'fecha_hora' },
       // ⚠️ Ausentes en una misión en tránsito, y eso es información: `0` es el
       // centinela de «aún no ha ocurrido», no la época de 1970.
@@ -100,8 +108,8 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
     ],
     filtros: [
       { nombre: 'en_transito', etiqueta: 'En tránsito', tipo: 'booleano' },
-      { nombre: 'origen', etiqueta: 'Origen (id)', tipo: 'numero' },
-      { nombre: 'unidad', etiqueta: 'Unidad (id)', tipo: 'numero' },
+      { nombre: 'origen', etiqueta: 'Origen', tipo: 'catalogo', catalogo: 'origen' },
+      { nombre: 'unidad', etiqueta: 'Unidad', tipo: 'catalogo', catalogo: 'unidad' },
       { nombre: 'caso', etiqueta: 'Caso', tipo: 'texto' },
     ],
   },
@@ -130,7 +138,7 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
         ayuda: 'La no sincronizada es evidencia que se levantó y nunca llegó.',
       },
       { nombre: 'caso', etiqueta: 'Caso', tipo: 'texto' },
-      { nombre: 'autor', etiqueta: 'Autor (id)', tipo: 'numero' },
+      { nombre: 'autor', etiqueta: 'Autor', tipo: 'catalogo', catalogo: 'autor' },
     ],
   },
 
@@ -152,7 +160,7 @@ export const INFORMES_EMERGENCIAS: Record<string, DefinicionListado> = {
       { nombre: 'sincronizado', etiqueta: 'Sincronizada', tipo: 'booleano' },
       { nombre: 'tipo', etiqueta: 'Tipo', tipo: 'texto' },
       { nombre: 'caso', etiqueta: 'Caso', tipo: 'texto' },
-      { nombre: 'autor', etiqueta: 'Autor (id)', tipo: 'numero' },
+      { nombre: 'autor', etiqueta: 'Autor', tipo: 'catalogo', catalogo: 'autor' },
     ],
   },
 

@@ -60,3 +60,24 @@ class DespachosView(ListadoBaseView):
              "caso": caso, "en_transito": en_transito},
             acotado_a=ACOTADO_TODOS,
         )
+
+
+class CatalogosDespachosView(ListadoBaseView):
+    """Opciones de «Origen» y «Unidad» del listado de despachos.
+
+    Mismo permiso interno que el listado: qué unidad atendió qué caso es
+    operación interna, y el catálogo no puede decir más que la tabla.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesEmergenciasInternoPermission]
+    admite_rango = False
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+
+        repo = CatalogosFiltrosRepository()
+        return success_response(
+            {"origen": repo.origenes_despacho(), "unidad": repo.unidades()},
+            meta={"acotado_a": ACOTADO_TODOS},
+        )

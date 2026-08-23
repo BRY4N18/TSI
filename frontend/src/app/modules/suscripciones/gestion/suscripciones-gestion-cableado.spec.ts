@@ -38,9 +38,10 @@ describe('cableado de gestión de Suscripciones', () => {
     const cobro = NAV_LINKS.find((l) => l.path === '/suscripciones/gestion/cobro');
     const movimientos = NAV_LINKS.find((l) => l.path === '/suscripciones/gestion/movimientos');
     const catalogo = NAV_LINKS.find((l) => l.path === '/suscripciones/gestion/catalogo');
-    expect(cobro?.roles).toEqual(['DirectorFinanciero', 'Administrador']);
-    expect(movimientos?.roles).toEqual(['DirectorFinanciero', 'Administrador']);
-    expect(catalogo?.roles).toEqual(['DirectorEstrategia', 'Administrador']);
+        // ⚠️ Sin `Administrador`: la gestión es de la autoridad del departamento.
+    expect(cobro?.roles).toEqual(['DirectorFinanciero']);
+    expect(movimientos?.roles).toEqual(['DirectorFinanciero']);
+    expect(catalogo?.roles).toEqual(['DirectorEstrategia']);
     expect(cobro?.roles).not.toContain('DirectorEstrategia');
     expect(catalogo?.roles).not.toContain('DirectorFinanciero');
   });

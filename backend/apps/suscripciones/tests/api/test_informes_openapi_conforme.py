@@ -26,7 +26,7 @@ CONTRATO = (
 
 #: Campos que el contrato declara **condicionales** en su propia descripción.
 CONDICIONALES = {
-    "motivo_cancelacion", "fecha_cancelacion", "cambio_programado",
+    "motivo_cancelacion", "fecha_cancelacion",
     "dias_mora", "resuelta_por", "motivo_rechazo", "fecha_resolucion",
 }
 

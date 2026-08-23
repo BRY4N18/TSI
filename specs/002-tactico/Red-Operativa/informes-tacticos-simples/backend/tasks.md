@@ -159,7 +159,20 @@ historias.
 - [X] T044 [P] Prueba de rendimiento en `backend/apps/red_operativa/tests/performance/test_informes_latencia.py`: primera página de los cuatro listados por debajo de 2 s, **con una flota de al menos 100 unidades** para que la resolución geográfica por lotes se ponga a prueba de verdad (SC-006)
 - [X] T045 Ejecutar `cd backend && python -m pytest -q` completo y verificar que **ninguna suite existente se movió**
 - [X] T046 Verificar que la implementación coincide con `contracts/informes-tacticos-simples.openapi.yaml` endpoint por endpoint
-- [ ] T047 Recorrer `quickstart.md` de principio a fin contra el stack levantado, con especial atención a §3.2 (alta ≠ disponible), §3.6 (`En_Alerta`) y §3.8 (criterio de pertenencia) — **parcial:** las comprobaciones reproducibles están cubiertas por la suite (§3.2 por `test_informes_flota_alcance.py`, §3.6 por `test_informes_region_estados.py`, §3.8 por `test_acotamiento_criterio.py` y `test_informes_flota_acotamiento.py`). **Falta el recorrido contra Docker levantado**
+- [X] T047 Recorrer `quickstart.md` de principio a fin contra el stack levantado — **hecho el 2026-08-19: 20 comprobaciones, 0 fallos.**
+
+  Con el actor de cada materia: §3.2 (el listado **no** expone disponibilidad y
+  trae unidades de alta y no de alta), §3.3 (sin latitud, longitud ni contacto
+  del proveedor), §3.4 (la baja forzada trae su `caso_afectado`), §3.6
+  (`En_Alerta` y `Despublicada` disjuntos), §3.7 (los 3 intentos de validación
+  conservados con motivo y ejecutor), §3.9 (Expansión recibe **403** en
+  validaciones: es materia del Tecnológico), §3.10 (condado, proveedor y ejecutor
+  por nombre) y §3.11 (rango solo donde FR-017 lo permite).
+
+  ⚠️ Dos reglas quedan comprobadas **solo en su contrato**, porque el origen no
+  tiene el caso: **ninguna unidad sin condado** (§3.5) y **ninguna región fuera
+  de `Producción`** (§3.6) — los cinco estados existen en el catálogo y solo uno
+  está poblado. Sembrar esos casos es la vía para ejercitarlas de verdad.
 - [X] T048 Anotar en `decisiones-pendientes.md` que **«pertenecer a una cuenta» tiene dos definiciones incompatibles** en el código operativo —administrador local frente a vínculo— y que conviene decidir si eso es intencional por departamento o una divergencia a unificar
 - [X] T049 Documentar el trabajo en `.specify/docs/changelog.md`, actualizar `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` marcando los listados como 🟢, y **añadir al contrato común** `specs/002-tactico/contrato-informes-simples.md` dos reglas nuevas: que el criterio de pertenencia se declara por listado, y que un listado cuyo alcance pueda malinterpretarse debe declararlo en su propia respuesta
 

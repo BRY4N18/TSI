@@ -142,7 +142,7 @@
               <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
                 @for (fila of cargaVisual().data; track $index) {
                   <li class="flex items-center justify-between gap-2 text-sm">
-                    <span class="text-text-secondary">{{ texto(fila['unidad']) || 'Unidad' }}</span>
+                    <span class="text-text-secondary">{{ etiquetaConPeriodo(fila, 'unidad', cargaVisual().data) }}</span>
                     @if (num(fila['desviacion_mediana']) === null) {
                       <span class="text-text-secondary">sin dato</span>
                     } @else {
@@ -314,7 +314,7 @@
               <ul class="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3">
                 @for (fila of ratios().data; track $index) {
                   <li class="rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm">
-                    <span class="text-text-secondary">{{ texto(fila['condado']) }}</span>
+                    <span class="text-text-secondary">{{ etiquetaConPeriodo(fila, 'condado', ratios().data) }}</span>
                     @if (esSinCapacidad(fila)) {
                       <span
                         class="ml-2 rounded-md bg-alert-warning-bg px-2 py-0.5 text-xs font-medium text-alert-warning"

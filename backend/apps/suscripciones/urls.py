@@ -16,6 +16,10 @@ from apps.suscripciones.views.informes_facturacion_views import (
     MetodosPagoView,
 )
 from apps.suscripciones.views.informes_suscripcion_views import SuscripcionesView
+from apps.suscripciones.views.informes_base import (
+    CatalogosCatalogoView,
+    CatalogosFinanzasView,
+)
 from apps.suscripciones.views.metodo_pago_views import MetodoPagoListCreateView
 from apps.suscripciones.views.plan_views import (
     PlanDetailView,
@@ -33,9 +37,19 @@ urlpatterns = [
     # ── Informes tácticos simples ───────────────────────────────────────────
     # Antes que las rutas operativas: Django resuelve por orden de declaración.
     path(
+        "informes/suscripciones-facturacion/suscripciones/catalogos",
+        CatalogosCatalogoView.as_view(),
+        name="informes-suscripciones-catalogos",
+    ),
+    path(
         "informes/suscripciones-facturacion/suscripciones",
         SuscripcionesView.as_view(),
         name="informes-susc-suscripciones",
+    ),
+    path(
+        "informes/suscripciones-facturacion/facturas/catalogos",
+        CatalogosFinanzasView.as_view(),
+        name="informes-suscripciones-facturas-catalogos",
     ),
     path(
         "informes/suscripciones-facturacion/facturas",
@@ -43,9 +57,19 @@ urlpatterns = [
         name="informes-susc-facturas",
     ),
     path(
+        "informes/suscripciones-facturacion/metodos-pago/catalogos",
+        CatalogosFinanzasView.as_view(),
+        name="informes-suscripciones-metodos-catalogos",
+    ),
+    path(
         "informes/suscripciones-facturacion/metodos-pago",
         MetodosPagoView.as_view(),
         name="informes-susc-metodos-pago",
+    ),
+    path(
+        "informes/suscripciones-facturacion/solicitudes-cambio-plan/catalogos",
+        CatalogosCatalogoView.as_view(),
+        name="informes-suscripciones-solicitudes-catalogos",
     ),
     path(
         "informes/suscripciones-facturacion/solicitudes-cambio-plan",

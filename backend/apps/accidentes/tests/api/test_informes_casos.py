@@ -15,6 +15,10 @@ import re
 
 import pytest
 
+from core.repositories.accidentes.informes_casos_repository import (
+    SITUACION_INCONSISTENTE,
+    situacion_de,
+)
 from apps.accidentes.tests.informes_fixtures import (
     CASO_ABIERTO,
     CASO_AJENO,
@@ -206,18 +210,70 @@ def test_el_fusionado_indica_de_que_caso_es_duplicado(
     assert fusionado["duplicado_de"] == CASO_CERRADO
 
 
-def test_la_respuesta_no_contiene_ningun_campo_estado(
+def test_los_tres_hechos_viajan_ademas_de_la_situacion(
     client, emergencias_sembradas, operador_informes_headers
 ):
-    """Los tres hechos viajan por separado; **no hay estado calculado**.
+    """`situacion` **se añade** a los tres hechos, no los sustituye.
 
-    Inferirlo ataría este listado a una regla de exclusividad que vive en el
-    módulo de fusión, y empezaría a mentir el día que cambiara.
+    Hasta el 2026-08-18 esta prueba exigía lo contrario: que no hubiera ningún
+    campo derivado, porque la exclusividad entre cerrado, descartado y fusionado
+    vive en el módulo de fusión y un derivado «empezaría a mentir el día que
+    cambiara». El argumento seguía siendo bueno; la conclusión no, porque la
+    tabla acababa mostrando `activo` — y los tres desenlaces son `activo = false`.
+
+    Se publica la situación **y** se conservan los hechos: quien prefiera
+    interpretarlos por su cuenta no ha perdido nada. Lo que no vuelve es el campo
+    `estado`, que sí sería el estado formal del histórico y no se deriva de aquí.
     """
     for fila in _data(client.get(f"{URL}?limit=500", **operador_informes_headers)):
         assert "estado" not in fila
-        assert "situacion" not in fila
-        assert {"activo", "hora_fin", "duplicado_de"} <= set(fila)
+        assert {"activo", "hora_fin", "duplicado_de", "situacion"} <= set(fila)
+
+
+def test_la_situacion_concuerda_siempre_con_los_tres_hechos(
+    client, emergencias_sembradas, operador_informes_headers
+):
+    """La garantía que sostiene la decisión de publicarla.
+
+    Un campo derivado solo vale lo que vale su acuerdo con el dato del que sale.
+    Se comprueba sobre **todas** las filas y no sobre un ejemplo: la mentira que
+    preocupaba aparecería en una fila rara, no en la primera.
+    """
+    for fila in _data(client.get(f"{URL}?limit=500", **operador_informes_headers)):
+        esperada = situacion_de(
+            activo=fila["activo"],
+            hora_fin=fila["hora_fin"],
+            duplicado_de=fila["duplicado_de"],
+        )
+        assert fila["situacion"] == esperada, fila["numero_caso"]
+
+
+def test_ninguna_fila_sembrada_es_inconsistente(
+    client, emergencias_sembradas, operador_informes_headers
+):
+    """⚠️ Si esto falla, **el fallo no está aquí**.
+
+    `inconsistente` significa que un caso está `activo` con hora de fin, o activo
+    apuntando a otro caso: la exclusividad que garantiza el módulo de fusión dejó
+    de cumplirse. Es exactamente el escenario que el campo existe para delatar.
+    """
+    situaciones = {
+        f["situacion"]
+        for f in _data(client.get(f"{URL}?limit=500", **operador_informes_headers))
+    }
+    assert SITUACION_INCONSISTENTE not in situaciones
+
+
+def test_la_duracion_ausente_no_se_publica_como_cero(
+    client, emergencias_sembradas, operador_informes_headers
+):
+    """Pinot no tiene NULL: una duración sin registrar llega como `0`.
+
+    Publicado como `0` junto a una hora de fin vacía se leía «cerrado al
+    instante», que es lo contrario de lo que dice el dato.
+    """
+    for fila in _data(client.get(f"{URL}?limit=500", **operador_informes_headers)):
+        assert fila["duracion_incidente_minutos"] != 0
 
 
 def test_los_tres_hechos_llegan_sin_interpretar(

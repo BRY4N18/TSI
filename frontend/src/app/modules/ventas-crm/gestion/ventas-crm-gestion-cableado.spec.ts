@@ -6,7 +6,8 @@ import { VENTAS_CRM_INFORMES_ROUTES } from '../informes/ventas-crm-informes.rout
 import { ventasCrmGestionGuard } from './guards/ventas-crm-gestion.guard';
 import { VENTAS_CRM_GESTION_ROUTES } from './ventas-crm-gestion.routes';
 
-const ROLES_GESTION = ['DirectorMarketing', 'GerenteVentas', 'Administrador'];
+// ⚠️ Sin `Administrador`: la gestión es de la autoridad del departamento.
+const ROLES_GESTION = ['DirectorMarketing', 'GerenteVentas'];
 
 describe('cableado de gestión de Ventas y CRM', () => {
   it('la_app_registra_gestion_aparte_de_los_listados', () => {

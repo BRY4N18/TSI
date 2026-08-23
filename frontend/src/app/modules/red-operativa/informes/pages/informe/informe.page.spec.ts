@@ -29,6 +29,14 @@ describe('InformeRedOperativaPage', () => {
     fixture = TestBed.createComponent(InformeRedOperativaPage);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+
+    // Los listados con filtros de catálogo piden además sus opciones. Se
+    // responde aquí y no en cada prueba porque no es el objeto de ninguna: sin
+    // esto, `http.verify()` fallaría por una petición pendiente en todas.
+    for (const peticion of http.match((r) => r.url.endsWith('/catalogos'))) {
+      peticion.flush({ data: {} });
+    }
+
   }
 
   function peticion(informe: string) {
@@ -166,14 +174,23 @@ describe('InformeRedOperativaPage', () => {
       peticion('regiones').flush(envelope([], { acotado_a: 'todos' }));
       fixture.detectChanges();
 
-      const opciones = Array.from(
+      const options = Array.from(
         fixture.nativeElement.querySelectorAll(
           '[data-testid="filtro-estado_region"] option',
         ) as NodeListOf<HTMLOptionElement>,
-      ).map((o) => o.textContent?.trim());
+      );
+      const etiquetas = options.map((o) => o.textContent?.trim());
+      const valores = options.map((o) => o.value);
 
-      expect(opciones).toContain('En_Alerta');
-      expect(opciones).toContain('Despublicada');
+      // ⚠️ La etiqueta se humaniza y **el valor no**: lo que se lee es «En
+      // Alerta» y lo que viaja al backend sigue siendo `En_Alerta`. Antes esta
+      // prueba miraba solo la etiqueta y por eso exigía el literal crudo en
+      // pantalla; ahora comprueba las dos caras, que es lo que puede romperse
+      // por separado.
+      expect(etiquetas).toContain('En Alerta');
+      expect(etiquetas).toContain('Despublicada');
+      expect(valores.some((v) => v.endsWith('En_Alerta'))).toBeTrue();
+      expect(valores.some((v) => v.endsWith('Despublicada'))).toBeTrue();
     });
 
     it('flota_when_se_muestra_no_expone_posicion_ni_contacto', () => {

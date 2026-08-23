@@ -35,7 +35,7 @@ describe('cableado de gestión de Partners', () => {
       '/partners/gestion/entrega',
     ]) {
       const link = NAV_LINKS.find((l) => l.path === path);
-      expect(link?.roles).toEqual(['DirectorTecnologico', 'Administrador']);
+      expect(link?.roles).toEqual(['DirectorTecnologico']);
       expect(link?.roles).not.toContain('PartnerIntegracion');
       expect(link?.roles).not.toContain('DesarrolladorAPIs');
     }

@@ -93,13 +93,31 @@ El SRS lo subraya, y **aplicarlo mecánicamente sería un error**:
 | **Red Operativa** | Tecnológico decide la validación de regiones; Expansión, el crecimiento |
 | **Cuentas y Clientes** | Tecnológico gobierna **solo la capa de accesos técnicos** |
 
-### Hallazgo: Cuentas y Clientes no tiene autoridad de negocio
+### Hallazgo (resuelto): Cuentas y Clientes no tenía autoridad de negocio
 
-La única que el §5.1 le asigna es el Director Tecnológico, limitado a accesos técnicos. Sus informes
-de altas, incorporación, ciclo de vida y sesiones **no tienen jefatura por encima del
-Administrador** — que es a la vez su responsable operativo y su única visión de conjunto.
+La única que el §5.1 le asignaba era el Director Tecnológico, limitado a accesos técnicos. Sus
+informes de altas, incorporación, ciclo de vida y sesiones **no tenían jefatura por encima del
+Administrador** — que era a la vez su responsable operativo y su única visión de conjunto.
 
-No es un olvido de esta asignación: es lo que dice el §5.1. Anotado en `decisiones-pendientes.md`.
+Eso se volvió un problema concreto el 2026-08-19, al decidir que el Administrador **opera y no lee
+gestión**: siete de los nueve informes compuestos del departamento se habrían quedado sin que nadie
+pudiera abrirlos. Se leían por ser administrador del sistema, no por responder de ellos.
+
+**Resolución: se creó el `DirectorCuentas`**, autoridad del **ciclo de vida** y la
+**incorporación**. La autoridad del departamento queda repartida, como en Suscripciones y Red
+Operativa:
+
+| Materia | Autoridad |
+|---|---|
+| Ciclo de vida (churn, antigüedad, cuentas en riesgo, usuarios vs tope) | **Director de Cuentas** |
+| Incorporación (tiempo de onboarding, embudo de abandono, tasa de aprobación) | **Director de Cuentas** |
+| Accesos técnicos (concurrencia de sesiones, roles incompatibles) | **Director Tecnológico** |
+
+⚠️ Cada uno entra a su materia y **no** a la del otro: quien fija los criterios técnicos de acceso
+no es quien responde de por qué se van los clientes.
+
+⚠️ El orden importó: retirar al Administrador **antes** de crear el cargo habría dejado esos siete
+informes inalcanzables.
 
 ---
 

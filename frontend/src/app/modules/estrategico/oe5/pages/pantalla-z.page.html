@@ -1,0 +1,281 @@
+<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8">
+  @if (definicion(); as def) {
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Estratégico · OE5
+        </p>
+        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+          {{ def.titulo }}
+        </h1>
+        <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
+        <p class="m-0 mt-2 text-xs text-text-secondary">
+          Lectura de empresa con ventana comparada. No es el compuesto táctico de
+          Soporte, Suscripciones o Cuentas, ni el ciclo de OE1.
+        </p>
+      </div>
+    </header>
+
+    @if (coberturaParcial()) {
+      <p
+        class="m-0 rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-secondary"
+        data-testid="zona-parcial"
+      >
+        Cobertura parcial
+        @if (faltaParcial().length) {
+          · {{ faltaParcial().join(', ') }}
+        }
+      </p>
+    }
+
+    <div class="grid gap-4 lg:grid-cols-12">
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        data-testid="zona-heroe"
+        data-bloque-vista
+      >
+        <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+          {{ def.heroe.titulo }}
+        </p>
+        @switch (cargaHeroe().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              (click)="reintentar(def.heroe.informes[0])"
+            >
+              Reintentar
+            </button>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">
+              @if (idPantalla() === 'servicio') {
+                Sin compromisos que cumplir en este período.
+              } @else {
+                Sin datos en este período.
+              }
+            </p>
+          }
+          @case ('sin_dato') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">
+              @if (idPantalla() === 'servicio') {
+                Sin compromisos que cumplir en este período.
+              } @else {
+                Sin dato en este período.
+              }
+            </p>
+          }
+          @default {
+            @if (idPantalla() === 'servicio') {
+              @if (cargaHeroe().data[0]; as fila) {
+                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                  {{ pct(num(fila['pct_cumplimiento'])) }}
+                </p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  Recuento {{ num(fila['con_compromiso']) | number }} cerrados con compromiso
+                </p>
+              }
+            }
+            @if (idPantalla() === 'ingresos') {
+              @if (cargaHeroe().data[0]; as fila) {
+                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                  {{ pct(num(fila['nrr'])) }}
+                </p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  Recuento {{ num(fila['recuento']) | number }} suscripciones de cohorte
+                </p>
+              }
+            }
+            @if (idPantalla() === 'planes') {
+              <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary">
+                @for (fila of cargaHeroe().data; track texto(fila['plan'])) {
+                  <li>
+                    {{ texto(fila['plan']) }} ·
+                    {{ pct(num(fila['pct_cumplimiento'])) }} ·
+                    {{ num(fila['con_compromiso']) | number }} con compromiso
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'riesgo') {
+              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                {{ cargaHeroe().data.length | number }}
+              </p>
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                Cuentas con al menos dos señales. Una sola no marca.
+              </p>
+            }
+          }
+        }
+      </article>
+
+      <div class="flex flex-col gap-3 lg:col-span-5" data-bloque-vista data-testid="zona-periodo">
+        <app-periodo-selector (cambio)="onPeriodoChange($event)">
+          <label class="flex flex-col text-xs text-text-secondary">
+            Granularidad
+            <select
+              class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+              [(ngModel)]="granularidad"
+              (change)="onFiltrosChange()"
+            >
+              <option value="mes">Mes</option>
+              <option value="trimestre">Trimestre</option>
+              <option value="anio">Año</option>
+            </select>
+          </label>
+          <label class="flex flex-col text-xs text-text-secondary" data-testid="zona-comparacion">
+            Comparación
+            <select
+              class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+              [(ngModel)]="comparacion"
+              (change)="onFiltrosChange()"
+            >
+              <option value="ninguna">Ninguna</option>
+              <option value="mom">Mes anterior</option>
+              <option value="yoy">Mismo tramo del año anterior</option>
+            </select>
+          </label>
+        </app-periodo-selector>
+        @if (cargaHeroe().meta.comparacion === null && cargaHeroe().meta.motivo_ausencia) {
+          <p class="m-0 text-xs text-text-secondary">
+            Comparación ausente: {{ cargaHeroe().meta.motivo_ausencia }}
+          </p>
+        }
+      </div>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        data-testid="zona-visual"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        @switch (cargaVisual().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'servicio') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['periodo'])) {
+                  <li class="text-sm text-text-secondary">
+                    {{ texto(fila['periodo']) }} ·
+                    {{ pct(num(fila['pct_incumplimiento'])) }} incumplimiento ·
+                    {{ num(fila['incumplidos']) | number }}
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'ingresos') {
+              @if (cargaVisual().data[0]; as fila) {
+                <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0 text-sm text-text-secondary">
+                  <li>Expansión {{ num(fila['expansion']) | number: '1.0-2' }}</li>
+                  <li>Contracción {{ num(fila['contraccion']) | number: '1.0-2' }}</li>
+                  <li>Churn {{ num(fila['churn']) | number: '1.0-2' }}</li>
+                </ul>
+              }
+            }
+            @if (idPantalla() === 'planes') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track $index) {
+                  <li class="text-sm text-text-secondary">
+                    {{ texto(fila['tipo_movimiento']) }} ·
+                    {{ num(fila['recuento']) | number }} ·
+                    delta {{ num(fila['delta_ingreso']) | number: '1.0-2' }}
+                  </li>
+                }
+              </ul>
+            }
+            @if (idPantalla() === 'riesgo') {
+              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
+                @for (fila of cargaVisual().data; track texto(fila['idcliente'])) {
+                  <li class="text-sm text-text-secondary">
+                    {{ num(fila['n_senales']) | number }} señales
+                    @if (num(fila['senal_api']) === 1) { · API }
+                    @if (num(fila['senal_tickets']) === 1) { · tickets }
+                    @if (num(fila['senal_cobro']) === 1) { · cobro }
+                    @if (num(fila['senal_sesiones']) === 1) { · sesiones }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </article>
+
+      <article
+        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        data-testid="zona-lectura"
+        data-bloque-vista
+      >
+        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        @switch (cargaLectura().estado) {
+          @case ('carga') {
+            <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>
+          }
+          @case ('error') {
+            <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
+          }
+          @case ('vacio') {
+            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+          }
+          @default {
+            @if (idPantalla() === 'servicio') {
+              @if (cargaLectura().data[0]; as fila) {
+                <p class="m-0 mt-3 text-sm text-text-secondary">
+                  Sin compromiso {{ num(fila['sin_compromiso']) | number }} — no inflan ni hunden el %.
+                </p>
+              }
+              <p class="m-0 mt-2 text-sm text-text-secondary">
+                {{ cargaLectura().meta.alcance || 'Denominador = cerrados con compromiso.' }}
+              </p>
+            }
+            @if (idPantalla() === 'ingresos') {
+              <p class="m-0 mt-3 text-sm text-text-secondary" data-testid="alcance-nrr">
+                {{ cargaLectura().meta.alcance || 'NRR descompuesto; precio congelado en la suscripción, no el catálogo.' }}
+              </p>
+            }
+            @if (idPantalla() === 'planes') {
+              @if (cargaLectura().data[0]; as fila) {
+                <p class="m-0 mt-3 text-sm text-text-secondary">
+                  Activas {{ num(fila['activas']) | number }} · media
+                  {{ num(fila['dias_antiguedad_media']) | number: '1.0-0' }} días
+                </p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  Cerradas {{ num(fila['cerradas']) | number }} — no entran en la media
+                </p>
+              }
+            }
+            @if (idPantalla() === 'riesgo') {
+              <p class="m-0 mt-3 text-sm text-text-secondary">
+                {{ cargaLectura().meta.alcance || 'Una cuenta se marca solo con dos o más señales.' }}
+              </p>
+              @if (cargaLectura().meta.falta?.length) {
+                <p class="m-0 mt-2 text-sm text-text-secondary">
+                  Falta: {{ cargaLectura().meta.falta!.join(', ') }}
+                </p>
+              }
+            }
+          }
+        }
+      </article>
+
+      @if (def.apoyoPlegado) {
+        <div class="lg:col-span-12" data-bloque-vista>
+          <app-apoyo-plegable-oe5 [bloques]="bloquesApoyo()" />
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="m-0 text-sm text-text-secondary">Pantalla no encontrada.</p>
+  }
+</div>

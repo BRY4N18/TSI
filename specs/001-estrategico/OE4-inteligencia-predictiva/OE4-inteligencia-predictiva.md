@@ -46,7 +46,7 @@ tablas que no existen; E4-14 lo impide la regla de idempotencia del modelo.
 | Capa | Ruta | Estado |
 |---|---|---|
 | **Backend** | [`backend/`](./backend/) | **implementado** (9 publicados, 6 → 404) |
-| Frontend | *(pendiente)* | aplazada |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** — 4 pantallas Z; 9 slugs; guards partidos |
 
 ## Lo que hay que saber antes de tocar este módulo
 

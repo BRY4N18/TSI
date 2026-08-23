@@ -53,6 +53,8 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
         <app-informes-filtros
           [filtros]="definicion().filtros ?? []"
           [admiteRango]="definicion().admiteRango ?? false"
+          [catalogos]="store.catalogos()"
+          [cargandoCatalogos]="store.cargandoCatalogos()"
           (aplicados)="aplicar($event)"
         />
       }
@@ -102,6 +104,12 @@ export class InformeVentasPage implements OnInit {
 
   ngOnInit(): void {
     this.store.configurar(this.definicion().ruta);
+    // Solo se pide el catálogo si algún filtro lo necesita: los listados que no
+    // declaran ninguno no tienen endpoint de catálogos, y pedirlo sería un 404
+    // por cada pantalla.
+    if (this.definicion().filtros?.some((f) => f.tipo === 'catalogo')) {
+      this.store.cargarCatalogos();
+    }
     this.store.aplicarFiltros({});
   }
 

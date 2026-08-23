@@ -29,6 +29,14 @@ describe('InformeSoportePage', () => {
     fixture = TestBed.createComponent(InformeSoportePage);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+
+    // Los listados con filtros de catálogo piden además sus opciones. Se
+    // responde aquí y no en cada prueba porque no es el objeto de ninguna: sin
+    // esto, `http.verify()` fallaría por una petición pendiente en todas.
+    for (const peticion of http.match((r) => r.url.endsWith('/catalogos'))) {
+      peticion.flush({ data: {} });
+    }
+
   }
 
   function peticion(informe: string) {
@@ -143,7 +151,10 @@ describe('InformeSoportePage', () => {
 
       const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
 
-      expect(celdas[2].textContent.trim()).toBe('automatico');
+      // ⚠️ Se pinta humanizado —`automatico` → «Automatico»— con la misma regla
+      // que las opciones del filtro, para que celda y desplegable digan lo
+      // mismo. **Sin acento inventado**: humanizar no adivina ortografía.
+      expect(celdas[2].textContent.trim()).toBe('Automatico');
       // El supervisor que lo recibe es destinatario, no autor.
       expect(celdas[5].textContent.trim()).toBe('—');
     });
@@ -179,9 +190,11 @@ describe('InformeSoportePage', () => {
 
       expect(fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"]').length).toBe(1);
 
+      // Índices de `tickets`: 6 agente_asignado, 7 situacion_compromiso,
+      // 8 factura_vinculada. Se comprueban los dos que pueden faltar.
       const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
-      expect(celdas[7].textContent.trim()).toBe('—');
-      expect(celdas[9].textContent.trim()).toBe('—');
+      expect(celdas[6].textContent.trim()).toBe('—');
+      expect(celdas[8].textContent.trim()).toBe('—');
     });
 
     it('sin_compromiso_when_llega_se_muestra_tal_cual', () => {
@@ -195,7 +208,9 @@ describe('InformeSoportePage', () => {
 
       const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
 
-      expect(celdas[8].textContent.trim()).toBe('sin compromiso');
+      // Humanizado, no colapsado: «Sin compromiso» sigue siendo una situación
+      // propia y distinta de «en curso» y de la ausencia.
+      expect(celdas[7].textContent.trim()).toBe('Sin compromiso');
     });
 
     it('rango_when_es_tickets_no_se_pinta', () => {

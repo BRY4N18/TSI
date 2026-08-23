@@ -130,6 +130,9 @@ describe('PantallaZPage (Soporte al Cliente)', () => {
       data: [
         {
           id_agente: 3,
+          // El servicio resuelve el nombre y lo manda junto al identificador:
+          // el gerente decide sobre personas, no sobre números.
+          agente: 'Lucia Vera',
           asignados: 8,
           resueltos: 2,
           reabiertos: 1,
@@ -282,10 +285,27 @@ describe('PantallaZPage (Soporte al Cliente)', () => {
       expect(par).toContain('35.7');
       expect(texto('heroe-cifra')).toContain('11.1');
       expect(texto('zona-lectura')).toContain('reabiertos');
-      expect(texto('fila-agente')).toContain('Agente 3');
-      expect(texto('fila-agente')).not.toContain('Lucia');
+      // ⚠️ Esta aserción cambió de sentido el 2026-08-22: afirmaba que la fila
+      // decía «Agente 3» y **no** un nombre, que era exactamente el defecto.
+      // El servicio resuelve el nombre desde el mismo repositorio que ya usaba
+      // el listado simple de tickets; faltaba hacerlo aquí.
+      expect(texto('fila-agente')).toContain('Lucia Vera');
+      expect(texto('fila-agente')).not.toContain('Agente #');
       const bloques = fixture.nativeElement.querySelectorAll('[data-bloque-vista]');
       expect(bloques.length).toBeLessThanOrEqual(8);
+    });
+
+    it('agente_que_no_resuelve_when_llega_se_ve_como_anomalia_no_como_nombre', () => {
+      // Un identificador que no resuelve significa que el agente ya no existe o
+      // que la carga se adelantó. El respaldo lleva `#` a propósito: disfrazarlo
+      // de nombre lo haría indistinguible de un agente normal.
+      const sinNombre = JSON.parse(JSON.stringify(cumplimientoOk));
+      delete sinNombre['rendimiento-agentes'].data[0].agente;
+
+      montar('cumplimiento');
+      flushTodos('cumplimiento', sinNombre);
+
+      expect(texto('fila-agente')).toContain('Agente #3');
     });
 
     it('pct_nulo_es_sin_dato_y_sigue_mostrando_cobertura', () => {

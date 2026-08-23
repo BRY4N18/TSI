@@ -201,9 +201,10 @@ El resto de comprobaciones 2.5–2.7, 2.12 y 2.13 las cubre la suite pytest (183
 
 - **La agrupación por región.** No existe. Comprobar que `por_region` **no es un parámetro aceptado**
   forma parte de 2.10.
-- **El rol `Gerente`.** No está sembrado todavía.
+- **Un usuario demo con rol `Gerente`.** El rol (id 23) está en `Dim_Rol` / `ROLES_DEMO`; este
+  quickstart no comprueba que haya una cuenta asignada en el entorno.
 - **Los siete informes bloqueados**, más allá de que devuelvan `404`.
-- **El frontend.** Aplazado.
+- **El frontend.** Implementado: [`../frontend/quickstart.md`](../frontend/quickstart.md).
 
 ---
 

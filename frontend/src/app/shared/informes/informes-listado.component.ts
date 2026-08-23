@@ -29,6 +29,8 @@ import { ColumnaListado, ErrorListado, AcotadoA } from './informes-listado.types
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../ui/list-states/list-empty-state.component';
 import { ListLoadingSkeletonComponent } from '../ui/list-states/list-loading-skeleton.component';
+import { duracionLegible } from './duracion';
+import { humanizar } from './informes-opciones';
 import {
   LIST_MOBILE_CARD_CLASS,
   LIST_ROW_CLASS,
@@ -262,8 +264,17 @@ export class InformesListadoComponent<T extends Record<string, unknown>> {
         return (Array.isArray(valor) ? valor : [valor]).join(', ');
       case 'booleano':
         return valor ? 'Sí' : 'No';
+      case 'enumeracion':
+        return humanizar(String(valor));
+      case 'duracion_minutos':
+        return duracionLegible(Number(valor));
       case 'numero':
         return this.decimalPipe.transform(valor as number) ?? AUSENTE;
+      // Dos decimales exactos, ni uno menos: es lo que permite comparar una
+      // columna de importes leyendo hacia abajo. Sin divisa — el backend no la
+      // publica, y ponerla aqui seria inventarla.
+      case 'moneda':
+        return this.decimalPipe.transform(valor as number, '1.2-2') ?? AUSENTE;
       case 'fecha':
         return this.datePipe.transform(valor as string, 'dd/MM/yyyy') ?? String(valor);
       case 'fecha_hora':

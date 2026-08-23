@@ -2,6 +2,8 @@ from django.urls import path
 
 from apps.accidentes.views.informes_views import (
     CasosView,
+    CatalogosCasosView,
+    CatalogosEvidenciaView,
     CierresView,
     EvidenciaFotosView,
     NotasCampoView,
@@ -54,10 +56,18 @@ from apps.accidentes.views.ubicacion_catalogo_views import (
 
 urlpatterns = [
     # ── Informes tácticos simples ───────────────────────────────────────────
+    # Antes que el listado no: son rutas distintas. Va aquí por vecindad, para
+    # que quien cambie una vea la otra.
+    path("informes/emergencias/casos/catalogos", CatalogosCasosView.as_view(),
+         name="informes-emergencias-casos-catalogos"),
     path("informes/emergencias/casos", CasosView.as_view(),
          name="informes-emergencias-casos"),
+    path("informes/emergencias/evidencia-fotos/catalogos", CatalogosEvidenciaView.as_view(),
+         name="informes-emergencias-evidencia-catalogos"),
     path("informes/emergencias/evidencia-fotos", EvidenciaFotosView.as_view(),
          name="informes-emergencias-evidencia-fotos"),
+    path("informes/emergencias/notas-campo/catalogos", CatalogosEvidenciaView.as_view(),
+         name="informes-emergencias-notas-catalogos"),
     path("informes/emergencias/notas-campo", NotasCampoView.as_view(),
          name="informes-emergencias-notas-campo"),
     path("informes/emergencias/cierres", CierresView.as_view(),

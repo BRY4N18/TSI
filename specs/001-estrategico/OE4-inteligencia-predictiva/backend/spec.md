@@ -348,7 +348,7 @@ cinco entre las historias anteriores habría hecho que un prerrequisito de datos
 | **Idoneidad funcional** | ✅ | Los quince salen del catálogo con origen trazado. Los tres huecos que el catálogo no declaraba —clima, distancia, región— se declaran aquí en vez de heredarse |
 | **Fiabilidad** | ✅ | El módulo **no participa en la operación**: mide su registro. La regla de versión final evita la cifra inflada intermitente |
 | **Eficiencia de desempeño** | ✅ | Regla 7: filtrar particiones por fecha. E4-05 acota además con top N |
-| **Capacidad de interacción** | ⚪ | No aplica: frontend aplazado |
+| **Capacidad de interacción** | ⚪ | No aplica en esta capa. Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE4-004. Es el OE donde más importa: sus productos **se venden a terceros**, y un mapa de siniestralidad con coordenadas exactas o identidad de implicados sería una fuga con destinatario comercial |
 | **Compatibilidad** | ✅ | Contrato OpenAPI bajo el envelope común. E4-12 y E4-13 son candidatos a exponerse vía la API de partners, lo que hace su contrato más sensible al cambio que el del resto |
 | **Mantenibilidad** | ✅ | Reutiliza el armazón de OE6 sin duplicarlo, y **retira la última tabla legada** de este dominio |
@@ -396,4 +396,4 @@ cinco entre las historias anteriores habría hecho que un prerrequisito de datos
   cifras.
 - **Las tres tablas de US4 no se diseñan aquí.** Pertenecen al módulo operativo de Analítica-ML
   (`predictive-ai-accident-rate`), que ya existe como spec.
-- **El frontend queda fuera de alcance.**
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado).

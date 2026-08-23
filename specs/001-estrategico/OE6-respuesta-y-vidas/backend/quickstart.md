@@ -252,7 +252,7 @@ El número de tablas en `tsi_tactico` **no cambió** al ejecutar los doce (Regla
   un parámetro aceptado** es parte de 2.14, no una comprobación propia.
 - **El rol `Gerente`.** Todavía no está sembrado en `Dim_Rol`. Los permisos se escriben contra él,
   pero hasta que exista solo `DirectorOperaciones` puede ejercerlos.
-- **El frontend.** Aplazado.
+- **El frontend.** Implementado: [`../frontend/quickstart.md`](../frontend/quickstart.md).
 - **La semaforización.** OE6 no puede semaforizarse hasta que sus metas tengan línea base. La primera
   lectura de estos informes es lo que la producirá.
 

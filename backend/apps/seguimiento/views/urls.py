@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.seguimiento.views.informes_views import DespachosView
+from apps.seguimiento.views.informes_views import DespachosView, CatalogosDespachosView
 
 from apps.seguimiento.views.cierre_views import (
     CancelarCasoView,
@@ -33,6 +33,8 @@ from apps.seguimiento.views.ruta_views import RutaSeguimientoView
 
 urlpatterns = [
     # ── Informes tácticos simples ───────────────────────────────────────────
+    path("informes/emergencias/despachos/catalogos", CatalogosDespachosView.as_view(),
+         name="informes-emergencias-despachos-catalogos"),
     path("informes/emergencias/despachos", DespachosView.as_view(),
          name="informes-emergencias-despachos"),
 

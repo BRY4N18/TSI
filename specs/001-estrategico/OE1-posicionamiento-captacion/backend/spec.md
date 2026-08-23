@@ -296,7 +296,7 @@ esperan a que se construya algo ya diseñado; estos tres esperan **datos que el 
 | **Idoneidad funcional** | ⚠️ | Los diez construibles están trazados a CU-E02, CU-E03 y CU-E07. **Tres se declaran inmedibles.** Y se corrige una discrepancia del catálogo: `hecho_pipeline` no existirá con ese nombre |
 | **Fiabilidad** | ✅ | El módulo mide, no participa en la operación. Versión final obligatoria en los hechos acumulados |
 | **Eficiencia de desempeño** | ✅ | Regla 7. E1-11 y E1-13 usan ventanas amplias por cohorte |
-| **Capacidad de interacción** | ⚪ | No aplica: frontend aplazado |
+| **Capacidad de interacción** | ⚪ | No aplica en esta capa. Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE1-003. **El medio de cobro es el dato más delicado del sistema**: no es una credencial que se rote, es la capacidad de cobrar |
 | **Compatibilidad** | ✅ | Contrato OpenAPI bajo el envelope común, cuando se planifique |
 | **Mantenibilidad** | ✅ | Reutiliza el armazón de OE6 y **es la única implementación** de los cuatro compartidos con OE5 |
@@ -336,4 +336,4 @@ medir**. Lo sacrificado es cobertura aparente del catálogo.
   ahora**: declara qué necesita la capa estratégica de cada uno.
 - **El armazón de OE6 está construido.** Si no, sus fases 1 y 2 son prerrequisito.
 - **La muestra mínima se hereda de OE6.** Con los volúmenes actuales, casi todo caerá por debajo.
-- **El frontend queda fuera de alcance.**
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado).

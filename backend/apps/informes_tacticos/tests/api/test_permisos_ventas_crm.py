@@ -55,8 +55,12 @@ class TestQuienEntraYQuienNo:
     def test_el_ejecutivo_comercial_entra(self):
         assert _concede(["GerenteVentas"])
 
-    def test_el_administrador_entra(self):
-        assert _concede(["Administrador"])
+    def test_el_administrador_no_lee_gestion(self):
+        """Decisión del 2026-08-19: el `Administrador` opera, no lee gestión.
+
+        Sigue entrando a los listados simples, que son trabajo operativo.
+        """
+        assert not _concede(["Administrador"])
 
     @pytest.mark.parametrize(
         "roles",
@@ -106,7 +110,17 @@ class TestElAcotamientoSeDeclaraYSeAplica:
         assert cuerpo["meta"]["acotado_a"] == "todos"
         assert capturado["idejecutivo"] == -1
 
-    def test_el_administrador_acota_igual_que_el_ejecutivo(self, monkeypatch):
+    def test_el_administrador_ya_no_llega_al_acotamiento(self, monkeypatch):
+        """Ya no entra, así que no hay acotamiento que comprobar.
+
+        Esto exigía que el `Administrador` entrara con `acotado_a = propios`, y
+        era cierto. Pero desde el 2026-08-19 **no lee informes de gestión**: se
+        queda en el permiso, antes de que el acotamiento llegue a aplicarse.
+
+        Se comprueba que la consulta **no se ejecuta**: un `403` que igualmente
+        hubiera consultado el modelo estaría filtrando trabajo —y, con otro
+        error, datos— a quien ya no debería llegar ahí.
+        """
         capturado: dict = {}
 
         def fake_ejecutar(self, consulta, *, departamento, parametros):
@@ -117,9 +131,8 @@ class TestElAcotamientoSeDeclaraYSeAplica:
 
         respuesta = _cliente(["Administrador"], user_id=1).get(f"{BASE}/{UN_INFORME}")
 
-        assert respuesta.status_code == 200
-        assert respuesta.json()["meta"]["acotado_a"] == "propios"
-        assert capturado["idejecutivo"] == 1
+        assert respuesta.status_code == 403
+        assert capturado == {}, "se consultó el modelo pese a denegar el acceso"
 
     def test_el_pipeline_declara_que_los_pesos_son_una_convencion(self, monkeypatch):
         monkeypatch.setattr(ModeloRepository, "ejecutar", lambda *a, **k: [])

@@ -7,7 +7,7 @@
 
 Índice global del módulo (no es una spec Speckit).
 
-## Estado: backend con **[`tasks.md`](backend/tasks.md)** — siguiente `/speckit-implement`
+## Estado: backend **implementado** · frontend **implementado**
 
 Sus trece informes consumen hechos que cargan los compuestos tácticos de tres departamentos:
 
@@ -45,8 +45,8 @@ Sus trece informes consumen hechos que cargan los compuestos tácticos de tres d
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | spec + plan + tasks + **código HTTP** (10 GET, 3 → 404). Siguiente: frontend aplazado o `/plan` de OE5 |
-| Frontend | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **implementado** (10 GET, 3 → 404) |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** — 4 pantallas Z, sin CAC/mercados |
 
 ## Lo que hay que saber antes de tocar este módulo
 

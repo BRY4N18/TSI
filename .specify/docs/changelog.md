@@ -7,6 +7,272 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-22 — Tres módulos tácticos de frontend que no tenían spec
+
+Red Operativa, Suscripciones y Facturación, y Ventas y CRM tenían la capa de frontend de
+sus informes simples **construida y en uso**, pero sin la carpeta `frontend/` con `spec.md`
+y `tasks.md` que sí tienen Emergencias, Soporte, Cuentas y Partners. Nada obligaba a que la
+regla de acceso, las exclusiones de dato y los porqués de cada etiqueta estuvieran escritos
+en alguna parte, y no lo estaban.
+
+Se redactan las tres, marcadas **`Status: Implemented`** y con las tareas en `[X]`. Son
+retro-specs: documentan comportamiento ya construido y verificado durante el repaso click a
+click de la capa táctica, no trabajo por hacer. La nota está en la cabecera de cada
+`tasks.md` para que nadie las lea como un plan.
+
+Lo que quedó fijado por escrito y antes solo vivía en el código:
+
+- **Red Operativa** — la autoridad está partida en **tres** por materia, y un Proveedor
+  entra a `flota` pero **no** a `regiones`: una región no pertenece a ninguna empresa de
+  flota. También que `dado_de_alta` no es disponibilidad, y que `estado_geografico` y
+  `estado_region` son dos cosas con el mismo sustantivo.
+- **Suscripciones** — la separación **finanzas / catálogo** es de materia, no de alcance:
+  Estrategia no ve facturas y Finanzas no ve el catálogo de planes. Y la exclusión que más
+  importa de toda la capa: **ningún listado publica identificador de pago**, ni siquiera al
+  Director Financiero.
+- **Ventas y CRM** — `reasignaciones` es supervisión pura y por eso no tiene roles
+  acotados: quien está dentro de un movimiento de cartera es parte interesada. Queda escrito
+  además que `ejecutivo_anterior` vacío es el **dato correcto** —primeras asignaciones—,
+  porque durante el repaso se tomó por un fallo de carga y se descartó.
+
+Las tres declaraban lo que **solo se había verificado en contrato** por falta de datos
+sembrados. Eso ya no aplica: ver la entrada siguiente.
+
+**Sin cambios de código.** Esta entrada es documental.
+
+---
+
+## 2026-08-22 — «Cambio programado» pintaba `[object Object]`: aplanado en el backend
+
+El listado `suscripciones` devolvía `cambio_programado: {plan, se_aplica_el}`, un objeto
+anidado, y la celda lo pintaba literalmente **`[object Object]`**: el catálogo de columnas
+del frontend declara campos escalares y la tabla no recorre objetos.
+
+**Aplanado en el backend**, que es la opción elegida entre las dos que había. Pasa a
+`cambio_programado_plan` y `cambio_programado_se_aplica_el`, dos escalares que viajan
+**siempre**, ambos `null` cuando no hay cambio — así el consumidor no tiene que distinguir
+«no hay cambio» de «este listado no responde eso». La alternativa, dar al catálogo un
+`render` por columna, habría metido lógica de presentación en las definiciones de los 32
+listados para resolver un caso.
+
+**La fecha no es decorado.** Una reducción aprobada **no se aplica al aprobarse** sino al
+cerrar el período ya pagado. Sin ella la tabla diría que hay un cambio pendiente sin decir
+cuándo, que es la mitad de la respuesta.
+
+Actualizados a la vez el contrato OpenAPI, el `data-model.md` y el `quickstart.md`, más las
+dos columnas del frontend. Se añadió una prueba de que **el objeto anidado no vuelve**
+(`test_el_cambio_programado_no_viaja_anidado`), y `cambio_programado` salió de la lista de
+campos condicionales de la prueba de conformidad: los dos nuevos son obligatorios y siempre
+presentes, así que la comprobación queda **más estricta** que antes.
+
+**Verificación.** `pytest apps` → 4 317 passed, 6 skipped. `ng test` → 1 408 SUCCESS. En
+pantalla, con `DirectorEstrategia`: «Básico» y «31/10/2026» en dos columnas; las demás filas,
+`—` y `—`.
+
+### ⚠️ Pinot dejó de consumir de Kafka a mitad de la verificación
+
+Al recrear el contenedor del frontend se comprobó que **los seis casos de borde sembrados
+habían desaparecido**: `Dim_Cliente` de vuelta a 7 filas, cero demos, cero regiones nuevas.
+No fue un fallo del seed —es idempotente y se reejecutó— sino que **las tablas en tiempo real
+se quedaron sin ningún segmento consumiendo** tras los reinicios de `pinot-server` de esta
+jornada. `pauseStatus` devolvía `pauseFlag: false` con `consumingSegments: []`: ni pausada ni
+consumiendo, y publicar en Kafka no daba error.
+
+Se restableció con `POST /tables/{tabla}/resumeConsumption` en las seis tablas, y el seed
+volvió a ingerir. Anotado como trampa del entorno: **una ingesta detenida no se anuncia**, se
+parece exactamente a un seed que no funcionó.
+
+---
+
+## 2026-08-22 — Los 58 fallos de la suite de frontend: ninguno era un defecto del producto
+
+La suite estaba en **58 FAILED / 1348 SUCCESS**. Los 58 codificaban el comportamiento
+**anterior** a los cambios de esta misma jornada: son pruebas que se quedaron atrás, no
+funciones rotas. Se arreglaron por familias, y en cada una se conservó lo que la prueba
+vigilaba en vez de reescribir la aserción para que pasara.
+
+| Familia | Nº | Qué pasaba |
+|---|---|---|
+| `http.verify()` con una petición de catálogos pendiente | **37** | Al convertir los filtros de id en comboboxes, las páginas piden además sus opciones. Ninguna prueba la atendía |
+| Guards de gestión con `Administrador` | 6 | Escritas a `toBeFalse()` **sin ejecutarlas**: el guard devuelve un `UrlTree`, no `false` |
+| Cableado de sidebars | 8 | `Administrador` salió de la gestión, Cuentas ganó su director táctico, y los 3 workpanels de Emergencias se retiraron |
+| Definiciones de `casos` | 2 | `situacion` sustituyó a la columna «Activo» |
+| Enumeraciones de Soporte | 3 | Ahora se humanizan al pintarlas; dos eran además desfase de índices de columna |
+| Estados de región | 1 | Miraba solo la etiqueta, que ahora se humaniza |
+| «Agente 3» en la Pantalla Z | 1 | El servicio ya resuelve el nombre del agente |
+
+**La familia grande era un hueco del arnés, no de las pruebas.** Emergencias ya lo había
+resuelto —atiende las peticiones de catálogos en su `montar`— y las otras cuatro páginas no.
+Se copió su solución tal cual, sin tocar ni una aserción: los 37 fallos desaparecen y lo que
+cada prueba comprueba sigue siendo lo mismo.
+
+**Seis pruebas de guard se habían editado sin ejecutarse.** Al quitar `Administrador` de la
+gestión alguien cambió `toBeTrue()` por `toBeFalse()`, pero el guard **redirige**: devuelve
+un `UrlTree` a `access-denied`. Ahora afirman eso, que es más fuerte que `false` — comprueba
+además *a dónde* manda. Y dos de ellas asertaban dos veces la misma variable, así que el
+segundo guard no se comprobaba; corregido.
+
+**Tres pruebas cambiaron de sentido en vez de borrarse**, porque lo que vigilaban sigue
+mereciendo vigilancia:
+
+- La de los workpanels de Emergencias comprobaba que los tres conservaran sus roles. Los tres
+  se retiraron, así que ahora comprueba que **no vuelvan** al sidebar.
+- La de `casos` afirmaba que **no** llevaba `situacion`. Ahora afirma que la lleva, que
+  `activo` **no** está —era la columna que causaba la ambigüedad— y que la pantalla no la
+  deriva. Se añadió una tercera para el formato.
+- La de la Pantalla Z afirmaba que la fila decía «Agente 3» y **no** un nombre, que era
+  exactamente el defecto. Ahora afirma el nombre, y una prueba nueva cubre el respaldo
+  `Agente #3` para el identificador que no resuelve, que es una anomalía y debe verse como tal.
+
+La de los estados de región miraba solo la etiqueta del `<option>` y por eso exigía el
+literal crudo `En_Alerta` en pantalla. Ahora comprueba **las dos caras**: se lee «En Alerta»
+y viaja `En_Alerta`. Pueden romperse por separado.
+
+**Resultado: `ng test` → 1 408 SUCCESS, cero fallos.** Dos pruebas más que antes.
+
+> **Lección.** Los 58 llevaban toda la jornada ahí y se dieron por «previos» tres veces
+> seguidas. Ninguno lo era en el sentido útil de la palabra: todos los produjo trabajo de
+> esta misma sesión, y seis los produjo editar aserciones sin ejecutarlas.
+
+---
+
+## 2026-08-22 — El catálogo de columnas gana un tipo `moneda`
+
+`FormatoColumna` tenía `numero` y nada más para los importes, así que la columna de
+facturas mezclaba **`49`, `63.5` y `166.88`** en filas contiguas: los decimales caían donde
+caía cada valor y una columna de dinero dejaba de compararse leyendo hacia abajo.
+
+Rellenar dentro de `numero` no era opción —dejaría «4 unidades» como `4.00`—, así que la
+distinción tiene que declararla **el catálogo de columnas**, que es el único sitio que sabe
+si un número es dinero.
+
+**`moneda`**: dos decimales exactos, vía `DecimalPipe` con `'1.2-2'`. Aplicado a las cinco
+columnas de dinero que existen en los 32 listados: `precio`, `monto_base`, `impuestos`,
+`monto_total` (Suscripciones) y `valor_estimado` (Ventas). Las cinco ya estaban alineadas a
+la derecha, así que la alineación no se toca.
+
+⛔ **Sin símbolo de divisa, y no es un olvido.** El sistema no almacena moneda en ninguna
+tabla. Un `$` aquí lo inventaría el frontend. Hay una prueba que lo afirma —la celda no
+puede contener `$`, `€`, `£` ni `¤`— para que el día que alguien lo añada tenga que
+justificarlo. Cuando el backend publique la divisa, `moneda` es el sitio donde ponerla.
+
+**Verificación.** 5 pruebas nuevas (entero, un decimal, dos decimales, ausencia y ausencia
+de divisa) y las 74 de `shared/informes` en verde. En el navegador, con
+`DirectorFinanciero` y `DirectorEstrategia`: `49.00`, `63.50`, `166.88`, `149.00`, `0.00`, y
+`15,000.00` / `99,000.00` en Ventas. `dias_mora` y `reintentos` siguen siendo `13` y `4`:
+solo se rellenan las columnas declaradas como dinero.
+
+⚠️ **La suite de frontend tiene 58 fallos, y son previos a este cambio.** Medido revirtiendo
+solo las cinco columnas: **58 FAILED / 1348 SUCCESS con y sin ellas**, idéntico. Son de la
+capa de gestión —guards de administrador, cableado de sidebars, páginas de Partners,
+Soporte, Cuentas y Red Operativa— y corresponden al cambio de «el administrador solo opera»
+de esta misma jornada, cuyas pruebas de frontend no se actualizaron. **Está pendiente**;
+darlo por verde sería falso.
+
+**Un defecto encontrado de paso, no corregido.** En `suscripciones`, la columna «Cambio
+programado» pinta **`[object Object]`**: el backend devuelve `{plan, se_aplica_el}` y la
+columna no declara formato, así que cae en `String(valor)`. Arreglarlo tiene dos formas
+legítimas —aplanarlo a dos campos en el contrato, o dar al catálogo un `render` por
+columna— y esa elección es del contrato, no una corrección. Anotado para decidir.
+
+---
+
+## 2026-08-22 — Los seis casos de borde que la capa táctica afirmaba sin poder enseñar
+
+`database/seed_casos_borde_informes.py`. Seis comportamientos estaban descritos en la
+spec y cubiertos por prueba unitaria, y en el navegador no había **ni una fila** que los
+ejerciera. Una regla que nadie ha visto fallar es una regla que nadie ha visto.
+
+| Caso | Lo que ahora se puede ver |
+|---|---|
+| Región `Despublicada`, `En_Alerta` y `Rechazada` | Los cinco estados conviven; `En_Alerta` **opera degradada** y no se agrupa con `Despublicada` |
+| Dos validaciones sobre la región rechazada | El historial completo (FR-005): el segundo intento **no sustituye** al primero |
+| Unidad sin condado | Condado y estado geográfico **ausentes**, y la fila **no se omite** |
+| Factura `En disputa` vencida hace 40 días | Sale **sin `dias_mora`**, junto a una `Pendiente` vencida que sí trae 13 |
+| Cuenta `Dado de baja` | La baja es lógica: la fila **sobrevive** con su razón social |
+| Tres demos activas | Los **tres formatos** de expiración que el parser tolera, ordenadas a 3, 9 y 21 días |
+
+**Dos cuidados que condicionaron cómo está escrito el seed**, y que importan más que los
+datos en sí:
+
+1. **La unidad sin condado nace `activo = false`.** `list_candidatas_por_condado` filtra
+   `activo = true`, así que de baja no puede entrar al despacho **por garantía**. Sembrada
+   activa quedaría fuera solo porque su `idcondado = 0` no cae en ningún condado — cierto
+   hoy, y dependiente de un detalle de la consulta que nadie prometió mantener.
+2. **La cuenta dada de baja es una fila nueva, sin personal.** Marcar de baja una cuenta
+   existente **impide iniciar sesión a sus usuarios** desde la corrección B9. Un fixture
+   para un informe no puede sacar gente del sistema.
+
+**Un defecto del propio seed, corregido antes de darlo por bueno.** Las demos se elegían
+entre los prospectos que *no tenían* demo. En la segunda pasada los tres primeros ya la
+tenían, elegía otros tres, y cada ejecución sumaba tres demos activas más. Ahora se eligen
+**por id**: reejecutar reescribe. Comprobado corriéndolo dos veces — los conteos no se
+mueven.
+
+**Verificación contra la API, con el actor de cada departamento y no con Administrador.**
+`DirectorExpansion` (flota), `DirectorTecnologico` (regiones y validaciones),
+`DirectorFinanciero` (facturas), `DirectorMarketing` (demos) y `Administrador` en
+`cuentas-por-estado`, que es suyo por `INFORMES_CUENTAS_ROLES`. Los seis casos salen como
+la spec decía. El filtro «Detenida más de 100 días» acota de 5 regiones a 2.
+
+`pytest` sobre los departamentos tocados y sobre despacho, accidentes e informes tácticos:
+**2 004 + 821 pasan, 2 saltadas**, ninguna falla. Las tres specs de frontend recién escritas
+quedan actualizadas: esos casos ya no dicen «solo en contrato».
+
+**Y luego se miraron las pantallas, que es donde aparecieron dos cosas más.**
+
+**Un defecto del seed que solo se vio pintado.** La cuenta dada de baja se sembró con
+`tipo: "Privado"`, copiado de `Dim_Prospecto.tipo_organizacion`. Pero `Dim_Cliente.tipo`
+usa **otro vocabulario** —`Corporativo`, `Proveedor`, `Aseguradora`— y el filtro «Tipo»
+solo ofrece esos tres. La cuenta salía en el listado y **desaparecía en cuanto alguien
+filtraba por cualquier tipo**: presente y a la vez inalcanzable. Corregido a `Corporativo`.
+Contra la API la fila se veía perfecta; hizo falta ver el desplegable al lado de la tabla.
+
+**Un requisito que yo mismo había escrito mal.** FR-F09 de la spec de Suscripciones exigía
+mostrar los importes «con su moneda». **El sistema no almacena moneda en ninguna tabla**:
+`Fact_Factura` no tiene columna, y el único «moneda» del repositorio es una etiqueta de
+unidad de la capa estratégica. El requisito se había escrito por analogía en la retro-spec,
+sin comprobarlo, y un símbolo en la celda lo habría inventado el frontend. Corregido a
+«sin redondear a entero», que sí se cumple.
+
+Queda abierto, en `decisiones-pendientes.md`, que la columna de importes mezcla `49`, `63.5`
+y `166.88` sin rellenar decimales. No se cambió sobre la marcha porque el formato numérico
+es de la capa compartida y afecta a todas las columnas de los 32 listados: separar «esto es
+dinero» de «esto es un conteo» exige un tipo nuevo en el catálogo de columnas, y eso es
+diseño de contrato, no una corrección.
+
+> **Lección, otra vez la misma.** La verificación contra la API dio los seis casos por
+> buenos. El desplegable que dejaba la fila inalcanzable no está en la respuesta JSON:
+> está al lado de la tabla.
+
+---
+
+## 2026-08-18 — Contrato estratégico: el siguiente paso ya no es `/speckit-tasks` de OE5 (D6)
+
+**D6 — §10 del contrato seguía mandando a generar tasks de OE5.** OE5 (y el resto de OE1–OE6)
+ya tienen backend HTTP y pantallas Z. El párrafo «siguiente = `/speckit-tasks` de OE5» mentía
+el orden de trabajo. Quickstarts de OE3/OE4 decían que `Gerente` no estaba sembrado: el rol
+sí está (`ROLES_DEMO` id 23); lo que no se garantiza es una cuenta demo asignada.
+
+Causa: el recuento D5 actualizó «frontend implementado» y dejó el siguiente de producto
+viejo. Efecto verificado: §10 ya no apunta a un ciclo Speckit de UI; los quickstarts no
+niegan el catálogo del rol.
+
+---
+
+## 2026-08-18 — Frontend estratégico OE1–OE6 ya no está aplazado (D5)
+
+**D5 — Specs que seguían diciendo «frontend aplazado».** El código ya sirve pantallas Z de
+OE1–OE6. `contrato-informes-estrategicos.md` §9–§10, specs/planes/quickstarts de backend de los
+seis OE, y el recuento de frontend del contrato ahora dicen **implementado** (capa `../frontend/`).
+La fila ISO «capacidad de interacción» sigue ⚪ **en la spec de backend** (esa capa no pinta UI).
+
+Causa: las capas de presentación se implementaron y los documentos de backend no se actualizaron.
+Efecto verificado: no queda «frontend aplazado» en `specs/001-estrategico/` salvo el asiento
+histórico D4 de este changelog.
+
+---
+
 ## 2026-08-18 — Capa estratégica: docs al día y backend OE4 (D4)
 
 **D4 — Índices OE1/OE2/OE5 y `acceso-estrategico.md`.** Seguí­an diciendo que el táctico no

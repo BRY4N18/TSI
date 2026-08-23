@@ -40,9 +40,10 @@ describe('cableado de gestión de Red Operativa', () => {
     const flota = NAV_LINKS.find((l) => l.path === '/red-operativa/gestion/flota');
     const mercados = NAV_LINKS.find((l) => l.path === '/red-operativa/gestion/mercados');
     const validacion = NAV_LINKS.find((l) => l.path === '/red-operativa/gestion/validacion');
-    expect(flota?.roles).toEqual(['DirectorExpansion', 'Administrador']);
-    expect(mercados?.roles).toEqual(['DirectorExpansion', 'Administrador']);
-    expect(validacion?.roles).toEqual(['DirectorTecnologico', 'Administrador']);
+        // ⚠️ Sin `Administrador`: la gestión es de la autoridad del departamento.
+    expect(flota?.roles).toEqual(['DirectorExpansion']);
+    expect(mercados?.roles).toEqual(['DirectorExpansion']);
+    expect(validacion?.roles).toEqual(['DirectorTecnologico']);
     expect(flota?.roles).not.toContain('DirectorTecnologico');
     expect(validacion?.roles).not.toContain('DirectorExpansion');
   });

@@ -33,7 +33,9 @@
                 [class.text-text-secondary]="agruparPor() !== opcion"
                 (click)="onAgrupar(opcion)"
               >
-                {{ opcion }}
+                <!-- El valor viaja como `agrupar_por` a la consulta, así que
+                     el botón muestra su forma legible y envía la cruda. -->
+                {{ humanizar(opcion) }}
               </button>
             }
           </div>
@@ -53,7 +55,7 @@
             </button>
           }
           @case ('vacio') {
-            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            <p class="m-0 mt-4 text-sm text-text-secondary">{{ textoVacio() }}</p>
           }
           @case ('sin_dato') {
             <p class="m-0 mt-3 text-4xl font-bold text-text-secondary" data-testid="heroe-sin-dato">
@@ -168,7 +170,7 @@
             <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisual().error }}</p>
           }
           @case ('vacio') {
-            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            <p class="m-0 mt-4 text-sm text-text-secondary">{{ textoVacio() }}</p>
           }
           @case ('sin_dato') {
             <p class="m-0 mt-4 text-sm text-text-secondary">sin dato</p>
@@ -252,14 +254,19 @@
             <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
           }
           @case ('vacio') {
-            <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
+            <p class="m-0 mt-4 text-sm text-text-secondary">{{ textoVacio() }}</p>
           }
           @default {
             @if (idPantalla() === 'cumplimiento') {
               <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
                 @for (fila of cargaLectura().data; track texto(fila['id_agente'])) {
                   <li class="text-sm" data-testid="fila-agente">
-                    <span class="text-text-primary">Agente {{ texto(fila['id_agente']) }}</span>
+                    <!-- El nombre lo resuelve el servicio; el identificador
+                         queda de respaldo cuando no resuelve, que es una
+                         anomalía y no debe disfrazarse de nombre. -->
+                    <span class="text-text-primary">{{
+                      texto(fila['agente']) || 'Agente #' + texto(fila['id_agente'])
+                    }}</span>
                     <span class="ml-2 text-text-secondary">
                       {{ num(fila['resueltos']) | number }} resueltos ·
                       {{ num(fila['reabiertos']) | number }} reabiertos
@@ -310,7 +317,7 @@
 
       @if (def.apoyoPlegado) {
         <div class="lg:col-span-12" data-bloque-vista>
-          <app-apoyo-plegable-soporte [bloques]="bloquesApoyo()" />
+          <app-apoyo-plegable-soporte [bloques]="bloquesApoyo()" [alcance]="alcance()" />
         </div>
       }
     </div>

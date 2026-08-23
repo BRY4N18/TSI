@@ -131,7 +131,14 @@ class TestLaPresentacionTambienLoDistingue:
             f for f in pagina.filas
             if f["cuenta"] in ("Aseguradora Torres S.A.", "Transportes Beltran Ltda.")
         ]
-        sin_cambio = [f for f in de_las_cuentas if f["cambio_programado"] is None]
+        # ⚠️ Las dos claves planas vienen **siempre**, y ambas `None` cuando no
+        # hay cambio. Omitirlas obligaria al consumidor a distinguir «no hay
+        # cambio» de «este listado no responde esa pregunta».
+        sin_cambio = [
+            f for f in de_las_cuentas
+            if f["cambio_programado_plan"] is None
+            and f["cambio_programado_se_aplica_el"] is None
+        ]
         assert len(sin_cambio) == 2
 
     def test_la_que_si_lo_tiene_devuelve_el_nombre_del_plan(
@@ -146,12 +153,30 @@ class TestLaPresentacionTambienLoDistingue:
             acotamiento=Acotamiento(titular=None, alcance=ACOTADO_TODOS), limit=500
         )
 
-        con_cambio = [f for f in pagina.filas if f["cambio_programado"] is not None]
+        con_cambio = [
+            f for f in pagina.filas if f["cambio_programado_plan"] is not None
+        ]
         assert len(con_cambio) == 1
-        # El contrato lo declara como objeto: el plan **y cuándo se aplica**.
-        # Sin la fecha, el listado diría que hay un cambio sin decir cuándo.
-        assert con_cambio[0]["cambio_programado"]["plan"] == "Basico"
-        assert con_cambio[0]["cambio_programado"]["se_aplica_el"]
+        # ⚠️ Dos campos planos, no un objeto: anidado, la tabla lo pintaba
+        # `[object Object]`. Siguen siendo el plan **y cuándo se aplica**; sin la
+        # fecha, el listado diria que hay un cambio sin decir cuándo.
+        assert con_cambio[0]["cambio_programado_plan"] == "Basico"
+        assert con_cambio[0]["cambio_programado_se_aplica_el"]
+
+    def test_el_cambio_programado_no_viaja_anidado(self, mock_pinot, dos_cuentas):
+        """⛔ El objeto anidado no debe volver: la tabla no sabe recorrerlo."""
+        from apps.suscripciones.services.informes_suscripcion_service import (
+            InformesSuscripcionService,
+        )
+        from core.informes.acotamiento import ACOTADO_TODOS, Acotamiento
+
+        pagina = InformesSuscripcionService().suscripciones(
+            acotamiento=Acotamiento(titular=None, alcance=ACOTADO_TODOS), limit=500
+        )
+
+        for fila in pagina.filas:
+            assert "cambio_programado" not in fila
+            assert not isinstance(fila["cambio_programado_plan"], dict)
 
     def test_el_catalogo_no_se_consulta_por_el_plan_cero(self, repo, dos_cuentas):
         # No existe un plan con identificador cero: pedirlo sería una consulta

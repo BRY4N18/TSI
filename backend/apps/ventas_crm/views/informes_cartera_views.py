@@ -87,3 +87,33 @@ class ProspectosView(ListadoBaseView):
             },
             acotado_a=acotamiento.alcance,
         )
+
+
+class CatalogosVentasView(ListadoBaseView):
+    """Opciones de «Ejecutivo» y «Prospecto» de los listados de Ventas y CRM.
+
+    ⚠️ **«Ejecutivo» no es el directorio entero**: solo quienes llevan un rol
+    comercial pueden aparecer en esa columna, y ofrecer a los demás sugiere que
+    podrían tener cartera.
+
+    ⚠️ **El catálogo de prospectos va por empresa, sin contacto.** Este es el
+    departamento con más dato personal del sistema; un desplegable necesita
+    distinguir oportunidades, no publicar a quién llamar.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesVentasLecturaPermission]
+    admite_rango = False
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+        from apps.ventas_crm.permissions import ROLES_INFORMES_ACOTADOS
+
+        repo = CatalogosFiltrosRepository()
+        return success_response(
+            {
+                "ejecutivo": repo.usuarios_con_rol(sorted(ROLES_INFORMES_ACOTADOS)),
+                "idprospecto": repo.prospectos(None),
+            },
+            meta={"acotado_a": "todos"},
+        )

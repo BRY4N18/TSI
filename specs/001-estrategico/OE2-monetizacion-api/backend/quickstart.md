@@ -92,7 +92,7 @@ JWT con rol de partner → **403** en las diez, incluida `consumo-por-partner`.
 
 ## 3. Lo que este quickstart no cubre
 
-- Frontend (aplazado).
+- Frontend: ver [`../frontend/quickstart.md`](../frontend/quickstart.md) (implementado).
 - Uptime real (E2-06).
 - Mix de ingresos al 100 % (falta precio de plan API).
 - Semilla Pinot de `Gerente` si el entorno no la ha corrido.

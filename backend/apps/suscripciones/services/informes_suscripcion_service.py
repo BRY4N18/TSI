@@ -99,9 +99,10 @@ def _fila(
         "renovacion_automatica": cruda.get("renovacionautomatica"),
         "fecha_inicio": a_iso(cruda.get("fecha_inicio")),
         "fecha_fin": a_iso(cruda.get("fecha_fin")),
-        # `None` cuando no hay cambio: el `0` no es un plan, es la marca de que
-        # no hay ninguno (research D2).
-        "cambio_programado": _cambio_programado(cruda, planes),
+        # ⚠️ **Dos campos planos, no un objeto anidado.** Ambos `None` cuando no
+        # hay cambio: el `0` no es un plan, es la marca de que no hay ninguno
+        # (research D2). Ver `_cambio_programado`.
+        **_cambio_programado(cruda, planes),
     }
     if estado == ESTADO_CANCELADA:
         # El motivo y la fecha solo tienen sentido en una cancelada. Devolverlos
@@ -113,21 +114,34 @@ def _fila(
 
 def _cambio_programado(
     cruda: dict[str, Any], planes: dict[int, str]
-) -> dict[str, Any] | None:
-    """El cambio pendiente `{plan, se_aplica_el}`, o `None` si no hay ninguno.
+) -> dict[str, Any]:
+    """El cambio pendiente, **aplanado en dos campos**.
 
-    `se_aplica_el` es el fin del ciclo vigente: una reducción aprobada no se
-    aplica al aprobarse sino **al cerrar el período ya pagado**. Sin esa fecha,
-    el listado diría que hay un cambio pendiente sin decir cuándo, que es la
-    mitad de la información que la pregunta necesita.
+    Devuelve siempre las dos claves; ambas `None` cuando no hay ningún cambio
+    programado.
+
+    `cambio_programado_se_aplica_el` es el fin del ciclo vigente: una reducción
+    aprobada no se aplica al aprobarse sino **al cerrar el período ya pagado**.
+    Sin esa fecha, el listado diría que hay un cambio pendiente sin decir cuándo,
+    que es la mitad de la información que la pregunta necesita.
+
+    ⚠️ **Antes esto era un objeto anidado** `{plan, se_aplica_el}`, y la tabla lo
+    pintaba **`[object Object]`**: el catálogo de columnas del frontend declara
+    campos escalares y no sabe recorrer un objeto. Se aplanó aquí, del lado que
+    conoce el dato, en vez de enseñar a la capa compartida a recorrer objetos
+    arbitrarios — eso habría metido lógica de presentación en 32 listados para
+    resolver un caso.
     """
     try:
         idplan = int(cruda.get("idplan_programado") or SIN_CAMBIO_PROGRAMADO)
     except (TypeError, ValueError):
-        return None
+        idplan = SIN_CAMBIO_PROGRAMADO
     if idplan <= SIN_CAMBIO_PROGRAMADO:
-        return None
+        return {
+            "cambio_programado_plan": None,
+            "cambio_programado_se_aplica_el": None,
+        }
     return {
-        "plan": planes.get(idplan),
-        "se_aplica_el": a_iso(cruda.get("fecha_fin")),
+        "cambio_programado_plan": planes.get(idplan),
+        "cambio_programado_se_aplica_el": a_iso(cruda.get("fecha_fin")),
     }

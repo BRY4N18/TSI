@@ -181,9 +181,10 @@ Los nueve devuelven `data: []` con `cobertura: "completa"`.
 ## 3. Lo que este quickstart NO comprueba
 
 - **Los cinco informes del modelo predictivo**, más allá del `404`. No hay modelo del que hablar.
-- **El rol `Gerente`.** No está sembrado.
+- **Un usuario demo con rol `Gerente`.** El rol (id 23) está en `Dim_Rol` / `ROLES_DEMO`; este
+  quickstart no comprueba que haya una cuenta asignada en el entorno.
 - **La agrupación por región.** No existe.
-- **El frontend.** Aplazado.
+- **El frontend.** Implementado: [`../frontend/quickstart.md`](../frontend/quickstart.md).
 
 ---
 

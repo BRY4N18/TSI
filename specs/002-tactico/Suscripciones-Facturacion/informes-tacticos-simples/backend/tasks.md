@@ -159,7 +159,22 @@ inyectado conocido, sin depender del reloj del sistema (T036).
 - [X] T043 [P] Prueba de rendimiento en `backend/apps/suscripciones/tests/performance/test_informes_latencia.py`: primera página de los cuatro listados por debajo de 2 s (SC-006)
 - [X] T044 Ejecutar `cd backend && python -m pytest -q` completo y verificar que **ninguna suite existente se movió**
 - [X] T045 Verificar que la implementación coincide con `contracts/informes-tacticos-simples.openapi.yaml` endpoint por endpoint, corrigiendo el contrato si la implementación reveló algo mejor
-- [ ] T046 Recorrer `quickstart.md` de principio a fin contra el stack levantado, con especial atención a §3.2 (identificador de cobro), §3.3 (centinela) y §3.4 (disputa vs mora) — **parcial:** las comprobaciones reproducibles están cubiertas por la suite (§3.2 por `test_informes_sin_token_pasarela.py`, §3.3 por `test_informes_suscripcion_cambio_programado.py`, §3.4 por `test_informes_factura_disputa.py`). **Falta el recorrido contra Docker levantado**
+- [X] T046 Recorrer `quickstart.md` de principio a fin contra el stack levantado — **hecho el 2026-08-19: 20 comprobaciones, 0 fallos.**
+
+  Con el director de cada materia, no con el Administrador: §3.2 (**ningún**
+  identificador de cobro en los cuatro listados — la comprobación de fondo del
+  módulo), §3.3 (ningún plan con identificador cero), §3.6 (métodos vigentes),
+  §3.9 (cuenta por razón social) y §3.10 (**Estrategia recibe 403 en facturas y
+  Financiero 403 en suscripciones**: el reparto por materia funciona en los dos
+  sentidos).
+
+  §3.8 verificado con su matiz: `facturas` acepta rango y los otros tres lo
+  rechazan con `400`, **pero `cancelada_desde` / `cancelada_hasta` sí se aceptan**
+  en suscripciones, porque son filtros de columna y no un período (FR-002).
+
+  ⚠️ §3.4 queda comprobada **solo en su contrato**: no hay ninguna factura
+  `En disputa` en el origen, así que la regla «una disputa no es mora» no se pudo
+  ejercitar con datos. De 7 facturas, 1 lleva `dias_mora`.
 - [X] T047 Anotar en `decisiones-pendientes.md` que la resolución «usuario → su cuenta» está escrita **cuatro veces** en el código operativo y debería converger en la pieza transversal, y que `Fact_Factura.id_cliente` usa un nombre de columna inconsistente con el resto de tablas
 - [X] T048 Documentar el trabajo en `.specify/docs/changelog.md`, actualizar `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` marcando los listados como 🟢, y **añadir al contrato común** `specs/002-tactico/contrato-informes-simples.md` la regla de que toda columna temporal se verifica en el esquema antes de diseñar su filtro (lección de research D5)
 

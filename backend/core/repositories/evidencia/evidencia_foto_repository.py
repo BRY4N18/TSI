@@ -71,6 +71,18 @@ class EvidenciaFotoRepository:
         urlevidenciafoto: str,
         fechahora: int,
     ) -> dict[str, Any]:
+        """Publica la evidencia con sus **dos** instantes.
+
+        ⚠️ Hasta el 2026-08-19 no se escribía `fecha_sincronizacion`: **ninguna
+        ruta del sistema la rellenaba**, así que la columna estaba vacía en el
+        100 % de las filas y el informe de latencia de sincronización no podía
+        medir nada. Las evidencias llegaban marcadas `sincronizado = true` y sin
+        el instante en que llegaron.
+
+        No se rellenan las filas anteriores: inventar el momento en que llegó una
+        evidencia de hace un mes sería fabricar la medición que faltaba. Las
+        antiguas siguen ausentes, y el informe ya distingue «ausente» de «cero».
+        """
         now = int(datetime.now(timezone.utc).timestamp() * 1000)
         payload = {
             "idevidenciafoto": self._next_id(),
@@ -78,7 +90,18 @@ class EvidenciaFotoRepository:
             "idusuario": idusuario,
             "urlevidenciafoto": urlevidenciafoto,
             "sincronizado": True,
+            # ⚠️ **`fechahora` y `fecha_sincronizacion` no son lo mismo**, y de
+            # que se distingan depende que la latencia se pueda medir.
+            #
+            # `fechahora` es **cuándo se tomó la foto en el sitio** y la fija
+            # quien captura: en una subida diferida es anterior, a veces por
+            # horas. `fecha_sincronizacion` es **cuándo llegó al sistema**, que
+            # es ahora, en el momento de publicar.
+            #
+            # Ponerle `fechahora` a las dos daría latencia cero siempre — la
+            # mejor marca posible — justo en las evidencias que más tardaron.
             "fechahora": fechahora,
+            "fecha_sincronizacion": now,
             "fecha_actualizacion": now,
             "activo": True,
         }

@@ -49,6 +49,19 @@ ROL_DIRECTOR_OPERACIONES = "DirectorOperaciones"
 #: herede los roles de debajo.
 ROL_GERENTE = "Gerente"
 ROL_GERENTE_EXITO_CLIENTE = "GerenteExitoCliente"
+
+#: Autoridad tactica de Cuentas y Clientes. **Creado el 2026-08-19**, y el
+#: departamento existia sin el.
+#:
+#: Al retirar al `Administrador` de los informes de gestion se vio que siete de
+#: los nueve de este departamento —churn por cohorte, antiguedad media, cuentas
+#: en riesgo, embudo de abandono, tasa de aprobacion, tiempo de onboarding y
+#: usuarios vs tope— **no los podia abrir nadie mas**: el SRS §5.1 no le
+#: reconocia autoridad propia, solo al Director Tecnologico sobre la capa de
+#: accesos tecnicos. El resultado era que el ciclo de vida de las cuentas y su
+#: incorporacion no tenian dueno de negocio, y quien los leia lo hacia por ser
+#: administrador del sistema, no por responder de ellos.
+ROL_DIRECTOR_CUENTAS = "DirectorCuentas"
 ROL_DIRECTOR_DATOS = "DirectorDatos"
 
 # Ya existian como actores operativos; suman autoridad tactica sin perder su
@@ -148,10 +161,18 @@ AUTORIDAD_OE5 = (
     | AUTORIDAD_OE5_RIESGO
 )
 
-#: Cuentas y Clientes: **solo** la capa de accesos tecnicos (§5.1). Los otros
-#: siete listados del departamento no tienen autoridad por encima del
-#: Administrador — no es un olvido, es lo que dice el SRS.
+#: Cuentas y Clientes: repartida, como Suscripciones y Red Operativa.
+#:
+#: El Director Tecnologico gobierna **solo** la capa de accesos tecnicos (§5.1)...
 AUTORIDAD_CUENTAS_ACCESOS_TECNICOS = frozenset({ROL_DIRECTOR_TECNOLOGICO})
+
+#: ...y el Director de Cuentas responde del **ciclo de vida** de las cuentas y de
+#: su **incorporacion**.
+#:
+#: ⚠️ Cada uno entra a su materia y no a la del otro, igual que en los otros dos
+#: departamentos repartidos: quien fija los criterios tecnicos de acceso no es
+#: quien responde de por que se van los clientes.
+AUTORIDAD_CUENTAS = frozenset({ROL_DIRECTOR_CUENTAS})
 
 
 #: Todas las autoridades departamentales, para comprobaciones genericas.

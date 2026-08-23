@@ -72,29 +72,17 @@ class TestContrasteUs3:
             "el estratégico y el táctico no cubren la misma cartera de abiertos"
         )
 
-    def test_rechazo_diverge_del_endpoint_operativo_porque_corrige_34(self):
-        operativo = _admin().get(
-            "/api/v1/informes-tacticos/despacho/rechazo-timeout-por-unidad",
-            PARAMS,
-        )
-        if operativo.status_code != 200:
-            pytest.skip("el endpoint operativo no respondió 200")
+    # `test_rechazo_diverge_del_endpoint_operativo_porque_corrige_34` se retiró
+    # el 2026-08-19 junto con el endpoint que contrastaba.
+    #
+    # Comparaba la tasa estratégica contra
+    # `informes-tacticos/despacho/rechazo-timeout-por-unidad` para demostrar que
+    # el estratégico **corrige** la decisión #34: el táctico dividía por
+    # transiciones de estado en vez de por intentos de despacho, así que una
+    # unidad que se comportaba mejor podía salir peor.
+    #
+    # Ese endpoint ya no existe —los tres informes agregados se retiraron—, así
+    # que la prueba no podía volver a ejecutarse: se saltaba sola y quedaba en
+    # verde sin comprobar nada, que es peor que no tenerla. El defecto que
+    # documentaba desapareció con el endpoint que lo contenía.
 
-        director = cliente(["DirectorOperaciones"])
-        respuesta = pedir(
-            director, "rechazo-y-timeout-por-unidad", top=100, granularidad="anio"
-        )
-        if respuesta.status_code != 200:
-            pytest.skip("el modelo analítico no está disponible")
-
-        # El operativo combina rechazo+timeout sobre transiciones. El estratégico
-        # usa intentos. La tasa estratégica de rechazo tiene que ser MAYOR o, como
-        # mínimo, distinta: si coincidieran, #34 no se habría corregido.
-        tasas_est = [float(f["tasa_rechazo"]) for f in respuesta.json()["data"] if f["tasa_rechazo"] is not None]
-        assert tasas_est, "sin tasas estratégicas"
-        filas_op = operativo.json().get("data") or []
-        if not filas_op:
-            pytest.skip("el endpoint operativo no devolvió filas")
-        campos_op = set(filas_op[0])
-        assert "pct_rechazo_timeout" in campos_op
-        assert "tasa_rechazo" not in campos_op

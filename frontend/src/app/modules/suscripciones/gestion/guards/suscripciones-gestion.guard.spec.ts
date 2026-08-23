@@ -36,8 +36,9 @@ function ejecutar(
 
 describe('guards de gestión de Suscripciones', () => {
   it('roles_when_se_declaran_no_son_una_union', () => {
-    expect([...ROLES_FINANZAS]).toEqual(['DirectorFinanciero', 'Administrador']);
-    expect([...ROLES_CATALOGO]).toEqual(['DirectorEstrategia', 'Administrador']);
+    // El `Administrador` opera y no lee gestión (2026-08-19).
+    expect([...ROLES_FINANZAS]).toEqual(['DirectorFinanciero']);
+    expect([...ROLES_CATALOGO]).toEqual(['DirectorEstrategia']);
     expect((ROLES_FINANZAS as readonly string[]).includes('DirectorEstrategia')).toBeFalse();
     expect((ROLES_CATALOGO as readonly string[]).includes('DirectorFinanciero')).toBeFalse();
   });
@@ -62,9 +63,14 @@ describe('guards de gestión de Suscripciones', () => {
     expect(String(resultado)).toContain('access-denied');
   });
 
-  it('administrador_when_entra_pasa_las_dos', () => {
-    expect(ejecutar(gestionFinanzasGuard, ['Administrador'])).toBeTrue();
-    expect(ejecutar(gestionCatalogoGuard, ['Administrador'])).toBeTrue();
+  it('administrador_when_entra_ya_no_pasa_ninguna', () => {
+    // ⚠️ Era el único rol que saltaba el reparto finanzas/catálogo entero.
+    const resultadoAdmin = ejecutar(gestionFinanzasGuard, ['Administrador']);
+    expect(resultadoAdmin instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdmin)).toContain('access-denied');
+    const resultadoAdminB = ejecutar(gestionCatalogoGuard, ['Administrador']);
+    expect(resultadoAdminB instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdminB)).toContain('access-denied');
   });
 
   it('cliente_proveedor_y_operador_when_entran_son_denegados', () => {

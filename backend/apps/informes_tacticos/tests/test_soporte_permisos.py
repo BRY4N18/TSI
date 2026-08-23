@@ -45,8 +45,12 @@ class TestQuienEntraYQuienNo:
     def test_el_agente_entra(self):
         assert _concede(["Soporte"])
 
-    def test_el_administrador_entra(self):
-        assert _concede(["Administrador"])
+    def test_el_administrador_no_lee_gestion(self):
+        """Decisión del 2026-08-19: el `Administrador` opera, no lee gestión.
+
+        Sigue entrando a los listados simples, que son trabajo operativo.
+        """
+        assert not _concede(["Administrador"])
 
     def test_un_cliente_recibe_403(self):
         assert _cliente(["Cliente"]).get(f"{BASE}/{UN_INFORME}").status_code == 403

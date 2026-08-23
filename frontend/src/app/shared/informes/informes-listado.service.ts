@@ -13,6 +13,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 
 import {
+  Catalogos,
   ErrorEnvelope,
   ErrorListado,
   ListadoEnvelope,
@@ -35,6 +36,19 @@ export const LIMIT_DEFECTO = 50;
 export class InformesListadoService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/informes';
+
+  /**
+   * Catálogos que pueblan los desplegables de un listado.
+   *
+   * ⚠️ **El backend los acota por cobertura**, así que no se cachean entre
+   * usuarios ni se dan por constantes: dos personas distintas reciben listas
+   * distintas de condados, y servir la de una a la otra revelaría zonas ajenas.
+   */
+  catalogos(ruta: string): Observable<{ data: Catalogos }> {
+    return this.http
+      .get<{ data: Catalogos }>(`${this.base}/${ruta}/catalogos`)
+      .pipe(catchError((error) => throwError(() => clasificarError(error))));
+  }
 
   listar<T>(peticion: PeticionListado): Observable<ListadoEnvelope<T>> {
     return this.http

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -40,7 +42,13 @@ def _fila(**extra):
 def test_la_consulta_no_une_el_sla_vigente_hoy():
     assert "es_vigente" not in SQL
     assert "dim_sla_config" not in SQL
-    assert "FROM hecho_ticket FINAL" in SQL
+    # Lee el hecho directamente y con `FINAL`. Se comprueba por partes y no como
+    # cadena literal porque la tabla lleva alias (`FROM hecho_ticket AS t FINAL`):
+    # el alias es obligatorio para poder calificar `t.motivo_sin_compromiso`, sin
+    # lo cual ClickHouse rechaza la consulta con ILLEGAL_AGGREGATION. Lo que esta
+    # prueba protege es que no se una el SLA vigente hoy, no cómo se nombra la
+    # tabla — y atarla a la forma exacta la hacía fallar por un cambio inocuo.
+    assert re.search(r"FROM hecho_ticket(?: AS \w+)? FINAL", SQL)
     assert "pct_sin_compromiso" in SQL
     assert "nullIf" in SQL
 

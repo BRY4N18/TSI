@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.base_propia import base_propia, vaciar  # noqa: E402,F401
 from tests.almacen import (  # noqa: E402
     ID_SUSCRIPCION_PRUEBA,
     asegurar_hechos_suscripciones,
@@ -21,7 +22,15 @@ from tests.almacen import (  # noqa: E402
 
 
 @pytest.fixture
-def escenario():
+def escenario(base_propia):
+    """⚠️ Corre sobre `base_propia`, no sobre el modelo cargado.
+
+    Esta prueba compara su escenario contra un total **global** (el MRR, la
+    utilización, el NRR). Contra el modelo real ese total incluye las
+    suscripciones de verdad y el número esperado deja de tener sentido: pasaba
+    solo mientras las tablas estaban vacías.
+    """
+    vaciar("hecho_suscripcion", "dim_plan")
     asegurar_hechos_suscripciones()
     limpiar_suscripciones()
     insertar("hecho_suscripcion", [

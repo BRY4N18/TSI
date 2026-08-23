@@ -89,6 +89,7 @@ class InformesAccesoService:
         orden: Orden = ORDEN_PARTNERS,
         estado: str | None = None,
         plan: str | None = None,
+        idpartner: int | None = None,
     ) -> Pagina:
         # Prefiltro: lo que se puede empujar a la base sin adivinar.
         pushable = FILTRO_PUSHABLE.get(estado, {})
@@ -102,6 +103,12 @@ class InformesAccesoService:
             limit=limit,
             orden=orden,
             cuenta=acotamiento.titular,
+            # ⚠️ **Acotar y filtrar son cosas distintas.** `cuenta` viene del
+            # acotamiento —a qué tiene derecho quien pregunta— y `idpartner` de
+            # lo que pidió. Mezclarlos haría que filtrar por un partner
+            # pareciera reducir el alcance, o peor, que pedir uno ajeno lo
+            # ampliara.
+            idpartner=idpartner,
             plan=plan,
             **pushable,
         )

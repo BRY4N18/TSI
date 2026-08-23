@@ -7,6 +7,7 @@
  */
 
 import { DefinicionListado } from '../../../../shared/informes/informes-listado.types';
+import { opciones } from '../../../../shared/informes/informes-opciones';
 
 export const ESTADOS_SUSCRIPCION = ['Activa', 'Suspendida', 'Cancelada', 'Vencida'] as const;
 
@@ -21,10 +22,6 @@ export const ESTADOS_PAGO = ['Pendiente', 'Pagada', 'Fallida', 'En disputa'] as 
 
 export const ESTADOS_SOLICITUD = ['Pendiente', 'Aprobada', 'Rechazada'] as const;
 
-function opciones(valores: readonly string[]) {
-  return valores.map((valor) => ({ valor, etiqueta: valor }));
-}
-
 export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
   suscripciones: {
     ruta: 'suscripciones-facturacion/suscripciones',
@@ -34,8 +31,8 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { campo: 'cuenta', etiqueta: 'Cuenta', principal: true },
       { campo: 'plan', etiqueta: 'Plan' },
       { campo: 'nivel', etiqueta: 'Nivel', soloEscritorio: true },
-      { campo: 'estado', etiqueta: 'Estado' },
-      { campo: 'precio', etiqueta: 'Precio', formato: 'numero', alineacion: 'derecha' },
+      { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
+      { campo: 'precio', etiqueta: 'Precio', formato: 'moneda', alineacion: 'derecha' },
       { campo: 'periodicidad', etiqueta: 'Periodicidad', soloEscritorio: true },
       { campo: 'renovacion_automatica', etiqueta: 'Renovación automática', formato: 'booleano' },
       { campo: 'fecha_inicio', etiqueta: 'Inicio', formato: 'fecha' },
@@ -45,7 +42,21 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { campo: 'fecha_cancelacion', etiqueta: 'Cancelada', formato: 'fecha', soloEscritorio: true },
       // Objeto `{plan, se_aplica_el}`: la capa lo pinta como texto, y ausente
       // significa que no hay cambio programado.
-      { campo: 'cambio_programado', etiqueta: 'Cambio programado', soloEscritorio: true },
+      // ⚠️ **Dos columnas, porque el backend devuelve dos campos.** Hasta el
+      // 2026-08-22 devolvía un objeto `{plan, se_aplica_el}` en un solo campo, y
+      // la celda pintaba `[object Object]`: este catálogo declara campos
+      // escalares y la tabla no recorre objetos. Se aplanó en el backend.
+      //
+      // La fecha no es decorado: una reducción aprobada **no se aplica al
+      // aprobarse** sino al cerrar el período ya pagado. Sin ella, la tabla dice
+      // que hay un cambio pendiente y no dice cuándo.
+      { campo: 'cambio_programado_plan', etiqueta: 'Cambio programado', soloEscritorio: true },
+      {
+        campo: 'cambio_programado_se_aplica_el',
+        etiqueta: 'Se aplica el',
+        formato: 'fecha',
+        soloEscritorio: true,
+      },
     ],
     filtros: [
       {
@@ -57,7 +68,7 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { nombre: 'plan', etiqueta: 'Plan', tipo: 'texto' },
       { nombre: 'vence_en_dias', etiqueta: 'Vence en (días)', tipo: 'numero' },
       { nombre: 'con_cambio_programado', etiqueta: 'Con cambio programado', tipo: 'booleano' },
-      { nombre: 'cuenta', etiqueta: 'Cuenta (id)', tipo: 'numero' },
+      { nombre: 'cuenta', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'cuenta' },
     ],
   },
 
@@ -71,10 +82,10 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { campo: 'cuenta', etiqueta: 'Cuenta' },
       { campo: 'periodo', etiqueta: 'Período', soloEscritorio: true },
       { campo: 'tipo_documento', etiqueta: 'Tipo', soloEscritorio: true },
-      { campo: 'monto_base', etiqueta: 'Base', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
-      { campo: 'impuestos', etiqueta: 'Impuestos', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
-      { campo: 'monto_total', etiqueta: 'Total', formato: 'numero', alineacion: 'derecha' },
-      { campo: 'estado_pago', etiqueta: 'Estado de pago' },
+      { campo: 'monto_base', etiqueta: 'Base', formato: 'moneda', alineacion: 'derecha', soloEscritorio: true },
+      { campo: 'impuestos', etiqueta: 'Impuestos', formato: 'moneda', alineacion: 'derecha', soloEscritorio: true },
+      { campo: 'monto_total', etiqueta: 'Total', formato: 'moneda', alineacion: 'derecha' },
+      { campo: 'estado_pago', etiqueta: 'Estado de pago', formato: 'enumeracion' },
       { campo: 'reintentos', etiqueta: 'Reintentos', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
       { campo: 'fecha_emision', etiqueta: 'Emitida', formato: 'fecha' },
       { campo: 'fecha_vencimiento', etiqueta: 'Vence', formato: 'fecha' },
@@ -89,7 +100,7 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
         ayuda: '«En disputa» no es impaga: el sistema dejó de cobrarla a propósito.',
       },
       { nombre: 'vencidas', etiqueta: 'Solo vencidas', tipo: 'booleano' },
-      { nombre: 'cuenta', etiqueta: 'Cuenta (id)', tipo: 'numero' },
+      { nombre: 'cuenta', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'cuenta' },
     ],
   },
 
@@ -101,9 +112,12 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { campo: 'cuenta', etiqueta: 'Cuenta', principal: true },
       { campo: 'plan_actual', etiqueta: 'Plan actual' },
       { campo: 'plan_solicitado', etiqueta: 'Plan solicitado' },
-      { campo: 'estado', etiqueta: 'Estado' },
+      { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
-      { campo: 'dias_espera', etiqueta: 'Días en espera', formato: 'numero', alineacion: 'derecha' },
+      // ⚠️ Se publicaba en días y **todas** las esperas salían «0»: las
+      // solicitudes reales se resuelven en minutos. Ahora viaja en minutos y la
+      // columna lo lee según la magnitud.
+      { campo: 'minutos_espera', etiqueta: 'En espera', formato: 'duracion_minutos', alineacion: 'derecha' },
       { campo: 'resuelta_por', etiqueta: 'Resuelta por', soloEscritorio: true },
       { campo: 'motivo_rechazo', etiqueta: 'Motivo de rechazo', soloEscritorio: true },
       { campo: 'fecha_solicitud', etiqueta: 'Solicitada', formato: 'fecha_hora' },
@@ -116,7 +130,7 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
         tipo: 'enumeracion',
         opciones: opciones(ESTADOS_SOLICITUD),
       },
-      { nombre: 'cuenta', etiqueta: 'Cuenta (id)', tipo: 'numero' },
+      { nombre: 'cuenta', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'cuenta' },
     ],
   },
 
@@ -135,7 +149,7 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
     ],
     filtros: [
       { nombre: 'caduca_en_dias', etiqueta: 'Caduca en (días)', tipo: 'numero' },
-      { nombre: 'cuenta', etiqueta: 'Cuenta (id)', tipo: 'numero' },
+      { nombre: 'cuenta', etiqueta: 'Cuenta', tipo: 'catalogo', catalogo: 'cuenta' },
     ],
   },
 };

@@ -255,7 +255,7 @@ specs/001-estrategico/
             spec.md  plan.md  tasks.md  data-model.md  research.md
             quickstart.md  traceability.md
             contracts/informes-estrategicos-oe1.openapi.yaml
-        frontend/                          ← aplazada
+        frontend/                          ← implementada (capa aparte)
     OE2-monetizacion-api/
     OE3-escalabilidad-multiregion/
     OE4-inteligencia-predictiva/
@@ -264,8 +264,8 @@ specs/001-estrategico/
 ```
 
 Se mantiene el patrón layered de las otras dos capas: índice `{modulo}.md` con el nombre de la
-carpeta, `backend/` activo primero, `frontend/` aplazado. Speckit apunta a **una capa** vía
-`.specify/feature.json`.
+carpeta, `backend/` primero y `frontend/` como capa Speckit aparte. Speckit apunta a **una capa**
+vía `.specify/feature.json`. En OE1–OE6 **ambas capas ya están implementadas**.
 
 **Código.** A diferencia de táctico, estos informes **no se reparten por app de departamento**: un
 OE cruza varios y repartirlos por app volvería a fragmentar la métrica que el modelo unifica.
@@ -308,7 +308,7 @@ en código. El recuento de 2026-08-16 (solo Emergencias en el almacén) **ya no 
 | **OE1** Posicionamiento | Suscripciones + Ventas + Cuentas **listos** | 10 / 13 | ✅ | ✅ | ✅ 53 | **implementado** (10 GET, E1-05/07/08 → 404) |
 | **OE5** Retención | Soporte + Suscripciones + Cuentas + Partners **listos** | 9 / 15 | ✅ | ✅ | ✅ 52 | **implementado** (9 GET; E5-01/11 y refs OE1 → 404) |
 
-Frontend de todos los OE: **aplazado** (decisión de capa, no de sustrato).
+Frontend: **OE1, OE2, OE3, OE4, OE5 y OE6 implementados**.
 
 ### OE5: backend implementado. OE1 backend implementado
 
@@ -318,7 +318,9 @@ medido. Los OE que sí midieron (OE6, OE3, OE4, OE2, OE1) produjeron correccione
 que **no se deducen de él**: eje de región muerto, E3-02 mezclando latencia técnica con tiempo
 operativo, E2-06 inmedible desde el log, NRR táctico con expansión/contracción en 0.
 
-- **OE5 backend está implementado.** Lo que queda de producto en esta capa es frontend (aplazado) o trabajo fuera de informes.
+- **OE1–OE6 backend y frontend de informes están implementados.** Lo que queda de producto es
+  trabajo fuera de estas pantallas (tablero CU-E01, agujeros de origen, informes ⛔, seed de
+  `Gerente` si falta en el entorno).
 
 ### Y la dependencia es doble
 
@@ -337,9 +339,11 @@ sobre 4 clientes y un cumplimiento de SLA sobre 14 tickets **son cifras anecdót
 indicador**. Por eso las tres specs obligan a declarar `cobertura: "parcial"` en casi todos sus
 informes.
 
-**Consecuencia práctica:** los compuestos tácticos de los siete departamentos **ya están**. OE1
-backend está implementado. OE5 tiene plan. El siguiente de producto en esta capa es
-`/speckit-tasks` de OE5. Los cinco huecos de la tabla de abajo no los cierra ningún táctico.
+**Consecuencia práctica:** los compuestos tácticos de los siete departamentos **ya están**.
+OE1–OE6 tienen backend y frontend de informes **implementados**. **No hay un ciclo más de
+pantallas Z.** Lo que sigue es origen de dato, tablas o decisión de producto (huecos de
+abajo, informes ⛔, metas `[CALIBRAR]`, CU-E01/E09/E10). Los cinco huecos no los cierra
+ningún táctico.
 
 ### Cinco huecos que ningún módulo táctico resuelve
 

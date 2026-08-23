@@ -22,6 +22,9 @@ from apps.accidentes.permissions import (
     ROLES_INTERNOS_EMERGENCIAS,
 )
 from apps.accidentes.services.informes_casos_service import InformesCasosService
+from apps.accidentes.services.informes_catalogos_service import (
+    InformesCatalogosService,
+)
 from apps.accidentes.services.informes_cierres_service import InformesCierresService
 from apps.accidentes.services.informes_evidencia_service import (
     InformesEvidenciaService,
@@ -29,6 +32,7 @@ from apps.accidentes.services.informes_evidencia_service import (
 from core.auth.permissions import IsAuthenticated401
 from core.informes.acotamiento import ACOTADO_TODOS, AccesoDenegado
 from core.informes.cobertura import resolver_cobertura
+from core.api.response_envelope import success_response
 from core.informes.envelope import listado_response
 from core.informes.paginacion import parse_dir
 from core.informes.vistas import ERRORES_DE_VALIDACION, ListadoBaseView
@@ -111,6 +115,38 @@ class CasosView(ListadoBaseView):
             },
             acotado_a=cobertura.alcance,
         )
+
+
+class CatalogosCasosView(ListadoBaseView):
+    """Opciones de los desplegables del listado de casos.
+
+    Existe porque los filtros pedían identificadores numéricos a mano —«Condado
+    (id)»— y la tabla solo mostraba nombres: no había manera de averiguar el
+    número desde la propia pantalla.
+
+    ⚠️ **Comparte el permiso y el acotamiento del listado, y no por simetría.**
+    La lista de condados es metadato, no filas, así que `Cobertura` no la cubre
+    por sí sola: hay que aplicarla a mano. Un catálogo completo diría dónde opera
+    el sistema a quien contrató una zona, y lo diría con el listado devolviendo
+    cero filas — sin ningún síntoma.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesCasosPermission]
+
+    def get(self, request: Request):
+        try:
+            cobertura = resolver_cobertura(
+                roles=getattr(request.user, "roles", []) or [],
+                user_id=request.user.idusuario,
+                roles_internos=ROLES_INTERNOS_EMERGENCIAS,
+                roles_cliente=ROLES_CLIENTE_EMERGENCIAS,
+                resolver_ubicaciones=_zonas_del_cliente,
+            )
+        except AccesoDenegado as exc:
+            return self.manejar_acceso_denegado(exc)
+
+        catalogos = InformesCatalogosService().catalogos(cobertura=cobertura)
+        return success_response(catalogos, meta={"acotado_a": cobertura.alcance})
 
 
 class _ListadoInternoView(ListadoBaseView):
@@ -240,3 +276,19 @@ def _zonas_del_cliente(idusuario: int) -> frozenset[int]:
     if idcliente is None:
         return frozenset()
     return InformesUbicacionRepository().zonas_contratadas(int(idcliente))
+
+
+class CatalogosEvidenciaView(_ListadoInternoView):
+    """Opciones del filtro «Autor» de fotografías y notas de campo.
+
+    Solo roles internos, igual que sus listados: quién levantó la evidencia es
+    operación interna, y el catálogo no puede decir más que el listado.
+    """
+
+    def get(self, request: Request):
+        from core.informes.catalogos import CatalogosFiltrosRepository
+
+        return success_response(
+            {"autor": CatalogosFiltrosRepository().usuarios(None)},
+            meta={"acotado_a": ACOTADO_TODOS},
+        )

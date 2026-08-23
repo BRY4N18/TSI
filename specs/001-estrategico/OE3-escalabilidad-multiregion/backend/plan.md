@@ -68,7 +68,7 @@ descarte de particiones más pesa
 | **I. Idoneidad funcional como contrato** | Los siete construibles están trazados a CU-E05 y CU-E08. **Los siete bloqueados se declaran con su prerrequisito** en vez de publicarse vacíos. Y se corrige una incoherencia del propio catálogo: la meta de E3-02 | ✅ |
 | **II. Fiabilidad operativa** | El módulo mide la fiabilidad, no participa en ella. Su indisponibilidad no retrasa ningún despacho | ⚪ |
 | **III. Eficiencia en tiempo real** | No toca la ruta crítica. Regla 7 obligatoria, y E3-03 la necesita más que ningún otro informe de la capa | ✅ |
-| **IV. Capacidad de interacción** | No aplica: frontend aplazado | ⚪ |
+| **IV. Capacidad de interacción** | No aplica en esta capa. Frontend en `../frontend/` (implementado) | ⚪ |
 | **V. Seguridad de la información** | Exclusión constitucional aplicada también a las tres autoridades. **Y el permiso es por informe**, que es más restrictivo que por módulo | ✅ |
 | **VI. Compatibilidad API-first** | Contrato OpenAPI bajo el envelope común | ✅ |
 | **VII. Mantenibilidad estructural** | Reutiliza el armazón de OE6 y las consultas tácticas por contraste. La ampliación es **una dimensión compartida**, no una tabla de informe | ✅ |

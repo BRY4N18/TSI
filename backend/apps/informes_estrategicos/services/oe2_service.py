@@ -42,6 +42,31 @@ CATALOGO: dict[str, str] = {
 
 PUBLICADOS: frozenset[str] = frozenset(CATALOGO)
 
+#: Informes que cuentan el **numerador dentro del período** y el **denominador
+#: sobre el estado de hoy**.
+#:
+#: ⚠️ Pedido enero de 2019, `integraciones-activas` respondía «3 partners con
+#: acceso, 0 % de adopción». Los tres partners son de hoy: en 2019 no existía
+#: ninguno. La cifra no decía «no sabemos», decía 0 % — una cifra inventada con
+#: forma de medición, y la más difícil de descubrir porque es plausible.
+#:
+#: Se **declara** en vez de corregirse (decisión del usuario, opción C): acotar
+#: el denominador exige historizar `dim_partner` y cambiaría lo que el informe
+#: mide. Mismo patrón que `umbral_aplicado` o `medida_exacta_desde`: la
+#: convención que no se deduce del número viaja con el número.
+DENOMINADOR_ACTUAL = frozenset({
+    "integraciones-activas",
+    "consumo-por-partner",
+    "excedente-facturable",
+    "comparativa-partners",
+})
+
+NOTA_DENOMINADOR_ACTUAL = (
+    "El denominador (partners y cuentas) se cuenta sobre el estado actual, no "
+    "sobre el período pedido: un período anterior al alta de un partner lo "
+    "incluye igual en el total."
+)
+
 BLOQUEADOS: frozenset[str] = frozenset({"disponibilidad-api"})
 
 PARCIALES: frozenset[str] = frozenset(
@@ -99,6 +124,9 @@ class Oe2Service:
         )
 
         cobertura = "parcial" if informe in PARCIALES else "completa"
+        denominador = (
+            NOTA_DENOMINADOR_ACTUAL if informe in DENOMINADOR_ACTUAL else None
+        )
         falta = list(FALTA_PRECIO_PLAN) if informe in PARCIALES else None
         alcance = ALCANCE_EXCEDENTE if informe == "excedente-facturable" else None
 
@@ -111,6 +139,7 @@ class Oe2Service:
             cobertura=cobertura,
             falta=falta,
             alcance=alcance,
+            denominador_actual=denominador,
         )
 
     def _unidad(self, informe: str) -> str:

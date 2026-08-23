@@ -281,7 +281,7 @@ precisamente lo que mide la disponibilidad.
 | **Idoneidad funcional** | ✅ | Los diez trazados a CU-E02, CU-E04 y CU-E05. Se corrige el catálogo en dos puntos: el nombre del hecho, y que **E2-08 no está bloqueado** |
 | **Fiabilidad** | ✅ | Versión final donde toca. FR-OE2-005 evita la fuente que no cuadra |
 | **Eficiencia de desempeño** | ✅ | Regla 7. E2-05 calcula percentiles sobre el detalle, que es lo que exige la partición por mes |
-| **Capacidad de interacción** | ⚪ | No aplica: frontend aplazado |
+| **Capacidad de interacción** | ⚪ | No aplica en esta capa. Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE2-003, FR-OE2-004 y **FR-OE2-007**: ningún partner ve el ecosistema. Es la exclusión propia de este módulo, y no es de dato sensible sino **de alcance competitivo** |
 | **Compatibilidad** | ✅ | **Es el objetivo que mide el Principio VI.** E2-09 es lo que permite retirar una versión sabiendo quién la usa; sin él, un retiro rompe integraciones activas a ciegas |
 | **Mantenibilidad** | ✅ | Reutiliza el armazón de OE6. Un solo departamento de origen |
@@ -316,4 +316,4 @@ Regla 2 del Tie-Breaker —no hay Safety—: **no se publica un uptime que serí
   es calculable; el p95 sigue sujeto a muestra mínima.
 - **El armazón de OE6 está construido.**
 - **La muestra mínima se hereda de OE6.** Con 18 llamadas, casi todo caerá por debajo.
-- **El frontend queda fuera de alcance.**
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado).

@@ -4,6 +4,8 @@ from django.urls import path
 
 from apps.partners.views.contrato_views import ContratoIntegracionView
 from apps.partners.views.informes_views import (
+    CatalogosAccesoView,
+    CatalogosContratoView,
     AlcanceDatosView,
     CambiosAccesoView,
     CredencialesView as InformesCredencialesView,
@@ -42,6 +44,34 @@ from apps.partners.views.promocion_views import (
 urlpatterns = [
     # ── Informes tácticos simples ───────────────────────────────────────────
     # Antes que las rutas operativas: Django resuelve por orden de declaración.
+    path(
+        # Catálogos de los desplegables. Uno por familia de listados: los tres
+        # de acceso comparten el filtro «Partner»; los dos de contrato comparten
+        # «Servicio» y «Cuenta». Cada uno hereda el permiso de su familia.
+        "informes/partners-api/partners/catalogos",
+        CatalogosAccesoView.as_view(),
+        name="informes-partners-catalogos-acceso",
+    ),
+    path(
+        "informes/partners-api/credenciales/catalogos",
+        CatalogosAccesoView.as_view(),
+        name="informes-partners-credenciales-catalogos",
+    ),
+    path(
+        "informes/partners-api/cambios-acceso/catalogos",
+        CatalogosAccesoView.as_view(),
+        name="informes-partners-cambios-acceso-catalogos",
+    ),
+    path(
+        "informes/partners-api/versiones-contrato/catalogos",
+        CatalogosContratoView.as_view(),
+        name="informes-partners-versiones-catalogos",
+    ),
+    path(
+        "informes/partners-api/alcance-datos/catalogos",
+        CatalogosContratoView.as_view(),
+        name="informes-partners-alcance-catalogos",
+    ),
     path(
         "informes/partners-api/partners",
         InformesPartnersView.as_view(),

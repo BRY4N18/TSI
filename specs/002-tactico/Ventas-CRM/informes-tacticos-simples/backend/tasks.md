@@ -155,7 +155,20 @@ formato de sufijo aparecen o desaparecen **juntas**, verificado por T034.
 - [X] T043 [P] Prueba de rendimiento en `backend/apps/ventas_crm/tests/performance/test_informes_latencia.py`: primera página de los cuatro listados por debajo de 2 s (SC-004)
 - [X] T044 Ejecutar `cd backend && python -m pytest -q` completo y verificar que **ninguna suite existente se movió** — en particular `apps/informes_tacticos` y `apps/cuentas_clientes`
 - [X] T045 Verificar que la implementación coincide con `contracts/informes-tacticos-simples.openapi.yaml` endpoint por endpoint, corrigiendo el contrato si la implementación reveló algo mejor
-- [ ] T046 Recorrer `quickstart.md` de principio a fin contra el stack levantado, con especial atención a §3.2 y §3.3 (acotamiento) y §3.4 (perdido vs convertido) — **parcial:** las 11 comprobaciones reproducibles están cubiertas por la suite y anotadas en `quickstart.md` §7, y se añadió §6 con el seed que las hace reales. **Falta el recorrido contra Docker levantado**, que en este módulo importa especialmente: el doble compara los formatos de `demo_expiracion` como texto Python y Pinot como texto SQL
+- [X] T046 Recorrer `quickstart.md` de principio a fin contra el stack levantado — **hecho el 2026-08-19: 27 comprobaciones, 0 fallos.**
+
+  Verificado con el actor de cada escenario, no con el Administrador: acotamiento
+  (`acotado_a = propios`, gerente 12 < autoridad 13), la cartera ajena como
+  **403 sin filas** y no como sustitución silenciosa, perdidos y convertidos
+  **disjuntos**, `400` nombrando los valores válidos, ausencia de `gmail` y
+  `telefono`, `ejecutivo` por nombre y no por identificador, `estado_envio` no
+  expuesto, el rango aceptado **solo** donde FR-015 lo permite, los cuatro
+  listados en `403` para el Operador y orden determinista entre dos llamadas.
+
+  ⚠️ §3.5 (demos activas) queda comprobado **solo en su contrato**: el origen no
+  tiene ninguna demo, así que la regla «una demo expirada no aparece» no se pudo
+  ejercitar con datos. `Fact_Interaccion_Demo` está vacía y eso es correcto, no
+  un fallo de carga.
 - [X] T047 Anotar en `decisiones-pendientes.md` que la columna de expiración de demo es texto con formatos mixtos y debería ser marca de tiempo numérica como el resto del sistema (causa raíz de research D3)
 - [X] T048 Documentar el trabajo en `.specify/docs/changelog.md`, actualizar `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` marcando los listados como 🟢, y **propagar `acotado_a` al contrato común** `specs/002-tactico/contrato-informes-simples.md` para que los seis departamentos restantes lo hereden
 

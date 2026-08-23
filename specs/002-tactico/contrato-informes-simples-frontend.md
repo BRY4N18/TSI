@@ -144,6 +144,56 @@ el componente común arma el formulario y la query. Con eso:
 - las enumeraciones se pintan como desplegable con los valores válidos, que es la mejor forma de que
   el `400` no llegue a producirse.
 
+#### El valor se envía crudo; solo la etiqueta se humaniza
+
+Los valores de estas enumeraciones son los **literales que guarda el origen**: `En_Validación`,
+`Pendiente_de_clasificacion`, `Producción activa`, `en_curso`. Pintados tal cual, el desplegable
+mostraba identificadores de máquina a quien opera.
+
+`shared/informes/informes-opciones.ts` los humaniza **solo para mostrarlos** —guion bajo por espacio
+y mayúscula inicial— y copia el `valor` sin tocarlo. Los dos lados importan:
+
+- normalizar el `valor` rompería el filtro **en silencio**: la petición saldría con algo que el
+  origen no conoce y la respuesta sería una lista vacía con `200`, indistinguible de «no hay nada
+  que mostrar» — no un `400`, que sí se notaría;
+- la humanización **no añade acentos que el literal no traiga** (`Pendiente_de_clasificacion` se
+  pinta «Pendiente de clasificacion»). Inventarlos haría que la pantalla y el dato dijeran cosas
+  distintas, y quien buscara el valor en el origen no lo encontraría.
+
+Antes había una copia de `opciones()` en cada uno de los siete departamentos, todas con
+`etiqueta: valor`. Ahora hay una sola, compartida.
+
+#### Los filtros de catálogo se pueblan desde el backend
+
+Un quinto tipo, `catalogo`, para lo que no se puede declarar en el código: severidad, tipo de
+reporte, condado y ciudad. Se **envía el id** y se **muestra el nombre**.
+
+Antes eran campos numéricos escritos a mano —«Condado (id)»— mientras la tabla mostraba solo
+nombres: no había forma de averiguar el número desde la propia pantalla.
+
+No son una `enumeracion` con otras opciones, y la diferencia importa:
+
+- son **datos**, no constantes del código: cambian sin que nadie toque el catálogo del frontend;
+- el backend **los acota por cobertura**. La lista de condados no es una fila del listado, es
+  metadato, así que `Cobertura` no la cubre sola: se aplica a mano en el servicio de catálogos.
+  Publicarla entera revelaría dónde opera el sistema a quien contrató una zona — y lo haría con el
+  listado devolviendo cero filas, sin ningún síntoma. Por eso tampoco se cachean entre usuarios.
+
+Dos detalles que parecen menores y no lo son:
+
+- **mientras cargan, el desplegable dice «Cargando…»**, no se queda vacío. Un desplegable vacío se
+  lee como «no hay condados», que es una afirmación sobre los datos y no sobre la petición — y
+  «aún no llegó» y «llegó vacío» tienen que verse distinto, porque lo segundo es un cliente sin
+  zonas contratadas;
+- **un fallo al cargarlos no rompe el listado**. El catálogo puebla los filtros, no las filas:
+  si no llega, los desplegables se quedan en «Todos» y la tabla sigue sirviendo. Pintar el estado
+  de error sobre una tabla perfectamente cargada sería peor que perder un filtro.
+
+Las opciones **homónimas se cualifican, y solo esas**: hay dos ciudades llamadas «Ciudad de
+Mexico», en condados distintos, y el desplegable las pintaba como dos entradas idénticas. Se
+muestran «Ciudad de Mexico · Cuauhtemoc» y «Ciudad de Mexico · Benito Juarez». Repetir el condado
+en todas sería ruido en el caso normal, que es el que no necesita ayuda.
+
 ### 3.3 El rango de fechas solo aparece donde el listado lo admite
 
 El backend distingue **estado actual** (rechaza `desde`/`hasta` con `400`) de **hechos del período**

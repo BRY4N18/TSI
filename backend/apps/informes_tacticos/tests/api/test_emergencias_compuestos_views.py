@@ -143,35 +143,40 @@ class TestErroresDeEntrada:
 
 
 class TestPermisos:
-    @pytest.mark.parametrize("roles", [["DirectorOperaciones"], ["Administrador"]])
-    def test_entran_la_autoridad_del_departamento_y_el_responsable(self, roles):
-        assert _cliente(roles).get(f"{BASE}/completitud-campos-criticos").status_code != 403
+    def test_entra_la_autoridad_del_departamento(self):
+        assert _cliente(["DirectorOperaciones"]).get(
+            f"{BASE}/completitud-campos-criticos"
+        ).status_code != 403
 
-    @pytest.mark.parametrize("roles", [["Operador"], ["Cliente"], ["Tecnico"], []])
-    def test_no_entra_quien_no_es_ninguno_de_los_dos(self, roles):
-        # El Operador **sí** ve los listados simples: un listado es su trabajo
-        # del día, un informe compuesto es una lectura de gestión sobre el
-        # trabajo de todos.
+    @pytest.mark.parametrize(
+        "roles", [["Operador"], ["Cliente"], ["Tecnico"], ["Administrador"], []]
+    )
+    def test_no_entra_quien_no_es_la_autoridad(self, roles):
+        """Solo la autoridad del departamento lee gestión.
+
+        El `Operador` **sí** ve los listados simples: un listado es su trabajo
+        del día, un informe compuesto es una lectura de gestión sobre el trabajo
+        de todos.
+
+        ⚠️ El `Administrador` entraba aquí hasta el 2026-08-19. Se le retiró con
+        el mismo argumento: opera el sistema y conserva los listados simples,
+        pero la lectura de gestión es de quien responde del departamento.
+        """
         assert _cliente(roles).get(f"{BASE}/completitud-campos-criticos").status_code == 403
 
     def test_sin_credencial_es_401_y_no_403(self):
         assert APIClient().get(f"{BASE}/completitud-campos-criticos").status_code == 401
 
 
-class TestElEndpointAnteriorSigueEnPie:
-    """T023 — **dejar intacto** `CompletitudCamposCriticosView`.
-
-    Se retirará cuando se decida qué pasa con los endpoints del módulo
-    sustituido. Apagarlo aquí dejaría al tablero sin el informe: la pantalla que
-    lo pinta apunta todavía a la ruta antigua, y quitarla no la migra, la vacía.
-    """
-
-    def test_la_ruta_del_modulo_operativo_sigue_resolviendo(self):
-        from django.urls import reverse
-
-        assert reverse("informes-tacticos-registro-completitud-campos-criticos")
-
-    def test_la_vista_operativa_sigue_existiendo(self):
-        from apps.informes_tacticos.views.registro_views import (  # noqa: F401
-            CompletitudCamposCriticosView,
-        )
+# `TestElEndpointAnteriorSigueEnPie` se retiró el 2026-08-19.
+#
+# Existía para T023: mantener en pie `CompletitudCamposCriticosView` y su ruta
+# `informes-tacticos/registro/...` mientras el tablero apuntara ahí, porque
+# apagarla habría vaciado la pantalla en vez de migrarla. Su propio docstring
+# decía que se retiraría «cuando se decida qué pasa con los endpoints del módulo
+# sustituido».
+#
+# Esa decisión se tomó: los tres informes agregados (registro, despacho,
+# seguimiento) se retiraron por completo. Leían Pinot directamente y quedaron
+# sustituidos por los listados de casos y por las pantallas de gestión sobre el
+# modelo analítico, que es lo que este archivo prueba.

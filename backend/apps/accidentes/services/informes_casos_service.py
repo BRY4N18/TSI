@@ -1,18 +1,31 @@
 """Servicio del listado de casos — L1.
 
-⚠️ Devuelve los TRES HECHOS, no un estado calculado
------------------------------------------------------
-`activo`, `hora_fin` y `duplicado_de` viajan por separado. **No hay campo
-`estado` en la respuesta.**
+⚠️ Devuelve los TRES HECHOS **y** la situación derivada de ellos
+----------------------------------------------------------------
+`activo`, `hora_fin` y `duplicado_de` viajan por separado y sin interpretar, más
+un campo `situacion` calculado a partir de esos mismos tres.
 
-Calcularlo funcionaría hoy porque el módulo de fusión garantiza que cerrado,
-descartado y fusionado son mutuamente excluyentes — pero esa garantía vive en
-otro módulo y podría cambiar sin que este se entere. Un campo derivado empezaría
-a mentir el día que cambiara, y nadie lo notaría: seguiría teniendo la forma
-correcta.
+**Antes no se publicaba la situación**, con este argumento: la exclusividad entre
+cerrado, descartado y fusionado la garantiza el módulo de fusión, esa garantía
+podría cambiar sin que este módulo se entere, y un campo derivado «empezaría a
+mentir el día que cambiara sin que nadie lo notara». El argumento es correcto y
+sigue en pie — lo que no se sostenía era la conclusión, por dos razones:
 
-Devolver los hechos no pierde información: quien necesite el estado formal tiene
-los informes agregados, que lo leen de donde está.
+1. **El listado ya derivaba la situación, para filtrar.** `_clausulas_situacion`
+   aplica exactamente esta regla desde siempre. La derivación era fiable para
+   decidir qué filas salen y no para nombrarlas: una de las dos posturas sobraba.
+2. **No publicarla no dejaba al lector sin estado: lo dejaba con uno peor.** La
+   tabla pintaba `activo`, y cerrado, descartado y duplicado son **los tres**
+   `activo = false`. Tres filas que ponen «No» significaban cosas distintas, y el
+   filtro ofrecía cuatro situaciones que la tabla no mostraba.
+
+El riesgo que señalaba el argumento se ataca de frente, no se ignora: cuando los
+tres hechos se contradicen —un caso `activo` con hora de fin, o `activo`
+apuntando a otro caso— `situacion_de` devuelve `inconsistente` en vez de elegir
+el primero que encaja. El día que la garantía se rompa, el campo lo dirá.
+
+Los tres hechos siguen enteros en la respuesta: quien prefiera interpretarlos por
+su cuenta no ha perdido nada.
 """
 
 from __future__ import annotations
@@ -28,6 +41,7 @@ from core.repositories.accidentes.informes_casos_repository import (
     SIN_VALOR,
     SITUACION_CERRADO,
     InformesCasosRepository,
+    situacion_de,
 )
 from core.repositories.accidentes.informes_ubicacion_repository import (
     InformesUbicacionRepository,
@@ -120,6 +134,9 @@ class InformesCasosService:
 
 def _fila(cruda, severidades, tipos, lugares) -> dict[str, Any]:
     lugar = lugares.get(cruda.get("idcalle")) or {}
+    activo = bool(cruda.get("activo"))
+    hora_fin = _hora_fin(cruda.get("horafin"))
+    duplicado_de = _sin_centinela(cruda.get("idaccidenteorigen"))
     return {
         # El número de caso es lenguaje de negocio: así lo nombra quien lo
         # atiende, y ocultarlo obligaría a traducir en cada conversación.
@@ -138,16 +155,42 @@ def _fila(cruda, severidades, tipos, lugares) -> dict[str, Any]:
         "num_fallecidos": cruda.get("numfallecidos"),
         "fecha_accidente": a_iso(cruda.get("fechahoraaccidente")),
         # ── Los tres hechos, por separado y sin interpretar ──────────────────
-        "activo": bool(cruda.get("activo")),
+        "activo": activo,
         # ⚠️ `horafin` es una columna **STRING que guarda epoch-ms**: la
         # escriben `cerrar_caso_service` y `cancelar_caso_service` con el reloj
         # del sistema. Devolverla verbatim entregaba `"1786625595899"`, que en
         # pantalla es un número ilegible y no se puede ordenar ni comparar como
         # fecha. Se normaliza como cualquier otra marca de tiempo de la API.
-        "hora_fin": _hora_fin(cruda.get("horafin")),
-        "duracion_minutos": cruda.get("duracionminutos"),
-        "duplicado_de": _sin_centinela(cruda.get("idaccidenteorigen")),
+        "hora_fin": hora_fin,
+        # ⚠️ **No mide cuánto estuvo abierto el caso**, aunque su vecindad con
+        # `hora_fin` lo sugiera: es la duración del incidente que registra quien
+        # atiende, y está poblada en 4 203 de 4 254 casos mientras que `hora_fin`
+        # lo está en 3. Son cosas distintas y por eso la etiqueta lo dice.
+        "duracion_incidente_minutos": _duracion(cruda.get("duracionminutos")),
+        "duplicado_de": duplicado_de,
+        # Derivada de los tres de arriba, que siguen viajando: quien prefiera
+        # interpretarlos por su cuenta los tiene enteros. Ver `situacion_de`.
+        "situacion": situacion_de(
+            activo=activo, hora_fin=hora_fin, duplicado_de=duplicado_de
+        ),
     }
+
+
+def _duracion(valor: Any) -> int | None:
+    """`0` es ausencia, no una duración.
+
+    Pinot no tiene NULL: una columna entera sin valor llega como `0`. Un
+    incidente de cero minutos no existe, así que los 48 casos que lo traen son
+    «no se registró» — y pintarlos «0» junto a una hora de fin vacía se lee como
+    «cerrado al instante», que es justo lo contrario de lo que dice el dato.
+    """
+    if valor is None:
+        return None
+    try:
+        numero = int(valor)
+    except (TypeError, ValueError):
+        return None
+    return numero or None
 
 
 def _hora_fin(valor: Any) -> str | None:

@@ -717,8 +717,10 @@ _reset_pinot_store()
 def _day_key_to_epoch_ms(day_key: str) -> int:
     """Convierte una clave de bucket 'YYYY-MM-DD' (o ISO semana 'YYYY-Www') de
     vuelta a epoch millis — DATETRUNC de Pinot real devuelve epoch millis, no
-    un string, así que el doble del mock debe hacer lo mismo (ver
-    core/repositories/informes_tacticos/_periodo_utils.py)."""
+    un string, así que el doble del mock debe hacer lo mismo.
+
+    (Antes esto remitía a `core/repositories/informes_tacticos/_periodo_utils.py`,
+    borrado el 2026-08-19 con los informes tácticos agregados.)"""
     from datetime import datetime, timezone
 
     if "-W" in day_key:

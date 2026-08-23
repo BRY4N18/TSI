@@ -112,7 +112,7 @@ NUMERADORES = {
         "pct_aprobacion_primer_intento": "aprobadas_al_primero"
     },
     "ot12_unidades_por_estado": {"pct_transiciones": "transiciones"},
-    "ot12_disponibilidad_declarada": {"pct_disponible": "segundos_disponible"},
+    "ot12_disponibilidad_declarada": {"pct_disponibilidad": "segundos_disponible"},
     "ot12_bajas_forzadas": {"pct_forzadas": "bajas"},
     "ot12_rendimiento_proveedor": {"pct_aceptacion": "confirmados"},
 }

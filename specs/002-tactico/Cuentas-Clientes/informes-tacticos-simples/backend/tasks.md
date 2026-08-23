@@ -163,7 +163,22 @@ sigue apareciendo con su razón social intacta, verificado por T042.
 - [X] T048 [P] Prueba de rendimiento en `backend/apps/cuentas_clientes/tests/performance/test_informes_latencia.py`: primera página de los ocho listados por debajo de 2 s (SC-002)
 - [X] T049 Ejecutar `cd backend && python -m pytest apps/informes_tacticos -q` y verificar que **sigue verde sin cambios** — si esa suite se mueve, el aislamiento del piloto falló (research D1)
 - [X] T050 Verificar que la implementación coincide con `contracts/informes-tacticos-simples.openapi.yaml` endpoint por endpoint, corrigiendo el contrato si la implementación reveló algo mejor
-- [ ] T051 Recorrer `quickstart.md` de principio a fin contra el stack levantado y anotar cualquier discrepancia — **parcial:** las 9 comprobaciones reproducibles quedan cubiertas por la suite y anotadas en `quickstart.md` §7, y se corrigieron dos discrepancias encontradas (§3.7 usaba un estado inexistente; §6 documenta el vacío de `transferencias-propiedad`). **Falta el recorrido contra Docker levantado**, que es donde aparecerían las diferencias de tipo y centinela que el doble en memoria no reproduce
+- [X] T051 Recorrer `quickstart.md` de principio a fin contra el stack levantado — **hecho el 2026-08-19: 25 comprobaciones, 0 fallos.**
+
+  Los ocho listados responden `200`. §3.2 (solo `transferencias-propiedad` acepta
+  rango; `cuentas-por-estado` lo rechaza con `400`), §3.3 (**sin contraseña ni
+  identificador de credencial, sin token de sesión, sin secretos en accesos
+  técnicos**, y roles por nombre y nunca `idrol`), §3.4 (33 filas y **ningún
+  usuario repetido**: los 3 con varios roles salen en una sola, «Ana Torres» con
+  `["Cliente","Proveedor"]`), §3.5 (**17 usuarios sin rol aparecen**, no se
+  omiten), §3.6 (dos páginas de 10 **sin una sola fila repetida**), §3.8
+  (`limit=5000` → `400` nombrando el máximo, en vez de recortar en silencio),
+  §3.9 (`estado=Vigente` → `400`) y §3.10 (Operador `403`, y el Director
+  Tecnológico también `403` fuera de su materia).
+
+  ⚠️ §3.7 queda comprobada **solo en su contrato**: el origen no tiene ninguna
+  cuenta dada de baja —los estados presentes son `Activo` y `Rechazado_Anulado`—
+  así que la regla «las dadas de baja siguen apareciendo» no se pudo ejercitar.
 - [X] T052 Documentar el trabajo en `.specify/docs/changelog.md` y actualizar `informestacticos/TSI-Informes-Tacticos-Requeridos-por-OT.md` marcando los ocho listados como 🟢
 
 ---

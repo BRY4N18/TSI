@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { CargaInforme, num, texto } from '../models/informes-compuestos.types';
+import { mensajeVacio } from '../../../../shared/informes/mensaje-vacio';
 
 export interface BloqueApoyo {
   titulo: string;
@@ -41,7 +42,7 @@ export interface BloqueApoyo {
                 <p class="m-0 mt-2 text-sm text-alert-critical">{{ bloque.carga.error }}</p>
               }
               @case ('vacio') {
-                <p class="m-0 mt-2 text-sm text-text-secondary">Sin datos en este período.</p>
+                <p class="m-0 mt-2 text-sm text-text-secondary">{{ textoVacio() }}</p>
               }
               @default {
                 <p class="m-0 mt-2 text-lg font-semibold text-text-primary">
@@ -73,6 +74,10 @@ export interface BloqueApoyo {
 })
 export class ApoyoPlegableComponent {
   readonly bloques = input.required<BloqueApoyo[]>();
+  /** Alcance declarado por el envelope; decide el texto del estado vacío. */
+  readonly alcance = input<string | null>(null);
+
+  readonly textoVacio = computed(() => mensajeVacio(this.alcance()));
 
   readonly num = num;
   readonly texto = texto;
@@ -89,7 +94,7 @@ export class ApoyoPlegableComponent {
   resumen(bloque: BloqueApoyo): string {
     const filas = bloque.carga.data;
     if (!filas.length) {
-      return 'Sin datos en este período.';
+      return mensajeVacio(this.alcance());
     }
     if (bloque.informe === 'carga-por-ejecutivo') {
       const activos = filas.reduce((acc, f) => acc + (num(f['activos']) ?? 0), 0);

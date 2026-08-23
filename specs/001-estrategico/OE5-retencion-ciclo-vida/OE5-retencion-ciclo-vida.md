@@ -7,7 +7,7 @@
 
 Índice global del módulo (no es una spec Speckit).
 
-## Estado: backend **implementado** (9 GET; E5-01/11 y refs OE1 → 404)
+## Estado: backend **implementado** · frontend **implementado**
 
 | Hecho o dimensión que necesita | Lo diseña | Estado |
 |---|---|:--:|
@@ -46,7 +46,7 @@ Quedan **nueve propios construibles** y **dos bloqueados**.
 | Capa | Ruta | Estado |
 |---|---|---|
 | **Backend** | [`backend/`](./backend/) | spec + plan + tasks + **código HTTP** (9 GET; E5-01/11 y 4 refs OE1 → 404) |
-| Frontend | *(pendiente)* | aplazada |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** — 4 pantallas Z; sin NPS ni ciclo OE1 |
 
 ## Lo que hay que saber antes de tocar este módulo
 

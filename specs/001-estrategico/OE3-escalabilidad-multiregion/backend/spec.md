@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft
+**Status**: Implemented (2026-08-18). Siete GET publicados; siete bloqueados sin endpoint. Frontend en capa aparte.
 
 **Input**: User description: "Informes estratégicos del OE3 — los catorce informes que miden si la operación puede escalar a nuevos mercados sin degradar el rendimiento del servicio, resueltos con consultas sobre el modelo analítico."
 
@@ -325,7 +325,7 @@ aplicación o integrar una fuente externa**, que son decisiones de arquitectura 
 | **Idoneidad funcional** | ⚠️ | Los siete construibles están trazados. **Los otros siete se declaran inmedibles con su prerrequisito**, que es la única forma honesta de cubrirlos |
 | **Fiabilidad** | ✅ | El módulo mide la fiabilidad, no participa en ella. Versión final obligatoria |
 | **Eficiencia de desempeño** | ✅ | Regla 7. E3-03 usa ventanas amplias, así que el filtrado de particiones importa aquí más que en ningún otro informe |
-| **Capacidad de interacción** | ⚪ | No aplica: frontend aplazado |
+| **Capacidad de interacción** | ⚪ | No aplica en esta capa. Frontend implementado en [`../frontend/`](../frontend/) |
 | **Seguridad** | ✅ | FR-OE3-005, con la exención de autoridad que no levanta exclusiones |
 | **Compatibilidad** | ✅ | Contrato OpenAPI bajo el envelope común |
 | **Mantenibilidad** | ✅ | Reutiliza el armazón de OE6 y es **la única implementación** de los cuatro informes compartidos |
@@ -374,4 +374,4 @@ ganado es que ninguna cifra del tablero afirme algo que el sistema no sabe.
 - **La muestra mínima para percentiles** se hereda de OE6.
 - **No se integra ninguna fuente externa.** Prometheus, costos y cobertura de pruebas quedan fuera:
   integrarlas es una decisión de arquitectura que excede a un módulo de informes.
-- **El frontend queda fuera de alcance.**
+- **Esta spec no define pantallas.** El frontend está en [`../frontend/`](../frontend/) (implementado).

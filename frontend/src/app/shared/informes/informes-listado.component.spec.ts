@@ -10,6 +10,7 @@ interface FilaPrueba extends Record<string, unknown> {
   calificacion: number | null;
   hora_fin: string | null;
   activo: boolean;
+  monto: number | null;
 }
 
 const COLUMNAS: ColumnaListado<FilaPrueba>[] = [
@@ -17,6 +18,7 @@ const COLUMNAS: ColumnaListado<FilaPrueba>[] = [
   { campo: 'calificacion', etiqueta: 'Calificación', formato: 'numero', alineacion: 'derecha' },
   { campo: 'hora_fin', etiqueta: 'Hora fin' },
   { campo: 'activo', etiqueta: 'Activo', formato: 'booleano' },
+  { campo: 'monto', etiqueta: 'Monto', formato: 'moneda', alineacion: 'derecha' },
 ];
 
 @Component({
@@ -69,6 +71,7 @@ describe('InformesListadoComponent', () => {
       calificacion: 4,
       hora_fin: '09:30',
       activo: false,
+      monto: 166.88,
       ...parcial,
     };
   }
@@ -234,7 +237,7 @@ describe('InformesListadoComponent', () => {
   });
 
   describe('las columnas declaradas', () => {
-    it('cabeceras_when_se_declaran_cuatro_pinta_esas_cuatro', () => {
+    it('cabeceras_when_se_declaran_cinco_pinta_esas_cinco', () => {
       anfitrion.filas = [fila()];
       fixture.detectChanges();
 
@@ -242,7 +245,7 @@ describe('InformesListadoComponent', () => {
         fixture.nativeElement.querySelectorAll('th') as NodeListOf<HTMLElement>,
       ).map((th) => th.textContent?.trim());
 
-      expect(cabeceras).toEqual(['Caso', 'Calificación', 'Hora fin', 'Activo']);
+      expect(cabeceras).toEqual(['Caso', 'Calificación', 'Hora fin', 'Activo', 'Monto']);
     });
 
     it('booleano_when_se_formatea_muestra_si_o_no', () => {
@@ -252,6 +255,59 @@ describe('InformesListadoComponent', () => {
       const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
 
       expect(celdas[3].textContent.trim()).toBe('Sí');
+    });
+  });
+
+  describe('una columna de dinero se compara leyendo hacia abajo', () => {
+    // ⚠️ Con `numero`, la columna de importes de facturas mezclaba `49`, `63.5`
+    // y `166.88` en filas contiguas: los decimales caian donde caia cada valor.
+    // El formato `moneda` existe para que siempre caigan en el mismo sitio.
+    it('moneda_when_el_importe_es_entero_igual_pinta_dos_decimales', () => {
+      anfitrion.filas = [fila({ monto: 49 })];
+      fixture.detectChanges();
+
+      const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
+
+      expect(celdas[4].textContent.trim()).toBe('49.00');
+    });
+
+    it('moneda_when_el_importe_tiene_un_decimal_lo_rellena_a_dos', () => {
+      anfitrion.filas = [fila({ monto: 63.5 })];
+      fixture.detectChanges();
+
+      const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
+
+      expect(celdas[4].textContent.trim()).toBe('63.50');
+    });
+
+    it('moneda_when_el_importe_tiene_dos_decimales_no_los_toca', () => {
+      anfitrion.filas = [fila({ monto: 166.88 })];
+      fixture.detectChanges();
+
+      const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
+
+      expect(celdas[4].textContent.trim()).toBe('166.88');
+    });
+
+    it('moneda_when_es_null_muestra_guion_y_no_cero_con_decimales', () => {
+      // Un importe ausente no es «0.00»: seria afirmar que no se cobro nada.
+      anfitrion.filas = [fila({ monto: null })];
+      fixture.detectChanges();
+
+      const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
+
+      expect(celdas[4].textContent.trim()).toBe('—');
+    });
+
+    it('moneda_when_se_pinta_no_inventa_simbolo_de_divisa', () => {
+      // ⛔ El backend no publica moneda en ninguna tabla. Un `$` aqui lo
+      // estaria inventando el frontend.
+      anfitrion.filas = [fila({ monto: 49 })];
+      fixture.detectChanges();
+
+      const celdas = fixture.nativeElement.querySelectorAll('[data-testid="fila-informe"] td');
+
+      expect(celdas[4].textContent.trim()).not.toMatch(/[$€£¤]/);
     });
   });
 

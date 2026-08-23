@@ -5,6 +5,13 @@ Una solicitud pendiente todavía no la ha resuelto nadie. Devolver
 y contradictorio en el peor: invita a leer «alguien la resolvió y no sé quién».
 
 Omitir la clave dice exactamente lo que pasa — aún no hay resolución.
+
+
+⚠️ La espera se publica en **minutos**, no en días. Se medía con `// DIA_MS` y
+las esperas reales —de 5 y 19 minutos— salían todas «0»: aritméticamente
+correcto e inútil, porque la columna existe para ver cuál tarda. Los valores
+esperados se escriben como `dias * 24 * 60` para que se siga leyendo el caso que
+la prueba describe.
 """
 
 from __future__ import annotations
@@ -82,7 +89,7 @@ class TestDiasEspera:
         pagina = servicio.solicitudes(acotamiento=SIN_ACOTAR, limit=500)
 
         pendientes = {f["cuenta"]: f for f in _por_estado(pagina, "Pendiente")}
-        assert pendientes["Aseguradora Torres S.A."]["dias_espera"] == 8
+        assert pendientes["Aseguradora Torres S.A."]["minutos_espera"] == 8 * 24 * 60
 
     def test_en_una_resuelta_se_mide_hasta_su_resolucion(
         self, servicio, solicitudes_sembradas
@@ -97,7 +104,7 @@ class TestDiasEspera:
 
         rechazada = _por_estado(pagina, "Rechazada")[0]
         # Solicitada hace 3 días, resuelta hace 1: esperó 2.
-        assert rechazada["dias_espera"] == 2
+        assert rechazada["minutos_espera"] == 2 * 24 * 60
 
     def test_no_depende_del_reloj_del_sistema(self, mock_pinot, solicitudes_sembradas):
         from apps.suscripciones.tests.conftest import AHORA_MS, DIA_MS
@@ -109,7 +116,7 @@ class TestDiasEspera:
         pagina = cinco_dias_despues.solicitudes(acotamiento=SIN_ACOTAR, limit=500)
         pendientes = {f["cuenta"]: f for f in _por_estado(pagina, "Pendiente")}
 
-        assert pendientes["Aseguradora Torres S.A."]["dias_espera"] == 13
+        assert pendientes["Aseguradora Torres S.A."]["minutos_espera"] == 13 * 24 * 60
 
     def test_la_resuelta_no_se_mueve_con_el_reloj(self, mock_pinot, solicitudes_sembradas):
         from apps.suscripciones.tests.conftest import AHORA_MS, DIA_MS
@@ -120,7 +127,7 @@ class TestDiasEspera:
 
         pagina = cinco_dias_despues.solicitudes(acotamiento=SIN_ACOTAR, limit=500)
 
-        assert _por_estado(pagina, "Rechazada")[0]["dias_espera"] == 2
+        assert _por_estado(pagina, "Rechazada")[0]["minutos_espera"] == 2 * 24 * 60
 
 
 class TestFormaYOrden:

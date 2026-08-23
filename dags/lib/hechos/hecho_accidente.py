@@ -108,11 +108,27 @@ CONSULTA_CONDUCTORES = f"SELECT idaccidente FROM Fact_Conductor_Accidente LIMIT 
 CONSULTA_IMPLICADOS = f"""
     SELECT idaccidente FROM Dim_Implicado WHERE activo = true LIMIT {LIMITE}
 """
+#: ⚠️ **Dos consultas, no un JOIN: Pinot no admite JOIN entre tablas.**
+#:
+#: Esto era un `LEFT JOIN` contra `Dim_EstadosClimas`, y Pinot lo rechaza al
+#: parsear —`SqlIdentifier cannot be cast to SqlSelect`—. No fallaba a medias:
+#: reventaba el `extract` **entero** de `hecho_accidente`, así que la tabla dejó
+#: de cargarse y se quedó con 4 252 casos mientras el origen tenía 4 254. Los dos
+#: que faltaban eran los dos más recientes, que es exactamente lo que hace que
+#: no se note: el informe sigue respondiendo, con casi todo.
+#:
+#: El resto del sistema ya resuelve así los catálogos —«Pinot no admite JOIN
+#: entre tablas: la resolución rol -> usuarios se hace en dos consultas»—; esta
+#: era la excepción.
 CONSULTA_CLIMA = f"""
-    SELECT e.idaccidente, c.condicionclima AS condicion_clima
-    FROM Dim_ElementoClimaticosAccidente AS e
-    LEFT JOIN Dim_EstadosClimas AS c ON e.idestadoclima = c.idestadoclima
-    WHERE e.activo = true
+    SELECT idaccidente, idestadoclima
+    FROM Dim_ElementoClimaticosAccidente
+    WHERE activo = true
+    LIMIT {LIMITE}
+"""
+CONSULTA_ESTADOS_CLIMA = f"""
+    SELECT idestadoclima, condicionclima
+    FROM Dim_EstadosClimas
     LIMIT {LIMITE}
 """
 CONSULTA_HISTORIAL_SEVERIDAD = f"""
@@ -143,12 +159,42 @@ def extraer(
         "notas": consultar_origen(CONSULTA_NOTAS),
         "conductores": consultar_origen(CONSULTA_CONDUCTORES),
         "implicados": consultar_origen(CONSULTA_IMPLICADOS),
-        "clima": consultar_origen(CONSULTA_CLIMA),
+        "clima": _clima_con_condicion(
+            consultar_origen(CONSULTA_CLIMA),
+            consultar_origen(CONSULTA_ESTADOS_CLIMA),
+        ),
         "historial_severidad": consultar_origen(CONSULTA_HISTORIAL_SEVERIDAD),
         "cierres": consultar_origen(CONSULTA_CIERRE),
         "dim_severidad": consultar_modelo(CONSULTA_DIM_SEVERIDAD),
         "dim_geografia": consultar_modelo(CONSULTA_DIM_GEOGRAFIA),
     }
+
+
+def _clima_con_condicion(
+    elementos: list[Mapping[str, Any]], catalogo: Iterable[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """Une los elementos climáticos con su catálogo, en Python.
+
+    Sustituye al `LEFT JOIN` que Pinot rechaza. Se conserva la forma que el
+    resto del módulo espera —`idaccidente` y `condicion_clima`— para que el
+    cambio no se propague.
+
+    ⚠️ `condicion_clima` queda **ausente** si el identificador no resuelve, igual
+    que hacía el `LEFT JOIN`: inventar un texto ahí convertiría un catálogo
+    incompleto en una condición meteorológica falsa.
+    """
+    condicion = {
+        f.get("idestadoclima"): f.get("condicionclima")
+        for f in catalogo
+        if f.get("idestadoclima") is not None
+    }
+    return [
+        {
+            "idaccidente": e.get("idaccidente"),
+            "condicion_clima": condicion.get(e.get("idestadoclima")),
+        }
+        for e in elementos
+    ]
 
 
 def _primer_instante(transiciones: Iterable[Mapping[str, Any]], estado: int) -> datetime | None:

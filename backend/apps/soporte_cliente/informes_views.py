@@ -182,3 +182,51 @@ class EscaladosView(ListadoBaseView):
             {**periodo.to_meta(), "tipo_escalado": tipo, "cuenta": cuenta},
             acotado_a=ACOTADO_TODOS,
         )
+
+
+class CatalogosSoporteView(ListadoBaseView):
+    """Opciones de «Cuenta» y «Agente» de los dos listados de Soporte.
+
+    ⚠️ **«Agente» no es el directorio entero.** Ofrecer las treinta y una
+    personas del sistema —incluidas las unidades registradas como usuario— no
+    ayuda a elegir y sugiere que cualquiera de ellas podría atender un ticket.
+    Solo entran quienes llevan un rol de atención.
+
+    ⚠️ **La lista de cuentas se acota igual que las filas.** Un cliente que entra
+    a su propia cola no puede ver el catálogo completo de cuentas: eso diría
+    quién más usa la plataforma, y lo diría con su listado devolviendo lo de
+    siempre. Se resuelve con el mismo `resolver_organizacion` que el listado.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesTicketsPermission]
+    admite_rango = False
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+
+        try:
+            acotamiento = resolver_organizacion(
+                roles=getattr(request.user, "roles", []) or [],
+                user_id=request.user.idusuario,
+                roles_amplios=ROLES_ATENCION,
+                roles_acotados=ROLES_REPORTADORES,
+                criterio=VINCULO_A_CUENTA,
+                cuenta_pedida=None,
+            )
+        except ERRORES_DE_VALIDACION as exc:
+            return self.manejar_peticion_invalida(exc)
+
+        repo = CatalogosFiltrosRepository()
+        # `titular is None` es el rol de atención: ve todas las cuentas. Un
+        # reportador queda acotado a la suya, y **solo a la suya**.
+        cuentas = (
+            None if acotamiento.titular is None else frozenset({int(acotamiento.titular)})
+        )
+        return success_response(
+            {
+                "cuenta": repo.clientes(cuentas),
+                "agente": repo.usuarios_con_rol(sorted(ROLES_ATENCION)),
+            },
+            meta={"acotado_a": acotamiento.alcance},
+        )

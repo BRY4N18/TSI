@@ -67,7 +67,7 @@ comparación son **dos ejecuciones** de la misma consulta, no una consulta el do
 | **I. Idoneidad funcional como contrato** | Los doce salen del catálogo con origen trazado a **CU-E08** y al BSC. Las **cinco discrepancias** del catálogo se corrigieron contra el modelo real en vez de heredarse, y una sexta —el eje de región— se declaró no construible con su prerrequisito nombrado | ✅ |
 | **II. Fiabilidad operativa** | No aplica a la cadena crítica: **este módulo no participa en el despacho**, solo lo mide. Su indisponibilidad no retrasa ninguna ambulancia | ⚪ |
 | **III. Eficiencia en tiempo real** | Tampoco toca la ruta crítica. La Regla 7 (filtrar particiones) es la única exigencia, y es de degradación futura, no de latencia de emergencia | ✅ |
-| **IV. Capacidad de interacción** | **No aplica**: el frontend está aplazado. Lo declarará la spec de la capa de presentación | ⚪ |
+| **IV. Capacidad de interacción** | **No aplica en esta capa.** Frontend en `../frontend/` (implementado) | ⚪ |
 | **V. Seguridad de la información** | `FR-OE6-009` y `FR-OE6-010`: exclusión constitucional aplicada **también a la autoridad**, y lista blanca de columnas en el repositorio. La comprobación 2.13 del quickstart se hace con el rol de máxima autoridad, no con uno acotado | ✅ |
 | **VI. Compatibilidad API-first** | Contrato OpenAPI versionado, bajo el envelope común del contrato estratégico | ✅ |
 | **VII. Mantenibilidad estructural** | Es el eje del plan: se reutiliza el lector de catálogo, el `ModeloRepository`, el envelope y el patrón `CATALOGO`/`PUBLICADOS`. **Ver el trade-off de abajo** | ⚠️ |

@@ -32,6 +32,18 @@
 -- catálogo del origen no tiene, así que se nombra por su texto.
 --
 -- `hecho_estado_unidad` es de **transacción**: `FINAL` prohibido.
+--
+-- ⚠️ La columna se llama `pct_disponibilidad`, **no `pct_disponible`**.
+--
+-- Se llamó `pct_disponible` y el nombre no coincidía con el que declaran el
+-- contrato OpenAPI, el contrato de UI y la plantilla, que leen
+-- `pct_disponibilidad`. El resultado no fue un error: la pantalla no encontraba
+-- la columna, la trataba como ausente y pintaba «ausente» en **todas** las
+-- unidades — que es exactamente el render correcto para un dato que no está.
+--
+-- Por eso costó verlo: las seis unidades declaraban «no se sabe» mientras la
+-- consulta devolvía 100 % para todas. Un nombre de columna equivocado aquí no
+-- rompe nada, se disfraza de dato faltante.
 
 SELECT
     unidad                                          AS unidad,
@@ -45,7 +57,7 @@ SELECT
         sum(segundos_del_tramo) = 0,
         NULL,
         round(sumIf(segundos_del_tramo, disponible) / sum(segundos_del_tramo), 4)
-    )                                               AS pct_disponible
+    )                                               AS pct_disponibilidad
 FROM (
     SELECT
         unidad                                      AS unidad,
@@ -71,4 +83,4 @@ FROM (
       AND estado_nuevo IS NOT NULL
 )
 GROUP BY unidad, proveedor
-ORDER BY pct_disponible DESC NULLS LAST, unidad
+ORDER BY pct_disponibilidad DESC NULLS LAST, unidad

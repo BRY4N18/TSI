@@ -92,7 +92,7 @@ Ninguna clave de respuesta es medio de pago, hash, contacto o país.
 
 ## 3. Lo que este quickstart no cubre
 
-- Frontend (aplazado).
+- Frontend: ver [`../frontend/quickstart.md`](../frontend/quickstart.md) (implementado).
 - CAC real y mercados (E1-05/07/08).
 - Mix de ingresos al 100 % (n de demostración).
 - OE5 consumiendo estos cuatro (otro módulo).

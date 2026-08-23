@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.soporte_cliente.informes_views import (
+    CatalogosSoporteView,
     EscaladosView as InformesEscaladosView,
     # Alias obligado: `views.py` exporta otra `TicketsView`, la operativa. Sin
     # alias la importacion posterior sustituiria a esta en silencio y la ruta de
@@ -25,8 +26,12 @@ from apps.soporte_cliente.views import (
 
 urlpatterns = [
     # ── Informes tácticos simples ───────────────────────────────────────────
+    path("informes/soporte-cliente/tickets/catalogos", CatalogosSoporteView.as_view(),
+         name="informes-soporte-tickets-catalogos"),
     path("informes/soporte-cliente/tickets", InformesTicketsView.as_view(),
          name="informes-soporte-tickets"),
+    path("informes/soporte-cliente/escalados/catalogos", CatalogosSoporteView.as_view(),
+         name="informes-soporte-escalados-catalogos"),
     path("informes/soporte-cliente/escalados", InformesEscaladosView.as_view(),
          name="informes-soporte-escalados"),
 

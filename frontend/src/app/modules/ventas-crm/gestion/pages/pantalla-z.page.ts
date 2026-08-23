@@ -24,6 +24,7 @@ import {
 } from '../models/informes-compuestos.types';
 import { InformesCompuestosApiService } from '../services/informes-compuestos-api.service';
 import { ApoyoPlegableComponent, BloqueApoyo } from './apoyo-plegable.component';
+import { mensajeVacio } from '../../../../shared/informes/mensaje-vacio';
 
 const VACIA: CargaInforme = {
   estado: 'carga',
@@ -79,6 +80,14 @@ export class PantallaZPage {
     }
     return null;
   });
+
+  /**
+   * ⚠️ El vacío de un informe acotado **no es el vacío de un período sin datos**.
+   * Ver `shared/informes/mensaje-vacio.ts`: decir «no hay datos en este período»
+   * cuando la causa es el alcance manda al lector a ampliar el rango, y puede
+   * ampliarlo indefinidamente sin que aparezca una fila.
+   */
+  readonly textoVacio = computed(() => mensajeVacio(this.alcance()));
 
   readonly totalTransiciones = computed(() =>
     this.cargaHeroe().data.reduce((acc, f) => acc + (num(f['transiciones']) ?? 0), 0),

@@ -349,7 +349,7 @@ pantalla para E2-06.
   La pantalla muestra lo que hay y enseña las muestras.
 - El mínimo de muestras lo resuelve el backend. Esta capa no ofrece un control extra de umbral.
 - E2-06 sigue sin fuente; no reaparece por inferencia.
-- El frontend de otros OE sigue aplazado.
+- Los frontends de OE1–OE6 de informes estratégicos ya están implementados en sus capas.
 
 ---
 
@@ -366,7 +366,7 @@ pantalla para E2-06.
 | Exportar, imprimir, programar envíos | El backend no lo ofrece |
 | Partner, Desarrollador de APIs, cargos ajenos | No son la autoridad de estos informes |
 | Cambiar OpenAPI, SQL o permisos del backend | Depends-on — salvo alinear HTTP con FR-OE2-006 si divergiera |
-| Frontend de OE1, OE3, OE4, OE5, OE6 | Otra capa |
+| Frontend de OE3, OE4 | Otra capa |
 
 ---
 

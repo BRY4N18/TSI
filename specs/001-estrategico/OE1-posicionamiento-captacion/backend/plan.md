@@ -64,7 +64,7 @@ onboardings / 10 prospectos en origen 2026-08-16
 | **I. Idoneidad funcional como contrato** | Diez informes trazados a CU-E02/E03/E07 y al BSC. Tres se declaran inmedibles. Dueño único de los cuatro compartidos con OE5 | ✅ |
 | **II. Fiabilidad operativa** | Lectura histórica. Fallo del almacén → 503 | ⚪ *fuera de la cadena crítica* |
 | **III. Eficiencia en tiempo real** | No toca despacho. Partición por mes | ✅ |
-| **IV. Capacidad de interacción** | No aplica: frontend aplazado | ⚪ |
+| **IV. Capacidad de interacción** | No aplica en esta capa. Frontend en `../frontend/` (implementado) | ⚪ |
 | **V. Seguridad de la información** | Lista blanca. Sin cobro ni persona. Permiso partido; onboarding/churn solo Gerente | ✅ |
 | **VI. Compatibilidad API-first** | OpenAPI bajo envelope común | ✅ |
 | **VII. Mantenibilidad estructural** | Misma app. Cero DDL. No recrea `dim_cliente` | ✅ |

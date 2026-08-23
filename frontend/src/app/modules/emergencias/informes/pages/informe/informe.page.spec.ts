@@ -29,7 +29,24 @@ describe('InformeEmergenciasPage', () => {
     fixture = TestBed.createComponent(InformeEmergenciasPage);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+
+    // Los listados con filtros de catálogo piden además sus opciones. Se
+    // responde aquí y no en cada prueba porque no es el objeto de ninguna: sin
+    // esto, `http.verify()` fallaría por una petición pendiente en todas.
+    const catalogos = http.match(
+      (r) => r.url === `/api/v1/informes/emergencias/${informe}/catalogos`,
+    );
+    for (const peticion of catalogos) {
+      peticion.flush({ data: CATALOGOS });
+    }
   }
+
+  const CATALOGOS = {
+    severidad: [{ id: 3, nombre: 'Grave' }],
+    tipo_reportado: [{ id: 1, nombre: 'Llamada telefónica' }],
+    condado: [{ id: 1, nombre: 'Valle Norte' }],
+    ciudad: [{ id: 1, nombre: 'San Ramón' }],
+  };
 
   function peticion(informe: string) {
     return http.expectOne((r) => r.url === `/api/v1/informes/emergencias/${informe}`);
@@ -70,8 +87,9 @@ describe('InformeEmergenciasPage', () => {
       fecha_accidente: '2026-08-10T12:00:00Z',
       activo: false,
       hora_fin: '2026-08-11T00:00:00Z',
-      duracion_minutos: 45,
+      duracion_incidente_minutos: 45,
       duplicado_de: null,
+      situacion: 'cerrado',
       ...parcial,
     };
   }

@@ -61,6 +61,26 @@ INFORMES_COBERTURA = frozenset({"usuarios-vs-tope", "cuentas-en-riesgo"})
 INFORMES_CATALOGO = frozenset({"embudo-abandono"})
 INFORMES_SOLAPE = frozenset({"concurrencia-sesiones"})
 
+#: Informes cuyo **denominador se cuenta sobre el estado de hoy**, no sobre el
+#: período pedido.
+#:
+#: ⚠️ `cuentas-en-riesgo` y `usuarios-vs-tope` listan **todas** las cuentas de
+#: `dim_cliente` aunque el período no tenga un solo hecho: en un período vacío
+#: devuelven una fila por cliente con `sin_actividad_conocida: 1`. Es defendible
+#: —«de estas cuentas no sabemos nada» es justo la anomalía que se busca— pero
+#: entonces el total **no es del período**, y quien lea «7 cuentas en riesgo en
+#: julio» tiene que poder saberlo.
+#:
+#: Se declara en vez de acotarse (decisión del usuario, opción C): acotar el
+#: denominador exige historizar `dim_cliente` y cambiaría lo que mide el informe.
+INFORMES_DENOMINADOR_ACTUAL = frozenset({"cuentas-en-riesgo", "usuarios-vs-tope"})
+
+NOTA_DENOMINADOR_ACTUAL = (
+    "El denominador son las cuentas que existen hoy, no las que existían en el "
+    "período: un período sin actividad las lista igual, con "
+    "sin_actividad_conocida."
+)
+
 PUBLICADOS: frozenset[str] = frozenset(CATALOGO)
 
 
@@ -104,7 +124,10 @@ class CuentasCompuestosService:
             notas["nota_catalogo"] = NOTA_CATALOGO
         if informe in INFORMES_SOLAPE and any(f.get("cruza_medianoche") for f in filas):
             notas["nota_solape"] = NOTA_SOLAPE
+        if informe in INFORMES_DENOMINADOR_ACTUAL:
+            notas["nota_denominador_actual"] = NOTA_DENOMINADOR_ACTUAL
         resultados = [_limpiar(informe, fila) for fila in filas]
+        _poner_razon_social(resultados)
         cuerpo = {
             "periodo": {"desde": periodo.desde, "hasta": periodo.hasta},
             "resultados": resultados,
@@ -117,3 +140,36 @@ def _limpiar(informe: str, fila: dict[str, Any]) -> dict[str, Any]:
     if informe == "concurrencia-sesiones":
         out.pop("cruza_medianoche", None)
     return out
+
+
+def _poner_razon_social(resultados: list[dict[str, Any]]) -> None:
+    """Añade `cuenta` (razón social) junto a `idcliente`.
+
+    ⚠️ **La pantalla mostraba «cliente 920001».** El informe devolvía solo el
+    identificador y la plantilla lo pintaba tal cual, así que quien decide sobre
+    churn y ocupación veía números en vez de empresas.
+
+    Mismo caso que «Agente 2» en Soporte, y misma respuesta: el nombre de la
+    cuenta no está entre los datos que este departamento excluye, y los listados
+    simples ya lo resuelven. Faltaba hacerlo en el compuesto.
+
+    `idcliente` se conserva: quien cruce con otra fuente lo necesita.
+
+    ⚠️ Un identificador que **no** resuelve queda ausente, no «cliente 920001»:
+    una cuenta que ya no existe es una anomalía, y disfrazarla de nombre la haría
+    indistinguible de una cuenta normal.
+    """
+    ids = [f.get("idcliente") for f in resultados if f.get("idcliente") is not None]
+    if not ids:
+        return
+
+    from core.informes.catalogos import CatalogosFiltrosRepository
+
+    nombres = {
+        o["id"]: o["nombre"]
+        for o in CatalogosFiltrosRepository().clientes(frozenset(int(i) for i in ids))
+    }
+    for fila in resultados:
+        ident = fila.get("idcliente")
+        if ident is not None:
+            fila["cuenta"] = nombres.get(int(ident))

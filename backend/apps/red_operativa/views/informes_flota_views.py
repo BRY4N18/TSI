@@ -19,6 +19,7 @@ from apps.red_operativa.permissions import (
     AMPLIOS_FLOTA,
     ROLES_INFORMES_FLOTA_ACOTADOS,
     InformesFlotaPermission,
+    InformesRegionPermission,
 )
 from apps.red_operativa.services.informes_flota_service import InformesFlotaService
 from apps.red_operativa.views.informes_base import ListadoRedOperativaBaseView
@@ -88,4 +89,49 @@ class FlotaView(ListadoRedOperativaBaseView):
             # La advertencia va **en la respuesta**, no solo en la
             # documentación: un consumidor puede no haber leído la spec.
             alcance=ALCANCE_COMPOSICION,
+        )
+
+
+class CatalogosFlotaView(ListadoRedOperativaBaseView):
+    """Opciones de «Proveedor» y «Condado» de flota y bajas de unidad.
+
+    ⚠️ **«Proveedor» es una cuenta cliente, no una entidad propia.** No existe
+    `Dim_Proveedor`: la columna resuelve `idcliente` contra `Dim_Cliente`, y el
+    catálogo tiene que salir del mismo sitio para que las opciones coincidan con
+    lo que la tabla muestra.
+    """
+
+    permission_classes = [IsAuthenticated401, InformesFlotaPermission]
+    admite_rango = False
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+        from core.repositories.accidentes.informes_ubicacion_repository import (
+            InformesUbicacionRepository,
+        )
+
+        repo = CatalogosFiltrosRepository()
+        return success_response(
+            {
+                "proveedor": repo.clientes(None),
+                "condado": InformesUbicacionRepository().catalogo_condados(None),
+            },
+            meta={"acotado_a": "todos"},
+        )
+
+
+class CatalogosRegionesView(ListadoRedOperativaBaseView):
+    """Opciones del filtro «Región» de las validaciones de región."""
+
+    permission_classes = [IsAuthenticated401, InformesRegionPermission]
+    admite_rango = False
+
+    def get(self, request: Request):
+        from core.api.response_envelope import success_response
+        from core.informes.catalogos import CatalogosFiltrosRepository
+
+        return success_response(
+            {"idregionoperativa": CatalogosFiltrosRepository().regiones_operativas()},
+            meta={"acotado_a": "todos"},
         )

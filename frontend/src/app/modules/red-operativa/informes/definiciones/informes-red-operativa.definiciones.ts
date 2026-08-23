@@ -15,6 +15,7 @@
  */
 
 import { DefinicionListado } from '../../../../shared/informes/informes-listado.types';
+import { opciones } from '../../../../shared/informes/informes-opciones';
 
 /**
  * ⚠️ **`En_Alerta` no es `Despublicada`.**
@@ -40,10 +41,6 @@ export const ESTADOS_REGION = [
  */
 export const TIPOS_BAJA = ['Normal', 'Forzada_con_reasignación'] as const;
 
-function opciones(valores: readonly string[]) {
-  return valores.map((valor) => ({ valor, etiqueta: valor }));
-}
-
 export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
   flota: {
     ruta: 'red-operativa/flota',
@@ -56,7 +53,14 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
       { campo: 'capacidad', etiqueta: 'Capacidad', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
       { campo: 'proveedor', etiqueta: 'Proveedor' },
       { campo: 'condado', etiqueta: 'Condado' },
-      { campo: 'estado_geografico', etiqueta: 'Estado', soloEscritorio: true },
+      // ⚠️ «Estado geográfico», no «Estado». El backend nombra el campo
+      // `estado_geografico` justamente para desambiguarlo, y recortarlo a
+      // «Estado» tiraba esa aclaración en el peor sitio: en un listado de flota
+      // «estado» se lee como el estado **de la unidad**, y el aviso de arriba
+      // dice que la disponibilidad no está aquí. Además el listado de regiones
+      // usa «Estado» para el estado del ciclo de vida: la misma cabecera
+      // significaba dos cosas en el mismo departamento.
+      { campo: 'estado_geografico', etiqueta: 'Estado geográfico', soloEscritorio: true },
       { campo: 'zona_cobertura', etiqueta: 'Zona de cobertura', soloEscritorio: true },
       { campo: 'tipo_propiedad', etiqueta: 'Propiedad', soloEscritorio: true },
       // ⚠️ **`dado_de_alta` significa que la unidad EXISTE**, no que esté
@@ -65,8 +69,8 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
       { campo: 'dado_de_alta', etiqueta: 'Dada de alta', formato: 'booleano' },
     ],
     filtros: [
-      { nombre: 'proveedor', etiqueta: 'Proveedor (id)', tipo: 'numero' },
-      { nombre: 'condado', etiqueta: 'Condado (id)', tipo: 'numero' },
+      { nombre: 'proveedor', etiqueta: 'Proveedor', tipo: 'catalogo', catalogo: 'proveedor' },
+      { nombre: 'condado', etiqueta: 'Condado', tipo: 'catalogo', catalogo: 'condado' },
       { nombre: 'tipo_unidad', etiqueta: 'Tipo de unidad', tipo: 'texto' },
       {
         nombre: 'dado_de_alta',
@@ -85,7 +89,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'placa', etiqueta: 'Placa', principal: true },
       { campo: 'proveedor', etiqueta: 'Proveedor' },
-      { campo: 'tipo_baja', etiqueta: 'Tipo de baja' },
+      { campo: 'tipo_baja', etiqueta: 'Tipo de baja', formato: 'enumeracion' },
       { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
       { campo: 'ejecutada_por', etiqueta: 'Ejecutada por', soloEscritorio: true },
       // Ausente en las normales, y eso es correcto: solo una baja forzada tiene
@@ -101,7 +105,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
         opciones: opciones(TIPOS_BAJA),
         ayuda: 'Una baja forzada es un incidente operativo, no una salida ordenada.',
       },
-      { nombre: 'proveedor', etiqueta: 'Proveedor (id)', tipo: 'numero' },
+      { nombre: 'proveedor', etiqueta: 'Proveedor', tipo: 'catalogo', catalogo: 'proveedor' },
     ],
   },
 
@@ -111,7 +115,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
     mensajeVacio: 'No hay regiones con esos criterios.',
     columnas: [
       { campo: 'nombre_region', etiqueta: 'Región', principal: true },
-      { campo: 'estado_region', etiqueta: 'Estado' },
+      { campo: 'estado_region', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'estado_geografico', etiqueta: 'Estado geográfico' },
       { campo: 'dias_sin_cambio', etiqueta: 'Días sin cambio', formato: 'numero', alineacion: 'derecha' },
       { campo: 'fecha_actualizacion', etiqueta: 'Último cambio', formato: 'fecha_hora' },
@@ -122,7 +126,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
         etiqueta: 'Estado de la región',
         tipo: 'enumeracion',
         opciones: opciones(ESTADOS_REGION),
-        ayuda: '«En_Alerta» sigue operando con cobertura degradada; «Despublicada» no.',
+        ayuda: '«En Alerta» sigue operando con cobertura degradada; «Despublicada» no.',
       },
       { nombre: 'detenida_mas_de_dias', etiqueta: 'Detenida más de (días)', tipo: 'numero' },
     ],
@@ -142,7 +146,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
     ],
     filtros: [
       { nombre: 'resultado', etiqueta: 'Resultado', tipo: 'texto' },
-      { nombre: 'idregionoperativa', etiqueta: 'Región (id)', tipo: 'numero' },
+      { nombre: 'idregionoperativa', etiqueta: 'Región', tipo: 'catalogo', catalogo: 'idregionoperativa' },
     ],
   },
 };

@@ -128,7 +128,12 @@
                 @for (fila of cargaVisual().data; track texto(fila['idcliente'])) {
                   <li data-testid="fila-ocupacion">
                     <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">cliente {{ texto(fila['idcliente']) }}</span>
+                      <!-- El nombre lo resuelve el servicio; el identificador
+                           queda de respaldo cuando no resuelve, que es una
+                           anomalía y no debe disfrazarse de nombre. -->
+                      <span class="text-text-secondary">{{
+                        texto(fila['cuenta']) || 'Cuenta #' + texto(fila['idcliente'])
+                      }}</span>
                       @if (num(fila['tope_plan']) === null) {
                         <span data-testid="ocupacion-sin-dato">sin dato</span>
                       } @else {
@@ -161,7 +166,10 @@
                 @for (fila of cargaVisual().data; track texto(fila['etapa']) + texto(fila['orden'])) {
                   <li data-testid="fila-etapa">
                     <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['etapa']) }}</span>
+                      <!-- Las etapas son literales del catálogo declarado
+                           (cambio_password, perfil_corporativo): se humanizan
+                           como el resto de enumeraciones del sistema. -->
+                      <span class="text-text-secondary">{{ humanizar(texto(fila['etapa'])) }}</span>
                       <span class="font-semibold tabular-nums text-text-primary">
                         {{ num(fila['clientes_que_llegaron']) | number }}
                         @if (num(fila['clientes_que_llegaron']) === 0) {
@@ -236,7 +244,9 @@
               <ul class="m-0 mt-3 flex list-none flex-col gap-2 p-0">
                 @for (fila of cargaLectura().data; track texto(fila['idcliente'])) {
                   <li class="text-sm" data-testid="fila-riesgo">
-                    <span class="text-text-primary">cliente {{ texto(fila['idcliente']) }}</span>
+                    <span class="text-text-primary">{{
+                      texto(fila['cuenta']) || 'Cuenta #' + texto(fila['idcliente'])
+                    }}</span>
                     <span class="ml-2 text-text-secondary">
                       @if (num(fila['sin_actividad_conocida']) === 1) {
                         <span data-testid="sin-actividad-conocida">sin actividad conocida</span>

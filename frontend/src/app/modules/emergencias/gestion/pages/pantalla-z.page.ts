@@ -85,6 +85,7 @@ export class PantallaZPage {
   readonly esSinCapacidad = esSinCapacidad;
   readonly num = num;
   readonly texto = texto;
+  readonly etiquetaConPeriodo = etiquetaConPeriodo;
 
   constructor() {
     this.route.url.pipe(takeUntilDestroyed()).subscribe((segs) => {
@@ -284,6 +285,38 @@ function agregarCobertura(filas: Record<string, unknown>[]): {
     casos,
     pct: casos === 0 ? null : conAlguna / casos,
   };
+}
+
+/**
+ * La etiqueta de una fila, con su período cuando hace falta distinguirla.
+ *
+ * ⚠️ Varios informes agrupan por **período × entidad**: la desviación de llegada
+ * devuelve una fila por unidad y mes, y el ratio demanda/capacidad una por
+ * condado y mes. Pintados en plano, `TSI-001` aparecía dos veces con cifras
+ * distintas —67 s y 62 s— y nada decía cuál era cuál; `Benito Juarez` salía con
+ * 162 y con 23.
+ *
+ * No es un fallo de cálculo: las dos cifras son correctas, cada una de su mes.
+ * Es que la pantalla las presentaba como si compitieran, y quien las mirara
+ * concluiría que el informe se contradice.
+ *
+ * El período solo se añade cuando el conjunto tiene **más de uno**: con un único
+ * mes sería ruido en cada fila.
+ */
+export function etiquetaConPeriodo(
+  fila: Record<string, unknown>,
+  campo: string,
+  filas: readonly Record<string, unknown>[],
+): string {
+  const base = texto(fila[campo]) || '—';
+  const periodos = new Set(
+    filas.map((f) => texto(f['periodo'])).filter((p) => p.length > 0),
+  );
+  if (periodos.size < 2) {
+    return base;
+  }
+  const periodo = texto(fila['periodo']);
+  return periodo ? `${base} · ${periodo}` : base;
 }
 
 function etiquetaApoyo(informe: string): string {

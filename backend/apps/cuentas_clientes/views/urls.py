@@ -22,6 +22,7 @@ from apps.cuentas_clientes.views.informes_acceso_views import (
     UsuariosPorRolView,
 )
 from apps.cuentas_clientes.views.informes_cuenta_views import (
+    CatalogosCuentasView,
     CuentasPorEstadoView,
     TransferenciasPropiedadView,
 )
@@ -74,6 +75,11 @@ urlpatterns = [
         name="informes-cuentas-usuarios-por-rol",
     ),
     path(
+        "informes/cuentas-clientes/sesiones-activas/catalogos",
+        CatalogosCuentasView.as_view(),
+        name="informes-cuentas-sesiones-activas-catalogos",
+    ),
+    path(
         "informes/cuentas-clientes/sesiones-activas",
         SesionesActivasView.as_view(),
         name="informes-cuentas-sesiones-activas",
@@ -104,6 +110,11 @@ urlpatterns = [
         "informes/cuentas-clientes/cuentas-por-estado",
         CuentasPorEstadoView.as_view(),
         name="informes-cuentas-cuentas-por-estado",
+    ),
+    path(
+        "informes/cuentas-clientes/transferencias-propiedad/catalogos",
+        CatalogosCuentasView.as_view(),
+        name="informes-cuentas-transferencias-catalogos",
     ),
     path(
         "informes/cuentas-clientes/transferencias-propiedad",

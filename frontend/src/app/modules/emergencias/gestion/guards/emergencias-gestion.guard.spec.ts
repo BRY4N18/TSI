@@ -30,15 +30,18 @@ function ejecutar(roles: string[], autenticado = true) {
 
 describe('emergenciasGestionGuard', () => {
   it('roles_when_se_declaran_son_director_y_administrador', () => {
-    expect([...ROLES_GESTION_EMERGENCIAS]).toEqual(['DirectorOperaciones', 'Administrador']);
+    // El `Administrador` opera y no lee gestión (2026-08-19).
+    expect([...ROLES_GESTION_EMERGENCIAS]).toEqual(['DirectorOperaciones']);
   });
 
   it('director_when_entra_pasa', () => {
     expect(ejecutar(['DirectorOperaciones'])).toBeTrue();
   });
 
-  it('administrador_when_entra_pasa', () => {
-    expect(ejecutar(['Administrador'])).toBeTrue();
+  it('administrador_when_entra_ya_no_pasa', () => {
+    const resultadoAdmin = ejecutar(['Administrador']);
+    expect(resultadoAdmin instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdmin)).toContain('access-denied');
   });
 
   it('operador_when_entra_es_denegado', () => {

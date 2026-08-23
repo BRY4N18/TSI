@@ -13,6 +13,8 @@ acopladas.
 import sys
 from pathlib import Path
 
+import re
+
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -117,33 +119,41 @@ class TestElTercerHechoUsaLasMismasDimensiones:
             query_clickhouse("SELECT count() FROM hecho_estado_unidad FINAL")
 
     def test_no_hizo_falta_una_dimension_nueva(self):
-        # Si un hecho nuevo obligara a crear dimensiones nuevas cada vez, el
-        # modelo no estaría creciendo: estaría empezando de cero cada vez
-        dimensiones = {
+        """El tercer hecho reutiliza las dimensiones que ya existían.
+
+        Si un hecho nuevo obligara a crear dimensiones nuevas cada vez, el modelo
+        no estaría creciendo: estaría empezando de cero cada vez.
+
+        ⚠️ **Esto comparaba el censo entero de `dim_*` contra una lista escrita a
+        mano**, restando primero las que habían traído otros módulos. Cada
+        departamento nuevo —Cuentas, Partners, Soporte, Suscripciones— obligaba a
+        alargar la resta, y mientras nadie la alargaba la prueba estaba roja sin
+        que el tercer hecho hubiera creado nada: justo lo contrario de lo que
+        afirma. Una prueba roja permanente deja de leerse.
+
+        Se comprueba sobre **el módulo del tercer hecho**, que es de quien habla:
+        las dimensiones que declara tienen que existir ya. Así no caduca cuando
+        el modelo crece por otro lado, y sigue fallando si el hecho se trae una
+        dimensión propia.
+        """
+        presentes = {
             f["name"]
             for f in query_clickhouse(
                 "SELECT name FROM system.tables "
                 "WHERE database = currentDatabase() AND name LIKE 'dim_%'"
             )
         }
-        # ⚠️ `dim_region` se excluye a proposito: la trajo **otro modulo**
-        # —Red Operativa— y no el tercer hecho. Lo que esta prueba afirma es que
-        # un hecho nuevo no necesita dimensiones nuevas; meter aqui las que
-        # aportan otros departamentos convertiria la afirmacion en otra distinta
-        # y la prueba dejaria de comprobar lo que dice su nombre.
-        # ⚠️ Se excluyen las que trajeron **otros modulos**, no el tercer hecho.
-        # Lo que esta prueba afirma es que un hecho nuevo no necesita dimensiones
-        # nuevas; meterle las que aportan otros departamentos la convertiria en
-        # otra afirmacion distinta.
-        #
-        # `dim_condado_vecino` la trajo **informes estrategicos**, y su presencia
-        # aqui deja constancia de que la vecindad entre condados esta representada
-        # dos veces: alli como tabla, y en Red Operativa como el atributo
-        # `dim_geografia.condados_vecinos`. Ver la decision #42.
-        dimensiones -= {
-            "dim_region", "dim_prospecto", "dim_canal", "dim_condado_vecino",
-        }
-        assert dimensiones == {
-            "dim_tiempo", "dim_geografia", "dim_severidad",
-            "dim_origen_despacho", "dim_unidad",
-        }
+
+        # Las dimensiones que el tercer hecho nombra en su propio código.
+        fuente = (
+            Path(__file__).resolve().parents[1] / "lib" / "hechos" / "hecho_estado_unidad.py"
+        ).read_text(encoding="utf-8")
+        usadas = set(re.findall(r"(dim_[a-z_]+)", fuente))
+
+        assert usadas <= presentes, (
+            f"el tercer hecho nombra dimensiones que no existen: "
+            f"{sorted(usadas - presentes)}"
+        )
+        # Y las que usa son de las que ya estaban, no dimensiones propias suyas.
+        propias = {d for d in usadas if "estado_unidad" in d}
+        assert propias == set(), f"el tercer hecho se trajo dimensión propia: {propias}"

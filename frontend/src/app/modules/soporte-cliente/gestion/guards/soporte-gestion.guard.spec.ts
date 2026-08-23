@@ -28,19 +28,21 @@ function ejecutar(roles: string[], autenticado = true) {
 describe('soporteGestionGuard', () => {
   it('roles_when_se_declaran_no_incluyen_cliente_ni_dev', () => {
     expect([...ROLES_GESTION_SOPORTE]).toEqual([
+      // El `Administrador` opera y no lee gestión (2026-08-19).
       'GerenteExitoCliente',
       'Soporte',
-      'Administrador',
     ]);
     expect((ROLES_GESTION_SOPORTE as readonly string[]).includes('Cliente')).toBeFalse();
     expect((ROLES_GESTION_SOPORTE as readonly string[]).includes('DesarrolladorAPIs')).toBeFalse();
     expect((ROLES_GESTION_SOPORTE as readonly string[]).includes('DirectorTecnologico')).toBeFalse();
   });
 
-  it('gerente_agente_y_admin_when_entran_pasan', () => {
+  it('gerente_y_agente_pasan_pero_el_admin_ya_no', () => {
     expect(ejecutar(['GerenteExitoCliente'])).toBeTrue();
     expect(ejecutar(['Soporte'])).toBeTrue();
-    expect(ejecutar(['Administrador'])).toBeTrue();
+    const resultadoAdmin = ejecutar(['Administrador']);
+    expect(resultadoAdmin instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdmin)).toContain('access-denied');
   });
 
   it('cliente_operador_dev_y_director_tec_when_entran_son_denegados', () => {

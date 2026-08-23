@@ -11,7 +11,8 @@
 
 | Actor                           | Descripción                                                                                                                        |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Administrador                   | Gestiona cuentas de clientes, usuarios, roles, sesiones y unidades de la red operativa. No gestiona el catálogo de planes ni pricing (ver Director de Estrategia). |
+| Administrador                   | Gestiona cuentas de clientes, usuarios, roles, sesiones y unidades de la red operativa. No gestiona el catálogo de planes ni pricing (ver Director de Estrategia). **No lee informes de gestión** (2026-08-19): opera el sistema, y la lectura de gestión es de la autoridad de cada departamento. |
+| Director de Cuentas             | Autoridad táctica de Cuentas y Clientes: responde del **ciclo de vida** de las cuentas y de su **incorporación**. Creado el 2026-08-19; hasta entonces esos informes solo los abría el Administrador. **No** gobierna los accesos técnicos, que son del Director Tecnológico. |
 | Operador de Emergencias         | Registra accidentes en tiempo real, coordina el despacho de unidades y da seguimiento a casos activos.                             |
 | Técnico de Campo                | Realiza verificación en sitio, reporta evidencia fotográfica y confirma el estado de emergencias atendidas.                        |
 | Unidad de Emergencia            | Recibe el despacho del operador, confirma atención en sitio y reporta el estado de la emergencia (en tránsito, atendido, cerrado). |

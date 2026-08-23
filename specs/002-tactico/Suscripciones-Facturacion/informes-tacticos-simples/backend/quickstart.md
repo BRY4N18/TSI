@@ -81,8 +81,13 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000/api/v1/informes
 **todas**, el filtro se escribió como comprobación de nulidad y está mal: el modelo guarda un valor
 por defecto que significa «sin cambio», no un vacío.
 
-Y en el listado completo, una suscripción sin cambio debe mostrar `cambio_programado` **ausente**,
-nunca un plan con identificador cero.
+Y en el listado completo, una suscripción sin cambio debe traer `cambio_programado_plan` y
+`cambio_programado_se_aplica_el` **ambos en `null`** —nunca un plan con identificador cero, y nunca
+las claves omitidas—. La que sí lo tiene trae el nombre del plan **y la fecha en que se aplica**:
+sin la fecha, el listado dice que hay un cambio sin decir cuándo.
+
+⚠️ **Son dos campos planos.** Si ves un objeto anidado, el backend está sin actualizar: así la
+tabla pintaba `[object Object]`.
 
 ### 3.4 Una factura en disputa no es mora *(research D3)*
 

@@ -36,8 +36,9 @@ function ejecutar(
 
 describe('guards de gestión de Red Operativa', () => {
   it('roles_when_se_declaran_no_son_una_union', () => {
-    expect([...ROLES_CRECIMIENTO]).toEqual(['DirectorExpansion', 'Administrador']);
-    expect([...ROLES_VALIDACION]).toEqual(['DirectorTecnologico', 'Administrador']);
+    // El `Administrador` opera y no lee gestión (2026-08-19).
+    expect([...ROLES_CRECIMIENTO]).toEqual(['DirectorExpansion']);
+    expect([...ROLES_VALIDACION]).toEqual(['DirectorTecnologico']);
     expect((ROLES_CRECIMIENTO as readonly string[]).includes('DirectorTecnologico')).toBeFalse();
     expect((ROLES_VALIDACION as readonly string[]).includes('DirectorExpansion')).toBeFalse();
   });
@@ -62,9 +63,14 @@ describe('guards de gestión de Red Operativa', () => {
     expect(String(resultado)).toContain('access-denied');
   });
 
-  it('administrador_when_entra_pasa_las_dos', () => {
-    expect(ejecutar(gestionCrecimientoGuard, ['Administrador'])).toBeTrue();
-    expect(ejecutar(gestionValidacionGuard, ['Administrador'])).toBeTrue();
+  it('administrador_when_entra_ya_no_pasa_ninguna', () => {
+    // ⚠️ Ya no salta el reparto por materia: era el único rol que lo hacía.
+    const resultadoAdmin = ejecutar(gestionCrecimientoGuard, ['Administrador']);
+    expect(resultadoAdmin instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdmin)).toContain('access-denied');
+    const resultadoAdminB = ejecutar(gestionValidacionGuard, ['Administrador']);
+    expect(resultadoAdminB instanceof UrlTree).toBeTrue();
+    expect(String(resultadoAdminB)).toContain('access-denied');
   });
 
   it('cliente_proveedor_y_operador_when_entran_son_denegados', () => {

@@ -63,7 +63,7 @@ histórico acotado al log real
 | **I. Idoneidad funcional como contrato** | Diez informes trazados a CU-E02/E04/E05 y al BSC. E2-06 se declara inmedible en vez de publicarse al 100 %. E2-08 se corrige respecto del catálogo (sí hay precio de excedente) | ✅ |
 | **II. Fiabilidad operativa** | Lectura histórica. No está en el camino de despacho. Fallo del almacén → 503 | ⚪ *fuera de la cadena crítica* |
 | **III. Eficiencia en tiempo real** | No toca despacho. Partición por mes | ✅ |
-| **IV. Capacidad de interacción** | No aplica: frontend aplazado | ⚪ |
+| **IV. Capacidad de interacción** | No aplica en esta capa. Frontend en `../frontend/` (implementado) | ⚪ |
 | **V. Seguridad de la información** | Lista blanca de columnas. Sin secreto ni contacto. **Un partner no ve el ecosistema** (ventaja competitiva, no solo PII) | ✅ |
 | **VI. Compatibilidad API-first** | OpenAPI bajo el envelope común. E2-09 es lo que permite retirar una versión sin romper integraciones a ciegas | ✅ |
 | **VII. Mantenibilidad estructural** | Misma app `informes_estrategicos`. Cero DDL nuevo | ✅ |

@@ -49,8 +49,8 @@ los implementa; OE6 los referencia y no los reimplementa (§7 del contrato).
 
 | Capa | Ruta | Estado |
 |---|---|---|
-| **Backend** | [`backend/`](./backend/) | **activa** — spec redactada |
-| Frontend | *(pendiente)* | aplazada |
+| **Backend** | [`backend/`](./backend/) | **implementado** (7 GET; 7 bloqueados sin endpoint) |
+| **Frontend** | [`frontend/`](./frontend/) | **implementado** — 4 pantallas Z; 7 slugs; guards partidos |
 
 ## Lo que hay que saber antes de tocar este módulo
 
