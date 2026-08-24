@@ -776,10 +776,28 @@ Principio V).
 - **Verificada la no-vacuidad:** quitando el manejo de `complete`, la prueba falla.
 
 ### PG-UI-006 — Accesibilidad
-**Severidad:** Menor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Menor · **Estado:** ⚠️ Parcial · **Prueba:** `frontend/src/app/core/a11y/accesibilidad.spec.ts`
 
 - **Regla:** las vistas críticas cumplen contraste, navegación por teclado, etiquetas de
-  formulario y roles ARIA. Verificable con `axe` en la suite E2E.
+  formulario y roles ARIA. Verificable con `axe`.
+- ⚠️ **La regla se apoyaba en algo que no existe.** Decía «con `axe` en la suite E2E», y el
+  proyecto **no tiene suite E2E**: ni Playwright ni Cypress. Llevaba desde el principio sin poder
+  cumplirse, y el motivo no estaba escrito en ninguna parte.
+- **Enfoque adoptado (2026-08-23):** `axe-core` sobre el DOM que Angular renderiza en Karma,
+  aprovechando las 1423 pruebas que ya corren. Reglas `wcag2a` + `wcag2aa`, nombradas
+  explícitamente: el conjunto por defecto de axe cambia entre versiones y podría relajarse solo.
+- **Defecto real encontrado y corregido:** el marcador arrastrable del mapa de registro
+  (`aria-command-name`, impacto *serious*). Leaflet lo renderiza focusable e interactivo, y sin
+  nombre accesible un lector solo anunciaba que había un control — no que era la ubicación del
+  accidente ni que podía moverse.
+- **Queda `⚠️ Parcial`, no `✅`, y por eso:** este enfoque **no** ve el orden de tabulación entre
+  pantallas, el foco tras navegar, ni el contraste real con los estilos globales cargados. Está
+  declarado en `axe.helper.ts` para que nadie lea «accesibilidad ✅» y suponga más de lo
+  comprobado. Cerrarla del todo exige el navegador con la aplicación entera.
+- **Control de no-vacuidad:** una prueba comprueba que axe detecta una imagen sin `alt` y un campo
+  sin etiqueta. Sin ella, un fallo de configuración daría «0 violaciones» en cualquier pantalla y
+  la regla entera quedaría verde sin comprobar nada — que es exactamente cómo `PG-CFG-005` llevaba
+  meses marcada como cubierta.
 
 ---
 
@@ -839,11 +857,27 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
   tablas ni cadenas de conexión.
 
 ### PG-RES-005 — Prueba de carga sobre la cadena crítica
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_carga_cadena_critica.py`
 
 - **Regla:** carga concurrente con k6/Locust sobre registro → despacho, sosteniendo el P95
   declarado en `testing.md` y **sin pérdida de eventos** — el criterio de aprobación incluye que
   el 100% de los accidentes generados sea consultable al final.
+- **Ejecutada por primera vez el 2026-08-23** contra el stack en marcha: 30 registros, 10
+  concurrentes, autenticación real.
+- ✅ **Sin pérdida de eventos.** Los 30 accidentes aceptados con `201` eran consultables tras la
+  ingesta. Ese era el criterio crítico: un `201` es una promesa, y un reporte confirmado que
+  después no existe rompe esa promesa **sin que nadie reciba un error**.
+- ❌ **P95 = 708 ms frente a los 500 ms de `testing.md`.** Queda `⚠️ Parcial` por esto, con la
+  prueba en `xfail(strict=True)` —no se ignora, y avisa en cuanto empiece a cumplirse— y la
+  decisión registrada en `decisiones-pendientes.md`.
+- **El matiz que casi cuesta un diagnóstico falso:** desde el host el P95 daba 1477 ms; desde
+  dentro del contenedor, 857 ms. Esos ~600 ms son el puente de red de Docker Desktop en Windows,
+  no la aplicación.
+- **Causa parcial encontrada:** el contenedor sirve con `manage.py runserver`, el servidor de
+  desarrollo. Con gunicorn el P95 baja a 708 ms — sigue incumpliendo, pero por menos.
+- **Corrección del enunciado:** se usa `ThreadPoolExecutor` en vez de k6/Locust. No añade
+  dependencia ni runtime nuevos, y la verificación de no-pérdida —reconsultar cada id registrado—
+  es lógica de programa que en k6 habría que escribir igual, en otro lenguaje.
 
 ### PG-RES-006 — Migraciones reversibles
 **Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_migraciones_reversibles.py`
@@ -962,10 +996,10 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 | API (`PG-API`) | 5 | 1 | 4 | 0 |
 | Negocio (`PG-NEG`) | 5 | 3 | 2 | 0 |
 | Seguridad (`PG-SEC`) | 10 | 6 | 4 | 0 |
-| Frontend (`PG-UI`) | 6 | 2 | 3 | 1 |
-| Resiliencia (`PG-RES`) | 6 | 3 | 2 | 1 |
+| Frontend (`PG-UI`) | 6 | 2 | 4 | 0 |
+| Resiliencia (`PG-RES`) | 6 | 3 | 3 | 0 |
 | CI y documentación (`PG-CI`, `PG-DOC`) | 6 | 4 | 2 | 0 |
-| **Total** | **57** | **34** | **21** | **2** |
+| **Total** | **57** | **34** | **23** | **0** |
 
 > Los totales de esta tabla se verifican contando las cabeceras de regla del propio documento.
 > Si se editan a mano, mienten: ya ocurrió una vez el 2026-08-23 (decían 10/19/28 con 8/18/31
@@ -976,8 +1010,8 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 | Severidad | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
 | **Bloqueante** (impide desplegar) | 18 | 10 | 8 | 0 |
-| Mayor (impide cerrar el módulo) | 35 | 23 | 11 | 1 |
-| Menor (deuda planificada) | 4 | 1 | 2 | 1 |
+| Mayor (impide cerrar el módulo) | 35 | 23 | 12 | 0 |
+| Menor (deuda planificada) | 4 | 1 | 3 | 0 |
 
 **Ninguna regla bloqueante sigue en ❌.** Las 18 tienen prueba; 8 de ellas solo parcial, que es
 donde queda el trabajo. Ese es el número que decide si

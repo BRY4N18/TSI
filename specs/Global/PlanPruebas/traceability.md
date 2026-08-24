@@ -92,7 +92,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-UI-003` | Sesión expirada durante el uso | Mayor | ✅ | `frontend/src/app/core/interceptors/sesion-expirada.interceptor.spec.ts` |
 | `PG-UI-004` | Validación duplicada, nunca delegada | Mayor | ⚠️ | dispersa |
 | `PG-UI-005` | Reconexión de SSE | Mayor | ✅ | `frontend/src/app/modules/seguimiento/services/seguimiento-sse.service.spec.ts`, `frontend/src/app/modules/despacho/services/despacho-sse.service.spec.ts` |
-| `PG-UI-006` | Accesibilidad | Menor | ❌ | _(sin prueba)_ |
+| `PG-UI-006` | Accesibilidad | Menor | ⚠️ | `frontend/src/app/core/a11y/accesibilidad.spec.ts` |
 
 ### `PG-RES` — Rendimiento, resiliencia y observabilidad
 
@@ -102,7 +102,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-RES-002` | Degradación ante caída de dependencias | Bloqueante | ⚠️ | `backend/tests/seguridad/test_resiliencia.py` |
 | `PG-RES-003` | Arranque en orden y reintento | Mayor | ✅ | `backend/tests/seguridad/test_resiliencia.py` |
 | `PG-RES-004` | Sonda de salud honesta | Mayor | ✅ | `backend/tests/seguridad/test_resiliencia.py` |
-| `PG-RES-005` | Prueba de carga sobre la cadena crítica | Mayor | ❌ | _(sin prueba)_ |
+| `PG-RES-005` | Prueba de carga sobre la cadena crítica | Mayor | ⚠️ | `backend/tests/seguridad/test_carga_cadena_critica.py` |
 | `PG-RES-006` | Migraciones reversibles | Mayor | ✅ | `backend/tests/seguridad/test_migraciones_reversibles.py` |
 
 ### `PG-CI` — Compuertas de calidad y automatización
@@ -133,11 +133,11 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-API` | 5 | 1 | 4 | 0 |
 | `PG-NEG` | 5 | 3 | 2 | 0 |
 | `PG-SEC` | 10 | 6 | 4 | 0 |
-| `PG-UI` | 6 | 2 | 3 | 1 |
-| `PG-RES` | 6 | 3 | 2 | 1 |
+| `PG-UI` | 6 | 2 | 4 | 0 |
+| `PG-RES` | 6 | 3 | 3 | 0 |
 | `PG-CI` | 4 | 2 | 2 | 0 |
 | `PG-DOC` | 2 | 2 | 0 | 0 |
-| **Total** | **57** | **34** | **21** | **2** |
+| **Total** | **57** | **34** | **23** | **0** |
 
 **8 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
 si el sistema puede considerarse validado — no el total de reglas ni el de pruebas existentes.

@@ -90,7 +90,16 @@ export class LocationPickerMapComponent implements AfterViewInit, OnChanges, OnD
       { injector: this.injector },
     );
 
-    this.marker = L.marker([start.lat, start.lng], { draggable: true, icon: PIN_ICON }).addTo(this.map);
+    // `alt` y `title` no son decorativos aqui: Leaflet renderiza el marcador
+    // como un elemento focusable e interactivo, y sin nombre accesible un lector
+    // de pantalla solo anuncia que hay un control — no que es la ubicacion del
+    // accidente ni que se puede mover. Detectado por axe (PG-UI-006).
+    this.marker = L.marker([start.lat, start.lng], {
+      draggable: true,
+      icon: PIN_ICON,
+      alt: 'Ubicacion del accidente. Arrastrable para ajustar la posicion.',
+      title: 'Ubicacion del accidente. Arrastrala para ajustar la posicion.',
+    }).addTo(this.map);
     this.marker.on('dragend', () => this.emitFromMarker());
 
     this.map.on('click', (event: L.LeafletMouseEvent) => {

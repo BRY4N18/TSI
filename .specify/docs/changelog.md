@@ -7,6 +7,48 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-23 — C16: el plan global se queda sin reglas pendientes
+
+Cierre de `PG-RES-005` y `PG-UI-006`, las dos últimas. El plan queda en **34 cubiertas, 23
+parciales, 0 pendientes**.
+
+**La cadena crítica bajo carga, medida por primera vez (`PG-RES-005`).** 30 registros con 10
+peticiones concurrentes contra el stack en marcha, con autenticación real.
+
+✅ **Sin pérdida de eventos:** los 30 accidentes aceptados con `201` eran consultables tras la
+ingesta. Ese era el criterio que importaba — un `201` es una promesa, y un reporte confirmado que
+después no existe la rompe sin que nadie reciba un error.
+
+❌ **P95 = 708 ms frente a los 500 ms de `testing.md`.** El diagnóstico costó separarlo en tres:
+desde el host daban 1477 ms, pero **~600 ms eran el puente de red de Docker Desktop en Windows**,
+no la aplicación; desde dentro del contenedor, 857 ms; y con gunicorn en vez de `manage.py
+runserver` —el servidor de desarrollo con el que sirve hoy el contenedor— 708 ms. Sigue
+incumpliendo, por menos. La prueba queda en `xfail(strict=True)`: no se ignora, y avisa en cuanto
+empiece a cumplirse. Decisión registrada.
+
+**La regla de accesibilidad se apoyaba en algo que no existe (`PG-UI-006`).** Decía «verificable
+con axe en la suite E2E», y el proyecto no tiene suite E2E: ni Playwright ni Cypress. Llevaba
+desde el principio sin poder cumplirse y el motivo no estaba escrito en ninguna parte.
+
+Se comprueba ahora con `axe-core` sobre el DOM que Angular renderiza en Karma. **Defecto real
+encontrado:** el marcador arrastrable del mapa de registro no tenía nombre accesible
+(`aria-command-name`, *serious*) — Leaflet lo renderiza focusable e interactivo, así que un lector
+de pantalla anunciaba que había un control sin poder decir que era la ubicación del accidente ni
+que se podía mover. Corregido con `alt` y `title`.
+
+Queda `⚠️ Parcial` a propósito: este enfoque no ve el orden de tabulación entre pantallas, el foco
+tras navegar, ni el contraste con los estilos globales cargados. Está declarado donde vive el
+código, para que nadie lea «accesibilidad ✅» y suponga más de lo comprobado.
+
+**De paso, el entorno.** El contenedor de Django se reconstruyó para poder medir —corría código
+anterior a los cambios del día, y `/api/v1/salud` devolvía 404 aunque la ruta ya existía—. El
+gunicorn instalado para comparar se desinstaló y el contenedor se recreó para no dejar rastro.
+Quedan ~65 accidentes de prueba en la base local, localizables por su descripción.
+
+**Verificación.** Frontend: **1423 SUCCESS**. La prueba de carga y la de accesibilidad llevan cada
+una su control de no-vacuidad, porque tres veces esta misma sesión una suite pasó en verde sin
+comprobar nada.
+
 ## 2026-08-23 — C15: cinco reglas del plan global, y el defecto que solo aparece con dos operadores
 
 Cierre de `PG-NEG-001`, `PG-NEG-002`, `PG-CFG-005`, `PG-RES-006` y `PG-UI-003`/`PG-UI-005`.

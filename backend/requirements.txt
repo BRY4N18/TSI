@@ -12,3 +12,9 @@ requests>=2.31,<3.0
 kafka-python>=2.0,<3.0
 python-dateutil>=2.9,<3.0
 puremagic>=1.28,<2.0
+
+# Tres pruebas de seguridad leen `docker-compose.*.yml` y el workflow de CI para
+# comprobar la configuracion desplegada (PG-CFG-005, PG-ANA-006, PG-RES-002).
+# Estaba disponible por transitividad y funcionaba en local: en CI habria
+# fallado con ImportError el dia que esa dependencia indirecta cambiara.
+PyYAML>=6.0,<7.0
