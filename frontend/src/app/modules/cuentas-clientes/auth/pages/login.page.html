@@ -92,6 +92,12 @@
           />
         </div>
 
+        @if (sesionExpirada()) {
+          <p class="m-0 text-sm text-alert-warning" role="status">
+            Tu sesión caducó y se cerró por seguridad. Inicia sesión de nuevo para continuar donde
+            estabas; lo que hubieras dejado a medio escribir sigue guardado.
+          </p>
+        }
         @if (errorMessage()) {
           <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
         }

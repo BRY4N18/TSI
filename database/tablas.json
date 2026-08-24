@@ -59,7 +59,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "timestamp_evento"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -92,7 +92,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_transicion"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -125,7 +125,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahoranotificacion"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -158,7 +158,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahoraasignacion"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -257,7 +257,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_inicio"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -290,7 +290,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_emision"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -323,7 +323,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_solicitud"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -686,7 +686,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahorainiciosesion"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -719,7 +719,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_completado"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -752,7 +752,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -785,7 +785,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_accion"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -884,7 +884,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechavigenciadesde"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -917,7 +917,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahorasubida"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -950,7 +950,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahoraaccidente"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1280,7 +1280,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahoramodificado"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1511,7 +1511,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1544,7 +1544,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1643,7 +1643,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahoradespacho"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1808,7 +1808,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1841,7 +1841,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -1874,7 +1874,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -2006,7 +2006,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -2072,7 +2072,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -2237,7 +2237,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fecha_cambio"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -2270,7 +2270,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechahora"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}
@@ -2336,7 +2336,7 @@
     },
     "upsertConfig": {
       "mode": "FULL",
-      "comparisonColumn": "fechallamada"
+      "comparisonColumn": "fecha_actualizacion"
     },
     "metadata": {
       "customConfigs": {}

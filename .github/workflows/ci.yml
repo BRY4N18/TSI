@@ -120,10 +120,16 @@ jobs:
         run: python manage.py check --deploy --fail-level WARNING
 
       # PG-CFG-005: ningún secreto versionado, ni en el árbol ni en el historial.
+      #
+      # GITLEAKS_CONFIG es obligatorio, no cosmético: sin él la acción usa la
+      # config por defecto, aparecen los 9 falsos positivos ya revisados y el
+      # paso queda en rojo permanente. Un escaneo que siempre falla deja de
+      # leerse — y ahí es donde se cuela el secreto de verdad.
       - name: Escaneo de secretos
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
 
       - name: La clave privada JWT no está versionada
         run: |

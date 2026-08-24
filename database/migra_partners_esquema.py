@@ -33,6 +33,17 @@ Alcance: solo tablas del departamento Partners y API, todas VACIAS (0 filas)
 al momento de esta migracion. No toca Fact_Factura ni Fact_Reclamo, que tienen
 datos reales y pertenecen a otros departamentos.
 
+Como se revierte
+----------------
+El script reescribe `esquemas.json` y `tablas.json` y recrea las tablas. La
+vuelta atras es `git checkout` de esos dos ficheros y volver a desplegarlos:
+ambos estan versionados, asi que el estado anterior siempre esta disponible.
+
+⚠️ **Lo que no vuelve es el contenido.** Recrear una tabla la hace re-consumir
+su topic desde el principio, asi que las filas dependen de lo que siga en Kafka.
+Revertir el esquema no es lo mismo que revertir los datos: si el topic esta
+purgado, la tabla vuelve vacia.
+
 Uso:
     python database/migra_partners_esquema.py --dry-run
     python database/migra_partners_esquema.py

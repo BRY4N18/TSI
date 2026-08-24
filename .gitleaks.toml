@@ -1,0 +1,55 @@
+# PG-CFG-005 — ningún secreto versionado.
+#
+# La regla estaba «cubierta» porque gitleaks figuraba en el workflow de CI, pero
+# **nunca se había ejecutado sobre el historial**. Al correrlo el 2026-08-23
+# aparecieron 9 hallazgos; los 9 se revisaron uno a uno y ninguno es un secreto.
+#
+# Este fichero existe para que ese análisis quede escrito. Sin él, la alternativa
+# era dejar el escaneo en rojo permanente — y un escaneo que siempre falla deja
+# de leerse, que es exactamente cómo se cuela el secreto de verdad.
+#
+# **Regla al añadir una excepción:** solo por ruta concreta y con el motivo. Un
+# patrón amplio aquí apaga la comprobación sin que se note.
+
+title = "TSI — allowlist de secretos revisada"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+description = "Clave genérica de alta entropía"
+regex = '''(?i)(?:key|api|token|secret|password|pass|pw)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\|:|<=|=>|:)(?:'|\"|\s|=|\x60){0,5}([0-9a-z\-_.=]{10,150})'''
+
+  [rules.allowlist]
+  regexTarget = "match"
+  paths = [
+    # Claves de un diccionario que mapea nombre de informe -> fichero SQL. La
+    # cadena que dispara la regla es «participacion-ingresos-api», un nombre de
+    # endpoint público.
+    '''backend/apps/informes_estrategicos/services/oe2_service\.py''',
+    '''backend/apps/informes_tacticos/services/partners_compuestos_service\.py''',
+    # Contraseñas y secretos **inventados dentro de pruebas**: son el dato de
+    # entrada del caso, no una credencial de ningún entorno.
+    '''backend/apps/cuentas_clientes/tests/services/test_cambio_password_service\.py''',
+    '''backend/apps/partners/tests/repositories/test_credencial_repository\.py''',
+    '''frontend/src/app/modules/partners/pages/secreto-emitido/secreto-emitido\.page\.spec\.ts''',
+  ]
+
+[[rules]]
+id = "curl-auth-user"
+description = "Credenciales en la línea de comandos de curl"
+regex = '''\bcurl\b(?:.*|[\r\n]{0,1}.*[\r\n]{0,1})(?:\s-u(?:\s|=)|\s--user(?:\s|=))([\w\-.]{1,100}:[^\s'\"]{1,100})'''
+
+  [rules.allowlist]
+  paths = [
+    # `tactico:tactico` contra `localhost:8123`: la credencial de ClickHouse en
+    # desarrollo, en un quickstart que documenta cómo comprobar los datos en la
+    # máquina propia.
+    #
+    # No es un descuido tolerado: ese valor exacto está registrado en
+    # `backend/core/config/secretos.py::DEFAULTS_INSEGUROS`, así que el arranque
+    # **aborta** si alguien lo deja puesto fuera de un entorno local. El riesgo
+    # que gitleaks señala aquí ya lo cierra el propio sistema.
+    '''specs/002-tactico/Emergencias/informes-tacticos-compuestos/backend/quickstart\.md''',
+  ]

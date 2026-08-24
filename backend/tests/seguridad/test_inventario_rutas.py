@@ -23,7 +23,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.seguridad]
 #: No son un umbral de calidad: son un detector de cambios. Si dejan de cuadrar
 #: es que se añadieron o retiraron endpoints, y toca revisar si los nuevos tienen
 #: cobertura de aislamiento — **no** relajar el número para que la prueba pase.
-RUTAS_API_REFERENCIA = 234
+#: 235 desde el 2026-08-23: se anadio `GET /api/v1/salud` (PG-RES-004). Esta
+#: prueba lo detecto sola, que es exactamente para lo que existe.
+RUTAS_API_REFERENCIA = 235
 RUTAS_CON_ID_REFERENCIA = 92
 
 

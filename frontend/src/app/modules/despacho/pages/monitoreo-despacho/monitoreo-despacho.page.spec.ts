@@ -37,8 +37,11 @@ describe('MonitoreoDespachoPage — cierre del caso (SRS §3.6.4)', () => {
   beforeEach(async () => {
     const api = jasmine.createSpyObj('DespachoApiService', ['obtenerEstado']);
     api.obtenerEstado.and.returnValue(of({ data: ESTADO_EN_ATENCION, meta: {} }) as never);
-    const sse = jasmine.createSpyObj('DespachoSseService', ['streamDespacho']);
+    const sse = jasmine.createSpyObj('DespachoSseService', ['streamDespacho', 'streamResiliente']);
     sse.streamDespacho.and.returnValue(of());
+    // La página usa `streamResiliente` desde PG-UI-005: el stream crudo dejaba
+    // la vista muerta tras el primer corte y en «En vivo» tras un cierre limpio.
+    sse.streamResiliente.and.returnValue(of());
     seguimiento = jasmine.createSpyObj('SeguimientoApiService', [
       'cerrarCaso',
       'cancelarCaso',

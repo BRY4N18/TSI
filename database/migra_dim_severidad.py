@@ -22,6 +22,17 @@ Ojo con dos efectos ya conocidos de recrear tablas en Pinot:
   - Durante unos segundos tras el DELETE la *external view* sigue viva y
     recrear devuelve 409. Se reintenta con espera.
 
+Como se revierte
+----------------
+No hay datos que respaldar: la tabla esta **vacia**, que es justamente el motivo
+de hacerlo ahora. La reversion es volver a poner `severidad` como metrica INT en
+`esquemas.json` y recrear la tabla — lo mismo que hace este script, en sentido
+contrario y con el mismo coste, que es cero.
+
+Revertirlo devolveria el defecto: Pinot volveria a descartar en silencio toda
+fila con un nombre de severidad. Se documenta para que la vuelta atras sea una
+decision y no un reflejo ante el primer susto.
+
 Uso:
     python database/migra_dim_severidad.py --dry-run
     python database/migra_dim_severidad.py

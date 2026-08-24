@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { MOTIVO_SESION_EXPIRADA } from '../../../../core/interceptors/sesion-expirada.interceptor';
 import { AuthApiService } from '../services/auth-api.service';
 import { resolvePostLoginPath } from '../services/post-login-home';
 
@@ -22,6 +23,26 @@ export class LoginPage {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
+  /**
+   * Si el usuario llego aqui porque su sesion caduco con la pantalla abierta
+   * (PG-UI-003), conviene decirselo: sin el aviso, la redireccion es
+   * indistinguible de un cierre de sesion voluntario y parece que la
+   * aplicacion se cerro sola.
+   *
+   * Se consume la marca al leerla — es un aviso de una vez, no un estado.
+   */
+  readonly sesionExpirada = signal(this.leerMotivoSesionExpirada());
+
+  private leerMotivoSesionExpirada(): boolean {
+    try {
+      const marca = sessionStorage.getItem(MOTIVO_SESION_EXPIRADA);
+      sessionStorage.removeItem(MOTIVO_SESION_EXPIRADA);
+      return marca === '1';
+    } catch {
+      return false;
+    }
+  }
+
   readonly form = this.fb.nonNullable.group({
     gmail: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
@@ -34,6 +55,7 @@ export class LoginPage {
 
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.sesionExpirada.set(false);
 
     const { gmail, password } = this.form.getRawValue();
 

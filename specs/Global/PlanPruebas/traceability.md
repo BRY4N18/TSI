@@ -22,7 +22,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-CFG-002` | Ningún secreto conserva su valor de desarrollo en producción | Bloqueante | ✅ | `backend/tests/test_configuracion_segura.py` |
 | `PG-CFG-003` | `ALLOWED_HOSTS` y CORS cerrados por defecto | Bloqueante | ⚠️ | `backend/tests/test_configuracion_segura.py` |
 | `PG-CFG-004` | `manage.py check --deploy` sin advertencias | Mayor | ✅ | `.github/workflows/ci.yml` (job `configuracion`) |
-| `PG-CFG-005` | Ningún secreto versionado en git | Bloqueante | ❌ | _(sin prueba)_ |
+| `PG-CFG-005` | Ningún secreto versionado en git | Bloqueante | ✅ | `backend/tests/seguridad/test_secretos_versionados.py` |
 
 ### `PG-OPE` — Capa operacional — Pinot, Kafka, Zookeeper
 
@@ -32,21 +32,21 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-OPE-002` | Reconciliación evento publicado → fila consultable | Bloqueante | ✅ | `backend/tests/seguridad/test_ingesta_pinot.py` |
 | `PG-OPE-003` | Esquema declarado == esquema real | Mayor | ✅ | `backend/tests/regression/test_doble_pinot_vs_esquemas.py` |
 | `PG-OPE-004` | Upsert `FULL` y monotonía de `fecha_actualizacion` | Mayor | ⚠️ | `backend/tests/regression/test_fecha_actualizacion_epoch_ms.py` |
-| `PG-OPE-005` | Idempotencia de reintentos | Mayor | ❌ | _(sin prueba)_ |
+| `PG-OPE-005` | Idempotencia de reintentos | Mayor | ✅ | `backend/tests/seguridad/test_escritura_operacional.py` |
 | `PG-OPE-006` | Límite de resultados explícito en toda consulta | Mayor | ✅ | `backend/tests/regression/test_pinot_client_limit.py` |
 | `PG-OPE-007` | Pinot es de solo lectura desde Django | Bloqueante | ✅ | `backend/tests/seguridad/test_pinot_solo_lectura.py` |
-| `PG-OPE-008` | Borrado lógico en el camino de la API | Mayor | ❌ | _(sin prueba)_ |
+| `PG-OPE-008` | Borrado lógico en el camino de la API | Mayor | ✅ | `backend/tests/seguridad/test_escritura_operacional.py` |
 
 ### `PG-ANA` — Capa analítica — ClickHouse, Airflow, ETL
 
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
-| `PG-ANA-001` | Cuadre analítica ↔ operacional | Bloqueante | ✅ | `backend/tests/seguridad/test_reconciliacion.py` + `test_reconciliacion_integracion.py` |
+| `PG-ANA-001` | Cuadre analítica ↔ operacional | Bloqueante | ✅ | `backend/tests/seguridad/test_reconciliacion.py` + `backend/tests/seguridad/test_reconciliacion_integracion.py` |
 | `PG-ANA-002` | Frescura declarada y visible | Mayor | ⚠️ | `backend/tests/seguridad/test_frescura_analitica.py` |
-| `PG-ANA-003` | Un DAG fallido no deja datos a medias | Bloqueante | ❌ | _(sin prueba)_ |
-| `PG-ANA-004` | Reejecución de un DAG es idempotente | Mayor | ❌ | _(sin prueba)_ |
+| `PG-ANA-003` | Un DAG fallido no deja datos a medias | Bloqueante | ⚠️ | `backend/tests/seguridad/test_carga_analitica.py` |
+| `PG-ANA-004` | Reejecución de un DAG es idempotente | Mayor | ✅ | `dags/tests/test_carga_particion.py::TestIdempotencia` |
 | `PG-ANA-005` | Alias que tapa la columna en ClickHouse | Mayor | ✅ | `backend/tests/seguridad/test_consultas_clickhouse.py` |
-| `PG-ANA-006` | El Postgres de Airflow no almacena negocio | Mayor | ❌ | _(sin prueba)_ |
+| `PG-ANA-006` | El Postgres de Airflow no almacena negocio | Mayor | ✅ | `backend/tests/seguridad/test_carga_analitica.py` |
 
 ### `PG-API` — Contratos de API
 
@@ -55,15 +55,15 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-API-001` | Implementación conforme al contrato OpenAPI | Mayor | ⚠️ | `apps/accidentes/tests/api/test_informes_openapi_conforme.py` |
 | `PG-API-002` | Rechazo estricto de campos no declarados | Bloqueante | ⚠️ | varios `test_*_contract.py` |
 | `PG-API-003` | Envelope y errores uniformes | Mayor | ⚠️ | `core/api/response_envelope.py` (implementación) |
-| `PG-API-004` | Validación de límites y tipos | Mayor | ❌ | _(sin prueba)_ |
+| `PG-API-004` | Validación de límites y tipos | Mayor | ✅ | `backend/tests/seguridad/test_validacion_entrada.py` |
 | `PG-API-005` | Paginación íntegra | Mayor | ⚠️ | `apps/accidentes/tests/api/test_informes_paginacion_integridad.py` |
 
 ### `PG-NEG` — Lógica de negocio y concurrencia
 
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
-| `PG-NEG-001` | Escrituras concurrentes sobre el mismo recurso | Mayor | ❌ | _(sin prueba)_ |
-| `PG-NEG-002` | Doble asignación de unidad de emergencia | Bloqueante | ❌ | _(sin prueba)_ |
+| `PG-NEG-001` | Escrituras concurrentes sobre el mismo recurso | Mayor | ✅ | `backend/tests/seguridad/test_concurrencia_despacho.py` |
+| `PG-NEG-002` | Doble asignación de unidad de emergencia | Bloqueante | ✅ | `backend/tests/seguridad/test_concurrencia_despacho.py` |
 | `PG-NEG-003` | Transiciones de estado válidas | Mayor | ⚠️ | dispersa por módulo |
 | `PG-NEG-004` | Unicidad e integridad de identificadores | Mayor | ✅ | `backend/tests/test_secuencia_id.py` |
 | `PG-NEG-005` | Cálculos de facturación y cuotas | Mayor | ⚠️ | módulos de suscripciones y partners |
@@ -76,7 +76,7 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | `PG-SEC-002` | Autorización vertical por rol | Bloqueante | ⚠️ | `e2e/tests/04-auth-roles.spec.ts` |
 | `PG-SEC-003` | Integridad del JWT | Bloqueante | ✅ | `backend/tests/seguridad/test_integridad_jwt.py` |
 | `PG-SEC-004` | Límite de tasa efectivo | Mayor | ✅ | `backend/tests/seguridad/test_throttles.py` |
-| `PG-SEC-005` | Inyección | Bloqueante | ⚠️ | `backend/tests/seguridad/test_inyeccion.py` + `test_inyeccion_integracion.py` |
+| `PG-SEC-005` | Inyección | Bloqueante | ⚠️ | `backend/tests/seguridad/test_inyeccion.py` + `backend/tests/seguridad/test_inyeccion_integracion.py` |
 | `PG-SEC-006` | Subida de archivos | Mayor | ✅ | `backend/tests/seguridad/test_subida_archivos.py` |
 | `PG-SEC-007` | Datos sensibles en registros y respuestas | Bloqueante | ⚠️ | `backend/tests/seguridad/test_datos_sensibles.py` |
 | `PG-SEC-008` | Cabeceras y cookies de seguridad HTTP | Mayor | ✅ | `backend/tests/seguridad/test_cabeceras.py` |
@@ -89,9 +89,9 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 |---|---|---|---|---|
 | `PG-UI-001` | Componentes sin acceso directo a red | Menor | ⚠️ | 250 `.spec.ts` en `frontend/src` |
 | `PG-UI-002` | El sistema nunca muestra una pantalla en blanco | Mayor | ⚠️ | `e2e/tests/` |
-| `PG-UI-003` | Sesión expirada durante el uso | Mayor | ❌ | _(sin prueba)_ |
+| `PG-UI-003` | Sesión expirada durante el uso | Mayor | ✅ | `frontend/src/app/core/interceptors/sesion-expirada.interceptor.spec.ts` |
 | `PG-UI-004` | Validación duplicada, nunca delegada | Mayor | ⚠️ | dispersa |
-| `PG-UI-005` | Reconexión de SSE | Mayor | ❌ | _(sin prueba)_ |
+| `PG-UI-005` | Reconexión de SSE | Mayor | ✅ | `frontend/src/app/modules/seguimiento/services/seguimiento-sse.service.spec.ts`, `frontend/src/app/modules/despacho/services/despacho-sse.service.spec.ts` |
 | `PG-UI-006` | Accesibilidad | Menor | ❌ | _(sin prueba)_ |
 
 ### `PG-RES` — Rendimiento, resiliencia y observabilidad
@@ -99,11 +99,11 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 | Regla | Descripción | Severidad | Estado | Verificada por |
 |---|---|---|---|---|
 | `PG-RES-001` | Presupuestos de latencia por motor y percentil | Mayor | ⚠️ | `PerfTrace` en tests |
-| `PG-RES-002` | Degradación ante caída de dependencias | Bloqueante | ❌ | _(sin prueba)_ |
-| `PG-RES-003` | Arranque en orden y reintento | Mayor | ❌ | _(sin prueba)_ |
-| `PG-RES-004` | Sonda de salud honesta | Mayor | ❌ | _(sin prueba)_ |
+| `PG-RES-002` | Degradación ante caída de dependencias | Bloqueante | ⚠️ | `backend/tests/seguridad/test_resiliencia.py` |
+| `PG-RES-003` | Arranque en orden y reintento | Mayor | ✅ | `backend/tests/seguridad/test_resiliencia.py` |
+| `PG-RES-004` | Sonda de salud honesta | Mayor | ✅ | `backend/tests/seguridad/test_resiliencia.py` |
 | `PG-RES-005` | Prueba de carga sobre la cadena crítica | Mayor | ❌ | _(sin prueba)_ |
-| `PG-RES-006` | Migraciones reversibles | Mayor | ❌ | _(sin prueba)_ |
+| `PG-RES-006` | Migraciones reversibles | Mayor | ✅ | `backend/tests/seguridad/test_migraciones_reversibles.py` |
 
 ### `PG-CI` — Compuertas de calidad y automatización
 
@@ -127,33 +127,31 @@ cubre el caso adversarial) · ❌ Pendiente (regla declarada, sin prueba).
 
 | | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| `PG-CFG` | 5 | 3 | 1 | 1 |
-| `PG-OPE` | 8 | 5 | 1 | 2 |
-| `PG-ANA` | 6 | 2 | 1 | 3 |
-| `PG-API` | 5 | 0 | 4 | 1 |
-| `PG-NEG` | 5 | 1 | 2 | 2 |
+| `PG-CFG` | 5 | 4 | 1 | 0 |
+| `PG-OPE` | 8 | 7 | 1 | 0 |
+| `PG-ANA` | 6 | 4 | 2 | 0 |
+| `PG-API` | 5 | 1 | 4 | 0 |
+| `PG-NEG` | 5 | 3 | 2 | 0 |
 | `PG-SEC` | 10 | 6 | 4 | 0 |
-| `PG-UI` | 6 | 0 | 3 | 3 |
-| `PG-RES` | 6 | 0 | 1 | 5 |
+| `PG-UI` | 6 | 2 | 3 | 1 |
+| `PG-RES` | 6 | 3 | 2 | 1 |
 | `PG-CI` | 4 | 2 | 2 | 0 |
 | `PG-DOC` | 2 | 2 | 0 | 0 |
-| **Total** | **57** | **21** | **19** | **17** |
+| **Total** | **57** | **34** | **21** | **2** |
 
-**10 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
+**8 de las 18 reglas bloqueantes siguen sin cobertura completa.** Es el número que decide
 si el sistema puede considerarse validado — no el total de reglas ni el de pruebas existentes.
 
 | Regla | Estado | Descripción |
 |---|---|---|
 | `PG-CFG-003` | ⚠️ | `ALLOWED_HOSTS` y CORS cerrados por defecto |
-| `PG-CFG-005` | ❌ | Ningún secreto versionado en git |
-| `PG-ANA-003` | ❌ | Un DAG fallido no deja datos a medias |
+| `PG-ANA-003` | ⚠️ | Un DAG fallido no deja datos a medias |
 | `PG-API-002` | ⚠️ | Rechazo estricto de campos no declarados |
-| `PG-NEG-002` | ❌ | Doble asignación de unidad de emergencia |
 | `PG-SEC-001` | ⚠️ | Aislamiento multi-tenant (IDOR) |
 | `PG-SEC-002` | ⚠️ | Autorización vertical por rol |
 | `PG-SEC-005` | ⚠️ | Inyección |
 | `PG-SEC-007` | ⚠️ | Datos sensibles en registros y respuestas |
-| `PG-RES-002` | ❌ | Degradación ante caída de dependencias |
+| `PG-RES-002` | ⚠️ | Degradación ante caída de dependencias |
 
 ---
 

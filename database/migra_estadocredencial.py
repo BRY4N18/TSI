@@ -16,8 +16,13 @@ Uso:
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _reversion import respaldar
 import time
 import urllib.request
 
@@ -68,6 +73,12 @@ def main():
     args = parser.parse_args()
 
     filas = query("SELECT * FROM Dim_Credencial LIMIT 10000")
+
+    # La fila se republica entera: sin copia previa, un error aqui enterraria
+    # el estado anterior de toda la credencial, no solo del campo de estado.
+    respaldo = respaldar("Dim_Credencial", filas, sufijo="estadocredencial")
+    print(f"Respaldo verificado -> {respaldo.name}")
+
     a_migrar = [
         r for r in filas
         if str(r.get("estadocredencial") or "").strip().lower() in EQUIVALENTES

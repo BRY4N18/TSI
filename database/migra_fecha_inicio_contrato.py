@@ -28,10 +28,17 @@ de cuántas son.
 
 Idempotente: reejecutar no cambia nada, porque las filas ya rellenas se saltan.
 """
+import argparse
 import json
+import os
 import subprocess
 import time
+import sys
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _reversion import anadir_dry_run, respaldar
 
 BROKER = "http://localhost:8099"
 NOW_MS = int(time.time() * 1000)
@@ -75,7 +82,17 @@ def _tiene_fecha(valor):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    anadir_dry_run(parser)
+    args = parser.parse_args()
+
     clientes = query("SELECT * FROM Dim_Cliente LIMIT 10000")
+
+    # La fila se republica entera (la tabla es upsert por clave), asi que sin
+    # copia previa un error en la fecha estimada enterraria el estado anterior
+    # de **todas** las columnas, no solo de la que se pretendia tocar.
+    respaldo = respaldar("Dim_Cliente", clientes, sufijo="fecha_inicio_contrato")
+    print(f"Respaldo verificado -> {respaldo.name}")
     primeras = {
         int(f["idcliente"]): int(f["primera"])
         for f in query(

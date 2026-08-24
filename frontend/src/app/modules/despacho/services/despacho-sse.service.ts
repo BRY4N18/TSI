@@ -1,11 +1,19 @@
-import { Injectable, NgZone, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { DestroyRef, Injectable, NgZone, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, Subscription } from 'rxjs';
 
 import { AuthApiService } from '../../cuentas-clientes/auth/services/auth-api.service';
 
 export interface DespachoStreamEvent {
   type: string;
   data: unknown;
+}
+
+export type DespachoConexionEstado = 'live' | 'reconnecting' | 'offline';
+
+export interface DespachoStreamUpdate {
+  estado: DespachoConexionEstado;
+  evento?: DespachoStreamEvent;
 }
 
 /**
@@ -20,6 +28,66 @@ export interface DespachoStreamEvent {
 export class DespachoSseService {
   private readonly zone = inject(NgZone);
   private readonly authApi = inject(AuthApiService);
+  private readonly RECONEXION_MS = 5000;
+
+  /**
+   * Igual que `streamDespacho()`, pero se reconecta sola mientras el consumidor
+   * siga vivo.
+   *
+   * **El defecto que corrige (PG-UI-005).** La pagina de monitoreo se suscribia
+   * a `streamDespacho()` directamente: ante un error marcaba `offline` y **no
+   * volvia a intentarlo nunca**, asi que la vista de una emergencia en curso
+   * quedaba muerta hasta que alguien recargase, aunque la red hubiera vuelto a
+   * los dos segundos.
+   *
+   * Peor era el cierre limpio: `complete` no estaba manejado, asi que el estado
+   * se quedaba en `live` mostrando el ultimo dato recibido **como si fuera
+   * actual**. Nginx cierra streams largos sin error, de modo que ese no es el
+   * caso raro sino el habitual — y es exactamente el fallo que la regla
+   * persigue: la pantalla no miente al fallar, miente al parecer que funciona.
+   */
+  streamResiliente(idaccidente: string, destroyRef: DestroyRef): Observable<DespachoStreamUpdate> {
+    return new Observable<DespachoStreamUpdate>((subscriber) => {
+      let detenido = false;
+      let retryHandle: ReturnType<typeof setTimeout> | undefined;
+      let currentSub: Subscription | null = null;
+
+      const programarReintento = () => {
+        if (!detenido) {
+          retryHandle = setTimeout(intentar, this.RECONEXION_MS);
+        }
+      };
+
+      const intentar = () => {
+        if (detenido) {
+          return;
+        }
+        subscriber.next({ estado: 'reconnecting' });
+        currentSub = this.streamDespacho(idaccidente).subscribe({
+          next: (evento) => subscriber.next({ estado: 'live', evento }),
+          error: () => {
+            subscriber.next({ estado: 'offline' });
+            programarReintento();
+          },
+          complete: () => {
+            // Cierre limpio del upstream: tambien deja de haber datos frescos.
+            subscriber.next({ estado: 'offline' });
+            programarReintento();
+          },
+        });
+      };
+
+      intentar();
+
+      return () => {
+        detenido = true;
+        currentSub?.unsubscribe();
+        if (retryHandle !== undefined) {
+          clearTimeout(retryHandle);
+        }
+      };
+    }).pipe(takeUntilDestroyed(destroyRef));
+  }
 
   streamDespacho(idaccidente: string): Observable<DespachoStreamEvent> {
     return new Observable((subscriber) => {

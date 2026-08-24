@@ -283,6 +283,15 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 
 REST_FRAMEWORK = {
+    # Un cuerpo que no sea objeto se rechaza con 400 antes de llegar a la vista.
+    # 25 modulos hacen `request.data.get(...)` sin comprobar el tipo, y con una
+    # lista eso da AttributeError -> 500, el unico camino sin manejador central
+    # (PG-API-004).
+    "DEFAULT_PARSER_CLASSES": [
+        "core.api.parsers.ObjetoJSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "apps.cuentas_clientes.authentication.JWTSessionAuthentication",
     ],

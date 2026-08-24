@@ -33,17 +33,20 @@ o, mas comodo, copiando el fichero al contenedor:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
 
 sys.path.insert(0, os.environ.get("PYTHONPATH", "/app"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
 
 django.setup()
 
+from _reversion import anadir_dry_run, respaldar  # noqa: E402
 from core.pinot.client import PinotClient  # noqa: E402
 from core.repositories.cuentas_clientes.kafka_writer import KafkaWriter  # noqa: E402
 
@@ -85,12 +88,24 @@ def traducir(crudo) -> list[int] | None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    anadir_dry_run(parser)
+    args = parser.parse_args()
+
     pinot = PinotClient()
     writer = KafkaWriter()
     total = 0
 
     for tabla, pk, topic in TABLAS:
         filas = pinot.query(f"SELECT * FROM {tabla} LIMIT 1000") or []
+
+        # Antes de tocar nada. Estas dos tablas son upsert por clave primaria y
+        # se republica la fila **entera**: si el mapeo resultara estar mal, sin
+        # copia previa no habria forma de volver al valor original — la version
+        # anterior queda enterrada bajo la nueva.
+        respaldo = respaldar(tabla, filas, sufijo="severidades")
+        print(f"{tabla}: respaldo verificado -> {respaldo.name}")
+
         for fila in filas:
             nuevos = traducir(fila.get("severidades_desbloqueadas"))
             if nuevos is None:
@@ -99,11 +114,17 @@ def main() -> None:
                 **fila,
                 "severidades_desbloqueadas": json.dumps(nuevos, ensure_ascii=False),
             }
-            writer.publish(topic, payload)
+            if not args.dry_run:
+                writer.publish(topic, payload)
             total += 1
             print(f"{tabla} {pk}={fila.get(pk)} -> {nuevos}")
 
-    print(f"filas republicadas: {total}")
+    if args.dry_run:
+        print(f"\n--dry-run: {total} filas se habrian republicado. No se escribio nada.")
+        print("(los respaldos si se crearon: sirven igual como foto del estado previo)")
+    else:
+        print(f"filas republicadas: {total}")
+        print("Para revertir: `_reversion.revertir(respaldo, lambda f: writer.publish(topic, f))`")
 
 
 if __name__ == "__main__":

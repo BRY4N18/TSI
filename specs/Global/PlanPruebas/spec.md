@@ -187,7 +187,7 @@ accesible con una credencial publicada en el `docker-compose`.
   (ver `PG-SEC-008`).
 
 ### PG-CFG-005 — Ningún secreto versionado en git
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_secretos_versionados.py`
 
 - **Regla:** escaneo de secretos (`gitleaks` o equivalente) sobre el árbol y el historial.
   `backend/env.example` solo contiene placeholders. `backend/config/keys/` (claves JWT RS256)
@@ -195,7 +195,19 @@ accesible con una credencial publicada en el `docker-compose`.
 - **Corregido 2026-08-23:** `backend/config/keys/` no estaba en `.gitignore` (aunque tampoco
   llegó a versionarse): un `git add -A` habría commiteado `jwt_private.pem`, la clave que firma
   los tokens de sesión. Añadida la regla al `.gitignore`.
-- **Pendiente:** el escaneo automatizado en CI y la verificación del historial.
+- **La regla estaba marcada y nunca se había ejecutado (2026-08-23).** `gitleaks` figuraba en el
+  workflow desde el principio, así que la casilla parecía cubierta. Al correrlo por primera vez
+  sobre los 30 commits salieron **9 hallazgos**; los 9 se revisaron uno a uno y ninguno es un
+  secreto (claves de un diccionario de informes, fixtures de prueba, y `tactico:tactico` contra
+  `localhost:8123` en un quickstart — valor que además está en `DEFAULTS_INSEGUROS`, así que el
+  arranque aborta si aparece fuera de un entorno local).
+- **Allowlist con motivo escrito:** `.gitleaks.toml` nombra los 5 ficheros uno a uno. La
+  alternativa era dejar el escaneo en rojo permanente, y un escaneo que siempre falla deja de
+  leerse — que es exactamente cómo se cuela el secreto de verdad.
+- **CI recibe la config explícitamente** (`GITLEAKS_CONFIG`): sin esa variable la acción usa la
+  por defecto y el paso vuelve al rojo permanente.
+- **Verificada la no-vacuidad:** con la allowlist puesta, una clave AWS y un token de GitHub de
+  aspecto realista se detectan igualmente.
 
 ---
 
@@ -245,10 +257,20 @@ exactamente igual que una siembra que no corrió — el endpoint responde `200` 
   que prevalece T2. Hoy se valida el formato, no el desempate.
 
 ### PG-OPE-005 — Idempotencia de reintentos
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_escritura_operacional.py`
 
-- **Regla:** republicar el mismo evento (reintento de red, redespliegue del worker) no puede
-  producir un registro duplicado ni alterar el estado del negocio.
+- **Regla:** republicar el mismo evento no puede producir un registro duplicado ni alterar el
+  estado del negocio. Kafka garantiza *al menos una vez*, así que la deduplicación **tiene** que
+  ocurrir en el destino.
+- **Verificado 2026-08-23:** las **79 tablas** declaran `upsertConfig` con `mode: FULL`, y toda
+  columna de comparación existe en su esquema — una declarada y ausente deja el upsert sin criterio
+  sin que Pinot avise.
+- ⚠️ **Hallazgo:** 26 tablas comparan por **fecha de negocio** (`fecha_emision`, `fecha_inicio`) en
+  vez de `fecha_actualizacion`. Esa columna no cambia al corregir el registro, así que la corrección
+  gana por el **desempate del motor**, no por comparación. **Hoy funciona** —`Fact_Session` tiene
+  292 cierres registrados— pero depende de comportamiento de Pinot, no de una garantía declarada.
+  Ver `decisiones-pendientes.md` #52. Una prueba congela el número en 26 para que ninguna tabla
+  nueva herede el patrón sin decisión.
 
 ### PG-OPE-006 — Límite de resultados explícito en toda consulta
 **Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/regression/test_pinot_client_limit.py`
@@ -270,7 +292,7 @@ exactamente igual que una siembra que no corrió — el endpoint responde `200` 
   ya no se comprueba es peor que no tener regla, porque aparenta cobertura.
 
 ### PG-OPE-008 — Borrado lógico en el camino de la API
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_escritura_operacional.py`
 
 Reescritura de la regla ambigua de la v1.0 (que declaraba una prohibición total de `DELETE`,
 contradicha por los ~25 scripts de `database/`).
@@ -286,6 +308,9 @@ contradicha por los ~25 scripts de `database/`).
 - **Advertencia de implementación:** el literal del estado debe **importarse de la constante
   canónica** del repositorio, nunca copiarse de una spec — literales inexistentes producen
   listados vacíos con `200`.
+- **Verificado 2026-08-23:** ningún `DELETE` de la API destruye el registro (`/usuarios` y `/roles`
+  llaman a `deactivate_*`), y **ningún módulo de aplicación importa los scripts de mantenimiento**
+  de `database/`. Que el borrado físico exista está bien; que esté a un clic de la API no.
 
 ---
 
@@ -295,7 +320,7 @@ contradicha por los ~25 scripts de `database/`).
 > fueran de hoy.
 
 ### PG-ANA-001 — Cuadre analítica ↔ operacional
-**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_reconciliacion.py` + `test_reconciliacion_integracion.py`
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_reconciliacion.py` + `backend/tests/seguridad/test_reconciliacion_integracion.py`
 
 - **Regla:** para todo informe táctico, los conteos e importes agregados en ClickHouse deben
   cuadrar con la misma agregación calculada sobre Pinot para el mismo periodo, dentro de la
@@ -341,19 +366,32 @@ contradicha por los ~25 scripts de `database/`).
   leyendo igual que uno al día.
 
 ### PG-ANA-003 — Un DAG fallido no deja datos a medias
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_carga_analitica.py`
 
 - **Regla:** la carga Pinot → staging Parquet (`ETL/`) → ClickHouse es **atómica por partición**:
   o la partición queda completa, o queda como estaba. Un fallo a mitad de DAG nunca deja una
   partición parcialmente cargada — que es indistinguible de un día de poca actividad.
-- **Prueba esperada:** inyectar un fallo a mitad de la carga; afirmar que la partición conserva
-  su estado previo y el DAG queda en `failed` (no en `success` con datos incompletos).
+- ⚠️ **Hallazgo 2026-08-23: la carga NO es atómica, y el motor no puede hacerla serlo.**
+  `DROP PARTITION` e `INSERT` son dos operaciones sin transacción entre ellas en ClickHouse. Si la
+  inserción falla, la partición queda **vacía**.
+- **Vacía es menos malo que parcial**, y esa es la parte tranquilizadora: el cuadre de `PG-ANA-001`
+  lo detecta como «faltan N», mientras que unas filas de menos pasarían por un mes flojo. Pero
+  sigue siendo una ventana en la que el informe muestra cero para un período con datos.
+- **Lo cubierto:** que se reemplace la partición entera y nunca por condición —un `DELETE WHERE`
+  deja fuera lo que la condición no alcanza—, que un período que se queda vacío también se
+  descarte, que el orden sea descartar→insertar, y que **el límite de atomicidad esté documentado
+  donde vive el código**, para que nadie suponga una garantía que no existe.
+- **Pendiente para ✅:** inyectar un fallo a mitad de carga contra ClickHouse real y comprobar el
+  estado resultante.
 
 ### PG-ANA-004 — Reejecución de un DAG es idempotente
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `dags/tests/test_carga_particion.py::TestIdempotencia`
 
 - **Regla:** reejecutar un DAG sobre la misma partición produce el mismo resultado, no filas
   duplicadas ni importes al doble.
+- **Ya estaba cubierta** por `dags/tests/test_carga_particion.py::TestIdempotencia`, escrita antes
+  de este plan. Se enlaza en vez de duplicarla: una segunda prueba de lo mismo envejece por su
+  cuenta y acaba contradiciendo a la primera.
 
 ### PG-ANA-005 — Alias que tapa la columna en ClickHouse
 **Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_consultas_clickhouse.py`
@@ -374,10 +412,16 @@ proyecto: un alias de `SELECT` que coincide con el nombre de una columna real.
   ella se pierde la que sí protege.
 
 ### PG-ANA-006 — El Postgres de Airflow no almacena negocio
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_carga_analitica.py`
 
 - **Regla:** `tactico-airflow-postgres` es **exclusivamente** metastore del orquestador. Ninguna
   tabla del modelo dimensional puede residir ahí.
+- **Verificado 2026-08-23:** Django no lo referencia, el DDL analítico no crea nada en Postgres, y
+  el metastore **no publica puertos al host** — barrera barata contra el atajo de guardar «una
+  tablita» ahí.
+- **Por qué importa más de lo que parece:** una tabla de negocio en el metastore sería una **tercera
+  copia de la verdad**, y el cuadre de `PG-ANA-001` solo compara Pinot con ClickHouse. Las tres
+  divergirían sin que nada lo detectara.
 
 ---
 
@@ -410,13 +454,23 @@ Existen **37 contratos OpenAPI**; hoy solo un módulo valida conformidad automá
   nombres de tabla ni SQL.
 
 ### PG-API-004 — Validación de límites y tipos
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_validacion_entrada.py`
 
 - **Regla:** batería transversal sobre todo endpoint: cadenas vacías, cadenas de 10.000
   caracteres, negativos donde se espera positivo, cero, `null` en campos obligatorios, unicode y
   emoji, fechas imposibles (`2026-02-30`), fechas futuras donde no procede, coordenadas fuera de
   rango, IDs inexistentes ⇒ `404` (**nunca** `500`).
 - **Regla heredada del changelog v1.0:** `fecha_nacimiento <= fecha_actual`.
+- **Implementado 2026-08-23:** diez formas de cuerpo malformado —vacío, tipos cambiados, cadena de
+  10 000 caracteres, nulos, unicode, `2026-02-30`, negativos, anidado inesperado, JSON inválido y
+  array en la raíz— contra **todos los endpoints de escritura sin parámetros**.
+- **Segundo defecto del mismo patrón encontrado y corregido:** `LoginView` hacía
+  `request.data.get()` sobre un array y lanzaba `AttributeError` → **500**. Es el mismo modo de
+  fallo que `changelog.md` C7, y la predicción de T081 se cumplió.
+- ⚠️ **Se corrigió de forma central, no vista a vista.** 25 módulos comparten el patrón; arreglar
+  25 ficheros a mano deja fuera el número 26, que se escribe la semana siguiente. Un parser
+  (`core/api/parsers.py`) rechaza con `400` cualquier cuerpo cuya raíz no sea un objeto, antes de
+  que ninguna vista lo vea. Se verificó primero que **ninguna vista espera una lista**.
 
 ### PG-API-005 — Paginación íntegra
 **Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** `apps/accidentes/tests/api/test_informes_paginacion_integridad.py`
@@ -430,20 +484,43 @@ Existen **37 contratos OpenAPI**; hoy solo un módulo valida conformidad automá
 ## 7. LÓGICA DE NEGOCIO Y CONCURRENCIA
 
 ### PG-NEG-001 — Escrituras concurrentes sobre el mismo recurso
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_concurrencia_despacho.py`
 
-- **Regla:** dos peticiones concurrentes sobre el mismo recurso se resuelven con bloqueo
-  optimista (token de versión): una procede (`200`), la otra falla por conflicto (`409`).
-- **Prohibición:** una condición de carrera no se corrige con `sleep()`. Se especifica el `409`
-  aquí y luego se implementa.
+- **Regla:** una escritura que depende de una lectura previa debe hacer ambas bajo la misma
+  exclusión mutua. El recurso crítico es la unidad de emergencia (`PG-NEG-002`).
+- **Corrección del enunciado (2026-08-23):** la redacción original pedía bloqueo optimista con
+  token de versión y `409`. **No es aplicable aquí:** el bloqueo optimista necesita comparar la
+  versión en el momento de escribir, y en este sistema la escritura va a Kafka —que no compara
+  nada— y se materializa en Pinot de forma asíncrona. No hay punto donde hacer el
+  *compare-and-set*. Se sustituye por reserva previa, que sí es implementable sobre esta
+  arquitectura.
+- **Prohibición mantenida:** una condición de carrera no se corrige con `sleep()`.
 
 ### PG-NEG-002 — Doble asignación de unidad de emergencia
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_concurrencia_despacho.py`
 
 - **Regla:** una misma unidad no puede quedar asignada a dos accidentes simultáneos, bajo ninguna
   secuencia de peticiones concurrentes.
 - **Por qué es bloqueante:** es el único fallo de concurrencia del sistema con consecuencia
   física directa — una ambulancia que no llega porque figura despachada a otro sitio.
+- **Defecto real, reproducido (2026-08-23).** `asignar()` comprobaba la disponibilidad leyendo de
+  Pinot y luego escribía vía Kafka, sin nada entre medias. Con dos operadores simultáneos el
+  resultado fue **dos despachos activos para la misma unidad y cero errores**: ambos vieron
+  confirmación. La ventana no mide milisegundos entre hilos, sino **lo que tarda la ingesta**: la
+  comprobación de la segunda petición no ve el despacho que la primera acaba de crear.
+- **Arreglo:** `core/seguridad/reserva_unidad.py`. La comprobación y la escritura pasan a ocurrir
+  dentro de una reserva tomada con `cache.add()` —comprobar-e-insertar atómico, la misma llamada
+  en LocMem que en Redis— con TTL para que un fallo a mitad no deje la ambulancia bloqueada.
+- ⚠️ **Límite conocido y documentado:** sin `CACHES` configurado, Django usa `LocMemCache`, que es
+  **por proceso**. Con varios workers de gunicorn dos peticiones repartidas entre workers
+  distintos podrían volver a colisionar. La reserva reduce la ventana de *segundos de ingesta* a
+  *un reparto entre workers*; cerrarla del todo exige Redis, que hoy no está desplegado.
+  **Decisión de infraestructura pendiente** — ver `decisiones-pendientes.md`.
+- **Cinco intentos hasta que la prueba probó algo.** Pasó en verde tres veces por motivos
+  distintos: los accidentes no existían, la unidad 1 ya tenía despacho activo en la siembra, y el
+  estado por defecto de una unidad sin historial es «Fuera de servicio». Cada uno hacía que ambas
+  llamadas fallaran antes de llegar a la carrera. La prueba lleva ahora asertos que **fallan si
+  eso vuelve a pasar**, en vez de pasar en silencio.
 
 ### PG-NEG-003 — Transiciones de estado válidas
 **Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** dispersa por módulo
@@ -537,7 +614,7 @@ sobre los mismos datos.
   de `RN-APM-002` (ver `PG-NEG-005`).
 
 ### PG-SEC-005 — Inyección
-**Severidad:** Bloqueante · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_inyeccion.py` + `test_inyeccion_integracion.py`
+**Severidad:** Bloqueante · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_inyeccion.py` + `backend/tests/seguridad/test_inyeccion_integracion.py`
 
 - **Regla:** ninguna consulta a Pinot o ClickHouse se construye por concatenación de entrada del
   usuario. Toda entrada se parametriza o se valida contra lista blanca.
@@ -646,10 +723,26 @@ Principio V).
   vista crítica.
 
 ### PG-UI-003 — Sesión expirada durante el uso
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `frontend/src/app/core/interceptors/sesion-expirada.interceptor.spec.ts`
 
 - **Regla:** al recibir `401` con trabajo sin guardar, la aplicación redirige a login **sin
   descartar silenciosamente** lo que el usuario escribió.
+- **Lo que había antes: nada (2026-08-23).** Ni una sola referencia a `401` en todo el frontend
+  fuera de los specs. La sesión caducaba y cada componente mostraba —o no— un error genérico: el
+  usuario se quedaba en una pantalla muerta pulsando botones que ya no hacían nada, sin
+  redirección ni aviso.
+- **Arreglo:** `sesionExpiradaInterceptor` limpia la sesión, deja anotado el motivo, y redirige al
+  login con `returnUrl` para volver donde estaba.
+- **El detalle que da sentido a la regla:** el interceptor **no** llama a `localStorage.clear()`.
+  Borra las cinco claves de sesión una a una y deja intacto `tsi.registro-accidente.draft`, el
+  parte a medio escribir. El `clear()` era una línea más corta y se habría llevado por delante el
+  trabajo del usuario justo cuando la regla dice que hay que conservarlo. **Verificado
+  sustituyéndolo:** la prueba del borrador falla.
+- **Tres cosas que a propósito NO dispara:** un `401` del propio login (ahí significa
+  «credenciales incorrectas» y redirigir sería un bucle que tapa el mensaje real), un `403` (la
+  sesión está viva; cerrarla expulsaría al usuario por pulsar donde no debía) y una respuesta
+  correcta. El error se **relanza**, para que un componente que muestra su propio aviso no se
+  quede en «cargando…» para siempre.
 
 ### PG-UI-004 — Validación duplicada, nunca delegada
 **Severidad:** Mayor · **Estado:** ⚠️ Parcial · **Prueba:** dispersa
@@ -661,10 +754,26 @@ Principio V).
   inválido **saltándose el frontend** y afirme `400`.
 
 ### PG-UI-005 — Reconexión de SSE
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `frontend/src/app/modules/seguimiento/services/seguimiento-sse.service.spec.ts`, `frontend/src/app/modules/despacho/services/despacho-sse.service.spec.ts`
 
 - **Regla:** el canal SSE de seguimiento en tiempo real se reconecta tras una caída y no deja el
   mapa congelado mostrando posiciones obsoletas **como si fueran actuales**.
+- **Hay dos canales, no uno.** `SeguimientoSseService` ya cumplía la regla con pruebas. El de
+  **despacho** —la pantalla de una emergencia en curso— no, y su única prueba comprobaba que
+  `streamDespacho()` devuelve algo con `.subscribe`: que un `Observable` es un `Observable`.
+  Pasaba siempre y no cubría nada.
+- **Dos defectos reales encontrados (2026-08-23):**
+  1. Ante un error marcaba `offline` y **no reintentaba nunca**: la vista quedaba muerta hasta que
+     alguien recargara, aunque la red volviera a los dos segundos.
+  2. `complete` no estaba manejado, así que un cierre limpio del upstream dejaba el estado en
+     `live` mostrando el último dato **como si fuera actual**. Nginx cierra streams largos sin
+     error: ese es el caso habitual, no el raro.
+- **El segundo es el que persigue este plan:** la pantalla no miente al fallar, miente al parecer
+  que funciona.
+- **Arreglo:** `streamResiliente()`, espejo del de seguimiento — reintento con backoff, aviso en
+  cada transición, y parada al morir el consumidor (un reintento que sobrevive a la pantalla es
+  una fuga).
+- **Verificada la no-vacuidad:** quitando el manejo de `complete`, la prueba falla.
 
 ### PG-UI-006 — Accesibilidad
 **Severidad:** Menor · **Estado:** ❌ Pendiente · **Prueba:** —
@@ -689,27 +798,45 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
   tienen presupuestos **distintos**; no se comparan entre sí.
 
 ### PG-RES-002 — Degradación ante caída de dependencias
-**Severidad:** Bloqueante · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Bloqueante · **Estado:** ⚠️ Parcial · **Prueba:** `backend/tests/seguridad/test_resiliencia.py`
 
 - **Regla:** con Kafka, Pinot, ClickHouse, Azure Blob u OSRM caídos, el sistema responde con un
   error explícito y acotado (`503`), **nunca** con un dato incompleto presentado como completo,
   ni con un cuelgue indefinido. Todo cliente externo declara *timeout* y política de reintento.
-- **Prueba esperada (`integration`):** detener cada dependencia por separado y verificar la
-  respuesta.
+- **Cubierto 2026-08-23:** todo cliente externo declara timeout, y OSRM uno **más corto** (3 s
+  frente a 10 s) por estar en la cadena crítica — un despacho que tarda diez segundos en calcular
+  ruta ya llegó tarde. Sin timeout, una dependencia lenta cuelga el hilo indefinidamente, que es
+  peor que un fallo: no se distingue de un proceso ocupado.
+- **Pendiente para ✅:** detener cada dependencia en caliente y comprobar que la respuesta es `503`
+  explícito y no un dato parcial. Requiere parar contenedores durante la suite.
 
 ### PG-RES-003 — Arranque en orden y reintento
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_resiliencia.py`
 
-- **Regla:** el orden documentado en `infrastructure.md` (`zookeeper` → `kafka` →
-  `pinot-controller` → `pinot-broker` → `pinot-server`) se respeta; un servicio que arranca antes
+- **Regla:** el orden documentado en `infrastructure.md` se respeta; un servicio que arranca antes
   que su dependencia reintenta en vez de morir.
+- **Verificado 2026-08-23:** el compose declara `depends_on` con `condition: service_healthy` en
+  los cuatro servicios encadenados. **La condición importa tanto como la dependencia**: sin ella se
+  espera al arranque del contenedor, no a que acepte conexiones, y Kafka tarda segundos más — Pinot
+  arrancaría, no encontraría el bróker y **se quedaría sin consumir en silencio**, que es
+  exactamente `PG-OPE-001` provocado por el orden de arranque.
 
 ### PG-RES-004 — Sonda de salud honesta
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_resiliencia.py`
 
-- **Regla:** el endpoint de salud verifica sus dependencias reales (broker de Pinot alcanzable,
-  productor Kafka vivo). Una sonda que devuelve `200` sin comprobar nada es **peor que no
-  tenerla**: convierte una caída en un silencio.
+- **Regla:** el endpoint de salud verifica sus dependencias reales. Una sonda que devuelve `200`
+  sin comprobar nada es **peor que no tenerla**: convierte una caída en un silencio — el
+  orquestador no reinicia, nadie recibe alerta, y las peticiones siguen llegando a un proceso que
+  no puede atenderlas.
+- **Implementado 2026-08-23**: `GET /api/v1/salud` ejerce cada dependencia con una consulta real, y
+  devuelve **503** si falla una esencial. Verificado tumbando Pinot a propósito.
+- ⚠️ **Distinción deliberada entre esencial y accesorio.** Pinot y Kafka tumban la sonda; ClickHouse
+  no. Su caída degrada los informes pero **no impide registrar un accidente ni despachar una
+  unidad**, y marcar el servicio como indisponible provocaría un reinicio que no arregla nada y que
+  sí interrumpe la cadena crítica.
+- **Sin autenticación, a propósito:** la consulta el orquestador antes de que exista sesión. A
+  cambio la respuesta solo da el nombre de la dependencia y el tipo de excepción — nunca rutas,
+  tablas ni cadenas de conexión.
 
 ### PG-RES-005 — Prueba de carga sobre la cadena crítica
 **Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
@@ -719,11 +846,29 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
   el 100% de los accidentes generados sea consultable al final.
 
 ### PG-RES-006 — Migraciones reversibles
-**Severidad:** Mayor · **Estado:** ❌ Pendiente · **Prueba:** —
+**Severidad:** Mayor · **Estado:** ✅ Cubierta · **Prueba:** `backend/tests/seguridad/test_migraciones_reversibles.py`
 
 - **Regla:** todo script de `database/` declara su reversión y se ensaya contra una copia con
   volumen realista antes de aplicarse. Una migración que solo se probó en una base vacía no está
   probada.
+- **Por qué pesa más aquí que en una base con transacciones:** las tablas son upsert por clave y
+  las migraciones **republican la fila entera** —hay que hacerlo, publicar solo la columna que
+  cambia dejaría el resto en su valor por defecto—. Una migración equivocada no corrompe un campo:
+  entierra el estado anterior de la fila completa, y Pinot no guarda la versión previa.
+- **Lo que se encontró (2026-08-23):** de las 9 migraciones, **3 escribían sin respaldo previo**
+  (`migra_fecha_inicio_contrato`, `migra_severidades_plan_a_idseveridad`, `migra_estadocredencial`)
+  y 2 no documentaban su vuelta atrás. El patrón correcto existía, pero copiado a mano en cada
+  script — así que las que se lo saltaron no rompieron nada visible: simplemente no tenían red.
+- **Extraído a `database/_reversion.py`:** `respaldar()` exporta **y relee** el fichero antes de
+  darlo por bueno (un disco lleno da un respaldo truncado que parece correcto hasta el día que
+  hace falta) y aborta con los datos aún intactos si no cuadra.
+- ⚠️ **Un salto silencioso encontrado en la propia prueba.** El detector de «escribe» solo miraba
+  `publish(`, así que `migra_plan_programado.py` —que escribe con un `POST` al controller— se
+  saltaba las tres comprobaciones **dándose por solo-lectura**. Se añadió un aserto que falla si
+  alguna migración deja de reconocerse como escritora, en vez de callar.
+- **Las 2 exenciones se declaran con su motivo** (`SIN_RESPALDO_JUSTIFICADO`): tabla vacía en un
+  caso, ficheros versionados con git como respaldo en el otro. Una exención sin motivo escrito es
+  indistinguible de un descuido seis meses después.
 
 ---
 
@@ -811,16 +956,16 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 
 | Área | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| Configuración (`PG-CFG`) | 5 | 3 | 1 | 1 |
-| Operacional (`PG-OPE`) | 8 | 3 | 2 | 3 |
-| Analítica (`PG-ANA`) | 6 | 2 | 1 | 3 |
-| API (`PG-API`) | 5 | 0 | 4 | 1 |
-| Negocio (`PG-NEG`) | 5 | 1 | 2 | 2 |
+| Configuración (`PG-CFG`) | 5 | 4 | 1 | 0 |
+| Operacional (`PG-OPE`) | 8 | 7 | 1 | 0 |
+| Analítica (`PG-ANA`) | 6 | 4 | 2 | 0 |
+| API (`PG-API`) | 5 | 1 | 4 | 0 |
+| Negocio (`PG-NEG`) | 5 | 3 | 2 | 0 |
 | Seguridad (`PG-SEC`) | 10 | 6 | 4 | 0 |
-| Frontend (`PG-UI`) | 6 | 0 | 3 | 3 |
-| Resiliencia (`PG-RES`) | 6 | 0 | 1 | 5 |
+| Frontend (`PG-UI`) | 6 | 2 | 3 | 1 |
+| Resiliencia (`PG-RES`) | 6 | 3 | 2 | 1 |
 | CI y documentación (`PG-CI`, `PG-DOC`) | 6 | 4 | 2 | 0 |
-| **Total** | **57** | **21** | **19** | **17** |
+| **Total** | **57** | **34** | **21** | **2** |
 
 > Los totales de esta tabla se verifican contando las cabeceras de regla del propio documento.
 > Si se editan a mano, mienten: ya ocurrió una vez el 2026-08-23 (decían 10/19/28 con 8/18/31
@@ -830,11 +975,12 @@ percentil y por tanto no era verificable. Los umbrales concretos son los de
 
 | Severidad | Reglas | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| **Bloqueante** (impide desplegar) | 18 | 8 | 6 | 4 |
-| Mayor (impide cerrar el módulo) | 35 | 11 | 10 | 14 |
+| **Bloqueante** (impide desplegar) | 18 | 10 | 8 | 0 |
+| Mayor (impide cerrar el módulo) | 35 | 23 | 11 | 1 |
 | Menor (deuda planificada) | 4 | 1 | 2 | 1 |
 
-**13 de las 18 reglas bloqueantes siguen sin cobertura completa.** Ese es el número que decide si
+**Ninguna regla bloqueante sigue en ❌.** Las 18 tienen prueba; 8 de ellas solo parcial, que es
+donde queda el trabajo. Ese es el número que decide si
 el sistema puede considerarse validado, no el 8/57 de la tabla anterior:
 
 `PG-CFG-003` · `PG-CFG-005` · `PG-OPE-001` · `PG-OPE-002` · `PG-ANA-001` · `PG-ANA-003` · `PG-API-002` · `PG-NEG-002` · `PG-SEC-001` · `PG-SEC-002` · `PG-SEC-005` · `PG-SEC-007` · `PG-RES-002`

@@ -206,16 +206,16 @@ export class MonitoreoDespachoPage implements OnInit {
   }
 
   private conectarSse(): void {
-    this.sse
-      .streamDespacho(this.idaccidente)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.syncStatus.set('live');
-          this.cargar();
-        },
-        error: () => this.syncStatus.set('offline'),
-      });
+    // `streamResiliente` reintenta sola y avisa de cada transicion. Antes esto
+    // se suscribia al stream crudo: un corte dejaba la pantalla muerta para
+    // siempre, y un cierre limpio la dejaba diciendo «En vivo» sobre datos
+    // congelados (PG-UI-005).
+    this.sse.streamResiliente(this.idaccidente, this.destroyRef).subscribe((update) => {
+      this.syncStatus.set(update.estado);
+      if (update.evento) {
+        this.cargar();
+      }
+    });
   }
 
   syncLabel(status: SyncStatus): string {

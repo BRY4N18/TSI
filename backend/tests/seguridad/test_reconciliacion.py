@@ -118,9 +118,17 @@ def test_las_correspondencias_estan_bien_formadas():
 
 @pytest.mark.unit
 @pytest.mark.seguridad
-def test_ninguna_tabla_analitica_se_declara_dos_veces():
-    nombres = [c.analitica for c in CORRESPONDENCIAS]
-    assert len(nombres) == len(set(nombres)), nombres
+def test_ningun_par_tabla_origen_se_declara_dos_veces():
+    """La unicidad es del **par**, no de la tabla analitica.
+
+    `hecho_evidencia` se cuadra en dos mitades —fotos contra `Dim_EvidenciaFoto`,
+    notas contra `Dim_NotaAccidente`— porque guarda ambas cosas. Exigir una
+    entrada por tabla obligaria a contarla entera contra un solo origen, que es
+    justo el error que daba «sobran 49».
+    """
+    pares = [(c.analitica, c.operacional) for c in CORRESPONDENCIAS]
+    duplicados = {p for p in pares if pares.count(p) > 1}
+    assert not duplicados, f"Pares repetidos: {sorted(duplicados)}"
 
 
 @pytest.mark.unit

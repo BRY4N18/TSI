@@ -22,6 +22,7 @@ from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
     HistorialEstadoUnidadRepository,
 )
+from core.seguridad.reserva_unidad import UnidadReservadaError, reservar
 
 
 class AsignacionManualService:
@@ -47,6 +48,38 @@ class AsignacionManualService:
         idusuario: int,
     ) -> dict[str, Any]:
         self._validar_elegible(idaccidente)
+        # La comprobación y la escritura quedan **dentro** de la reserva. Fuera
+        # de ella no sirven de nada: la escritura viaja por Kafka y Pinot tarda
+        # en ingerirla, así que la comprobación de una segunda petición no vería
+        # el despacho que esta acaba de crear. Ver `core/seguridad/reserva_unidad.py`.
+        try:
+            with reservar(idunidademergencia):
+                result = self._asignar_reservada(
+                    idaccidente=idaccidente,
+                    idunidademergencia=idunidademergencia,
+                    idusuario=idusuario,
+                )
+        except UnidadReservadaError as exc:
+            # Mismo mensaje que el rechazo por disponibilidad: para el operador
+            # es el mismo hecho —la unidad no está libre— y distinguirlos solo
+            # revelaría el detalle interno de la reserva.
+            raise ValueError("Unidad no disponible") from exc
+        estado_caso = self.estado.get_current_estado(idaccidente)
+        return {
+            "message": "Despacho manual creado",
+            **result,
+            "origen": "Manual",
+            "estado_caso": estado_caso or ESTADO_BUSCANDO_UNIDAD,
+        }
+
+    def _asignar_reservada(
+        self,
+        *,
+        idaccidente: str,
+        idunidademergencia: int,
+        idusuario: int,
+    ) -> dict[str, Any]:
+        """Comprobaciones y escritura, con la unidad ya tomada en exclusiva."""
         if self.despachos.has_active_for_unidad(idunidademergencia):
             raise ValueError("Unidad no disponible")
         estado_unidad, _ = self.historial_unidad.get_current_estado(idunidademergencia)
@@ -63,13 +96,7 @@ class AsignacionManualService:
         )
         if result is None:
             raise ValueError("No se pudo crear despacho")
-        estado_caso = self.estado.get_current_estado(idaccidente)
-        return {
-            "message": "Despacho manual creado",
-            **result,
-            "origen": "Manual",
-            "estado_caso": estado_caso or ESTADO_BUSCANDO_UNIDAD,
-        }
+        return result
 
     def _validar_elegible(self, idaccidente: str) -> None:
         if not self.accidentes.find_by_id(idaccidente):

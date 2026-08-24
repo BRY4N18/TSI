@@ -7,6 +7,110 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-23 — C15: cinco reglas del plan global, y el defecto que solo aparece con dos operadores
+
+Cierre de `PG-NEG-001`, `PG-NEG-002`, `PG-CFG-005`, `PG-RES-006` y `PG-UI-003`/`PG-UI-005`.
+El plan pasa de 28/21/8 a **34 cubiertas, 21 parciales, 2 pendientes**, y ninguna regla
+bloqueante queda en ❌.
+
+**Una ambulancia asignada dos veces, sin un solo error (`PG-NEG-002`).** `asignar()` comprobaba
+la disponibilidad leyendo de Pinot y luego escribía vía Kafka. Con dos operadores simultáneos se
+crearon **dos despachos activos para la misma unidad y ambos vieron confirmación**. La ventana no
+mide milisegundos entre hilos: mide lo que tarda la ingesta, porque la comprobación de la segunda
+petición no puede ver el despacho que la primera acaba de crear.
+
+Arreglado con `core/seguridad/reserva_unidad.py`: comprobación y escritura pasan a ocurrir dentro
+de una reserva tomada con `cache.add()` —comprobar-e-insertar atómico, la misma llamada en LocMem
+que en Redis—. ⚠️ Sin `CACHES` configurado la reserva es **por proceso**: con varios workers la
+ventana se reduce, no desaparece. Registrado como decisión de infraestructura pendiente.
+
+**La prueba pasó en verde tres veces sin probar nada.** Los accidentes no existían; luego la
+unidad elegida ya tenía despacho activo en la siembra; luego el estado por defecto de una unidad
+sin historial resultó ser «Fuera de servicio». Cada caso hacía que las dos llamadas fallaran antes
+de llegar a la carrera. La prueba lleva ahora asertos que fallan si eso vuelve a ocurrir.
+
+**Un escaneo de secretos que nunca se había ejecutado (`PG-CFG-005`).** `gitleaks` estaba en CI
+desde el principio, así que la regla figuraba cubierta. Al correrlo por primera vez sobre los 30
+commits salieron 9 hallazgos: los 9 revisados uno a uno, ninguno es un secreto. Se añadió
+`.gitleaks.toml` con la excepción razonada fichero a fichero, y `GITLEAKS_CONFIG` al workflow —sin
+esa variable el paso queda en rojo permanente, y un escaneo que siempre falla deja de leerse.
+
+**Tres migraciones escribían sin respaldo previo (`PG-RES-006`).** El patrón correcto existía,
+copiado a mano en cada script, así que las que se lo saltaron no rompieron nada visible:
+simplemente no tenían red. Extraído a `database/_reversion.py`, donde `respaldar()` **relee** el
+fichero antes de darlo por bueno y aborta con los datos aún intactos si no cuadra.
+
+⚠️ **La propia prueba tenía un salto silencioso:** su detector de escrituras solo miraba
+`publish(`, así que `migra_plan_programado.py` —que escribe con un POST al controller— se saltaba
+las tres comprobaciones dándose por solo-lectura. Ahora falla si alguna migración deja de
+reconocerse como escritora.
+
+**El frontend no miraba el `401` en ningún sitio (`PG-UI-003`).** Ni una línea. La sesión caducaba
+y el usuario se quedaba en una pantalla muerta pulsando botones que ya no hacían nada. El nuevo
+`sesionExpiradaInterceptor` limpia la sesión, explica por qué, y redirige con `returnUrl` —pero
+**no** llama a `localStorage.clear()`: borra las cinco claves de sesión una a una y conserva el
+parte de accidente a medio escribir, que es justo lo que la regla protege.
+
+**El canal SSE de despacho mentía al parecer que funcionaba (`PG-UI-005`).** Ante un error marcaba
+`offline` y no reintentaba nunca; y `complete` no estaba manejado, así que un cierre limpio del
+upstream —lo que hace nginx con streams largos— dejaba el estado en `live` mostrando el último
+dato como si fuera actual. Su única prueba anterior comprobaba que un `Observable` es un
+`Observable`.
+
+**Verificación.** Backend: **4909 passed**, 1125 skipped. Frontend: **1418 SUCCESS**. Cada arreglo
+se comprobó rompiéndolo a propósito: sin la reserva, la carrera produce dos despachos; con
+`localStorage.clear()`, cae el aserto del borrador; sin el manejo de `complete`, cae el del SSE; y
+con la allowlist puesta, gitleaks sigue detectando una clave AWS realista.
+
+## 2026-08-23 — C14: las 79 tablas migran a `fecha_actualizacion` como criterio de upsert
+
+**Decisión del responsable** sobre `decisiones-pendientes.md` #52: el upsert debe regirse por
+`fecha_actualizacion`, no por fechas de negocio.
+
+**El problema era peor de lo que se había descrito.** El análisis inicial decía que las
+correcciones «ganaban por el desempate del motor en vez de por comparación». Al leer la
+configuración viva apareció `dropOutOfOrderRecord: false`, que significa algo más fuerte: **la
+última fila ingerida gana aunque su valor de comparación sea más antiguo**.
+
+Con `fecha_emision` como criterio, un evento reentregado con retraso —lo normal en Kafka, que
+garantiza *al menos una vez*— podía **devolver una fila a un estado anterior sin que nada lo
+delatara**. Una factura corregida volvía a su versión previa; una sesión cerrada volvía a abierta.
+Que no se hubiera manifestado dependía del orden de llegada, no de ninguna garantía.
+
+**La migración.**
+
+Antes de tocar nada se comprobó lo que la haría inviable: que las 26 tablas **tuvieran**
+`fecha_actualizacion` (las 26, tipo `LONG`) y que se poblara con valores válidos (verificado en
+Pinot: mínimos entre 2026-02 y 2026-08, ninguno nulo ni cero). Migrar a una columna ausente habría
+cambiado un criterio frágil por uno inexistente.
+
+- `database/tablas.json`: 26 entradas, fuente de verdad del aprovisionamiento.
+- **Las tablas vivas**, por `PUT /tables/{n}_REALTIME` del controller. Se probó primero en
+  `Fact_Factura` y se verificó antes de seguir: config aplicada, 8 filas intactas, segmento
+  `CONSUMING`.
+
+**Efecto verificado, sin pérdida ni interrupción:**
+
+```
+Fact_Accidente  4258 (antes 4258)    Fact_Session  1160 (antes 1160)
+Fact_Despacho   4314 (antes 4314)    Fact_Factura     8 (antes 8)
+estados de sesión: 292 cerradas / 858 abiertas / 10 expulsadas — intactos
+tablas sin consumidor activo: ninguna
+79 de 79 tablas vivas con comparisonColumns = ["fecha_actualizacion"]
+```
+
+**Un falso negativo corregido de paso.** La prueba que comprobaba que la columna se puebla miraba
+en `kafka_writer.py` y no la encontraba en ninguno: el productor solo publica lo que recibe, y la
+marca la ponen los **repositorios**. Buscar en el sitio equivocado habría hecho fallar una
+comprobación correcta.
+
+**Archivos tocados.** `database/tablas.json`, `backend/tests/seguridad/test_escritura_operacional.py`
+y las 26 configuraciones vivas de Pinot.
+
+**Trazabilidad.** `PG-OPE-005` (✅) · `decisiones-pendientes.md` #52 cerrada.
+
+---
+
 ## 2026-08-23 — C13: la infraestructura estaba levantada, y con ella cayeron cinco reglas
 
 **El cambio de contexto.** Docker tenía todo corriendo —Pinot, Kafka, ClickHouse, Airflow—. Las

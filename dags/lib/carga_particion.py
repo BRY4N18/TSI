@@ -70,6 +70,19 @@ def cargar_particiones(
     por condición.
 
     Devuelve las particiones tocadas, en orden.
+
+    ⚠️ **La carga NO es atomica, y conviene saberlo antes de confiar en ella.**
+    `DROP PARTITION` e `INSERT` son dos operaciones y ClickHouse no ofrece
+    transaccion entre ambas: si la insercion falla, la particion queda **vacia**,
+    no a medias.
+
+    Vacia es menos malo que parcial —el cuadre de `PG-ANA-001` lo ve como
+    «faltan N» y lo reporta, mientras que unas cuantas filas de menos pasarian
+    por un mes flojo— pero sigue siendo una ventana en la que el informe muestra
+    cero para un periodo que tenia datos.
+
+    Se documenta aqui, donde vive el codigo, para que nadie suponga una garantia
+    que el motor no da (PG-ANA-003).
     """
     por_particion: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for fila in filas:
