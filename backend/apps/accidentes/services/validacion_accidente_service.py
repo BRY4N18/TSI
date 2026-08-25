@@ -70,6 +70,14 @@ class ValidacionAccidenteService:
         if not data.get("descripcion") or not data.get("idcalle"):
             result.blocking_errors.append({"code": "campos_obligatorios", "detail": "Campos obligatorios faltantes"})
 
+        # `fechahoraaccidente` se validaba solo `if fechahora is not None`, pero
+        # mas abajo `find_nearby` lo pasa por `int()` sin comprobar: omitirlo no
+        # daba un 400, reventaba con TypeError y devolvia un 500. Un campo que el
+        # servicio necesita si o si es obligatorio, y hay que decirlo aqui.
+        if fechahora is None:
+            result.blocking_errors.append(
+                {"code": "campos_obligatorios", "detail": "Fecha y hora del accidente requerida"})
+
         if result.is_blocked:
             return result
 
