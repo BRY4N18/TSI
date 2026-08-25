@@ -115,7 +115,9 @@ const COPY_ERROR: Record<string, string> = {
             <label class="mb-1 mt-4 block text-sm font-medium text-text-secondary" for="nombre">
               Nombre del partner
             </label>
-            <input id="nombre" data-testid="input-nombre" [class]="inputClass" formControlName="nombrepartner" />
+            <input id="nombre" data-testid="input-nombre" [class]="inputClass" formControlName="nombrepartner"
+          placeholder="Ej. Flota Centro"
+        />
           </div>
 
           <div class="tsi-panel p-6">
@@ -127,12 +129,16 @@ const COPY_ERROR: Record<string, string> = {
             <label class="mb-1 block text-sm font-medium text-text-secondary" for="contacto">
               Nombre
             </label>
-            <input id="contacto" data-testid="input-contacto" [class]="inputClass" formControlName="contacto_tecnico_nombre" />
+            <input id="contacto" data-testid="input-contacto" [class]="inputClass" formControlName="contacto_tecnico_nombre"
+          placeholder="Ej. Flota Centro"
+        />
 
             <label class="mb-1 mt-4 block text-sm font-medium text-text-secondary" for="gmail">
               Correo
             </label>
-            <input id="gmail" type="email" data-testid="input-gmail" [class]="inputClass" formControlName="contacto_tecnico_gmail" />
+            <input id="gmail" type="email" data-testid="input-gmail" [class]="inputClass" formControlName="contacto_tecnico_gmail"
+          placeholder="nombre@empresa.com"
+        />
           </div>
 
           <div>

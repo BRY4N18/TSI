@@ -109,11 +109,15 @@
     <form class="grid gap-3" (ngSubmit)="crear()">
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Plan (ID)
-        <input class="tsi-input" type="number" name="idplan" [(ngModel)]="idplan" />
+        <input class="tsi-input" type="number" name="idplan" [(ngModel)]="idplan"
+          placeholder="ID numérico del plan"
+        />
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Tipo de incidencia
-        <input class="tsi-input" name="tipoincidencia" [(ngModel)]="tipoincidencia" />
+        <input class="tsi-input" name="tipoincidencia" [(ngModel)]="tipoincidencia"
+          placeholder="Ej. técnica"
+        />
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Prioridad
@@ -121,11 +125,15 @@
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Tiempo respuesta (seg)
-        <input class="tsi-input" type="number" name="tiemporespuestamax" [(ngModel)]="tiemporespuestamax" />
+        <input class="tsi-input" type="number" name="tiemporespuestamax" [(ngModel)]="tiemporespuestamax"
+          placeholder="Segundos. Ej. 3600"
+        />
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Tiempo resolución (seg)
-        <input class="tsi-input" type="number" name="tiemporesolucionmax" [(ngModel)]="tiemporesolucionmax" />
+        <input class="tsi-input" type="number" name="tiemporesolucionmax" [(ngModel)]="tiemporesolucionmax"
+          placeholder="Segundos. Ej. 86400"
+        />
       </label>
       <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Crear regla</button>
     </form>

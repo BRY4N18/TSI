@@ -46,7 +46,8 @@ import { PasswordResetService } from '../services/password-reset.service';
               class="tsi-input"
               formControlName="passwordActual"
               autocomplete="current-password"
-            />
+          placeholder="Tu contraseña"
+        />
 
             <label for="nueva" class="text-sm font-semibold">Contraseña nueva</label>
             <input
@@ -55,7 +56,8 @@ import { PasswordResetService } from '../services/password-reset.service';
               class="tsi-input"
               formControlName="passwordNueva"
               autocomplete="new-password"
-            />
+          placeholder="Tu contraseña"
+        />
             <p class="m-0 text-xs text-text-secondary">Mínimo 8 caracteres.</p>
 
             <label for="repetir" class="text-sm font-semibold">Repetir contraseña nueva</label>
@@ -65,7 +67,8 @@ import { PasswordResetService } from '../services/password-reset.service';
               class="tsi-input"
               formControlName="passwordRepetida"
               autocomplete="new-password"
-            />
+          placeholder="Tu contraseña"
+        />
 
             @if (errorMessage()) {
               <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>
@@ -94,7 +97,8 @@ import { PasswordResetService } from '../services/password-reset.service';
               formControlName="gmail"
               autocomplete="username"
               [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
-            />
+          placeholder="nombre@empresa.com"
+        />
 
             @if (errorMessage()) {
               <p class="m-0 text-sm text-alert-critical" role="alert">{{ errorMessage() }}</p>

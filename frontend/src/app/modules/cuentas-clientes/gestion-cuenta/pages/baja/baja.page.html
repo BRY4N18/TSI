@@ -20,7 +20,9 @@
   <form class="grid max-w-md gap-3 tsi-panel p-4" (ngSubmit)="confirmar()">
     <label class="grid gap-1 text-sm font-medium text-text-secondary">
       Motivo (opcional)
-      <textarea class="tsi-textarea min-h-24" [(ngModel)]="motivo" name="motivo"></textarea>
+      <textarea class="tsi-textarea min-h-24" [(ngModel)]="motivo" name="motivo"
+          placeholder="Motivo, en una frase"
+        ></textarea>
     </label>
     <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Confirmar baja</button>
   </form>

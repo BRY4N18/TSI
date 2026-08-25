@@ -37,7 +37,8 @@
             formControlName="gmail"
             autocomplete="username"
             [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
-          />
+          placeholder="nombre@empresa.com"
+        />
         </div>
 
         <div class="grid gap-1.5">
@@ -51,7 +52,8 @@
             formControlName="password"
             autocomplete="current-password"
             [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
-          />
+          placeholder="Tu contraseña"
+        />
         </div>
 
         @if (sesionExpirada()) {

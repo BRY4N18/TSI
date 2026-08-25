@@ -209,7 +209,8 @@
                 type="text"
                 class="tsi-input w-full"
                 formControlName="codigopostal"
-              />
+          placeholder="Ej. 06700"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="fechahoraaccidente" class="text-sm font-medium text-text-secondary"
@@ -256,7 +257,8 @@
                   form.errors?.['justificacionRequerida'] && form.touched
                 "
                 formControlName="justificacionRetrospectiva"
-              ></textarea>
+          placeholder="Por qué se registra fuera de plazo"
+        ></textarea>
             </div>
           }
         </section>
@@ -277,7 +279,8 @@
               [class.border-alert-critical]="isInvalid('descripcion')"
               formControlName="descripcion"
               [attr.aria-invalid]="isInvalid('descripcion')"
-            ></textarea>
+          placeholder="Qué ocurrió, en una o dos frases"
+        ></textarea>
           </div>
         </section>
       </div>
@@ -328,7 +331,8 @@
                 min="0"
                 class="tsi-input w-full"
                 formControlName="numvehiculos"
-              />
+          placeholder="Ej. 2"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="numheridos" class="text-sm font-medium text-text-secondary"
@@ -340,7 +344,8 @@
                 min="0"
                 class="tsi-input w-full"
                 formControlName="numheridos"
-              />
+          placeholder="Ej. 1"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="numvictimas" class="text-sm font-medium text-text-secondary"
@@ -352,7 +357,8 @@
                 min="0"
                 class="tsi-input w-full"
                 formControlName="numvictimas"
-              />
+          placeholder="Ej. 3"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="numfallecidos" class="text-sm font-medium text-text-secondary"
@@ -364,7 +370,8 @@
                 min="0"
                 class="tsi-input w-full"
                 formControlName="numfallecidos"
-              />
+          placeholder="Ej. 0"
+        />
             </div>
           </div>
         </section>

@@ -135,7 +135,8 @@
                 name="numvehiculos"
                 [disabled]="!esModoEditar()"
                 [attr.readonly]="esModoEditar() ? null : true"
-              />
+          placeholder="Ej. 2"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="numheridos" class="text-sm font-medium text-text-secondary">Heridos</label>
@@ -148,7 +149,8 @@
                 name="numheridos"
                 [disabled]="!esModoEditar()"
                 [attr.readonly]="esModoEditar() ? null : true"
-              />
+          placeholder="Ej. 1"
+        />
             </div>
             <div class="grid gap-1.5">
               <label for="numfallecidos" class="text-sm font-medium text-text-secondary">Fallecidos</label>
@@ -161,7 +163,8 @@
                 name="numfallecidos"
                 [disabled]="!esModoEditar()"
                 [attr.readonly]="esModoEditar() ? null : true"
-              />
+          placeholder="Ej. 0"
+        />
             </div>
             <div class="grid gap-1.5 sm:col-span-2">
               <label for="descripcion" class="text-sm font-medium text-text-secondary">Descripción</label>
@@ -173,7 +176,8 @@
                 name="descripcion"
                 [disabled]="!esModoEditar()"
                 [attr.readonly]="esModoEditar() ? null : true"
-              ></textarea>
+          placeholder="Qué ocurrió, en una o dos frases"
+        ></textarea>
             </div>
           </form>
         </section>

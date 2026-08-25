@@ -66,14 +66,16 @@ import { TipoCliente } from '../../models/prospectos.types';
             <input
               formControlName="nombre"
               class="tsi-input w-full"
-            />
+          placeholder="Ej. Flota Centro"
+        />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Razón social
             <input
               formControlName="razon_social"
               class="tsi-input w-full"
-            />
+          placeholder="Ej. Transportes del Norte S.A. de C.V."
+        />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Tipo
@@ -92,7 +94,8 @@ import { TipoCliente } from '../../models/prospectos.types';
             <input
               formControlName="nit_identificacion"
               class="tsi-input w-full"
-            />
+          placeholder="RFC o identificación fiscal"
+        />
           </label>
 
           <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">
@@ -104,14 +107,16 @@ import { TipoCliente } from '../../models/prospectos.types';
             <input
               formControlName="admin_nombres"
               class="tsi-input w-full"
-            />
+          placeholder="Ej. María"
+        />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Apellidos
             <input
               formControlName="admin_apellidos"
               class="tsi-input w-full"
-            />
+          placeholder="Ej. Salazar"
+        />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Correo electrónico
@@ -119,7 +124,8 @@ import { TipoCliente } from '../../models/prospectos.types';
               type="email"
               formControlName="admin_gmail"
               class="tsi-input w-full"
-            />
+          placeholder="nombre@empresa.com"
+        />
           </label>
 
           @if (error()) {

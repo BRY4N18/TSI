@@ -24,11 +24,15 @@
     >
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Razón social
-        <input class="tsi-input" [(ngModel)]="perfil.razon_social" name="razon_social" />
+        <input class="tsi-input" [(ngModel)]="perfil.razon_social" name="razon_social"
+          placeholder="Ej. Transportes del Norte S.A. de C.V."
+        />
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Nombre
-        <input class="tsi-input" [(ngModel)]="perfil.nombre" name="nombre" />
+        <input class="tsi-input" [(ngModel)]="perfil.nombre" name="nombre"
+          placeholder="Ej. Flota Centro"
+        />
       </label>
       <p class="m-0 text-sm text-text-secondary">Tipo: {{ perfil.tipo }} (solo lectura)</p>
       <p class="m-0 text-sm text-text-secondary">NIT: {{ perfil.nit_identificacion }} (solo lectura)</p>

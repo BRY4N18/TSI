@@ -293,7 +293,8 @@ const TIMEOUT_ACCION_MS = 15_000;
                   data-testid="input-nombre-produccion"
                   [class]="inputClass"
                   formControlName="nombre_credencial"
-                />
+          placeholder="Ej. Flota Centro"
+        />
               </div>
               <button
                 type="submit"

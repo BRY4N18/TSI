@@ -30,7 +30,9 @@ import {
       }
       <label>
         idprospecto
-        <input type="number" [(ngModel)]="idprospecto" />
+        <input type="number" [(ngModel)]="idprospecto"
+          placeholder="Ej. 0"
+        />
       </label>
       <label>
         demo_grant

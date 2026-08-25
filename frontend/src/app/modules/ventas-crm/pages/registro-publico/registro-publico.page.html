@@ -63,7 +63,8 @@
                 [class]="inputClass('nombres')"
                 formControlName="nombres"
                 autocomplete="given-name"
-              />
+          placeholder="Ej. María"
+        />
               @if (fieldError('nombres'); as msg) {
                 <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
               }
@@ -78,7 +79,8 @@
                 [class]="inputClass('apellidos')"
                 formControlName="apellidos"
                 autocomplete="family-name"
-              />
+          placeholder="Ej. Salazar"
+        />
               @if (fieldError('apellidos'); as msg) {
                 <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
               }
@@ -95,7 +97,8 @@
               [class]="inputClass('gmail')"
               formControlName="gmail"
               autocomplete="email"
-            />
+          placeholder="nombre@empresa.com"
+        />
             @if (fieldError('gmail'); as msg) {
               <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
             }
@@ -109,7 +112,8 @@
               [class]="inputClass('empresa')"
               formControlName="empresa"
               autocomplete="organization"
-            />
+          placeholder="Ej. Rescue Fleet"
+        />
             @if (fieldError('empresa'); as msg) {
               <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
             }
@@ -137,7 +141,8 @@
                 [class]="inputClass('cargo')"
                 formControlName="cargo"
                 autocomplete="organization-title"
-              />
+          placeholder="Ej. Jefe de flota"
+        />
               @if (fieldError('cargo'); as msg) {
                 <p class="m-0 text-xs text-alert-critical">{{ msg }}</p>
               }

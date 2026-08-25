@@ -165,7 +165,8 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
                       <input
                         formControlName="motivo"
                         class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-                      />
+          placeholder="Motivo, en una frase"
+        />
                     </label>
                     <button
                       type="submit"
@@ -202,7 +203,8 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
                       <input
                         formControlName="nit_identificacion"
                         class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-                      />
+          placeholder="RFC o identificación fiscal"
+        />
                     </label>
                     <button
                       type="submit"
@@ -284,7 +286,8 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
                 formControlName="motivo_perdida"
                 data-testid="input-motivo-perdida"
                 class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-              />
+          placeholder="Motivo, en una frase"
+        />
             </label>
             <div class="flex flex-wrap justify-end gap-2">
               <button

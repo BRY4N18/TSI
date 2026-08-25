@@ -115,6 +115,7 @@ export function deserializarPreferencias(
           class="tsi-input w-full"
           [(ngModel)]="valor.tiempoLlegadaMaxMin"
           name="umbral"
+          placeholder="Ej. 0"
         />
         <p class="m-0 text-xs text-text-secondary">
           Déjalo vacío si no quieres avisos por tiempo de llegada.
@@ -147,7 +148,8 @@ export function deserializarPreferencias(
             class="tsi-input w-full"
             [(ngModel)]="valor.telefonoSms"
             name="telefono"
-          />
+          placeholder="+52 55 1234 5678"
+        />
         </div>
       }
 

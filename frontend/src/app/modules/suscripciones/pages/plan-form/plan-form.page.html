@@ -72,7 +72,8 @@
               [class.border-alert-critical]="isInvalid('nombre')"
               formControlName="nombre"
               autocomplete="off"
-            />
+          placeholder="Ej. Flota Centro"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Precio (USD/mes)</span>
@@ -83,7 +84,8 @@
               class="tsi-input"
               [class.border-alert-critical]="isInvalid('precio')"
               formControlName="precio"
-            />
+          placeholder="Ej. 1200.00"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Excedente API (USD/llamada)</span>
@@ -94,7 +96,8 @@
               class="tsi-input"
               [class.border-alert-critical]="isInvalid('precio_excedente_llamada')"
               formControlName="precio_excedente_llamada"
-            />
+          placeholder="Ej. 1200.00"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Nivel</span>
@@ -168,7 +171,8 @@
               min="0"
               class="tsi-input"
               formControlName="unidades_max"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Usuarios máx.</span>
@@ -177,7 +181,8 @@
               min="0"
               class="tsi-input"
               formControlName="usuarios_max"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">API calls / mes</span>
@@ -186,7 +191,8 @@
               min="0"
               class="tsi-input"
               formControlName="api_calls_mes"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">API calls / minuto</span>
@@ -195,7 +201,8 @@
               min="0"
               class="tsi-input"
               formControlName="api_calls_minuto"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
         </div>
       </section>

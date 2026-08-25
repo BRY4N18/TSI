@@ -24,7 +24,9 @@
     <form class="mt-4 grid max-w-xl gap-3" (ngSubmit)="registrar()">
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Asunto
-        <input class="tsi-input" name="asunto" [(ngModel)]="asunto" required />
+        <input class="tsi-input" name="asunto" [(ngModel)]="asunto" required
+          placeholder="Resume el problema en una línea"
+        />
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Descripción
@@ -33,6 +35,7 @@
           name="descripcion"
           [(ngModel)]="descripcion"
           required
+          placeholder="Qué ocurrió, en una o dos frases"
         ></textarea>
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">

@@ -59,7 +59,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
               name="motivo"
               required
               class="tsi-input w-full"
-            />
+          placeholder="Motivo, en una frase"
+        />
           </label>
           <button
             type="submit"

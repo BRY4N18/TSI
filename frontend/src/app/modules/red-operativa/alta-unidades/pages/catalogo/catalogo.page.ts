@@ -436,7 +436,8 @@ interface ReactivarDialogState {
                 [(ngModel)]="bajaDialog.motivo"
                 name="motivoBaja"
                 class="tsi-input w-full"
-              />
+          placeholder="Motivo, en una frase"
+        />
             </label>
             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button

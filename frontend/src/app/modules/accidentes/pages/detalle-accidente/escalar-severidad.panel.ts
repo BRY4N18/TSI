@@ -41,7 +41,8 @@ import { SEVERIDADES } from '../../severidad.constants';
               class="tsi-input w-full"
               [(ngModel)]="numheridos"
               name="numheridos"
-            />
+          placeholder="Ej. 0"
+        />
           </div>
           <div class="grid gap-1.5 sm:col-span-2">
             <label for="escalarUnidadAdicional" class="text-sm font-medium text-text-secondary"
@@ -68,7 +69,8 @@ import { SEVERIDADES } from '../../severidad.constants';
               class="tsi-textarea w-full"
               [(ngModel)]="nota"
               name="nota"
-            ></textarea>
+          placeholder="Escribe el detalle"
+        ></textarea>
           </div>
           <div class="sm:col-span-2">
             <button

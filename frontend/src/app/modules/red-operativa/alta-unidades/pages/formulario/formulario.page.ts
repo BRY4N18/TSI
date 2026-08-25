@@ -195,7 +195,8 @@ const FORM_VACIO: UnidadFormState = {
               [disabled]="mode === 'edit'"
               required
               class="tsi-input w-full"
-            />
+          placeholder="Ej. TSI-002"
+        />
           </label>
 
           <label class="block">
@@ -204,7 +205,8 @@ const FORM_VACIO: UnidadFormState = {
               [(ngModel)]="form.capacidad"
               name="capacidad"
               class="tsi-input w-full"
-            />
+          placeholder="Ej. 4"
+        />
           </label>
 
           @if (form.tipopropiedad === 'Externa') {
@@ -255,7 +257,8 @@ const FORM_VACIO: UnidadFormState = {
                 name="gmail"
                 data-testid="input-gmail"
                 class="tsi-input w-full"
-              />
+          placeholder="nombre@empresa.com"
+        />
             </label>
           }
 
@@ -268,7 +271,8 @@ const FORM_VACIO: UnidadFormState = {
                 [(ngModel)]="form.latitud"
                 name="latitud"
                 class="tsi-input w-full"
-              />
+          placeholder="Ej. 0"
+        />
             </label>
             <label class="block">
               <span class="mb-1 block text-sm font-medium text-text-secondary">Longitud</span>
@@ -278,7 +282,8 @@ const FORM_VACIO: UnidadFormState = {
                 [(ngModel)]="form.longitud"
                 name="longitud"
                 class="tsi-input w-full"
-              />
+          placeholder="Ej. 0"
+        />
             </label>
           }
         </form>

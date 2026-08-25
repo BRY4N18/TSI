@@ -68,7 +68,8 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             [ngModel]="anio()"
             (ngModelChange)="anio.set(+$event)"
             data-testid="input-anio"
-          />
+          placeholder="Ej. 0"
+        />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-xs uppercase tracking-wide text-text-secondary">Mes</span>
@@ -80,7 +81,8 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             [ngModel]="mes()"
             (ngModelChange)="mes.set(+$event)"
             data-testid="input-mes"
-          />
+          placeholder="Ej. 0"
+        />
         </label>
         <label class="flex items-center gap-2 text-sm text-text-secondary">
           <input
@@ -100,7 +102,8 @@ import type { PartnerListItem } from '../../services/models/partner.types';
               [ngModel]="anioComparar()"
               (ngModelChange)="anioComparar.set(+$event)"
               data-testid="input-anio-comparar"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-xs uppercase tracking-wide text-text-secondary">Mes a comparar</span>
@@ -112,7 +115,8 @@ import type { PartnerListItem } from '../../services/models/partner.types';
               [ngModel]="mesComparar()"
               (ngModelChange)="mesComparar.set(+$event)"
               data-testid="input-mes-comparar"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
         }
         <button

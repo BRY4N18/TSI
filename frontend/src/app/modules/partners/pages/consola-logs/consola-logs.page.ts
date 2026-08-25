@@ -145,7 +145,7 @@ const REFRESCO_MS = 30_000;
             [ngModel]="filtroDesde()"
             (ngModelChange)="cambiarDesde($event)"
             data-testid="input-desde"
-          placeholder="Escribe para filtrar…"
+          placeholder="Buscar por ID o nombre"
         />
         </label>
 
@@ -157,7 +157,7 @@ const REFRESCO_MS = 30_000;
             [ngModel]="filtroHasta()"
             (ngModelChange)="cambiarHasta($event)"
             data-testid="input-hasta"
-          placeholder="Escribe para filtrar…"
+          placeholder="Buscar por ID o nombre"
         />
         </label>
 

@@ -54,7 +54,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                 name="idregionoperativa"
                 type="number"
                 class="tsi-input w-full"
-              />
+          placeholder="Ej. 0"
+        />
             </label>
             @if (!idregionoperativa) {
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -66,7 +67,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                     type="number"
                     required
                     class="tsi-input w-full"
-                  />
+          placeholder="Ej. 0"
+        />
                 </label>
                 <label class="block">
                   <span class="mb-1 block text-sm font-medium text-text-secondary">nombreregion</span>
@@ -75,7 +77,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                     name="nombreregion"
                     required
                     class="tsi-input w-full"
-                  />
+          placeholder="Ej. Flota Centro"
+        />
                 </label>
               </div>
             }
@@ -101,7 +104,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                   name="motivo"
                   required
                   class="tsi-input w-full"
-                />
+          placeholder="Motivo, en una frase"
+        />
               </label>
             }
           </fieldset>

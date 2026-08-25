@@ -181,7 +181,8 @@ const TIMEOUT_ACCION_MS = 15_000;
                     data-testid="input-motivo"
                     [class]="inputClass"
                     formControlName="motivo"
-                  ></textarea>
+          placeholder="Motivo, en una frase"
+        ></textarea>
                   <p class="mt-1 text-xs text-text-secondary">
                     Este texto se envía al contacto técnico del partner: es lo que le permitirá
                     corregir. Mínimo {{ motivoMinimo }} caracteres

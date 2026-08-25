@@ -62,7 +62,8 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
               [ngModel]="anio()"
               (ngModelChange)="anio.set(+$event)"
               data-testid="input-anio"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-xs uppercase tracking-wide text-text-secondary">Mes</span>
@@ -74,7 +75,8 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
               [ngModel]="mes()"
               (ngModelChange)="mes.set(+$event)"
               data-testid="input-mes"
-            />
+          placeholder="Ej. 0"
+        />
           </label>
           <button
             type="button"

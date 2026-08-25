@@ -15,7 +15,9 @@ import { ParametrosDespachoData } from '../../services/models/despacho.types';
       @if (parametros()) {
         <label>
           Timeout (s)
-          <input type="number" [(ngModel)]="timeout" min="30" max="300" />
+          <input type="number" [(ngModel)]="timeout" min="30" max="300"
+          placeholder="Ej. 0"
+        />
         </label>
         <button type="button" (click)="guardar()">Guardar</button>
       }

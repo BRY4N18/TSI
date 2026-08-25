@@ -124,7 +124,8 @@
             rows="3"
             class="tsi-textarea w-full"
             [class.border-alert-critical]="motivoError"
-          ></textarea>
+          placeholder="Por qué se rechaza"
+        ></textarea>
           @if (motivoError) {
             <span class="mt-1 flex items-center gap-1 text-sm text-alert-critical">
               <app-tabler-icon name="alert-circle" [size]="16" />

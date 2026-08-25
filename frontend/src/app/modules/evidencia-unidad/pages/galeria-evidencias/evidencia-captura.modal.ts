@@ -179,7 +179,8 @@ const FOCUSABLE_SELECTOR =
                   [(ngModel)]="textoNota"
                   required
                   class="tsi-textarea w-full"
-                ></textarea>
+          placeholder="Escribe el detalle"
+        ></textarea>
               </div>
 
               <div class="flex flex-wrap gap-3">
