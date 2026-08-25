@@ -1,7 +1,8 @@
     <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="dashboard-soporte">
       <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Dashboard de soporte</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Dashboard de soporte</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Métricas de tickets, cumplimiento de SLA y reaperturas (RF-TIC-007).
           </p>
@@ -36,14 +37,14 @@
       } @else if (metricas()) {
         @let m = metricas()!;
         <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="kpi-grid">
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Total tickets
             </p>
             <p class="m-0 mt-2 text-3xl font-bold text-text-primary">{{ m.total_tickets }}</p>
           </article>
 
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA en riesgo
             </p>
@@ -51,7 +52,7 @@
             <p class="m-0 mt-1 text-xs text-text-secondary">Umbral 80% (próximos a vencer)</p>
           </article>
 
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA vencidos
             </p>
@@ -59,7 +60,7 @@
             <p class="m-0 mt-1 text-xs text-text-secondary">sla_status = incumplido</p>
           </article>
 
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tasa de reapertura
             </p>
@@ -70,7 +71,7 @@
         </section>
 
         <section class="grid gap-3 sm:grid-cols-2" data-testid="tiempos-promedio">
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tiempo promedio 1.ª respuesta
             </p>
@@ -78,7 +79,7 @@
               {{ formatDuration(m.tiempo_promedio_primera_respuesta_ms) }}
             </p>
           </article>
-          <article class="rounded-md border border-border-default bg-bg-surface p-4">
+          <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tiempo promedio resolución
             </p>
@@ -90,10 +91,10 @@
 
         <section class="grid gap-4 lg:grid-cols-2">
           <article
-            class="rounded-md border border-border-default bg-bg-surface p-4"
+            class="tsi-panel p-4"
             data-testid="por-estado"
           >
-            <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por estado</h2>
+            <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Por estado</h2>
             @if (!porEstado().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
@@ -117,10 +118,10 @@
           </article>
 
           <article
-            class="rounded-md border border-border-default bg-bg-surface p-4"
+            class="tsi-panel p-4"
             data-testid="por-prioridad"
           >
-            <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por prioridad</h2>
+            <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Por prioridad</h2>
             @if (!porPrioridad().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
@@ -146,10 +147,10 @@
 
         <section class="grid gap-4 lg:grid-cols-2">
           <article
-            class="rounded-md border border-border-default bg-bg-surface p-4"
+            class="tsi-panel p-4"
             data-testid="por-tipo"
           >
-            <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
+            <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">
               Por tipo de incidencia
             </h2>
             @if (!porTipo().length) {
@@ -169,10 +170,10 @@
           </article>
 
           <article
-            class="rounded-md border border-border-default bg-bg-surface p-4"
+            class="tsi-panel p-4"
             data-testid="por-cliente"
           >
-            <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por cliente</h2>
+            <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Por cliente</h2>
             @if (!porCliente().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {

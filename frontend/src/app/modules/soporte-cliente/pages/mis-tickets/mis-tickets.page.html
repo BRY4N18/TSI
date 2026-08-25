@@ -1,7 +1,8 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="mis-tickets">
   <header class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="m-0 text-2xl font-bold text-text-primary">Mis tickets de soporte</h1>
+      <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Mis tickets de soporte</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 mt-1 text-sm text-text-secondary">
         Registra incidencias y da seguimiento a tus tickets.
       </p>
@@ -16,7 +17,7 @@
     <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensaje() }}</p>
   }
 
-  <details class="rounded-md border border-border-default bg-bg-surface p-4" open>
+  <details class="tsi-panel p-4" open>
     <summary class="cursor-pointer text-sm font-semibold text-text-primary">
       Registrar nuevo ticket
     </summary>
@@ -80,7 +81,7 @@
         <li>
           <a
             [routerLink]="['/soporte-cliente', 'tickets', t.id_reclamo]"
-            class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            class="flex flex-wrap items-center justify-between gap-3 tsi-panel p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
           >
             <div class="grid gap-1">
               <span class="font-mono text-xs font-semibold text-text-secondary">#{{ t.id_reclamo }}</span>

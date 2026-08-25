@@ -64,6 +64,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
               <h1 class="m-0 text-2xl font-bold text-text-primary" data-testid="workpanel-titulo">
                 {{ p.nombres }} {{ p.apellidos }}
               </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
               <span [class]="etapaBadge(p.etapa_actual)">{{ p.etapa_actual }}</span>
               <span [class]="p.activo ? okBadge() : warnBadge()">
                 {{ p.activo ? 'Activo' : 'Inactivo' }}

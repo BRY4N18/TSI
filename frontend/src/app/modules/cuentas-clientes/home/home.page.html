@@ -1,6 +1,7 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="cuentas-home">
   <header>
-    <h1 class="m-0 text-2xl font-bold text-text-primary">{{ tituloHub() }}</h1>
+    <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">{{ tituloHub() }}</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
     <p class="m-0 mt-1 text-sm text-text-secondary">
       @if (profile; as p) {
         Sesión: {{ p.gmail }} · {{ p.roles.join(', ') || 'sin roles' }}
@@ -14,7 +15,7 @@
     @if (esUnidad()) {
       <a
         routerLink="/despacho/mi-despacho"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="radio" [size]="22" />
@@ -24,7 +25,7 @@
       </a>
       <a
         routerLink="/seguimiento/mi-seguimiento"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="map" [size]="22" />
@@ -34,7 +35,7 @@
       </a>
       <a
         routerLink="/evidencia-unidad/disponibilidad"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="camera" [size]="22" />
@@ -47,7 +48,7 @@
     @if (esOperador()) {
       <a
         routerLink="/accidentes/registro"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="car-crash" [size]="22" />
@@ -57,7 +58,7 @@
       </a>
       <a
         routerLink="/despacho/monitoreo"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="radio" [size]="22" />
@@ -67,7 +68,7 @@
       </a>
       <a
         routerLink="/seguimiento/mapa"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="map" [size]="22" />
@@ -80,7 +81,7 @@
     @if (esAdmin()) {
       <a
         routerLink="/cuentas-clientes/gestion-cuenta"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="settings" [size]="22" />
@@ -90,7 +91,7 @@
       </a>
       <a
         routerLink="/cuentas-clientes/incorporacion-clientes/solicitudes"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="list" [size]="22" />
@@ -102,7 +103,7 @@
     @if (esCliente()) {
       <a
         routerLink="/soporte-cliente/mis-tickets"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="list" [size]="22" />
@@ -114,7 +115,7 @@
     @if (esSoporte()) {
       <a
         routerLink="/soporte-cliente/cola"
-        class="rounded-md border border-border-default bg-bg-surface p-4 no-underline hover:border-accent-primary"
+        class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
         <div class="mb-2 text-accent-primary">
           <app-tabler-icon name="list" [size]="22" />

@@ -40,7 +40,8 @@ const ESTADO_BADGE: Record<EstadoRegion, string> = {
     <div class="mx-auto max-w-4xl space-y-8 p-6">
       <header class="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 class="text-[28px] font-bold text-text-primary">Regiones operativas</h1>
+          <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">Regiones operativas</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="mt-1 text-sm text-text-secondary">
             Catálogo y accesos a validación / reevaluación.
           </p>

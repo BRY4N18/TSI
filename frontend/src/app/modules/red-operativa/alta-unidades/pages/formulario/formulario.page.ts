@@ -75,9 +75,10 @@ const FORM_VACIO: UnidadFormState = {
 
       <header class="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-[28px] font-bold text-text-primary">
+          <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">
             {{ mode === 'create' ? 'Nueva unidad' : 'Editar unidad' }}
           </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           @if (form.idunidademergencia && mode === 'edit') {
             <p class="mt-1 font-mono text-sm text-text-secondary">
               #{{ form.idunidademergencia }} · {{ form.placa }}
@@ -112,7 +113,7 @@ const FORM_VACIO: UnidadFormState = {
         <p class="mt-6 text-sm text-text-secondary">Cargando unidad…</p>
       } @else {
         <form
-          class="mt-6 grid grid-cols-1 gap-4 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+          class="mt-6 grid grid-cols-1 gap-4 tsi-panel p-6 sm:grid-cols-2"
           (ngSubmit)="guardar()"
         >
           @if (mode === 'edit') {

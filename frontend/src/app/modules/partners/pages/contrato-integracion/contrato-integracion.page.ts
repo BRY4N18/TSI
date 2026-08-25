@@ -49,7 +49,8 @@ const SERVICIOS = [
   template: `
     <section [class]="shellClass">
       <header class="mb-6">
-        <h1 class="m-0 text-2xl font-bold text-text-primary">Contrato de integración</h1>
+        <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Contrato de integración</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="mt-1 text-sm text-text-secondary">
           Versión vigente y versiones soportadas de cada API
         </p>
@@ -104,7 +105,7 @@ const SERVICIOS = [
           }
         </div>
 
-        <h2 class="mb-3 mt-6 text-lg font-semibold text-text-primary">Todas las versiones</h2>
+        <h2 class="tsi-display mb-3 mt-6 text-lg font-semibold text-text-primary">Todas las versiones</h2>
         @if (c.versiones.length === 0) {
           <app-list-empty-state
             message="Este servicio todavía no tiene una versión publicada."
@@ -114,7 +115,7 @@ const SERVICIOS = [
           <ul class="grid gap-2" data-testid="lista-versiones">
             @for (v of c.versiones; track v.idversion) {
               <li
-                class="flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-bg-surface p-4 text-sm"
+                class="flex flex-wrap items-center gap-3 tsi-panel p-4 text-sm"
                 [attr.data-testid]="'version-' + v.idversion"
               >
                 <span class="font-mono font-semibold text-text-primary">{{ v.version }}</span>

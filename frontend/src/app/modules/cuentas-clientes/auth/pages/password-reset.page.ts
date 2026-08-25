@@ -28,9 +28,10 @@ import { PasswordResetService } from '../services/password-reset.service';
         class="grid w-full max-w-md gap-3 rounded-md border border-border-default bg-bg-surface p-8 shadow-[0_4px_24px_rgba(26,29,41,0.06)]"
         aria-labelledby="reset-title"
       >
-        <h1 id="reset-title" class="m-0 text-xl font-bold text-text-primary">
+        <h1 id="reset-title" class="tsi-display m-0 text-xl font-extrabold text-text-primary">
           {{ forcedChange() ? 'Cambio de contraseña obligatorio' : 'Recuperar contraseña' }}
         </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
         @if (forcedChange()) {
           <p class="m-0 text-sm text-text-secondary">

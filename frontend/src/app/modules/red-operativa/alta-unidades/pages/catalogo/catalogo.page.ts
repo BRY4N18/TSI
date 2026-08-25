@@ -77,7 +77,8 @@ interface ReactivarDialogState {
     <div class="mx-auto w-full max-w-5xl space-y-6 p-6">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-[28px] font-bold text-text-primary">Catálogo de unidades</h1>
+          <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">Catálogo de unidades</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="mt-1 text-sm text-text-secondary">
             Flota del Proveedor — ver detalles, crear o editar en páginas dedicadas.
           </p>
@@ -93,9 +94,9 @@ interface ReactivarDialogState {
         </button>
       </header>
 
-      <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
+      <section class="space-y-4 tsi-panel p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-text-primary">Mis unidades</h2>
+          <h2 class="tsi-display text-lg font-semibold text-text-primary">Mis unidades</h2>
           <button
             type="button"
             data-testid="btn-actualizar-lista"
@@ -363,14 +364,14 @@ interface ReactivarDialogState {
         }
       </section>
 
-      <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
+      <section class="space-y-4 tsi-panel p-6">
         <button
           type="button"
           class="flex w-full items-center justify-between text-left"
           (click)="loteAbierto = !loteAbierto"
           [attr.aria-expanded]="loteAbierto"
         >
-          <h2 class="text-lg font-semibold text-text-primary">Importación en lote (CSV)</h2>
+          <h2 class="tsi-display text-lg font-semibold text-text-primary">Importación en lote (CSV)</h2>
           <app-tabler-icon [name]="loteAbierto ? 'chevron-up' : 'chevron-down'" [size]="20" />
         </button>
         @if (loteAbierto) {
@@ -425,7 +426,7 @@ interface ReactivarDialogState {
       >
         <div class="w-full max-w-md space-y-4 rounded-xl bg-bg-surface p-6 shadow-lg">
           @if (bajaDialog.step === 1) {
-            <h3 class="text-lg font-semibold text-text-primary">Dar de baja</h3>
+            <h3 class="tsi-display text-lg font-semibold text-text-primary">Dar de baja</h3>
             <p class="text-sm text-text-secondary">
               Unidad #{{ bajaDialog.idunidademergencia }} ({{ bajaDialog.placa }}). Indica el motivo.
             </p>
@@ -454,7 +455,7 @@ interface ReactivarDialogState {
               </button>
             </div>
           } @else if (bajaDialog.step === 2) {
-            <h3 class="text-lg font-semibold text-text-primary">Confirmar baja</h3>
+            <h3 class="tsi-display text-lg font-semibold text-text-primary">Confirmar baja</h3>
             <p class="text-sm text-text-secondary">
               ¿Confirmas dar de baja la unidad #{{ bajaDialog.idunidademergencia }}
               ({{ bajaDialog.placa }})? Motivo: {{ bajaDialog.motivo }}
@@ -477,7 +478,7 @@ interface ReactivarDialogState {
               </button>
             </div>
           } @else {
-            <h3 class="text-lg font-semibold text-text-primary">Despacho activo</h3>
+            <h3 class="tsi-display text-lg font-semibold text-text-primary">Despacho activo</h3>
             <p class="text-sm text-text-secondary">
               La unidad tiene un despacho en curso. ¿Forzar la baja de todas formas?
             </p>
@@ -512,7 +513,7 @@ interface ReactivarDialogState {
       >
         <div class="w-full max-w-md space-y-4 rounded-xl bg-bg-surface p-6 shadow-lg">
           @if (reactivarDialog.step === 1) {
-            <h3 class="text-lg font-semibold text-text-primary">Reactivar unidad</h3>
+            <h3 class="tsi-display text-lg font-semibold text-text-primary">Reactivar unidad</h3>
             <p class="text-sm text-text-secondary">
               ¿Deseas reactivar #{{ reactivarDialog.idunidademergencia }}
               ({{ reactivarDialog.placa }})?
@@ -534,7 +535,7 @@ interface ReactivarDialogState {
               </button>
             </div>
           } @else {
-            <h3 class="text-lg font-semibold text-text-primary">Confirmar reactivación</h3>
+            <h3 class="tsi-display text-lg font-semibold text-text-primary">Confirmar reactivación</h3>
             <p class="text-sm text-text-secondary">
               La unidad volverá a estar operativa en el catálogo.
             </p>

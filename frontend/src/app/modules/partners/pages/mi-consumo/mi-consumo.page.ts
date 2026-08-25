@@ -53,7 +53,8 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
   template: `
     <section [class]="shellClass">
       <header class="flex flex-wrap items-center gap-3">
-        <h1 class="m-0 text-2xl font-bold text-text-primary">Mi consumo</h1>
+        <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Mi consumo</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <!-- El entorno se dice con TEXTO, no solo con color (RN-APM-001). -->
         <span
           class="inline-flex items-center gap-1.5 rounded-md bg-alert-info-bg px-2 py-1 text-xs font-medium text-alert-info"
@@ -87,10 +88,10 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 1 — Cupo. Tono informativo en TODOS los estados. -->
           <div
-            class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
+            class="mt-4 tsi-panel p-6"
             data-testid="bloque-cupo"
           >
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Cupo del período</h2>
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Cupo del período</h2>
             <div class="flex flex-wrap items-baseline gap-3">
               <span
                 class="rounded-md px-2 py-1 font-mono text-2xl font-bold"
@@ -112,19 +113,19 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 2 — Actividad -->
           <div class="mt-4 grid gap-4 sm:grid-cols-3">
-            <div class="rounded-md border border-border-default bg-bg-surface p-6">
+            <div class="tsi-panel p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Llamadas</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-llamadas">
                 {{ c.llamadas.toLocaleString('es-EC') }}
               </p>
             </div>
-            <div class="rounded-md border border-border-default bg-bg-surface p-6">
+            <div class="tsi-panel p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Errores</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-errores">
                 {{ c.errores.toLocaleString('es-EC') }}
               </p>
             </div>
-            <div class="rounded-md border border-border-default bg-bg-surface p-6">
+            <div class="tsi-panel p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Latencia media</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-latencia">
                 {{ c.latencia_media_ms }} ms
@@ -135,10 +136,10 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
           <!-- Bloque 4 — Excedente: solo si hay algo que decir -->
           @if (mostrarExcedente(c)) {
             <div
-              class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
+              class="mt-4 tsi-panel p-6"
               data-testid="bloque-excedente"
             >
-              <h2 class="m-0 mb-2 text-lg font-semibold text-text-primary">Excedente estimado</h2>
+              <h2 class="tsi-display m-0 mb-2 text-lg font-semibold text-text-primary">Excedente estimado</h2>
               <p class="m-0 font-mono text-xl text-text-primary" data-testid="importe-excedente">
                 {{ importe(c) }}
               </p>
@@ -151,10 +152,10 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 3 — Errores del partner: autodiagnóstico (RN-APM-009) -->
           <div
-            class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
+            class="mt-4 tsi-panel p-6"
             data-testid="bloque-errores"
           >
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">
               Errores de tu integración
             </h2>
             @if (erroresNoDisponibles()) {

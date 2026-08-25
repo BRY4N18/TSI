@@ -31,7 +31,8 @@ import { TipoCliente } from '../../models/prospectos.types';
 
       <div class="mb-6">
         <p class="m-0 text-sm font-medium text-text-secondary">Administración</p>
-        <h1 class="m-0 mt-1 text-2xl font-bold text-text-primary">Entrada directa</h1>
+        <h1 class="tsi-display m-0 mt-1 text-3xl font-extrabold text-text-primary">Entrada directa</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="m-0 mt-1 text-sm text-text-secondary">
           Crear cliente sin prospecto previo (solo Administrador)
         </p>
@@ -54,11 +55,11 @@ import { TipoCliente } from '../../models/prospectos.types';
         </section>
       } @else {
         <form
-          class="grid max-w-xl gap-4 rounded-md border border-border-default bg-bg-surface p-6"
+          class="grid max-w-xl gap-4 tsi-panel p-6"
           [formGroup]="form"
           (ngSubmit)="enviar()"
         >
-          <h2 class="m-0 text-base font-semibold text-text-primary">Datos del cliente</h2>
+          <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Datos del cliente</h2>
 
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Nombre
@@ -94,7 +95,7 @@ import { TipoCliente } from '../../models/prospectos.types';
             />
           </label>
 
-          <h2 class="m-0 text-base font-semibold text-text-primary">
+          <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">
             Administrador local (primer usuario de la cuenta)
           </h2>
 

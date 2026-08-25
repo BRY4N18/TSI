@@ -68,9 +68,10 @@ import type { LogLlamada } from '../../services/models/monitoreo.types';
              el template literal y rompen el archivo entero.) -->
         @if (log(); as l) {
         <header class="mt-1 flex flex-wrap items-center gap-3">
-          <h1 class="m-0 font-mono text-2xl font-bold text-text-primary">
+          <h1 class="tsi-display m-0 font-mono text-3xl font-extrabold text-text-primary">
             {{ l.metodohttp }} {{ l.endpoint }}
           </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <span
             class="rounded-md px-2 py-1 text-xs font-medium"
             [class]="tono(l.codigohttp)"
@@ -80,7 +81,7 @@ import type { LogLlamada } from '../../services/models/monitoreo.types';
           </span>
         </header>
 
-        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
+        <div class="mt-4 tsi-panel p-6">
           <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
             <dt class="text-xs uppercase tracking-wide text-text-secondary">Id</dt>
             <dd class="m-0 font-mono text-text-primary">{{ l.idlogllamadaapi }}</dd>

@@ -1,7 +1,8 @@
 <div class="mx-auto max-w-2xl space-y-6 p-6">
   <header class="space-y-2">
     <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Incorporación de clientes</p>
-    <h1 class="m-0 text-[28px] font-bold text-text-primary">Autorregistro</h1>
+    <h1 class="tsi-display m-0 text-[28px] font-extrabold text-text-primary">Autorregistro</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
     <p class="m-0 text-sm text-text-secondary">
       Completa los datos de tu organización. La solicitud quedará en revisión hasta que un administrador la apruebe.
     </p>
@@ -14,7 +15,7 @@
     >
       <div class="flex items-center gap-2 text-alert-info">
         <app-tabler-icon name="info-circle" [size]="22" />
-        <h2 class="m-0 text-xl font-semibold">Solicitud en revisión</h2>
+        <h2 class="tsi-display m-0 text-xl font-semibold">Solicitud en revisión</h2>
       </div>
       <p class="m-0 text-sm text-text-primary">
         Solicitud <strong>#{{ idSolicitud }}</strong> registrada con estado
@@ -34,7 +35,7 @@
       </button>
     </section>
   } @else {
-    <section class="rounded-md border border-border-default bg-bg-surface p-6">
+    <section class="tsi-panel p-6">
       <form (ngSubmit)="enviar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label class="block sm:col-span-2">
           <span class="mb-1 block text-sm font-medium text-text-secondary">Razón social</span>

@@ -21,13 +21,14 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
   template: `
     <div class="mx-auto max-w-lg space-y-6 p-6">
       <header>
-        <h1 class="text-[28px] font-bold text-text-primary">
+        <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">
           Re-evaluar/despublicar región #{{ idregionoperativa }}
         </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="mt-1 text-sm text-text-secondary">CU-O61 — Región habilitada en producción.</p>
       </header>
 
-      <section class="space-y-5 rounded-md border border-border-default bg-bg-surface p-6">
+      <section class="space-y-5 tsi-panel p-6">
         <form (ngSubmit)="reevaluar()" class="space-y-4">
           <div class="flex gap-6">
             <label class="flex items-center gap-2 text-sm text-text-primary">

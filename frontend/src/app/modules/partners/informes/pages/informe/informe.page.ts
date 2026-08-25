@@ -42,9 +42,10 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
         Volver a los informes
       </a>
 
-      <h1 class="mb-6 text-2xl font-semibold text-text-primary" data-testid="titulo-informe">
+      <h1 class="tsi-display mb-6 text-3xl font-semibold text-text-primary" data-testid="titulo-informe">
         {{ definicion().titulo }}
       </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
       @if (filtrosVisibles().length || definicion().admiteRango) {
         <app-informes-filtros

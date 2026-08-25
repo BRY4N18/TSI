@@ -23,14 +23,15 @@ import { homePathForRoles } from '../services/post-login-home';
   template: `
     <div class="mx-auto max-w-6xl p-8">
       <div
-        class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
+        class="grid place-items-center gap-3 tsi-panel p-10 text-center"
         data-testid="access-denied"
         role="alert"
       >
         <span class="tsi-node h-14 w-12 bg-alert-warning-bg text-alert-warning" aria-hidden="true">
           <app-tabler-icon name="alert-triangle" [size]="24" />
         </span>
-        <h1 class="m-0 text-2xl font-bold text-text-primary">Acceso denegado</h1>
+        <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Acceso denegado</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="m-0 max-w-md text-sm text-text-secondary">
           Tu sesión sigue activa, pero tu rol no tiene permiso para abrir esta sección.
           Si necesitas acceso, solicítalo al administrador de tu cuenta.

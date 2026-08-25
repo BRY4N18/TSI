@@ -2,7 +2,8 @@
   <header class="flex flex-wrap items-end justify-between gap-4">
     <div>
       <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Administración</p>
-      <h1 class="m-0 mt-1 text-2xl font-bold text-text-primary">Gestión de cuenta</h1>
+      <h1 class="tsi-display m-0 mt-1 text-3xl font-extrabold text-text-primary">Gestión de cuenta</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 mt-1 text-sm text-text-secondary">
         Administra usuarios y roles del sistema, y abre el perfil corporativo de un cliente.
       </p>
@@ -20,8 +21,8 @@
     <p class="m-0 text-sm text-alert-critical" data-testid="error">{{ error() }}</p>
   }
 
-  <section class="rounded-md border border-border-default bg-bg-surface p-4">
-    <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Cuenta de cliente</h2>
+  <section class="tsi-panel p-4">
+    <h2 class="tsi-display m-0 mb-3 text-base font-semibold text-text-primary">Cuenta de cliente</h2>
     <p class="m-0 mb-3 text-sm text-text-secondary">
       Indica el ID del cliente y abre perfil, preferencias, transferencia o baja.
     </p>
@@ -53,8 +54,8 @@
     </div>
   </section>
 
-  <section class="rounded-md border border-border-default bg-bg-surface p-4">
-    <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Usuarios</h2>
+  <section class="tsi-panel p-4">
+    <h2 class="tsi-display m-0 mb-3 text-base font-semibold text-text-primary">Usuarios</h2>
     @if (cargando() && !usuarios().length) {
       <app-list-loading-skeleton [count]="3" />
     } @else if (error() && !usuarios().length) {
@@ -157,8 +158,8 @@
   </section>
 
   <section class="grid gap-4 lg:grid-cols-2">
-    <div class="rounded-md border border-border-default bg-bg-surface p-4">
-      <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Roles</h2>
+    <div class="tsi-panel p-4">
+      <h2 class="tsi-display m-0 mb-3 text-base font-semibold text-text-primary">Roles</h2>
       <ul class="m-0 grid list-none gap-2 p-0">
         @for (r of roles(); track r.idrol) {
           <li class="flex items-center justify-between gap-2 rounded-md border border-border-default px-3 py-2 text-sm">
@@ -180,8 +181,8 @@
       </ul>
     </div>
 
-    <div class="rounded-md border border-border-default bg-bg-surface p-4">
-      <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Asignar rol</h2>
+    <div class="tsi-panel p-4">
+      <h2 class="tsi-display m-0 mb-3 text-base font-semibold text-text-primary">Asignar rol</h2>
       <form class="grid gap-3" (ngSubmit)="asignarRol()">
         <label class="grid gap-1 text-sm font-medium text-text-secondary">
           Usuario

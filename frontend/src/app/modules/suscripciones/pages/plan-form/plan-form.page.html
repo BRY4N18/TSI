@@ -7,9 +7,10 @@
       >
         ← Volver al catálogo
       </a>
-      <h1 class="m-0 text-[1.75rem] font-bold leading-tight">
+      <h1 class="tsi-display m-0 text-[1.75rem] font-extrabold leading-tight">
         {{ esEdicion() ? 'Editar plan' : 'Nuevo plan' }}
       </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 max-w-xl text-sm leading-normal text-text-secondary">
         @if (esEdicion()) {
           Actualiza precio, nivel y límites. Las suscripciones ya contratadas no se cancelan al
@@ -56,13 +57,13 @@
   } @else {
     <form
       id="plan-form"
-      class="grid gap-6 rounded-md border border-border-default bg-bg-surface p-6"
+      class="grid gap-6 tsi-panel p-6"
       [formGroup]="form"
       (ngSubmit)="guardar()"
       novalidate
     >
       <section class="grid gap-4">
-        <h3 class="m-0 text-base font-semibold">Datos del plan</h3>
+        <h3 class="tsi-display m-0 text-base font-semibold">Datos del plan</h3>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Nombre</span>
@@ -121,7 +122,7 @@
       </section>
 
       <section class="grid gap-4 border-t border-border-default pt-6">
-        <h3 class="m-0 text-base font-semibold">Severidades atendibles</h3>
+        <h3 class="tsi-display m-0 text-base font-semibold">Severidades atendibles</h3>
         <p class="m-0 text-sm text-text-secondary">
           Configuración independiente del nivel: elige qué severidades de incidente cubre este
           plan.
@@ -146,7 +147,7 @@
       </section>
 
       <section class="grid gap-4 border-t border-border-default pt-6">
-        <h3 class="m-0 text-base font-semibold">Carga en lote de unidades</h3>
+        <h3 class="tsi-display m-0 text-base font-semibold">Carga en lote de unidades</h3>
         <p class="m-0 text-sm text-text-secondary">
           Habilita a los proveedores con este plan a cargar unidades masivamente desde archivo
           (CU-O40).
@@ -158,7 +159,7 @@
       </section>
 
       <section class="grid gap-4 border-t border-border-default pt-6">
-        <h3 class="m-0 text-base font-semibold">Límites de uso</h3>
+        <h3 class="tsi-display m-0 text-base font-semibold">Límites de uso</h3>
         <div class="grid gap-4 sm:grid-cols-3">
           <label class="grid gap-1.5 text-sm">
             <span class="font-medium text-text-secondary">Unidades máx.</span>

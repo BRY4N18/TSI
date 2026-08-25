@@ -17,7 +17,8 @@
       >
         <div>
           <p class="m-0 font-mono text-xs text-text-secondary">#{{ t.id_reclamo }}</p>
-          <h1 class="m-0 mt-1 text-2xl font-bold text-text-primary">{{ t.asunto }}</h1>
+          <h1 class="tsi-display m-0 mt-1 text-3xl font-extrabold text-text-primary">{{ t.asunto }}</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-2 flex flex-wrap gap-2 text-sm text-text-secondary">
             <span class="tsi-badge" [ngClass]="estadoBadge(t.estado)">{{ labelEstado(t.estado) }}</span>
             <span class="tsi-badge tsi-badge-neutral">Prioridad: {{ t.prioridad ?? '—' }}</span>
@@ -55,7 +56,7 @@
       <div class="px-4 py-4">
         <p class="m-0 whitespace-pre-wrap text-sm text-text-secondary">{{ t.descripcion }}</p>
 
-        <h2 class="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 class="tsi-display mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-text-secondary">
           Historial
         </h2>
         @if (!historial().length) {

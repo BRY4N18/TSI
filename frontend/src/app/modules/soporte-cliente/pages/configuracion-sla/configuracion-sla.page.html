@@ -1,7 +1,8 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="configuracion-sla">
   <header class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="m-0 text-2xl font-bold text-text-primary">Configuración de SLA</h1>
+      <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Configuración de SLA</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 mt-1 text-sm text-text-secondary">
         Reglas de tiempo de respuesta y resolución por plan, tipo y prioridad (CU-O97).
       </p>
@@ -16,7 +17,7 @@
     <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensaje() }}</p>
   }
 
-  <section class="rounded-md border border-border-default bg-bg-surface p-4">
+  <section class="tsi-panel p-4">
     @if (cargando() && !reglas().length) {
       <app-list-loading-skeleton [count]="3" />
     } @else if (error() && !reglas().length) {
@@ -103,8 +104,8 @@
     }
   </section>
 
-  <section class="max-w-xl rounded-md border border-border-default bg-bg-surface p-4">
-    <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Nueva regla</h2>
+  <section class="max-w-xl tsi-panel p-4">
+    <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Nueva regla</h2>
     <form class="grid gap-3" (ngSubmit)="crear()">
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Plan (ID)

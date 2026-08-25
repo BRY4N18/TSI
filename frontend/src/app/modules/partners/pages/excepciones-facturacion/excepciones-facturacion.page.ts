@@ -51,7 +51,8 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
   template: `
     <section [class]="shellClass">
       <header class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="m-0 text-2xl font-bold text-text-primary">Excepciones de facturación</h1>
+        <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Excepciones de facturación</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <div class="flex items-end gap-3">
           <label class="flex flex-col gap-1 text-sm">
             <span class="text-xs uppercase tracking-wide text-text-secondary">Año</span>
@@ -149,7 +150,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
 
           <ul class="m-0 list-none space-y-3 p-3 md:hidden">
             @for (e of excepciones(); track e.idpartner + e.tipo + e.periodo) {
-              <li class="rounded-md border border-border-default bg-bg-surface p-4 text-sm">
+              <li class="tsi-panel p-4 text-sm">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-medium text-text-primary">{{ e.nombrepartner }}</span>
                   <span

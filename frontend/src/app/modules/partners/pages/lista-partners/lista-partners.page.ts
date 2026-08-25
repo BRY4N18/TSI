@@ -50,7 +50,8 @@ const CLAVE_ULTIMO_ABIERTO = 'tsi.partners.ultimo-abierto';
     <section [class]="shellClass">
       <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Partners</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Partners</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="mt-1 text-sm text-text-secondary">
             Incorporar partners y asignarles su plan de acceso
           </p>

@@ -47,7 +47,8 @@ const BOARD_LIMIT = 100;
     <section class="grid gap-6 pb-8 text-text-primary">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="m-0 text-xl font-semibold">Pipeline</h1>
+          <h1 class="tsi-display m-0 text-xl font-semibold">Pipeline</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Avance adyacente con botones · sin arrastrar tarjetas
           </p>
@@ -75,7 +76,7 @@ const BOARD_LIMIT = 100;
         >
           @for (col of columnas; track col) {
             <div class="min-w-[12rem] rounded-md border border-border-default bg-bg-surface p-3">
-              <h2 class="m-0 mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+              <h2 class="tsi-display m-0 mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
                 {{ col }}
               </h2>
               <div class="grid gap-2">
@@ -149,8 +150,8 @@ const BOARD_LIMIT = 100;
         role="dialog"
         aria-modal="true"
       >
-        <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-2 text-lg font-semibold">Marcar perdido — {{ target.empresa }}</h2>
+        <div class="w-full max-w-md tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-2 text-lg font-semibold">Marcar perdido — {{ target.empresa }}</h2>
           <form [formGroup]="perdidaForm" (ngSubmit)="confirmarPerdido()" class="grid gap-3">
             <input
               formControlName="motivo_perdida"

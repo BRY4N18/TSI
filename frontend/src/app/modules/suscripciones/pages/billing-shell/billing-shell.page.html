@@ -2,9 +2,10 @@
   @if (showModuleHeader()) {
     <header class="grid gap-1.5">
       <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Facturación</p>
-      <h1 class="m-0 text-[1.75rem] font-bold">
+      <h1 class="tsi-display m-0 text-[1.75rem] font-extrabold">
         {{ isDirectorOnly() ? 'Planes de suscripción' : 'Suscripciones' }}
       </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
         @if (isDirectorOnly()) {
           Catálogo comercial: crear, editar y desactivar planes publicados.

@@ -31,7 +31,8 @@ import { NotificacionApiService } from '../../services/notificacion-api.service'
     <div [class]="pageShell">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Notificaciones de ventas</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Notificaciones de ventas</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Alertas enviadas a gerentes por reglas de comportamiento del prospecto
           </p>

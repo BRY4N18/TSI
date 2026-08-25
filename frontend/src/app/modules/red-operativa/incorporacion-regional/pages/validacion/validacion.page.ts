@@ -36,11 +36,12 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
   template: `
     <div class="mx-auto max-w-2xl space-y-8 p-6">
       <header>
-        <h1 class="text-[28px] font-bold text-text-primary">Validación de operatividad de región</h1>
+        <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">Validación de operatividad de región</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="mt-1 text-sm text-text-secondary">CU-O55 — Ejecutar protocolo de validación.</p>
       </header>
 
-      <section class="space-y-5 rounded-md border border-border-default bg-bg-surface p-6">
+      <section class="space-y-5 tsi-panel p-6">
         <form (ngSubmit)="ejecutarValidacion()" class="space-y-5">
           <fieldset class="space-y-3 rounded-md border border-border-default p-4">
             <legend class="px-1 text-sm font-semibold text-text-primary">Región</legend>
@@ -137,9 +138,9 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
       </section>
 
       @if (idregionoperativa) {
-        <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
+        <section class="space-y-4 tsi-panel p-6">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-text-primary">Historial de validaciones</h2>
+            <h2 class="tsi-display text-lg font-semibold text-text-primary">Historial de validaciones</h2>
             <button
               type="button"
               (click)="cargarHistorial()"
@@ -198,7 +199,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
 
           <div class="border-t border-border-default pt-4">
             @if (esAdministrador) {
-              <h3 class="mb-2 text-sm font-semibold text-text-primary">Rechazo definitivo</h3>
+              <h3 class="tsi-display mb-2 text-sm font-semibold text-text-primary">Rechazo definitivo</h3>
               <button
                 type="button"
                 (click)="rechazarDefinitivamente()"

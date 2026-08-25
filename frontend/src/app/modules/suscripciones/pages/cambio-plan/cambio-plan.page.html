@@ -1,7 +1,7 @@
 <section class="mx-auto grid max-w-6xl gap-6 pb-8 text-text-primary">
   <header class="grid gap-1.5">
     <p class="m-0 text-xs font-medium uppercase tracking-wider text-text-secondary">Plan</p>
-    <h2 class="m-0 text-[1.75rem] font-bold leading-tight">Cambio de plan</h2>
+    <h2 class="tsi-display m-0 text-[1.75rem] font-bold leading-tight">Cambio de plan</h2>
     <p class="m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
       Los upgrades se aprueban al instante. Los downgrades quedan pendientes hasta revisión del
       administrador.
@@ -15,7 +15,7 @@
   }
 
   <section class="rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
-    <h3 class="m-0 text-lg font-semibold">Nueva solicitud</h3>
+    <h3 class="tsi-display m-0 text-lg font-semibold">Nueva solicitud</h3>
     <div class="mt-4 grid gap-4 md:grid-cols-2">
       <div class="grid gap-1.5">
         <label for="plan" class="text-[0.8125rem] font-medium text-text-secondary">Plan destino</label>
@@ -55,7 +55,7 @@
   </section>
 
   <section class="rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
-    <h3 class="m-0 text-lg font-semibold">Historial de solicitudes</h3>
+    <h3 class="tsi-display m-0 text-lg font-semibold">Historial de solicitudes</h3>
     <div class="mt-4">
       @if (loading()) {
         <app-list-loading-skeleton [count]="3" />

@@ -2,7 +2,8 @@
   <header class="flex flex-wrap items-start justify-between gap-4">
     <div class="space-y-2">
       <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Administración</p>
-      <h1 class="m-0 text-[28px] font-bold text-text-primary">Solicitudes de cliente</h1>
+      <h1 class="tsi-display m-0 text-[28px] font-extrabold text-text-primary">Solicitudes de cliente</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 text-sm text-text-secondary">
         Aprueba, rechaza o anula autorregistros. El plan de suscripción se gestiona fuera de este módulo.
       </p>
@@ -18,8 +19,8 @@
     </button>
   </header>
 
-  <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
-    <h2 class="m-0 text-xl font-semibold text-text-primary">Pendientes de aprobación</h2>
+  <section class="space-y-4 tsi-panel p-6">
+    <h2 class="tsi-display m-0 text-xl font-semibold text-text-primary">Pendientes de aprobación</h2>
     <ul class="m-0 list-none space-y-3 p-0">
       @for (s of pendientes; track s.idcliente) {
         <li
@@ -68,9 +69,9 @@
     </ul>
   </section>
 
-  <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
+  <section class="space-y-4 tsi-panel p-6">
     <div class="space-y-1">
-      <h2 class="m-0 text-xl font-semibold text-text-primary">Rechazadas</h2>
+      <h2 class="tsi-display m-0 text-xl font-semibold text-text-primary">Rechazadas</h2>
       <p class="m-0 text-sm text-text-secondary">
         Anular marca la fila como Rechazado_Anulado (sin borrado). El solicitante puede autorregistrarse de
         nuevo con el mismo NIT.
@@ -109,7 +110,7 @@
       <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl">
         <div class="mb-3 flex items-center gap-2 text-alert-critical">
           <app-tabler-icon name="alert-triangle" [size]="22" />
-          <h2 class="m-0 text-lg font-semibold">Confirmar rechazo</h2>
+          <h2 class="tsi-display m-0 text-lg font-semibold">Confirmar rechazo</h2>
         </div>
         <p class="m-0 mb-4 text-sm text-text-secondary">
           Vas a rechazar la solicitud <strong class="text-text-primary">#{{ target.idcliente }}</strong>

@@ -18,7 +18,8 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
     <div [class]="pageShellClass" data-testid="detalle-page">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-[28px] font-bold text-text-primary">Detalles</h1>
+          <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">Detalles</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           @if (unidad) {
             <p class="mt-1 font-mono text-sm text-text-secondary">
               #{{ unidad.idunidademergencia }} · {{ unidad.placa }}
@@ -50,7 +51,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
 
       @if (cargando) {
         <div
-          class="mt-6 space-y-3 rounded-md border border-border-default bg-bg-surface p-6"
+          class="mt-6 space-y-3 tsi-panel p-6"
           data-testid="detalle-loading"
         >
           <p class="text-sm text-text-secondary">Cargando unidad…</p>
@@ -67,7 +68,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
         </div>
       } @else if (unidad) {
         <dl
-          class="mt-6 grid grid-cols-1 gap-4 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+          class="mt-6 grid grid-cols-1 gap-4 tsi-panel p-6 sm:grid-cols-2"
           data-testid="detalle-campos"
         >
           <div class="sm:col-span-2">

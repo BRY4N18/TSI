@@ -39,7 +39,8 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
         <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
           Credencial emitida
         </p>
-        <h1 class="mb-2 mt-1 text-2xl font-bold text-text-primary">{{ c.nombre_credencial }}</h1>
+        <h1 class="tsi-display mb-2 mt-1 text-3xl font-extrabold text-text-primary">{{ c.nombre_credencial }}</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <span
           class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
           [class]="entorno(c).tono"
@@ -65,7 +66,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
         </div>
 
         <div class="mt-4 grid gap-4">
-          <div class="rounded-md border border-border-default bg-bg-surface p-4">
+          <div class="tsi-panel p-4">
             <p class="m-0 mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
               Client ID
             </p>
@@ -85,7 +86,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
             </div>
           </div>
 
-          <div class="rounded-md border border-border-default bg-bg-surface p-4">
+          <div class="tsi-panel p-4">
             <p class="m-0 mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
               Client secret
             </p>
@@ -141,11 +142,11 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
         <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
           Credencial emitida
         </p>
-        <h1 class="mb-3 mt-1 text-2xl font-bold text-text-primary">
+        <h1 class="tsi-display mb-3 mt-1 text-3xl font-extrabold text-text-primary">
           El secreto ya no está disponible
         </h1>
         <div
-          class="rounded-md border border-border-default bg-bg-surface p-6"
+          class="tsi-panel p-6"
           data-testid="secreto-no-disponible"
         >
           <p class="m-0 text-sm text-text-secondary">

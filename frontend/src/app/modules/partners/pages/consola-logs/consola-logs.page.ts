@@ -60,7 +60,8 @@ const REFRESCO_MS = 30_000;
     <section [class]="shellClass">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Registros de API</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Registros de API</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <span class="inline-flex items-center gap-2 text-xs text-text-secondary" data-testid="sincronizacion">
             <span class="h-2 w-2 rounded-full bg-alert-success"></span>
             @if (datosHasta()) {
@@ -98,7 +99,7 @@ const REFRESCO_MS = 30_000;
       </p>
 
       <!-- Filtros. Cada cambio consulta a la base: no se filtra en memoria. -->
-      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-md border border-border-default bg-bg-surface p-4">
+      <div class="mt-4 flex flex-wrap items-end gap-4 tsi-panel p-4">
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-xs uppercase tracking-wide text-text-secondary">Partner</span>
           <select
@@ -144,7 +145,8 @@ const REFRESCO_MS = 30_000;
             [ngModel]="filtroDesde()"
             (ngModelChange)="cambiarDesde($event)"
             data-testid="input-desde"
-          />
+          placeholder="Escribe para filtrar…"
+        />
         </label>
 
         <label class="flex flex-col gap-1 text-sm">
@@ -155,7 +157,8 @@ const REFRESCO_MS = 30_000;
             [ngModel]="filtroHasta()"
             (ngModelChange)="cambiarHasta($event)"
             data-testid="input-hasta"
-          />
+          placeholder="Escribe para filtrar…"
+        />
         </label>
 
         <p class="basis-full text-xs text-text-secondary" data-testid="alcance-filtros">
@@ -233,7 +236,7 @@ const REFRESCO_MS = 30_000;
 
           <ul class="m-0 list-none space-y-3 p-3 md:hidden">
             @for (log of logs(); track log.idlogllamadaapi) {
-              <li class="rounded-md border border-border-default bg-bg-surface p-4 text-sm">
+              <li class="tsi-panel p-4 text-sm">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-mono text-text-primary">{{ log.metodohttp }} {{ log.endpoint }}</span>
                   <span class="rounded-md px-2 py-1 text-xs font-medium" [class]="tono(log.codigohttp)">

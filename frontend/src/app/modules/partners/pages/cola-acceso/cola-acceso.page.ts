@@ -37,7 +37,8 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-5xl p-8">
-      <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Suspensiones de partners</h1>
+      <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Suspensiones de partners</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 mb-6 text-sm text-text-secondary">
         Partners suspendidos y partners en ciclo de mora con avisos ya enviados. La
         reactivación siempre la confirma una persona: el sistema no reactiva solo.
@@ -68,7 +69,7 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
         <ul class="grid gap-3">
           @for (p of filas(); track p.idpartner) {
             <li
-              class="rounded-md border border-border-default bg-bg-surface p-5"
+              class="tsi-panel p-5"
               [attr.data-testid]="'fila-' + p.idpartner"
             >
               <div class="flex flex-wrap items-start justify-between gap-3">

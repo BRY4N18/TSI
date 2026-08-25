@@ -35,7 +35,7 @@ import { humanizar } from './informes-opciones';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form
-      class="mb-6 grid gap-4 rounded-md border border-border-default bg-bg-surface p-4 md:grid-cols-3"
+      class="mb-6 grid gap-4 tsi-panel p-4 md:grid-cols-3"
       data-testid="filtros-informe"
       (ngSubmit)="aplicar()"
     >
@@ -105,7 +105,8 @@ import { humanizar } from './informes-opciones';
                 [ngModel]="valorDe(filtro.nombre)"
                 [name]="filtro.nombre"
                 (ngModelChange)="cambiar(filtro.nombre, $event)"
-              />
+          placeholder="Escribe para filtrar…"
+        />
             }
             @case ('fecha') {
               <input
@@ -115,7 +116,8 @@ import { humanizar } from './informes-opciones';
                 [ngModel]="valorDe(filtro.nombre)"
                 [name]="filtro.nombre"
                 (ngModelChange)="cambiar(filtro.nombre, $event)"
-              />
+          placeholder="Escribe para filtrar…"
+        />
             }
             @default {
               <input
@@ -125,7 +127,8 @@ import { humanizar } from './informes-opciones';
                 [ngModel]="valorDe(filtro.nombre)"
                 [name]="filtro.nombre"
                 (ngModelChange)="cambiar(filtro.nombre, $event)"
-              />
+          placeholder="Escribe para filtrar…"
+        />
             }
           }
 
@@ -145,7 +148,8 @@ import { humanizar } from './informes-opciones';
             name="desde"
             [ngModel]="valorDe('desde')"
             (ngModelChange)="cambiar('desde', $event)"
-          />
+          placeholder="Escribe para filtrar…"
+        />
         </label>
         <label class="grid gap-1.5 text-sm">
           <span class="text-text-secondary">Hasta</span>
@@ -156,7 +160,8 @@ import { humanizar } from './informes-opciones';
             name="hasta"
             [ngModel]="valorDe('hasta')"
             (ngModelChange)="cambiar('hasta', $event)"
-          />
+          placeholder="Escribe para filtrar…"
+        />
         </label>
       }
 

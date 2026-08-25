@@ -34,7 +34,7 @@ import { NotificationService } from './notification.service';
           aria-describedby="app-alert-message"
           class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl"
         >
-          <h2 id="app-alert-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
+          <h2 id="app-alert-title" class="tsi-display m-0 mb-2 text-lg font-semibold text-text-primary">
             {{ a.title }}
           </h2>
           <p id="app-alert-message" class="m-0 mb-5 text-sm text-text-secondary">{{ a.message }}</p>

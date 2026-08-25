@@ -68,9 +68,10 @@
       <span class="h-1.5 w-1.5 rounded-full bg-alert-success" aria-hidden="true"></span>
       Sistema operativo
     </span>
-    <h1 id="hero-title" class="m-0 max-w-3xl text-3xl font-bold leading-tight md:text-4xl">
+    <h1 id="hero-title" class="tsi-display m-0 max-w-3xl text-3xl font-extrabold leading-tight md:text-4xl">
       Una emergencia reportada. Una unidad en camino.
     </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
     <p class="m-0 max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
       Plataforma B2B para registrar accidentes, despachar unidades y dar seguimiento operativo —
       con planes según la severidad que tu flota puede atender.
@@ -97,7 +98,7 @@
     <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12">
       <div class="grid max-w-2xl gap-2">
         <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">Servicios</p>
-        <h2 id="cap-title" class="m-0 text-2xl font-bold">Capacidades de la plataforma</h2>
+        <h2 id="cap-title" class="tsi-display m-0 text-2xl font-bold">Capacidades de la plataforma</h2>
         <p class="m-0 text-sm leading-normal text-text-secondary">
           El mismo núcleo operativo que usan los centros de monitoreo, disponible según el plan
           contratado.
@@ -112,7 +113,7 @@
             >
               <app-tabler-icon [name]="c.icon" [size]="22" />
             </span>
-            <h3 class="m-0 text-base font-semibold">{{ c.title }}</h3>
+            <h3 class="tsi-display m-0 text-base font-semibold">{{ c.title }}</h3>
             <p class="m-0 text-sm leading-normal text-text-secondary">{{ c.description }}</p>
           </article>
         }
@@ -124,7 +125,7 @@
   <section id="planes" class="mx-auto grid max-w-6xl scroll-mt-20 gap-8 px-5 py-12" aria-labelledby="planes-title">
     <div class="grid max-w-2xl gap-2">
       <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">Catálogo público</p>
-      <h2 id="planes-title" class="m-0 text-2xl font-bold">Planes de suscripción</h2>
+      <h2 id="planes-title" class="tsi-display m-0 text-2xl font-bold">Planes de suscripción</h2>
       <p class="m-0 text-sm leading-normal text-text-secondary">
         Precios, límites y severidades desbloqueadas. Sin iniciar sesión.
       </p>
@@ -133,7 +134,7 @@
     @if (loading()) {
       <div class="grid gap-5 md:grid-cols-3" aria-busy="true" aria-label="Cargando planes">
         @for (_ of [1, 2, 3]; track $index) {
-          <article class="grid min-h-72 gap-4 rounded-md border border-border-default bg-bg-surface p-5">
+          <article class="grid min-h-72 gap-4 tsi-panel p-5">
             <div class="h-6 w-1/2 animate-pulse rounded-sm bg-border-default"></div>
             <div class="h-8 w-2/5 animate-pulse rounded-sm bg-border-default"></div>
             <div class="h-4 w-3/4 animate-pulse rounded-sm bg-border-default"></div>
@@ -153,7 +154,7 @@
             class="shrink-0 text-alert-critical"
             aria-hidden="true"
           />
-          <h3 class="m-0 text-xl font-semibold">No pudimos cargar el catálogo</h3>
+          <h3 class="tsi-display m-0 text-xl font-semibold">No pudimos cargar el catálogo</h3>
         </div>
         <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
         <button
@@ -165,14 +166,14 @@
         </button>
       </div>
     } @else if (planes().length === 0) {
-      <div class="grid max-w-md justify-items-start gap-3 rounded-md border border-border-default bg-bg-surface p-6">
+      <div class="grid max-w-md justify-items-start gap-3 tsi-panel p-6">
         <span
           class="tsi-node h-12 w-11 bg-accent-primary/10 text-accent-primary"
           aria-hidden="true"
         >
           <app-tabler-icon name="license" [size]="20" />
         </span>
-        <h3 class="m-0 text-xl font-semibold">No hay planes activos</h3>
+        <h3 class="tsi-display m-0 text-xl font-semibold">No hay planes activos</h3>
         <p class="m-0 text-sm text-text-secondary">
           El catálogo está vacío por ahora. Puedes registrarte como prospecto y un ejecutivo te
           orientará.
@@ -196,7 +197,7 @@
             }
 
             <div class="flex items-start justify-between gap-3" [class.pt-2]="esPopular(p)">
-              <h3 class="m-0 text-xl font-semibold">{{ p.nombre }}</h3>
+              <h3 class="tsi-display m-0 text-xl font-semibold">{{ p.nombre }}</h3>
               <span
                 class="shrink-0 rounded-sm border border-border-default px-2 py-1 text-xs font-medium text-text-secondary"
               >

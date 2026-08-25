@@ -6,7 +6,8 @@
     Volver a gestión
   </a>
 
-  <h1 class="m-0 text-2xl font-bold text-text-primary">Perfil corporativo</h1>
+  <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Perfil corporativo</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
   <p class="m-0 text-sm text-text-secondary">{{ perfil?.razon_social || 'Cuenta de cliente' }}</p>
 
   @if (mensaje) {
@@ -18,7 +19,7 @@
 
   @if (perfil) {
     <form
-      class="grid max-w-md gap-3 rounded-md border border-border-default bg-bg-surface p-4"
+      class="grid max-w-md gap-3 tsi-panel p-4"
       (ngSubmit)="guardar()"
     >
       <label class="grid gap-1 text-sm font-medium text-text-secondary">

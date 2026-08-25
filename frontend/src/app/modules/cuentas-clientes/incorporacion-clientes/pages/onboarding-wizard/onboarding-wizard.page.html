@@ -1,7 +1,8 @@
 <div class="mx-auto max-w-2xl space-y-6 p-6">
   <header class="space-y-2">
     <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">Onboarding</p>
-    <h1 class="m-0 text-[28px] font-bold text-text-primary">Configuración inicial</h1>
+    <h1 class="tsi-display m-0 text-[28px] font-extrabold text-text-primary">Configuración inicial</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
     <p class="m-0 text-sm text-text-secondary">{{ perfil.razon_social || 'Tu cuenta' }}</p>
   </header>
 
@@ -18,7 +19,7 @@
   </div>
 
   @if (progreso) {
-    <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
+    <section class="space-y-4 tsi-panel p-6">
       <p class="m-0 text-sm text-text-secondary">
         Estado: <span class="font-medium text-text-primary">{{ progreso.estado_onboarding }}</span>
         · Etapa:

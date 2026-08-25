@@ -75,7 +75,8 @@ const COPY_ERROR: Record<string, string> = {
       } @else if (errorCarga()) {
         <app-list-error-state [message]="errorCarga()!" (retry)="cargar()" />
       } @else if (modo === 'crear') {
-        <h1 class="mb-6 mt-1 text-2xl font-bold text-text-primary">Nuevo partner</h1>
+        <h1 class="tsi-display mb-6 mt-1 text-3xl font-extrabold text-text-primary">Nuevo partner</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
         @if (errorAccion()) {
           <div
@@ -97,8 +98,8 @@ const COPY_ERROR: Record<string, string> = {
         }
 
         <form [formGroup]="form" (ngSubmit)="guardar()" class="grid max-w-2xl gap-5">
-          <div class="rounded-md border border-border-default bg-bg-surface p-6">
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
+          <div class="tsi-panel p-6">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
 
             <label class="mb-1 block text-sm font-medium text-text-secondary" for="cliente">
               Cliente
@@ -117,8 +118,8 @@ const COPY_ERROR: Record<string, string> = {
             <input id="nombre" data-testid="input-nombre" [class]="inputClass" formControlName="nombrepartner" />
           </div>
 
-          <div class="rounded-md border border-border-default bg-bg-surface p-6">
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Contacto técnico</h2>
+          <div class="tsi-panel p-6">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Contacto técnico</h2>
             <p class="mb-4 text-sm text-text-secondary">
               Recibirá los avisos de credenciales y de la promoción a producción.
             </p>
@@ -149,7 +150,7 @@ const COPY_ERROR: Record<string, string> = {
         <!-- El alias "as" solo se admite en el @if primario, no en un @else if -->
         @if (partner(); as p) {
         <div class="mb-6 mt-1 flex flex-wrap items-center gap-3">
-          <h1 class="m-0 text-2xl font-bold text-text-primary">{{ p.nombrepartner }}</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">{{ p.nombrepartner }}</h1>
           <span
             class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
             [class]="presentacion(p.estado).tono"
@@ -168,8 +169,8 @@ const COPY_ERROR: Record<string, string> = {
 
         <!-- Modo Ver: <dl>, nunca <input disabled> (design-system § 5) -->
         <div class="grid gap-5 md:grid-cols-2">
-          <section class="rounded-md border border-border-default bg-bg-surface p-6">
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
+          <section class="tsi-panel p-6">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm" data-testid="dl-identificacion">
               <dt class="text-xs uppercase tracking-wide text-text-secondary">Contacto técnico</dt>
               <dd class="m-0 text-text-primary">{{ p.contacto_tecnico_nombre }}</dd>
@@ -178,8 +179,8 @@ const COPY_ERROR: Record<string, string> = {
             </dl>
           </section>
 
-          <section class="rounded-md border border-border-default bg-bg-surface p-6">
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
+          <section class="tsi-panel p-6">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
               <dt class="text-xs uppercase tracking-wide text-text-secondary">Plan</dt>
               <dd class="m-0 text-text-primary" data-testid="dd-plan">{{ plan(p) }}</dd>
@@ -253,8 +254,8 @@ const COPY_ERROR: Record<string, string> = {
             }
           </section>
 
-          <section class="rounded-md border border-border-default bg-bg-surface p-6 md:col-span-2">
-            <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Credenciales</h2>
+          <section class="tsi-panel p-6 md:col-span-2">
+            <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Credenciales</h2>
             @if (p.credenciales.length === 0) {
               <p class="m-0 text-sm text-text-secondary">Este partner aún no ha emitido credenciales.</p>
             } @else {

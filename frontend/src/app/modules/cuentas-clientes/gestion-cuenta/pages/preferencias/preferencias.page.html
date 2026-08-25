@@ -6,7 +6,8 @@
     Volver a gestión
   </a>
 
-  <h1 class="m-0 text-2xl font-bold text-text-primary">Preferencias operativas</h1>
+  <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Preferencias operativas</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
   <p class="m-0 text-sm text-text-secondary">{{ razonSocial || 'Cuenta de cliente' }}</p>
 
   @if (mensaje) {
@@ -17,7 +18,7 @@
   }
 
   @if (preferencias) {
-    <div class="max-w-2xl rounded-md border border-border-default bg-bg-surface p-6">
+    <div class="max-w-2xl tsi-panel p-6">
       <app-preferencias-operativas-form
         [valor]="prefsForm"
         submitLabel="Guardar"

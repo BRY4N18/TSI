@@ -66,7 +66,8 @@ const TIMEOUT_ACCION_MS = 15_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="shellClass">
-      <h1 class="m-0 text-2xl font-bold text-text-primary">Mi integración</h1>
+      <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Mi integración</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
       @if (cargando()) {
         <app-list-loading-skeleton [count]="4" />
@@ -77,7 +78,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         @if (partner(); as p) {
         <!-- Estado + qué sigue: un estado sin siguiente paso deja al partner
              sin saber qué hacer (FR-UI-015). -->
-        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
+        <div class="mt-4 tsi-panel p-6">
           <span
             class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
             [class]="presentacion(p.estado).tono"
@@ -101,7 +102,7 @@ const TIMEOUT_ACCION_MS = 15_000;
               class="mt-4 rounded-md border border-alert-critical bg-alert-critical-bg p-6"
               data-testid="panel-suspension"
             >
-              <h2 class="m-0 mb-2 flex items-center gap-2 text-lg font-semibold text-alert-critical">
+              <h2 class="tsi-display m-0 mb-2 flex items-center gap-2 text-lg font-semibold text-alert-critical">
                 <app-tabler-icon name="ban" [size]="18" />
                 Por qué está suspendido tu acceso
               </h2>
@@ -145,8 +146,8 @@ const TIMEOUT_ACCION_MS = 15_000;
           }
         }
 
-        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
+        <div class="mt-4 tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
           <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
             <dt class="text-xs uppercase tracking-wide text-text-secondary">Plan</dt>
             <dd class="m-0 text-text-primary" data-testid="dd-plan">{{ plan(p) }}</dd>
@@ -171,7 +172,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         @for (e of entornos; track e) {
           @if (mostrarGrupo(e)) {
             <section
-              class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
+              class="mt-4 tsi-panel p-6"
               [attr.data-testid]="'grupo-' + e"
             >
               <header class="mb-1 flex flex-wrap items-center gap-2">
@@ -279,8 +280,8 @@ const TIMEOUT_ACCION_MS = 15_000;
         }
 
         <!-- Solicitar producción: solo desde «Pruebas activo» (FR-UI-026) -->
-        <section class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-3 text-lg font-semibold text-text-primary">Paso a producción</h2>
+        <section class="mt-4 tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-3 text-lg font-semibold text-text-primary">Paso a producción</h2>
           @if (p.estado === 'Pruebas activo') {
             <form [formGroup]="formProduccion" (ngSubmit)="solicitarProduccion()" class="grid gap-2 sm:flex sm:items-end">
               <div class="grow">

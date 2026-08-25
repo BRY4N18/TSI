@@ -39,12 +39,13 @@ import type { PartnerListItem } from '../../services/models/partner.types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="shellClass">
-      <h1 class="m-0 text-2xl font-bold text-text-primary">Reporte mensual de consumo</h1>
+      <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Reporte mensual de consumo</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="mt-1 text-sm text-text-secondary" data-testid="leyenda-entorno">
         Este reporte incluye únicamente consumo de <strong>producción</strong>.
       </p>
 
-      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-md border border-border-default bg-bg-surface p-4">
+      <div class="mt-4 flex flex-wrap items-end gap-4 tsi-panel p-4">
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-xs uppercase tracking-wide text-text-secondary">Partner</span>
           <select
@@ -140,7 +141,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             />
           } @else {
             <div class="mt-4 grid gap-4 sm:grid-cols-3">
-              <div class="rounded-md border border-border-default bg-bg-surface p-6">
+              <div class="tsi-panel p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Llamadas</p>
                 <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-llamadas">
                   {{ r.llamadas.toLocaleString('es-EC') }}
@@ -154,13 +155,13 @@ import type { PartnerListItem } from '../../services/models/partner.types';
                   </p>
                 }
               </div>
-              <div class="rounded-md border border-border-default bg-bg-surface p-6">
+              <div class="tsi-panel p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Errores</p>
                 <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-errores">
                   {{ r.errores.toLocaleString('es-EC') }}
                 </p>
               </div>
-              <div class="rounded-md border border-border-default bg-bg-surface p-6">
+              <div class="tsi-panel p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">
                   Latencia media
                 </p>

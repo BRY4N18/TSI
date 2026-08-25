@@ -21,6 +21,7 @@ import {
   template: `
     <section class="page">
       <h1>Demo interactiva</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       @if (loading()) {
         <div class="skeleton" aria-busy="true">Procesando…</div>
       } @else if (error()) {

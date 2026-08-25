@@ -5,9 +5,10 @@
         <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
           Estratégico · OE1
         </p>
-        <h1 class="m-0 mt-1 text-[28px] font-bold leading-tight text-text-primary">
+        <h1 class="tsi-display m-0 mt-1 text-[28px] font-extrabold leading-tight text-text-primary">
           {{ def.titulo }}
         </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <p class="m-0 mt-1 text-sm text-text-secondary">{{ def.pregunta }}</p>
         <p class="m-0 mt-2 text-xs text-text-secondary">
           Lectura de empresa con ventana comparada. No es el compuesto táctico de
@@ -30,7 +31,7 @@
 
     <div class="grid gap-4 lg:grid-cols-12">
       <article
-        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        class="tsi-panel p-5 lg:col-span-7"
         data-testid="zona-heroe"
         data-bloque-vista
       >
@@ -152,11 +153,11 @@
       </div>
 
       <article
-        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        class="tsi-panel p-5 lg:col-span-8"
         data-testid="zona-visual"
         data-bloque-vista
       >
-        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
+        <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">{{ def.visual.titulo }}</h2>
         @switch (cargaVisual().estado) {
           @case ('carga') {
             <div class="mt-4 h-24 animate-pulse rounded-md bg-bg-page"></div>
@@ -232,11 +233,11 @@
       </article>
 
       <article
-        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        class="tsi-panel p-5 lg:col-span-4"
         data-testid="zona-lectura"
         data-bloque-vista
       >
-        <h2 class="m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
+        <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">{{ def.lectura.titulo }}</h2>
         @switch (cargaLectura().estado) {
           @case ('carga') {
             <div class="mt-4 h-16 animate-pulse rounded-md bg-bg-page"></div>

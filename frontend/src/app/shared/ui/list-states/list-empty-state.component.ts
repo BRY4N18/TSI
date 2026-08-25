@@ -10,7 +10,7 @@ import { TablerIconComponent, TablerIconName } from '../icon/tabler-icon.compone
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
+      class="grid place-items-center gap-3 tsi-panel p-10 text-center"
       data-testid="empty-state"
     >
       <span class="tsi-node h-14 w-12 bg-accent-primary/10 text-accent-primary" aria-hidden="true">

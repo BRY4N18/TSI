@@ -1,7 +1,8 @@
     <div class="flex min-h-0 flex-1 flex-col gap-4 p-6 lg:p-8" data-testid="cola-soporte">
       <header class="flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Cola de soporte</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Cola de soporte</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Atiende tickets pendientes sin salir del panel.
           </p>
@@ -142,7 +143,7 @@
               >
                 <div>
                   <p class="m-0 font-mono text-xs text-text-secondary">#{{ t.id_reclamo }}</p>
-                  <h2 class="m-0 mt-1 text-lg font-semibold text-text-primary">{{ t.asunto }}</h2>
+                  <h2 class="tsi-display m-0 mt-1 text-lg font-semibold text-text-primary">{{ t.asunto }}</h2>
                   <p class="m-0 mt-1 text-xs text-text-secondary">
                     {{ t.tipo_incidencia || t.tipo || 'Sin categoría' }}
                   </p>
@@ -183,7 +184,7 @@
                 <p class="m-0 mb-4 whitespace-pre-wrap text-sm text-text-secondary">
                   {{ t.descripcion }}
                 </p>
-                <h3 class="m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                <h3 class="tsi-display m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
                   Mensajes
                 </h3>
                 @if (!historial().length) {

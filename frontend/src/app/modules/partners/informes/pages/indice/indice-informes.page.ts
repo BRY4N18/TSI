@@ -27,9 +27,10 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="shellClass">
-      <h1 class="mb-2 text-2xl font-semibold text-text-primary" data-testid="titulo-indice">
+      <h1 class="tsi-display mb-2 text-3xl font-semibold text-text-primary" data-testid="titulo-indice">
         {{ titulo() }}
       </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="mb-6 text-sm text-text-secondary">
         {{ subtitulo() }}
       </p>
@@ -40,7 +41,7 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
             <a
               [routerLink]="['/partners/informes', informe.id]"
               [attr.data-testid]="'enlace-' + informe.id"
-              class="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-4 text-text-primary hover:border-accent-primary"
+              class="flex items-center gap-3 tsi-panel p-4 text-text-primary hover:border-accent-primary"
             >
               <app-tabler-icon name="list" [size]="20" />
               <span class="text-sm font-medium">{{ informe.titulo }}</span>
