@@ -27,6 +27,7 @@ import { InformesCompuestosApiService } from '../services/informes-compuestos-ap
 import { ApoyoPlegableComponent, BloqueApoyo } from './apoyo-plegable.component';
 import { mensajeVacio } from '../../../../shared/informes/mensaje-vacio';
 import { humanizar } from '../../../../shared/informes/informes-opciones';
+import { KpiRingComponent } from '../../../../shared/ui/kpi-ring/kpi-ring.component';
 
 const VACIA: CargaInforme = {
   estado: 'carga',
@@ -41,7 +42,7 @@ const AGRUPAR: AgruparCola[] = ['estado', 'prioridad', 'tipo', 'agente'];
 @Component({
   selector: 'app-pantalla-z-soporte',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, KpiRingComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -136,6 +137,9 @@ export class PantallaZPage {
     }
     this.pedir(informe, periodo, this.secuencia);
   }
+
+  /** Meta de cumplimiento de SLA; la plantilla la muestra y el ring la marca. */
+  readonly META_CUMPLIMIENTO = 95;
 
   pct(valor: number | null): string {
     if (valor === null) {
