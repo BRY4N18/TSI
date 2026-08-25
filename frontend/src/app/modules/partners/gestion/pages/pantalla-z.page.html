@@ -40,7 +40,7 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary" data-testid="heroe-sin-dato">
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary" data-testid="heroe-sin-dato">
               sin dato
             </p>
           }
@@ -53,7 +53,7 @@
                       {{ texto(fila['endpoint_path']) }}
                     </p>
                     <p
-                      class="m-0 mt-1 text-3xl font-bold tabular-nums text-text-primary"
+                      class="tsi-display m-0 mt-1 text-3xl font-bold tabular-nums text-text-primary"
                       data-testid="heroe-cifra"
                     >
                       {{ num(fila['latencia_p95_ms']) | number: '1.0-1' }}
@@ -90,7 +90,7 @@
             @if (idPantalla() === 'entrega') {
               @if (filaIntegracion(); as fila) {
                 <p
-                  class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                  class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary"
                   data-testid="heroe-cifra"
                 >
                   {{ pct(num(fila['pct'])) }}

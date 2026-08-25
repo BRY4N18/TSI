@@ -41,12 +41,12 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary">sin dato</p>
           }
           @default {
             @if (idPantalla() === 'calidad') {
               <p
-                class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary"
                 [class.text-alert-warning]="completitudBaja()"
                 data-testid="heroe-cifra"
               >
@@ -58,7 +58,7 @@
             }
             @if (idPantalla() === 'despacho') {
               <p
-                class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary"
                 [class.text-alert-success]="primerIntentoCumple()"
                 [class.text-alert-warning]="primerIntentoBajo()"
                 data-testid="heroe-cifra"
@@ -71,7 +71,7 @@
               </p>
             }
             @if (idPantalla() === 'cierre') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ cartera().total | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">casos abiertos al cierre del período</p>
@@ -209,7 +209,7 @@
               <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaLectura().error }}</p>
             }
             @default {
-              <p class="m-0 mt-3 text-3xl font-bold text-text-primary">
+              <p class="tsi-display m-0 mt-3 text-3xl font-bold text-text-primary">
                 {{ completitud().incompletos | number }}
               </p>
               <p class="m-0 mt-1 text-sm text-text-secondary">casos que no entran en el porcentaje</p>

@@ -59,7 +59,7 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">{{ textoVacio() }}</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary" data-testid="heroe-sin-dato">
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary" data-testid="heroe-sin-dato">
               sin dato
             </p>
             @if (idPantalla() === 'cumplimiento' && filaHeroe(); as fila) {
@@ -82,7 +82,7 @@
                       etiqueta="Cumplimiento de SLA"
                     >
                       <p
-                        class="m-0 text-3xl font-bold tabular-nums text-text-primary"
+                        class="tsi-display m-0 text-3xl font-bold tabular-nums text-text-primary"
                         data-testid="heroe-cifra"
                       >
                         {{ pct(num(fila['pct_cumplimiento'])) }}
@@ -92,7 +92,7 @@
                       cumplimiento · meta ≥ {{ META_CUMPLIMIENTO }} %
                     </p>
                   </div>
-                  <p class="m-0 mt-3 text-2xl font-bold tabular-nums text-text-primary">
+                  <p class="tsi-display m-0 mt-3 text-2xl font-bold tabular-nums text-text-primary">
                     {{ pct(num(fila['pct_sin_compromiso'])) }}
                   </p>
                   <p class="m-0 mt-1 text-sm text-text-secondary">
@@ -123,7 +123,7 @@
             @if (idPantalla() === 'tendencias') {
               @if (filaCarga(); as fila) {
                 <p
-                  class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary"
+                  class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary"
                   data-testid="heroe-cifra"
                 >
                   {{ saldo(fila) | number }}

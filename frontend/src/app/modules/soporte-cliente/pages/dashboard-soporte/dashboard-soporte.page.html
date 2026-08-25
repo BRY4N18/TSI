@@ -41,14 +41,14 @@
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Total tickets
             </p>
-            <p class="m-0 mt-2 text-3xl font-bold text-text-primary">{{ m.total_tickets }}</p>
+            <p class="tsi-display m-0 mt-2 text-3xl font-bold text-text-primary">{{ m.total_tickets }}</p>
           </article>
 
           <article class="tsi-panel p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA en riesgo
             </p>
-            <p class="m-0 mt-2 text-3xl font-bold text-alert-warning">{{ m.sla_en_riesgo }}</p>
+            <p class="tsi-display m-0 mt-2 text-3xl font-bold text-alert-warning">{{ m.sla_en_riesgo }}</p>
             <p class="m-0 mt-1 text-xs text-text-secondary">Umbral 80% (próximos a vencer)</p>
           </article>
 
@@ -56,7 +56,7 @@
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA vencidos
             </p>
-            <p class="m-0 mt-2 text-3xl font-bold text-alert-critical">{{ m.sla_vencidos }}</p>
+            <p class="tsi-display m-0 mt-2 text-3xl font-bold text-alert-critical">{{ m.sla_vencidos }}</p>
             <p class="m-0 mt-1 text-xs text-text-secondary">sla_status = incumplido</p>
           </article>
 
@@ -64,7 +64,7 @@
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tasa de reapertura
             </p>
-            <p class="m-0 mt-2 text-3xl font-bold text-accent-primary">
+            <p class="tsi-display m-0 mt-2 text-3xl font-bold text-accent-primary">
               {{ m.tasa_reapertura * 100 | number: '1.0-1' }}%
             </p>
           </article>

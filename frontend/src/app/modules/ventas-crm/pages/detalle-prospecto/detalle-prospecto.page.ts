@@ -61,7 +61,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
           <div class="min-w-0">
             <p class="m-0 text-sm font-medium text-text-secondary">Detalles</p>
             <div class="mt-1 flex flex-wrap items-center gap-3">
-              <h1 class="m-0 text-2xl font-bold text-text-primary" data-testid="workpanel-titulo">
+              <h1 class="tsi-display m-0 text-2xl font-bold text-text-primary" data-testid="workpanel-titulo">
                 {{ p.nombres }} {{ p.apellidos }}
               </h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>

@@ -87,7 +87,7 @@ const SERVICIOS = [
           <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
             Versión vigente
           </p>
-          <p class="m-0 mt-1 font-mono text-2xl font-bold text-text-primary">{{ c.version }}</p>
+          <p class="tsi-display m-0 mt-1 font-mono text-2xl font-bold text-text-primary">{{ c.version }}</p>
           @if (tieneSpec(c)) {
             <a
               [href]="c.spec_url"

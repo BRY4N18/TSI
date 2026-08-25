@@ -40,11 +40,11 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">{{ textoVacio() }}</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary">sin dato</p>
           }
           @default {
             @if (idPantalla() === 'embudo') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ totalTransiciones() | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">transiciones entre etapas</p>
@@ -59,7 +59,7 @@
               </ul>
             }
             @if (idPantalla() === 'captacion') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ totalProspectosCanal() | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">prospectos por canal</p>
@@ -83,7 +83,7 @@
                     <p class="m-0 text-sm font-medium text-text-secondary">
                       {{ etiquetaGrupo(texto(fila['grupo'])) }}
                     </p>
-                    <p class="m-0 mt-1 text-3xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                    <p class="tsi-display m-0 mt-1 text-3xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
                       {{ pct(num(fila['pct_conversion'])) }}
                     </p>
                     <p class="m-0 mt-1 text-sm text-text-secondary">
@@ -289,7 +289,7 @@
             }
             @if (idPantalla() === 'nutricion') {
               @for (fila of cargaLectura().data; track $index) {
-                <p class="m-0 mt-3 text-3xl font-bold tabular-nums text-text-primary">
+                <p class="tsi-display m-0 mt-3 text-3xl font-bold tabular-nums text-text-primary">
                   {{ formatSegundos(num(fila['segundos_mediana'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">

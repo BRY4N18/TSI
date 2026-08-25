@@ -40,11 +40,11 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary">sin dato</p>
           }
           @default {
             @if (idPantalla() === 'flota') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ criticos().total | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -61,7 +61,7 @@
               <p class="m-0 mt-3 text-xs text-text-secondary">{{ notaUmbral() }}</p>
             }
             @if (idPantalla() === 'mercados') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ mercados().produccion | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -69,7 +69,7 @@
               </p>
             }
             @if (idPantalla() === 'validacion') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ pct(tasa().pct) }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">

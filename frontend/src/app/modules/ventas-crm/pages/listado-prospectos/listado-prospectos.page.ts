@@ -57,7 +57,7 @@ type EstadoFiltro = 'todas' | 'activo' | 'inactivo';
     <div [class]="pageShell">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="m-0 text-2xl font-bold text-text-primary">Prospectos</h1>
+          <h1 class="tsi-display m-0 text-2xl font-bold text-text-primary">Prospectos</h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Hasta {{ pageLimit }} por página · abrir solo con el ícono de ver

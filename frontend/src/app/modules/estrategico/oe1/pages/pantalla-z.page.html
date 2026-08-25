@@ -58,7 +58,7 @@
           @case ('sin_dato') {
             @if (idPantalla() === 'ciclo') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary">
                   n = {{ num(fila['n']) | number }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -72,7 +72,7 @@
           @default {
             @if (idPantalla() === 'ingreso') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ num(fila['mrr']) | number: '1.0-2' }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -92,14 +92,14 @@
               </ul>
             }
             @if (idPantalla() === 'captacion') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ cargaHeroe().data.length | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">Etapas del embudo en el período</p>
             }
             @if (idPantalla() === 'ciclo') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary">
                   @if (num(fila['pct_churn']) === null) {
                     n = {{ num(fila['n']) | number }}
                   } @else {
@@ -251,7 +251,7 @@
           @default {
             @if (idPantalla() === 'ingreso') {
               @if (cargaLectura().data[0]; as fila) {
-                <p class="m-0 mt-3 text-2xl font-bold tabular-nums text-text-primary">
+                <p class="tsi-display m-0 mt-3 text-2xl font-bold tabular-nums text-text-primary">
                   {{ num(fila['arr']) | number: '1.0-2' }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary" data-testid="alcance-arr">

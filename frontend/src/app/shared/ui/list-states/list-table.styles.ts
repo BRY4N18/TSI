@@ -6,10 +6,10 @@ export const LIST_TABLE_CLASS =
   'hidden w-full border-collapse overflow-hidden rounded-md border border-border-default md:table';
 
 export const LIST_TABLE_TH_CLASS =
-  'border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary';
+  'tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary';
 
 export const LIST_TABLE_TH_RIGHT_CLASS =
-  'border-b border-border-default px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-text-primary';
+  'tsi-display border-b-2 border-accent-primary px-4 py-3 text-right text-xs uppercase tracking-widest text-text-primary';
 
 export const LIST_TABLE_TD_CLASS = 'px-4 py-3 text-sm text-text-secondary';
 

@@ -69,7 +69,7 @@
           @default {
             @if (idPantalla() === 'latencia') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   @if (num(fila['p95_min']) === null) {
                     sin dato
                   } @else {
@@ -86,7 +86,7 @@
             }
             @if (idPantalla() === 'calidad') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ pct(num(fila['tasa_error'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -116,7 +116,7 @@
             }
             @if (idPantalla() === 'respaldo') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ pct(num(fila['pct_respaldo'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">

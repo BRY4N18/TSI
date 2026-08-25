@@ -94,7 +94,7 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
             <h2 class="tsi-display m-0 mb-4 text-lg font-semibold text-text-primary">Cupo del período</h2>
             <div class="flex flex-wrap items-baseline gap-3">
               <span
-                class="rounded-md px-2 py-1 font-mono text-2xl font-bold"
+                class="tsi-display rounded-md px-2 py-1 font-mono text-2xl font-bold"
                 [class]="tonoCupo"
                 data-testid="porcentaje-cupo"
               >

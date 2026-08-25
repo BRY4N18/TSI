@@ -45,7 +45,7 @@
           @default {
             @if (idPantalla() === 'uso') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ pct(num(fila['pct_adopcion'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -55,7 +55,7 @@
               }
             }
             @if (idPantalla() === 'dinero') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ importeTotal() | number: '1.0-2' }}
               </p>
               <ul class="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm text-text-secondary">
@@ -72,7 +72,7 @@
             }
             @if (idPantalla() === 'ecosistema') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ num(fila['partners_nuevos']) | number }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">

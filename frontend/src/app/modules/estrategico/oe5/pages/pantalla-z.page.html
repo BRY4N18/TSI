@@ -73,7 +73,7 @@
           @default {
             @if (idPantalla() === 'servicio') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ pct(num(fila['pct_cumplimiento'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -83,7 +83,7 @@
             }
             @if (idPantalla() === 'ingresos') {
               @if (cargaHeroe().data[0]; as fila) {
-                <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+                <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                   {{ pct(num(fila['nrr'])) }}
                 </p>
                 <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -103,7 +103,7 @@
               </ul>
             }
             @if (idPantalla() === 'riesgo') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ cargaHeroe().data.length | number }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">

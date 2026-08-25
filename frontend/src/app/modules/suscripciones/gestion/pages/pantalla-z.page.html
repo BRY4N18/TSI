@@ -40,11 +40,11 @@
             <p class="m-0 mt-4 text-sm text-text-secondary">Sin datos en este período.</p>
           }
           @case ('sin_dato') {
-            <p class="m-0 mt-3 text-4xl font-bold text-text-secondary">sin dato</p>
+            <p class="tsi-display m-0 mt-3 text-4xl font-extrabold text-text-secondary">sin dato</p>
           }
           @default {
             @if (idPantalla() === 'cobro') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ num(filaHeroe()['mrr']) | number: '1.2-2' }}
                 <span class="text-lg font-medium">{{ texto(filaHeroe()['moneda']) }}</span>
               </p>
@@ -59,7 +59,7 @@
               </p>
             }
             @if (idPantalla() === 'movimientos') {
-              <p class="m-0 mt-3 text-5xl font-bold tabular-nums text-text-primary" data-testid="heroe-cifra">
+              <p class="tsi-display m-0 mt-3 text-5xl font-extrabold tabular-nums text-text-primary" data-testid="heroe-cifra">
                 {{ pct(num(filaHeroe()['nrr'])) }}
               </p>
               <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -217,7 +217,7 @@
           @default {
             @if (idPantalla() === 'cobro') {
               @for (fila of cargaLectura().data; track $index) {
-                <p class="m-0 mt-3 text-3xl font-bold tabular-nums text-text-primary">
+                <p class="tsi-display m-0 mt-3 text-3xl font-bold tabular-nums text-text-primary">
                   {{ pct(num(fila['pct_renovacion'])) }}
                 </p>
                 <p class="m-0 mt-1 text-sm text-text-secondary">
