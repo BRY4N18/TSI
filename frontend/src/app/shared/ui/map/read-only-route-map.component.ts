@@ -16,7 +16,8 @@ import * as L from 'leaflet';
 
 import { RutaService } from '../../services/ruta.service';
 import { ThemeService } from '../../theme/theme.service';
-import { TablerIconName, tablerIconPaths } from '../icon/tabler-icon.component';
+import { TablerIconName } from '../icon/tabler-icon.component';
+import { capasDeRuta, nodoPin, unidadPin } from './map-pins';
 import { crearTileLayer } from './map-tile';
 
 /**
@@ -33,35 +34,6 @@ const TONE_COLOR: Record<string, string> = {
 
 const UNIDAD_COLOR = 'var(--accent-primary)';
 
-function destinoPin(color: string, iconName: TablerIconName): L.DivIcon {
-  const glyphPaths = tablerIconPaths(iconName)
-    .map(
-      (d) =>
-        `<path d="${d}" transform="translate(6.5,6.5) scale(0.46)" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-    )
-    .join('');
-  return L.divIcon({
-    className: 'app-mapa-pin',
-    html: `<svg width="28" height="36" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="${color}"/>
-      <circle cx="12" cy="12" r="8.5" fill="#ffffff"/>
-      ${glyphPaths}
-    </svg>`,
-    iconSize: [28, 36],
-    iconAnchor: [14, 34],
-  });
-}
-
-function origenPin(color: string): L.DivIcon {
-  return L.divIcon({
-    className: 'app-mapa-pin',
-    html: `<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="9" fill="${color}" stroke="#ffffff" stroke-width="3"/>
-    </svg>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  });
-}
 
 /**
  * Mapa de solo-lectura (Leaflet + OSM) para pantallas de despacho/monitoreo: pinta
@@ -73,7 +45,7 @@ function origenPin(color: string): L.DivIcon {
   selector: 'app-read-only-route-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #mapContainer class="h-full w-full rounded-lg border border-border-default"></div>`,
+  template: `<div #mapContainer class="h-full w-full rounded-md border border-border-default"></div>`,
 })
 export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input({ required: true }) destinoLat!: number;
@@ -89,7 +61,7 @@ export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDe
   private readonly themeService = inject(ThemeService);
   private readonly injector = inject(Injector);
   private map: L.Map | null = null;
-  private ruta: L.Polyline | null = null;
+  private ruta?: L.LayerGroup;
   private tileLayer: L.TileLayer | null = null;
 
   ngAfterViewInit(): void {
@@ -134,7 +106,7 @@ export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDe
       return;
     }
     const destino = L.latLng(this.destinoLat, this.destinoLng);
-    L.marker(destino, { icon: destinoPin(TONE_COLOR[this.destinoTono] ?? 'var(--text-secondary)', this.destinoIcono) }).addTo(
+    L.marker(destino, { icon: nodoPin(TONE_COLOR[this.destinoTono] ?? 'var(--text-secondary)', this.destinoIcono) }).addTo(
       this.map,
     );
 
@@ -145,11 +117,16 @@ export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDe
     }
 
     const origen = L.latLng(this.origenLat!, this.origenLng!);
-    L.marker(origen, { icon: origenPin(UNIDAD_COLOR) }).addTo(this.map);
+    L.marker(origen, { icon: unidadPin(UNIDAD_COLOR) }).addTo(this.map);
 
     this.ruta?.remove();
     this.rutaService.calcularRuta(origen, destino).subscribe((puntos) => {
-      this.ruta = L.polyline(puntos, { color: UNIDAD_COLOR, weight: 3 }).addTo(this.map!);
+      // La ruta se pinta como el riel de §3.1: via + divisoria interior. Las
+      // dos capas se guardan juntas para poder retirarlas a la vez.
+      const [via, divisoria] = capasDeRuta(puntos);
+      via.addTo(this.map!);
+      divisoria.addTo(this.map!);
+      this.ruta = L.layerGroup([via, divisoria]);
       const bounds = L.latLngBounds([origen, destino]);
       this.map!.fitBounds(bounds, { padding: [32, 32], maxZoom: 15 });
     });

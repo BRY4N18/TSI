@@ -13,7 +13,8 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 
-import { TablerIconComponent, TablerIconName, tablerIconPaths } from '../../../../shared/ui/icon/tabler-icon.component';
+import { TablerIconComponent, TablerIconName } from '../../../../shared/ui/icon/tabler-icon.component';
+import { capasDeRuta, nodoPin, unidadPin } from '../../../../shared/ui/map/map-pins';
 import { SEVERIDAD_INFO } from '../../../accidentes/severidad.constants';
 import { RutaService } from '../../../../shared/services/ruta.service';
 import { ThemeService } from '../../../../shared/theme/theme.service';
@@ -47,37 +48,14 @@ const RECALCULO_MIN_MS = 30_000;
 const RECALCULO_MIN_METROS = 100;
 
 interface RutaCacheEntry {
+  /** Capa gruesa del riel; es la que conserva la geometría de referencia. */
   linea: L.Polyline;
+  /** Divisoria interior: misma geometría, encima. Se mueve con `linea`. */
+  divisoria: L.Polyline;
   ultimoCalculo: number;
   origenUltimoCalculo: L.LatLng;
 }
 
-function accidentePin(color: string, iconName: TablerIconName): L.DivIcon {
-  const glyphPaths = tablerIconPaths(iconName)
-    .map((d) => `<path d="${d}" transform="translate(6.5,6.5) scale(0.46)" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`)
-    .join('');
-  return L.divIcon({
-    className: 'app-mapa-pin',
-    html: `<svg width="28" height="36" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="${color}"/>
-      <circle cx="12" cy="12" r="8.5" fill="#ffffff"/>
-      ${glyphPaths}
-    </svg>`,
-    iconSize: [28, 36],
-    iconAnchor: [14, 34],
-  });
-}
-
-function unidadPin(color: string): L.DivIcon {
-  return L.divIcon({
-    className: 'app-mapa-pin',
-    html: `<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="9" fill="${color}" stroke="#ffffff" stroke-width="3"/>
-    </svg>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  });
-}
 
 function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
   return a.distanceTo(b);
@@ -105,7 +83,7 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
 
       <!-- Estado de sincronización — flotante arriba-derecha -->
       <div
-        class="absolute right-4 top-4 z-[1000] flex items-center gap-1.5 rounded-lg border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary shadow"
+        class="absolute right-4 top-4 z-[1000] flex items-center gap-1.5 rounded-md border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary shadow"
       >
         <span
           class="h-2 w-2 rounded-full"
@@ -118,7 +96,7 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
 
       <!-- Leyenda — flotante abajo-izquierda -->
       <div
-        class="absolute bottom-4 left-4 z-[1000] flex flex-col gap-1.5 rounded-lg border border-border-default bg-bg-surface p-3 text-xs text-text-secondary shadow"
+        class="absolute bottom-4 left-4 z-[1000] flex flex-col gap-1.5 rounded-md border border-border-default bg-bg-surface p-3 text-xs text-text-secondary shadow"
       >
         <span class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-full bg-alert-critical"></span> Fatal
@@ -147,7 +125,7 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
       <!-- Centrar vista — flotante abajo-derecha, debajo del zoom nativo de Leaflet -->
       <button
         type="button"
-        class="absolute bottom-[6.5rem] right-4 z-[1000] flex h-9 w-9 items-center justify-center rounded-md border border-border-default bg-bg-surface text-text-secondary shadow hover:bg-bg-page hover:text-text-primary"
+        class="tsi-hit-target absolute bottom-[6.5rem] right-4 z-[1000] flex h-9 w-9 items-center justify-center rounded-md border border-border-default bg-bg-surface text-text-secondary shadow hover:bg-bg-page hover:text-text-primary"
         (click)="centrarVista()"
         aria-label="Centrar vista"
         title="Centrar vista"
@@ -158,14 +136,14 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
       @if (error()) {
         <div class="absolute inset-0 z-[1100] grid place-items-center bg-bg-page/70 p-8">
           <div
-            class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center shadow"
+            class="grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center shadow"
             data-testid="error-state"
           >
             <app-tabler-icon name="alert-triangle" [size]="32" />
             <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
             <button
               type="button"
-              class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+              class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               (click)="cargar()"
             >
               <app-tabler-icon name="refresh" [size]="16" />
@@ -294,6 +272,7 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
         marker.remove();
         this.unidadMarkers.delete(id);
         this.rutaCache.get(id)?.linea.remove();
+      this.rutaCache.get(id)?.divisoria.remove();
         this.rutaCache.delete(id);
       }
     }
@@ -311,7 +290,7 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
     const info = SEVERIDAD_INFO[a.idseveridad];
     const tone = info?.tone ?? 'info';
     const iconName: TablerIconName = info?.icon ?? 'info-circle';
-    const icon = accidentePin(TONE_COLOR[tone] ?? 'var(--text-secondary)', iconName);
+    const icon = nodoPin(TONE_COLOR[tone] ?? 'var(--text-secondary)', iconName);
     const latlng = L.latLng(a.coordenadas.latitud, a.coordenadas.longitud);
     const label = info?.label ?? `Sev. ${a.idseveridad}`;
 
@@ -343,6 +322,7 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
 
     if (!u.idaccidente) {
       this.rutaCache.get(u.idunidademergencia)?.linea.remove();
+      this.rutaCache.get(u.idunidademergencia)?.divisoria.remove();
       this.rutaCache.delete(u.idunidademergencia);
       return;
     }
@@ -358,9 +338,14 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
     this.rutaService.calcularRuta(origen, destino).subscribe((puntos) => {
       const existente = this.rutaCache.get(idunidademergencia);
       existente?.linea.remove();
-      const linea = L.polyline(puntos, { color: 'var(--accent-primary)', weight: 3 }).addTo(this.map!);
+      existente?.divisoria.remove();
+      // Riel de §3.1 sobre el mapa: via en accent-flow + divisoria interior.
+      const [via, divisoria] = capasDeRuta(puntos);
+      via.addTo(this.map!);
+      divisoria.addTo(this.map!);
       this.rutaCache.set(idunidademergencia, {
-        linea,
+        linea: via,
+        divisoria,
         ultimoCalculo: Date.now(),
         origenUltimoCalculo: origen,
       });
@@ -393,7 +378,9 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
       // Todavía no amerita recalcular contra el motor de ruteo — solo se
       // reajusta visualmente el extremo de la unidad en la polyline actual.
       const puntos = cache.linea.getLatLngs() as L.LatLng[];
-      cache.linea.setLatLngs([latlng, puntos[puntos.length - 1]]);
+      const tramo = [latlng, puntos[puntos.length - 1]];
+      cache.linea.setLatLngs(tramo);
+      cache.divisoria.setLatLngs(tramo);
       return;
     }
 

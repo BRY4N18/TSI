@@ -16,6 +16,8 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 
+import { nodoPinSimple } from './map-pins';
+
 import { ThemeService } from '../../theme/theme.service';
 import { crearTileLayer } from './map-tile';
 
@@ -26,25 +28,15 @@ export interface LatLng {
 
 const DEFAULT_CENTER: LatLng = { lat: 19.4326, lng: -99.1332 }; // CDMX — referencia si no hay coordenadas iniciales
 
+/** Nodo hexagonal del sistema (design-system.md §3.1). */
+const PIN_ICON = nodoPinSimple('var(--accent-primary)');
+
 /**
  * Ícono de pin en SVG inline (mismo lenguaje visual que TablerIconComponent,
  * accent-primary del design system) — evita depender de los PNG por defecto
  * de Leaflet, cuyas rutas relativas no resuelven bajo el bundler de Angular
  * (esa era la causa de que el marcador no se viera).
  */
-const PIN_SVG = `
-  <svg width="32" height="42" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="var(--accent-primary)"/>
-    <circle cx="12" cy="12" r="5" fill="#ffffff"/>
-  </svg>
-`;
-
-const PIN_ICON = L.divIcon({
-  className: 'app-location-pin',
-  html: PIN_SVG,
-  iconSize: [32, 42],
-  iconAnchor: [16, 40],
-});
 
 /**
  * Selector de coordenadas en mapa (Leaflet + OpenStreetMap, decisión documentada
