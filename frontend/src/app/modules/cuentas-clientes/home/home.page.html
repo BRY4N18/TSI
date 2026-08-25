@@ -1,14 +1,28 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="cuentas-home">
-  <header>
-    <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">{{ tituloHub() }}</h1>
-<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
-    <p class="m-0 mt-1 text-sm text-text-secondary">
-      @if (profile; as p) {
-        Sesión: {{ p.gmail }} · {{ p.roles.join(', ') || 'sin roles' }}
-      } @else {
-        Portal TSI
-      }
-    </p>
+  <!-- La banda de convergencia: este es el nodo, y de aqui sale todo. Es la
+       unica superficie de marca dentro de la aplicacion — hasta ahora solo la
+       veia quien estaba sin sesion. -->
+  <header class="tsi-panel tsi-panel--elevado tsi-panel--marca relative overflow-hidden p-7 lg:p-9">
+    <app-node-pattern variante="banda" [opacidad]="0.18" />
+    <div class="relative flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="m-0 text-xs font-medium uppercase tracking-[0.16em] text-white/60">
+          Centro de operaciones
+        </p>
+        <h1 class="tsi-display m-0 mt-2 text-4xl font-extrabold text-white">{{ tituloHub() }}</h1>
+        <p class="m-0 mt-3 text-sm text-white/70">
+          @if (profile; as p) {
+            {{ p.gmail }} · {{ p.roles.join(', ') || 'sin roles' }}
+          } @else {
+            Portal TSI
+          }
+        </p>
+      </div>
+      <div class="relative flex items-center gap-2 text-xs text-white/70">
+        <span class="h-2 w-2 rounded-full bg-alert-success motion-safe:animate-pulse"></span>
+        Sistema operativo
+      </div>
+    </div>
   </header>
 
   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -17,9 +31,12 @@
         routerLink="/despacho/mi-despacho"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="radio" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="radio" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Mi despacho</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Despachos asignados a mi unidad</p>
       </a>
@@ -27,9 +44,12 @@
         routerLink="/seguimiento/mi-seguimiento"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="map" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="map" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Mi seguimiento</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">GPS y estado de mi misión activa</p>
       </a>
@@ -37,9 +57,12 @@
         routerLink="/evidencia-unidad/disponibilidad"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="camera" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="camera" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Disponibilidad</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Declarar disponibilidad (CU-O30)</p>
       </a>
@@ -50,9 +73,12 @@
         routerLink="/accidentes/registro"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="car-crash" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="car-crash" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Registrar accidente</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Captura en tiempo real</p>
       </a>
@@ -60,9 +86,12 @@
         routerLink="/despacho/monitoreo"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="radio" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="radio" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Monitoreo de despacho</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Asignación y seguimiento de flota</p>
       </a>
@@ -70,9 +99,12 @@
         routerLink="/seguimiento/mapa"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="map" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="map" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Mapa de seguimiento</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Unidades en curso</p>
       </a>
@@ -83,9 +115,12 @@
         routerLink="/cuentas-clientes/gestion-cuenta"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="settings" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="settings" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Gestión de cuenta</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Usuarios, roles y perfil corporativo</p>
       </a>
@@ -93,9 +128,12 @@
         routerLink="/cuentas-clientes/incorporacion-clientes/solicitudes"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="list" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="list" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Solicitudes de cliente</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Aprobar o rechazar autorregistros</p>
       </a>
@@ -105,9 +143,12 @@
         routerLink="/soporte-cliente/mis-tickets"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="list" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="list" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Mis tickets</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Soporte e incidencias</p>
       </a>
@@ -117,9 +158,12 @@
         routerLink="/soporte-cliente/cola"
         class="tsi-panel p-4 no-underline hover:border-accent-primary"
       >
-        <div class="mb-2 text-accent-primary">
-          <app-tabler-icon name="list" [size]="22" />
-        </div>
+        <span
+          class="tsi-node mb-3 h-11 w-10 bg-accent-primary/12 text-accent-primary"
+          aria-hidden="true"
+        >
+          <app-tabler-icon name="list" [size]="20" />
+        </span>
         <p class="m-0 font-semibold text-text-primary">Cola de soporte</p>
         <p class="m-0 mt-1 text-sm text-text-secondary">Tickets pendientes de atención</p>
       </a>

@@ -538,6 +538,17 @@ html[data-theme='dark'] {
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
+  /* Panel de marca: la superficie de convergencia CON la esquina cortada.
+
+     `.tsi-node-surface` pinta el degradado en el propio elemento, pero un panel
+     recortado pinta su superficie en un pseudo-elemento — asi que el degradado
+     tiene que mudarse ahi. Sin esto el `background: transparent` de
+     `--elevado` mata el degradado y el `::after` cubre la banda de color liso.
+     Se usa junto a `.tsi-panel .tsi-panel--elevado`. */
+  .tsi-panel--marca::after {
+    background: var(--gradient-node);
+  }
+
   /* Riel horizontal bajo el titulo de pagina: la firma estructural que §3.1
      define y que hasta ahora solo estaba en la nav activa. */
   .tsi-rail-h {

@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { NodePatternComponent } from '../../../shared/brand/node-pattern.component';
 import { TablerIconComponent } from '../../../shared/ui/icon/tabler-icon.component';
 import { AuthApiService } from '../auth/services/auth-api.service';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [RouterLink, TablerIconComponent],
+  imports: [RouterLink, TablerIconComponent, NodePatternComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.page.html',
 })
