@@ -173,10 +173,16 @@ interface NavGroup {
           @if (navGroups().length) {
             @for (group of navGroups(); track group.name) {
               <div class="flex flex-col gap-1">
+                <!-- Nombre del grupo con el nodo de partida de su via. -->
                 <span
-                  class="mb-1 px-3 text-[0.7rem] font-medium uppercase tracking-wide text-text-secondary"
-                  >{{ group.name }}</span
+                  class="mb-1 flex items-center gap-2 px-1 text-[0.7rem] font-medium uppercase tracking-wide text-text-secondary"
                 >
+                  <span class="tsi-via-nodo" aria-hidden="true"></span>
+                  {{ group.name }}
+                </span>
+                <!-- tsi-via dibuja la via dormida detras de los items; el
+                     item activo enciende su tramo con tsi-rail. -->
+                <div class="tsi-via flex flex-col gap-1">
                 @for (link of group.links; track link.path) {
                   <a
                     class="flex items-stretch rounded-md text-sm font-medium transition-colors"
@@ -209,6 +215,7 @@ interface NavGroup {
                     </span>
                   </a>
                 }
+                </div>
               </div>
             }
           } @else {

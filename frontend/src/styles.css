@@ -499,6 +499,45 @@ html[data-theme='dark'] {
     );
   }
 
+  /* La navegacion como vias — design-system.md §3.1.
+
+     Hasta aqui la identidad traducia el DIBUJO del isotipo (hexagono, corte,
+     divisoria). Esto traduce su IDEA: caminos que convergen en nodos. Cada
+     grupo del menu es una via con su nodo de partida, cada item una parada, y
+     el item activo enciende su tramo. Es la superficie que el usuario ve en
+     todas las pantallas, asi que es donde esa lectura rinde mas.
+
+     La via dormida usa `border-default` para no competir con nada; el tramo
+     encendido es `.tsi-rail`, que se pinta encima con el acento. */
+  .tsi-via {
+    position: relative;
+  }
+
+  .tsi-via::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.375rem;
+    bottom: 0.375rem;
+    width: 5px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--border-default) 0 2px,
+      var(--bg-surface) 2px 3px,
+      var(--border-default) 3px 5px
+    );
+  }
+
+  /* Nodo de partida de cada via, junto al nombre del grupo. */
+  .tsi-via-nodo {
+    width: 9px;
+    height: 11px;
+    flex-shrink: 0;
+    background: var(--accent-flow);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
   /* Riel horizontal bajo el titulo de pagina: la firma estructural que §3.1
      define y que hasta ahora solo estaba en la nav activa. */
   .tsi-rail-h {
