@@ -68,7 +68,11 @@ export const SUSCRIPCIONES_ROUTES: Routes = [
             (m) => m.AprobacionesDowngradePage,
           ),
       },
-      { path: '', pathMatch: 'full', canActivate: [suscripcionesHomeRedirect] },
+      // `children: []` no es decorativo: una ruta solo con `canActivate` no tiene
+      // nada que renderizar y Angular la rechaza entera con NG04014, tumbando la
+      // configuracion de TODO el modulo (no solo esta ruta). El guard redirige
+      // devolviendo un UrlTree, asi que el array vacio es suficiente.
+      { path: '', pathMatch: 'full', canActivate: [suscripcionesHomeRedirect], children: [] },
     ],
   },
 ];
