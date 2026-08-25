@@ -191,7 +191,7 @@ interface NavGroup {
                     [class.border-accent-primary]="rla.isActive"
                     [class.text-accent-primary]="rla.isActive"
                     [class.font-semibold]="rla.isActive"
-                    [style.background-color]="rla.isActive ? 'rgba(46,111,242,0.1)' : null"
+                    [style.background-color]="rla.isActive ? 'color-mix(in srgb, var(--accent-primary) 10%, transparent)' : null"
                     [title]="link.description"
                     (click)="closeSidebar()"
                   >

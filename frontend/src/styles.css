@@ -7,8 +7,18 @@
   --border-default: #e1e5ee;
   --text-primary: #1a1d29;
   --text-secondary: #5a5e70;
-  --accent-primary: #2e6ff2;
-  --accent-hover: #245bc7;
+  --accent-primary: #002b5b;
+  --accent-hover: #0a4a80;
+
+  /* Identidad Nodo Integral — design-system.md §3.1 (Lenguaje de forma).
+     `accent-flow` es el Cian Tecnologico del isotipo con trabajo definido: trazo
+     del riel, indicador de nav activa, arco "en proceso" de los rings. Nunca es
+     relleno con texto blanco encima (el cian crudo no llega a 4.5:1). */
+  --accent-flow: #0090c8;
+  --accent-ring: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+  --rail-groove: var(--bg-surface);
+  --gradient-node: linear-gradient(140deg, #001a38 0%, #002b5b 55%, #00558f 100%);
 
   /* Tokens semánticos de alerta — design-system.md §3, valores de modo claro */
   --alert-critical: #a32d2d;
@@ -30,8 +40,13 @@ html[data-theme='dark'] {
   --border-default: #2a2d3a;
   --text-primary: #e8e9ef;
   --text-secondary: #8a8da0;
-  --accent-primary: #2e6ff2;
-  --accent-hover: #245bc7;
+  --accent-primary: #007aaf;
+  --accent-hover: #006a98;
+
+  /* En oscuro el cian crudo del isotipo si es legible como trazo (6.1:1 sobre
+     bg-surface), asi que el riel usa el hex de marca sin oscurecer. */
+  --accent-flow: #00a8e8;
+  --gradient-node: linear-gradient(140deg, #0a0f1c 0%, #002b5b 60%, #00558f 100%);
 
   --alert-critical: #f09595;
   --alert-critical-bg: #4a1b0c;
@@ -53,6 +68,7 @@ html[data-theme='dark'] {
   --color-text-secondary: var(--text-secondary);
   --color-accent-primary: var(--accent-primary);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-flow: var(--accent-flow);
 
   --color-alert-critical: var(--alert-critical);
   --color-alert-critical-bg: var(--alert-critical-bg);
@@ -65,7 +81,10 @@ html[data-theme='dark'] {
   --color-alert-info: var(--alert-info);
   --color-alert-info-bg: var(--alert-info-bg);
 
-  --radius-md: 0.5rem;
+  /* Escala de radios — design-system.md §5. Tres pasos, sin solapamiento:
+     sm = botones/inputs/badges, md = cards/modales/tablas, lg = paneles grandes. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
 }
 
@@ -128,10 +147,42 @@ html[data-theme='dark'] {
 
   .tsi-input:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(46, 111, 242, 0.15);
+    box-shadow: 0 0 0 3px var(--accent-ring);
   }
 
   .tsi-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Igual que `.tsi-input` pero sin alto fijo: un textarea tiene que poder
+     crecer. Es la razon por la que no basta con reusar `.tsi-input` — su
+     `height: 2.75rem` colapsaria el campo a una sola linea. */
+  .tsi-textarea {
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    min-width: 0;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-default);
+    background: var(--bg-page);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .tsi-textarea::placeholder {
+    color: var(--text-secondary);
+  }
+
+  .tsi-textarea:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-ring);
+  }
+
+  .tsi-textarea:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
@@ -162,7 +213,7 @@ html[data-theme='dark'] {
 
   .tsi-select:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(46, 111, 242, 0.15);
+    box-shadow: 0 0 0 3px var(--accent-ring);
   }
 
   .tsi-select:disabled {
@@ -217,13 +268,37 @@ html[data-theme='dark'] {
   }
 
   .tsi-btn-ghost:hover:not(:disabled) {
-    background: rgba(46, 111, 242, 0.05);
+    background: var(--accent-soft);
   }
 
   .tsi-btn-icon {
     width: 2.75rem;
     min-height: 2.75rem;
     padding: 0;
+  }
+
+  /* Extiende el area de toque a 44x44 sin tocar la caja visible.
+     §5 pide 44px de area de toque "aunque el icono visual sea de ~18-20px":
+     lo que debe medir 44 es el objetivo del dedo, no el dibujo. Agrandar la
+     caja obligaria a rehacer el layout de las barras densas donde viven estos
+     botones (header de 64px, cabecera de modal, chip de archivo), asi que se
+     extiende con un pseudo-elemento centrado, que no ocupa espacio.
+
+     Condicion de uso: no puede haber dos de estos con centros a menos de 44px
+     — sus areas se solaparian y la ultima en el DOM taparia a la anterior.
+     Para grupos densos, agrandar las cajas de verdad. */
+  .tsi-hit-target {
+    position: relative;
+  }
+
+  .tsi-hit-target::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
   }
 
   .tsi-badge {
@@ -265,5 +340,140 @@ html[data-theme='dark'] {
   .tsi-badge-critical {
     background: var(--alert-critical-bg);
     color: var(--alert-critical);
+  }
+
+  /* ---------------------------------------------------------------------
+     Lenguaje de forma Nodo Integral — design-system.md §3.1
+     Tres primitivas derivadas del isotipo. Se usan SOLO donde ya hay
+     estructura (nav activa, spine de seccion, pin de mapa, nodo de estado
+     vacio); nunca como ornamentacion suelta.
+     --------------------------------------------------------------------- */
+
+  /* Riel: barra con una divisoria de 1px corriendo por dentro, eco de la linea
+     interior de las vias del isotipo. Es la marca mas apropiable del sistema.
+     Vertical por defecto (borde izquierdo de nav activa, spine de timeline).
+
+     Por que 5px y no 4: la divisoria tiene que caer sobre un pixel entero. Con
+     un riel de 4px el unico reparto centrado es 1.5/1/1.5, y a dpr=1 esa banda
+     se reparte al 50% entre dos pixeles — el groove se pinta como un borron
+     gris, no como una linea. Con 5px el reparto es 2/1/2: entero, centrado, y
+     nitido tanto a dpr=1 como a dpr=2. Verificado en navegador a dpr=1. */
+  .tsi-rail {
+    width: 5px;
+    align-self: stretch;
+    flex-shrink: 0;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--accent-primary) 0 2px,
+      var(--rail-groove) 2px 3px,
+      var(--accent-primary) 3px 5px
+    );
+  }
+
+
+
+  /* Nodo hexagonal: el hexagono implicito donde convergen las tres vias.
+     Contenedor de icono en estados vacios y pines de mapa — nunca avatares
+     (Ley de Jakob: los avatares siguen full-round). */
+  .tsi-node {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  /* Superficie de marca: el degradado de convergencia navy -> azul luminoso.
+     Se detiene antes del cian crudo para que el texto blanco encima mantenga
+     contraste (7.8:1 en el extremo mas claro). Solo en chrome de marca
+     (paneles de auth/registro, cabecera de onboarding), nunca detras de datos
+     operativos. */
+  .tsi-node-surface {
+    background: var(--gradient-node);
+    color: #fff;
+  }
+
+  /* Toast — design-system.md §5: fondo semántico, no card bg-surface. */
+  .tsi-toast {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-default);
+    border-left-width: 4px;
+    border-left-style: solid;
+    padding: 0.75rem 0.75rem 0.75rem 0.625rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    box-shadow: 0 8px 24px color-mix(in srgb, #000 28%, transparent);
+    animation: tsi-toast-in 180ms ease-out;
+  }
+
+  .tsi-toast--success {
+    border-left-color: var(--alert-success);
+    background: var(--alert-success-bg);
+  }
+
+  .tsi-toast--info {
+    border-left-color: var(--alert-info);
+    background: var(--alert-info-bg);
+  }
+
+  .tsi-toast--warning {
+    border-left-color: var(--alert-warning);
+    background: var(--alert-warning-bg);
+  }
+
+  .tsi-toast--urgent {
+    border-left-color: var(--alert-urgent);
+    background: var(--alert-urgent-bg);
+  }
+
+  .tsi-toast--critical {
+    border-left-color: var(--alert-critical);
+    background: var(--alert-critical-bg);
+  }
+
+  .tsi-toast__icon {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .tsi-toast--success .tsi-toast__icon {
+    color: var(--alert-success);
+  }
+
+  .tsi-toast--info .tsi-toast__icon {
+    color: var(--alert-info);
+  }
+
+  .tsi-toast--warning .tsi-toast__icon {
+    color: var(--alert-warning);
+  }
+
+  .tsi-toast--urgent .tsi-toast__icon {
+    color: var(--alert-urgent);
+  }
+
+  .tsi-toast--critical .tsi-toast__icon {
+    color: var(--alert-critical);
+  }
+}
+
+@keyframes tsi-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tsi-toast {
+    animation: none;
   }
 }

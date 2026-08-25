@@ -110,7 +110,7 @@ export class RegistroPublicoPage implements OnInit {
     name: 'nombres' | 'apellidos' | 'gmail' | 'empresa' | 'cargo' | 'telefono' | 'fuente' | 'fuente_otro',
   ): string {
     const base =
-      'box-border h-11 w-full min-w-0 rounded-md border bg-bg-page px-3 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)]';
+      'box-border h-11 w-full min-w-0 rounded-md border bg-bg-page px-3 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:ring-4 focus:ring-accent-primary/15';
     const invalid = this.fieldError(name);
     return invalid
       ? `${base} border-alert-critical focus:border-alert-critical`
@@ -119,7 +119,7 @@ export class RegistroPublicoPage implements OnInit {
 
   selectClass(name: 'fuente' | 'tipo_organizacion'): string {
     const base =
-      'box-border h-11 w-full min-w-0 appearance-none rounded-md border bg-bg-page bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-10 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)]';
+      'box-border h-11 w-full min-w-0 appearance-none rounded-md border bg-bg-page bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-10 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:ring-4 focus:ring-accent-primary/15';
     const invalid =
       name === 'fuente' ? this.fieldError('fuente') : null;
     const border = invalid

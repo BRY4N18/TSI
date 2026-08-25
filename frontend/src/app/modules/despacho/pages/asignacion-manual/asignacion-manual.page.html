@@ -25,7 +25,7 @@
           Unidad
           <select
             [(ngModel)]="unidadSeleccionada"
-            class="rounded-md border border-border-default bg-transparent px-3 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(46,111,242,0.15)] focus:outline-none"
+            class="rounded-md border border-border-default bg-transparent px-3 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
           >
             @for (c of candidatas(); track c.idunidademergencia) {
               <option [ngValue]="c.idunidademergencia">

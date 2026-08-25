@@ -34,7 +34,7 @@ const DEFAULT_CENTER: LatLng = { lat: 19.4326, lng: -99.1332 }; // CDMX — refe
  */
 const PIN_SVG = `
   <svg width="32" height="42" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="#2e6ff2"/>
+    <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="var(--accent-primary)"/>
     <circle cx="12" cy="12" r="5" fill="#ffffff"/>
   </svg>
 `;

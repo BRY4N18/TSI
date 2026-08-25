@@ -1,6 +1,6 @@
 # Sistema de Diseño (UX/UI) — TSI
 **Ubicación de este archivo:** `docs/diseno/design-system.md`
-**Última actualización:** 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend). Anterior: 2026-07-12 (v5 — corrección de IDs de caso de uso en ejemplos de Toast/Snackbar/Alert para alinear con la numeración vigente de los specs de Emergencias: CU-O39 abortar misión, CU-O32 descartar caso, CU-O41 fusionar reportes, CU-O44 forzar cierre, CU-O42 cancelar con unidad despachada; "sin unidades disponibles" ya no es un CU independiente, es una alerta dentro de CU-O34)
+**Última actualización:** 2026-08-24 (v7 — paleta Nodo Integral: `accent-primary`/`accent-hover` derivados del logo navy/cian, distintos por tema para conservar contraste de botones y texto). Anterior: 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend).
 
 ---
 
@@ -8,7 +8,7 @@
 
 La interfaz de TSI debe comunicar **confianza, velocidad y precisión**, como un centro de control de tráfico aéreo o sala de monitoreo. Profesionalismo institucional, con carácter propio (no plantilla genérica ni "hecho por IA"). La información crítica debe ser legible en fracciones de segundo. Microinteracciones suaves y jerarquía visual robusta.
 
-**Lenguaje visual global:** el sistema usa esquinas redondeadas de forma consistente en todos los componentes — botones, inputs, cards, tablas, modales, badges, tooltips, tabs y navegación — pero con una redondez **sutil y contenida** (radios en el rango 6-12px según el componente, nunca por debajo de este mínimo ni acercándose a formas muy suaves tipo app de consumo). El objetivo es evitar dos extremos: la dureza visual de esquinas a 0-2px (que se lee fría y genérica) y la suavidad excesiva de radios grandes (que se lee informal, poco apta para un centro de control de emergencias). La redondez debe sentirse como un detalle de coherencia del sistema, no como una decisión estética protagonista. La tipografía y el espaciado deben leerse como parte de ese mismo sistema coherente en cada pantalla, no como decisiones aisladas.
+**Lenguaje visual global:** el sistema usa esquinas redondeadas de forma consistente en todos los componentes — botones, inputs, cards, tablas, modales, badges, tooltips, tabs y navegación — pero con una redondez **sutil y contenida** (radios en el rango 6-12px según el componente, nunca por debajo de este mínimo ni acercándose a formas muy suaves tipo app de consumo). El objetivo es evitar dos extremos: la dureza visual de esquinas a 0-2px (que se lee fría y genérica) y la suavidad excesiva de radios grandes (que se lee informal, poco apta para un centro de control de emergencias). La redondez debe sentirse como un detalle de coherencia del sistema, no como una decisión estética protagonista. La tipografía y el espaciado deben leerse como parte de ese mismo sistema coherente en cada pantalla, no como decisiones aisladas. Esta estética de nodos conectados se refuerza solo donde ya hay estructura (logo, navegación activa, anillos de progreso), nunca como ornamentación suelta.
 
 El diseño se apoya en 5 principios de psicología de diseño, que deben poder rastrearse en cualquier pantalla nueva que se construya (ver sección 2).
 
@@ -29,7 +29,14 @@ Toda pantalla o componente nuevo debe poder justificarse con al menos uno de est
 
 ## 3. Paleta de colores
 
-Paleta migrada de la base negro/rojo a un sistema **dual claro/oscuro** con acento azul eléctrico, decidido tras evaluar 3 direcciones (azul, violeta, teal) — se eligió azul por transmitir monitoreo/tecnología sin ninguna cercanía a los colores semánticos de alerta (rojo/naranja/ámbar/verde), evitando así cualquier ambigüedad bajo estrés.
+Paleta alineada con la identidad **Nodo Integral** (isotipo de tres vías que convergen en un hexágono): Azul Profundo institucional y Cian Tecnológico. El sistema sigue siendo **dual claro/oscuro**. Los hex del logo no se copian crudos a los tokens de UI: cada tema usa el polo del isotipo que contrasta con su fondo, ajustado para que un botón primario con texto blanco cumpla WCAG 4.5:1.
+
+**Referencia de marca (logo, no tokens de componente):**
+
+| Rol en el isotipo | Hex | Dónde sí | Dónde no |
+|---|---|---|---|
+| Azul Profundo | `#002B5B` | Wordmark, vía izquierda del nodo, `accent-primary` en modo claro | Botón primario en modo oscuro (se funde con `bg-surface`) |
+| Cian Tecnológico | `#00A8E8` | Vía luminosa del nodo, referencia de matiz para el acento oscuro | Texto sobre blanco, ni relleno de botón con texto blanco (contraste < 4.5:1) |
 
 **Tokens base — estructura**
 
@@ -40,8 +47,8 @@ Paleta migrada de la base negro/rojo a un sistema **dual claro/oscuro** con acen
 | `border-default` | `#2A2D3A` | `#E1E5EE` | Líneas divisorias, bordes de input, separadores |
 | `text-primary` | `#E8E9EF` | `#1A1D29` | Texto principal, títulos |
 | `text-secondary` | `#8A8DA0` | `#5A5E70` | Texto secundario, placeholders, labels |
-| `accent-primary` | `#2E6FF2` | `#2E6FF2` | Header, botones primarios, navegación activa, marca (se mantiene igual en ambos modos — validado con contraste suficiente sobre ambos fondos) |
-| `accent-hover` | `#245BC7` | `#245BC7` | Estado hover de elementos con `accent-primary` |
+| `accent-primary` | `#007AAF` (cian oscurecido) | `#002B5B` (Azul Profundo) | Header, botones primarios, navegación activa, marca en UI |
+| `accent-hover` | `#006A98` | `#0A4A80` | Estado hover de elementos con `accent-primary`. En claro, el navy se eleva hacia el cian; en oscuro, el cian se oscurece (estado presionado) |
 
 **Tokens semánticos — alertas y estados**
 
@@ -55,11 +62,13 @@ Paleta migrada de la base negro/rojo a un sistema **dual claro/oscuro** con acen
 
 **Punto de color crudo (referencia, no usar directamente en componentes):** los estados usan la misma familia de matiz en ambos modos (rojo, naranja, ámbar, verde) — lo que cambia es la posición en la rampa: fondo oscuro-saturado + texto claro en modo oscuro, fondo claro-pastel + texto oscuro-saturado en modo claro. Ningún componente debe usar hex "a mano"; siempre referenciar el token semántico (ej. `alerta-critica-bg`, `alerta-critica-texto`) para que el cambio de tema sea automático.
 
-**Regla de uso:** `bg-page`/`bg-surface` dominan como base estructural (~55-60% de la interfaz). `accent-primary` se usa con intención en botones primarios, navegación activa y marca — nunca como color de alerta, precisamente para eliminar cualquier ambigüedad entre "acción de marca" y "estado crítico" (a diferencia de la paleta anterior negro/rojo, donde ambos compartían el mismo hex). Naranja para despacho urgente, ámbar para advertencias, verde para éxito. Nunca usar colores pastel o saturados sin propósito fuera de los tokens ya definidos.
+**Regla de uso:** `bg-page`/`bg-surface` dominan como base estructural (~55-60% de la interfaz). `accent-primary` se usa con intención en botones primarios, navegación activa y marca — nunca como color de alerta. `accent-hover` es interacción, no un segundo color de marca para texto de cuerpo. Naranja para despacho urgente, ámbar para advertencias, verde para éxito. Nunca usar colores pastel o saturados sin propósito fuera de los tokens ya definidos. Ningún componente hardcodea el hex del acento (ni el del logo ni el del token): siempre `accent-primary` / `accent-hover`, para que el tema resuelva solo.
 
-**Por qué el acento ya no comparte hex con las alertas:** en la paleta anterior, el rojo de marca y el rojo crítico usaban el mismo valor, diferenciados solo por contexto (fondo+borde+ícono). Con azul como acento, esa ambigüedad desaparece estructuralmente: ningún estado de alerta usa tonos azules, así que no hace falta ningún contexto adicional para diferenciarlos — es una mejora de legibilidad bajo estrés, no solo estética.
+**Por qué el acento ya no comparte hex con las alertas:** en la paleta negro/rojo, el rojo de marca y el rojo crítico usaban el mismo valor, diferenciados solo por contexto (fondo+borde+ícono). Con navy/cian de marca, esa ambigüedad desaparece estructuralmente: ningún estado de alerta usa tonos azules o cian, así que no hace falta contexto adicional para diferenciarlos — es una mejora de legibilidad bajo estrés, no solo estética.
 
-**Sobre el azul de "obligación" (ISO 3864):** dado que ahora el acento primario del sistema **es** azul (por identidad de marca/monitoreo, no por severidad), se descarta definitivamente reservar un azul adicional para "obligación" según la norma — generaría confusión entre "esto es una acción de marca" y "esto es obligatorio" usando el mismo matiz. Toda acción obligatoria del usuario sigue comunicándose mediante el nivel de severidad ya cubierto por la paleta de alertas (ej. aceptar una asignación es urgente/alto, no neutro).
+**Por qué claro y oscuro no comparten el mismo hex de acento:** el logo tiene dos polos. `#002B5B` sobre `bg-surface` oscuro (`#1C1F2B`) casi no se distingue; `#00A8E8` con texto blanco no llega a 4.5:1, ni como texto sobre blanco. Cada tema privilegia el polo que contrasta con su fondo, oscurecido o elevado lo justo para que el botón primario (texto blanco) y el texto de acento sobre la página cumplan contraste. El cian crudo del isotipo no es un token de UI.
+
+**Sobre el azul de "obligación" (ISO 3864):** dado que ahora el acento primario y el hover del sistema son azul/cian (por identidad de marca/monitoreo, no por severidad), se descarta definitivamente reservar un azul adicional para "obligación" según la norma — generaría confusión entre "esto es una acción de marca" y "esto es obligatorio" usando el mismo matiz. Toda acción obligatoria del usuario sigue comunicándose mediante el nivel de severidad ya cubierto por la paleta de alertas (ej. aceptar una asignación es urgente/alto, no neutro).
 
 **Tema oscuro/claro — alcance:** ambos temas son completos e intercambiables por el usuario (no solo un sidebar oscuro sobre contenido claro como en la versión anterior). Justificación: operadores en salas de control suelen trabajar en penumbra o en turnos nocturnos, y no se conoce de antemano la edad ni sensibilidad visual de cada usuario — ofrecer ambos como opción real cubre ambos casos sin forzar una decisión única para todos los roles (operador, unidad de emergencia, técnico de campo).
 
@@ -90,9 +99,9 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 - Tablas: esquinas del contenedor general en 8px (las celdas internas quedan rectas por legibilidad de datos, pero el marco exterior sigue la regla)
 - Nunca usar 0-2px en ningún componente de la interfaz — esto es lo que se busca evitar deliberadamente ("muy cuadrado")
 
-**Header:** Fondo `bg-surface`, altura 64px, borde inferior `border-default`. Logo a la izquierda. A la derecha: saludo/contexto de usuario, avatar circular con iniciales (fondo `accent-primary`), notificaciones (campana con contador en color de alerta correspondiente), selector de región. Barra de búsqueda global centrada con input redondeado (Ley de Jakob: patrón esperado).
+**Header:** Fondo `bg-surface`, altura 64px, borde inferior `border-default`. Logo Nodo Integral (isotipo + wordmark; en viewports estrechos el wordmark se oculta y queda el isotipo) a la izquierda. A la derecha: saludo/contexto de usuario, avatar circular con iniciales (fondo `accent-primary`), notificaciones (campana con contador en color de alerta correspondiente), selector de región. Barra de búsqueda global centrada con input redondeado (Ley de Jakob: patrón esperado).
 
-**Navegación lateral (sidebar):** Fondo `bg-surface`, ancho 240px, borde derecho `border-default`. Items con ícono 24x24px, contenedor de item con radio 8-10px al hacer hover/activo (no un rectángulo pegado al borde). Item activo: fondo con opacidad baja de `accent-primary` (ej. `rgba(46,111,242,0.1)`), borde izquierdo 4px `accent-primary`, texto `accent-primary` en bold. Agrupaciones por Gestalt dentro de cada sidebar, separadas por 24px mínimo.
+**Navegación lateral (sidebar):** Fondo `bg-surface`, ancho 240px, borde derecho `border-default`. Items con ícono 24x24px, contenedor de item con radio 8-10px al hacer hover/activo (no un rectángulo pegado al borde). Item activo: fondo `accent-primary` al ~10% de opacidad (`color-mix` sobre el token, nunca un rgba con hex fijo), borde izquierdo 4px `accent-primary`, texto `accent-primary` en bold. Agrupaciones por Gestalt dentro de cada sidebar, separadas por 24px mínimo.
 
 **Regla de sidebar por rol:** cada rol del sistema (operador, unidad de emergencia, técnico de campo) tiene su **propio sidebar**, compuesto únicamente por los módulos a los que ese rol tiene acceso — nunca un sidebar único con ítems ocultos u ocultos/deshabilitados por permisos. Esto reduce carga cognitiva (Ley de Hick) y evita que un usuario descubra la existencia de módulos fuera de su alcance. El listado concreto de qué módulos ve cada rol se define en `module-map.md`; este documento solo fija el patrón visual y estructural del sidebar, no su contenido.
 
@@ -103,15 +112,15 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 
 **Layout general de la aplicación (aplica a cualquier pantalla, no solo dashboards):**
 - Grid principal: sidebar fija + área de contenido con cards de esquinas redondeadas (12-16px)
-- Bloques de KPIs con indicadores circulares de progreso (ring charts) donde tenga sentido mostrar métricas — máximo 3-4 rings visibles a la vez (Ley de Hick + carga cognitiva)
+- Bloques de KPIs con indicadores circulares de progreso (ring charts) donde tenga sentido mostrar métricas — máximo 3-4 rings visibles a la vez (Ley de Hick + carga cognitiva). El arco completado usa `accent-primary`; un estado activo o en proceso usa `accent-hover`
 - Listados de eventos/actividad agrupados por proximidad temporal, en cards individuales redondeadas, no en tablas densas cuando el contenido es narrativo
 - Máximo 6-8 bloques de información simultáneos por vista, en cualquier módulo del sistema (despacho, analítica, administración, etc.)
 
-**Botones:** Primario `accent-primary` texto blanco, hover `accent-hover`, radio 8-10px. Secundario borde `accent-primary` texto `accent-primary` sobre fondo transparente/claro. Crítico destructivo: color de alerta crítica (texto/ícono del token `alerta-critica`) con ícono de advertencia explícito + confirmación en 2 pasos (nunca solo el color para distinguirlo de un botón primario normal — y ahora, al no compartir hex con el acento de marca, la distinción es aún más clara). Advertencia: color de alerta media, texto sobre ese fondo. Deshabilitado opacidad 0.5. Padding 10px 20px. Área mínima de toque 44x44px (Ley de Fitts) en acciones críticas.
+**Botones:** Primario `accent-primary` texto blanco, hover `accent-hover`, radio 8-10px. Secundario borde `accent-primary` texto `accent-primary` sobre fondo transparente/claro, hover con fondo `accent-primary` al ~5% y borde `accent-hover`. Crítico destructivo: color de alerta crítica (texto/ícono del token `alerta-critica`) con ícono de advertencia explícito + confirmación en 2 pasos (nunca solo el color para distinguirlo de un botón primario normal — y ahora, al no compartir hex con el acento de marca, la distinción es aún más clara). Advertencia: color de alerta media, texto sobre ese fondo. Deshabilitado opacidad 0.5. Padding 10px 20px. Área mínima de toque 44x44px (Ley de Fitts) en acciones críticas.
 
 **Estado "en carga" (acciones críticas — ej. Asignar unidad, Confirmar despacho):** al activarse la acción, el botón se deshabilita para evitar doble-submit, el texto cambia a su forma en gerundio (ej. "Asignar unidad" → "Asignando…"), y se agrega un spinner de 16px a la izquierda del texto, dentro del propio botón — nunca un spinner flotante aparte. El fondo mantiene `accent-primary` con opacidad ~0.8 (distinta del disabled real en 0.5, para diferenciar "procesando" de "no disponible"). Si no hay respuesta del backend en 10-15s, el botón vuelve a su estado normal y dispara el feedback de error correspondiente (Toast o Alert según gravedad) — nunca queda cargando indefinidamente.
 
-**Formularios:** Inputs borde `border-default`, radio 8-10px, padding 10px 14px, fondo `bg-surface`. Foco borde `accent-primary` + sombra `0 0 0 3px rgba(46,111,242,0.15)`. Labels `text-secondary`, 14px, peso 500.
+**Formularios:** Inputs borde `border-default`, radio 8-10px, padding 10px 14px, fondo `bg-surface`. Foco borde `accent-primary` + anillo `accent-primary` al 15% de opacidad (`ring-accent-primary/15` o equivalente con `color-mix` sobre el token — nunca un rgba con hex fijo). Labels `text-secondary`, 14px, peso 500.
 
 **Validación semántica en formularios:**
 - **Error:** borde y texto de ayuda en color de alerta crítica, ícono de error. Campo obligatorio faltante o dato inválido.
@@ -291,7 +300,7 @@ El copy específico de cada estado (qué dice exactamente el mensaje vacío o de
 
 ## 6. Accesibilidad
 
-- Contraste mínimo 4.5:1 texto normal, 3:1 texto grande, **verificado en ambos temas por separado** (claro y oscuro) para cada token semántico definido en la sección 3 — un color que cumple contraste en modo claro no garantiza cumplirlo en modo oscuro y viceversa.
+- Contraste mínimo 4.5:1 texto normal, 3:1 texto grande, **verificado en ambos temas por separado** (claro y oscuro) para cada token de la sección 3, incluidos los de marca — un color que cumple contraste en modo claro no garantiza cumplirlo en modo oscuro y viceversa. El cian crudo del logo (`#00A8E8`) no se usa como color de texto ni como relleno de botón con texto blanco.
 - Los colores nunca son el único medio para transmitir información — siempre acompañados de íconos y labels.
 - Tamaño mínimo 14px, zoom sin romper el layout.
 - El cambio de tema (claro/oscuro) debe persistir por usuario (no reiniciar en cada sesión) y estar disponible desde una ubicación consistente y predecible (ej. selector en el header o en configuración de cuenta).

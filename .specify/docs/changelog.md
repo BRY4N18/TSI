@@ -7,6 +7,19 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-24 — Paleta Nodo Integral (design-system v7)
+
+El acento de UI deja el azul eléctrico genérico (`#2E6FF2`) y se deriva del logo
+Nodo Integral (navy `#002B5B` / cian `#00A8E8`). Los hex del isotipo no se copian
+crudos: en claro el primario es el navy; en oscuro un cian oscurecido (`#007AAF`)
+para que el botón con texto blanco cumpla contraste y no se funda con `bg-surface`.
+
+Fuente de verdad: `.specify/docs/design/design-system.md` §1, §3, §5, §6.
+Tokens en `frontend/src/styles.css`. Los `rgba(46,111,242,…)` que ignoraban el
+tema pasan a `color-mix` / `ring-accent-primary/15` sobre el token.
+
+---
+
 ## 2026-08-23 — C16: el plan global se queda sin reglas pendientes
 
 Cierre de `PG-RES-005` y `PG-UI-006`, las dos últimas. El plan queda en **34 cubiertas, 23
