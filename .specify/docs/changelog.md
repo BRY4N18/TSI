@@ -7,6 +7,43 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-25 — design-system v8: §1 invierte la filosofía y §4 estrena pareja tipográfica
+
+**Se redacta al final a propósito.** Estas dos secciones se reescriben *después* de
+construir la identidad, a partir de lo que se decidió en pantalla. Es lo contrario del
+flujo normal del proyecto, y fue una decisión explícita: la dirección visual no se podía
+cerrar en abstracto, había que verla.
+
+**§1 — la forma pasa a ser protagonista.** Hasta la v7 el documento pedía sobriedad: la
+redondez debía ser "un detalle de coherencia, no una decisión estética protagonista". Esa
+regla, aplicada al pie de la letra, produjo un sistema **coherente pero anónimo** — con la
+paleta del logo y sin que nada recordara al logo. Era la propia filosofía la que frenaba
+el cambio, no un olvido de implementación.
+
+La sección nueva declara el objetivo real —que alguien reconozca TSI sin ver el logo ni
+leer el nombre— y lista las cuatro traducciones del isotipo con su sitio: el riel, el
+nodo, la esquina cortada y la superficie de convergencia. Conserva **dos límites**, que son
+los que separan identidad de ruido: las primitivas van solo donde ya hay estructura, y la
+severidad nunca la pisa la marca. Y deja explícito dónde la sobriedad sigue mandando —
+celdas, labels y formularios, donde manda la legibilidad bajo estrés.
+
+**§4 — Archivo Expanded / Inter.** Dos familias con papeles separados: la display da
+carácter, la de texto da legibilidad. Se documenta por qué Expanded y no Archivo a secas —
+la versión normal se probó primero y no se distinguía de Inter, porque ambas son grotescas
+neo; lo que se percibe sin ojo entrenado es el ancho (495px contra 392 en el mismo
+titular). Se fija la regla de reparto en una línea: si se lee de un vistazo es display, si
+se lee con atención es Inter. Y se documentan los placeholders como ejemplos concretos, no
+instrucciones.
+
+**Huecos cerrados de paso:** §3.1 no listaba la esquina cortada ni las vías del sidebar
+(se construyeron después de escribirla); §5 no documentaba `.tsi-panel` ni sus tres
+variantes ni la esquina del botón; y la sección de iconografía seguía citando una escala de
+radios de "6-12px" que dejó de existir en v7.2.
+
+**Archivos:** `.specify/docs/design/design-system.md` §1, §3.1, §4, §5.
+
+---
+
 ## 2026-08-24 — El cian y el hexágono dejan de ser papel (design-system v7.4)
 
 **Causa:** auditando lo desplegado apareció lo incómodo — `--accent-flow` tenía **cero

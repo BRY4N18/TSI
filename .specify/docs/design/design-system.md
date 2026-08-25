@@ -1,16 +1,36 @@
 # Sistema de Diseño (UX/UI) — TSI
 **Ubicación de este archivo:** `docs/diseno/design-system.md`
-**Última actualización:** 2026-08-24 (v7.4 — §5 Mapa: los pines pasan al nodo hexagonal y la ruta al riel; §3.1 deja de reclamar el punto de sincronización para el cian, que es semántico por §5). Anterior en el mismo día: v7.3 — §3.1: se documenta `app-brand-panel` como aplicación canónica de la superficie de convergencia, tras aplicarla a las pantallas públicas). Anterior en el mismo día: v7.2 — nueva §3.1 Lenguaje de forma: riel, nodo hexagonal y superficie de convergencia; §5 escala de radios reducida a tres tokens, resolviendo la contradicción 8-10px vs 12-16px). Anterior en el mismo día: v7.1 — §5 Toast: cuerpo con fondo semántico, no card `bg-surface`; cierra D2). Anterior en el mismo día: v7 paleta Nodo Integral. Anterior: 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend).
+**Última actualización:** 2026-08-25 (v8 — §1 invierte la filosofía: la forma pasa a ser protagonista y es la del isotipo, con los dos límites que la separan del ruido; §4 pareja tipográfica Archivo Expanded / Inter con la regla de reparto y los placeholders. Ambas secciones se redactan **después** de construir la identidad, a partir de lo que se decidió en pantalla, no antes). Anterior: 2026-08-24 (v7.4 — §5 Mapa: los pines pasan al nodo hexagonal y la ruta al riel). v7.2: §3.1 Lenguaje de forma y escala de radios de tres tokens. v7: paleta Nodo Integral. v6 (2026-08-12): §11 overlays bloqueantes como diálogo.
 
 ---
 
 ## 1. Filosofía
 
-La interfaz de TSI debe comunicar **confianza, velocidad y precisión**, como un centro de control de tráfico aéreo o sala de monitoreo. Profesionalismo institucional, con carácter propio (no plantilla genérica ni "hecho por IA"). La información crítica debe ser legible en fracciones de segundo. Microinteracciones suaves y jerarquía visual robusta.
+La interfaz de TSI debe comunicar **confianza, velocidad y precisión**, como un centro de control de tráfico aéreo o sala de monitoreo. La información crítica debe ser legible en fracciones de segundo, y la jerarquía visual robusta.
 
-**Lenguaje visual global:** el sistema usa esquinas redondeadas de forma consistente en todos los componentes — botones, inputs, cards, tablas, modales, badges, tooltips, tabs y navegación — pero con una redondez **sutil y contenida** (radios en el rango 6-12px según el componente, nunca por debajo de este mínimo ni acercándose a formas muy suaves tipo app de consumo). El objetivo es evitar dos extremos: la dureza visual de esquinas a 0-2px (que se lee fría y genérica) y la suavidad excesiva de radios grandes (que se lee informal, poco apta para un centro de control de emergencias). La redondez debe sentirse como un detalle de coherencia del sistema, no como una decisión estética protagonista. La tipografía y el espaciado deben leerse como parte de ese mismo sistema coherente en cada pantalla, no como decisiones aisladas. Esta estética de nodos conectados se refuerza solo donde ya hay estructura (logo, navegación activa, anillos de progreso), nunca como ornamentación suelta.
+**Lo que este sistema quiere lograr, y por qué cambió.** Hasta la v7 este documento pedía sobriedad: la forma debía ser "un detalle de coherencia, no una decisión estética protagonista". El resultado fue un sistema **coherente pero anónimo** — con la paleta del logo aplicada y sin que nada recordara al logo. Coherencia e identidad no son lo mismo: la primera evita que el sistema se contradiga; la segunda hace que se reconozca. Faltaba la segunda.
 
-El diseño se apoya en 5 principios de psicología de diseño, que deben poder rastrearse en cualquier pantalla nueva que se construya (ver sección 2).
+A partir de v8 la regla se invierte: **la forma es protagonista, y es la del isotipo.** El objetivo declarado es que un usuario que abra cualquier pantalla —sin ver el logo, sin leer el nombre— sepa que está en TSI.
+
+**De qué habla el isotipo.** Tres vías con su línea divisoria interior que convergen y se anudan en un hexágono. No es un adorno: es la tesis del producto — TSI es el nodo donde confluyen flujos comerciales, operativos y de emergencia. Todo lo que sigue traduce esa idea, no solo ese dibujo.
+
+**Las cuatro traducciones**, cada una con su sitio y su justificación en §3.1 y §5:
+
+| Del logo | A la interfaz | Dónde se ve |
+|---|---|---|
+| La divisoria de la vía | El **riel** — barra de 5px con una línea de 1px corriendo por dentro | Nav activa, bajo cada título de página, la ruta en el mapa |
+| El hexágono | El **nodo** — recorte hexagonal | Pines de mapa, severidad en cada fila, estados vacíos, destinos del hub |
+| Los lados en ángulo del hexágono | La **esquina cortada** — superior derecha, en cards y botones | Todas las pantallas |
+| La convergencia | La **superficie de marca** — degradado con el patrón de las tres vías | Login, registro y la banda del hub |
+
+**Lo que la inversión NO autoriza.** Que la forma sea protagonista no la vuelve libre. Siguen valiendo dos límites, y son los que separan identidad de ruido:
+
+1. **Solo donde ya hay estructura.** Un estado activo, un límite de sección, un pin que ya iba a estar ahí. Nunca se añade un elemento a una pantalla *para* mostrar la marca. Si al quitar la primitiva no se pierde información ni jerarquía, era ornamentación.
+2. **La severidad no se negocia.** El color y la forma de las alertas son información, y la marca nunca los pisa. Un pin es hexagonal por marca y rojo por gravedad; si hay conflicto, gana la gravedad.
+
+**Dónde la sobriedad sigue mandando.** El carácter vive en titulares, geometría y superficies de marca. **No** en celdas de datos, labels, formularios ni cuerpo de texto: ahí manda la legibilidad bajo estrés, y esa regla no cambió. Un operador leyendo una tabla de accidentes a las 3 AM no necesita personalidad, necesita leer.
+
+El diseño se apoya además en 5 principios de psicología de diseño, que deben poder rastrearse en cualquier pantalla nueva (ver sección 2).
 
 ## 2. Principios de UX aplicados
 
@@ -84,7 +104,9 @@ Regla que gobierna las tres (extensión de §1): **se aplican solo donde ya exis
 |---|---|---|---|---|
 | **Riel** | `.tsi-rail` | Barra de 5px con una divisoria de 1px corriendo por dentro | Borde izquierdo de nav activa; ruta activa sobre el mapa (§5 Mapa) | Bordes de card, separadores de tabla, cualquier línea que solo divide |
 | **Nodo hexagonal** | `.tsi-node` | Contenedor recortado en hexágono vertical | Contenedor de ícono en estados vacíos, pines de mapa | Avatares (siguen full-round, Ley de Jakob), badges, botones |
-| **Superficie de convergencia** | `.tsi-node-surface` | Degradado navy → azul luminoso | Chrome de marca: paneles de auth/registro, cabecera de onboarding | Detrás de datos operativos, cards de KPI, cualquier fondo de contenido |
+| **Superficie de convergencia** | `.tsi-node-surface` | Degradado navy → azul luminoso | Chrome de marca: paneles de auth/registro, banda del hub | Detrás de datos operativos, cards de KPI, cualquier fondo de contenido |
+| **Esquina cortada** | `.tsi-panel` | Card con la esquina superior derecha cortada en ángulo | Cards, paneles y modales con padding de card real | Chips, badges y overlays pequeños — el corte de 20px se come la caja |
+| **Vía de navegación** | `.tsi-via` | Línea dormida que recorre un grupo de nav; el item activo enciende su tramo | Los grupos del sidebar | Cualquier otra lista: no toda lista es un camino |
 
 **El riel es la marca más apropiable del sistema.** La divisoria interior de las vías del isotipo es una línea de carretera vista desde arriba: es el detalle que ningún otro producto tiene. Un borde izquierdo plano de 4px en la nav activa lo tiene cualquier framework; ese mismo borde con la divisoria corriendo por dentro se lee como TSI de inmediato. El cian (`accent-flow`) marca **activo / en curso**, nunca severidad — esa sigue siendo competencia exclusiva de los tokens de alerta; hoy su uso es la ruta del mapa. No existen variantes del riel declaradas "por si acaso": cuando aparezca el caso (spine de timeline, separador de sección) se añade entonces, que es lo que exige la regla de esta misma sección.
 
@@ -102,18 +124,35 @@ Regla que gobierna las tres (extensión de §1): **se aplican solo donde ya exis
 
 ## 4. Tipografía
 
-La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos no demasiado rígidos, buen interlineado (line-height 1.4-1.6 en cuerpo de texto), y letras que respiren dentro de sus contenedores redondeados — nunca texto pegado al borde de una card o botón.
+Dos familias con papeles separados, y la separación es la regla: **la display da carácter, la de texto da legibilidad.** Ninguna invade el terreno de la otra.
 
-| Elemento | Especificación |
-|---|---|
-| Fuente principal | **Inter** (variable), pesos 400, 500, 600, 700 |
-| H1 (títulos de página) | 28px, peso 700, color `text-primary` |
-| H2 (encabezados de sección) | 20px, peso 600, color `text-primary` |
-| H3 (subencabezados) | 16px, peso 600, color `text-primary` |
-| Cuerpo principal | 14px, peso 400, color `text-primary`, line-height 1.5 |
-| Cuerpo secundario | 14px, peso 400, color `text-secondary`, line-height 1.5 |
-| KPIs y labels | 12px, peso 500, mayúsculas, letter-spacing 0.5px, color `text-secondary` |
-| Monoespaciada | **JetBrains Mono** 13px solo para códigos, IDs de API y coordenadas |
+| Familia | Uso | Por qué |
+|---|---|---|
+| **Archivo Expanded** (eje `wdth` 125, pesos 600-800) | Titulares, cifras héroe, cabeceras de tabla | Grotesca de linaje de señalización vial — el mismo origen que los carteles de carretera, que es el dominio del producto. Su peso alto recoge el wordmark del logo |
+| **Inter** (variable, 400-700) | Cuerpo, celdas de datos, labels, formularios, badges | Legibilidad bajo estrés. Es deliberadamente neutra donde la neutralidad es una virtud |
+| **JetBrains Mono** 13px | IDs de caso, códigos de API, coordenadas | Sin cambios respecto a v7 |
+
+**Por qué Expanded y no Archivo a secas.** Se probó primero la versión normal y fue un error: Archivo e Inter son ambas grotescas neo, primas hermanas, y a simple vista se leen igual — el cambio no se percibía. Lo que distingue una fuente de otra sin ojo entrenado no es el peso ni el detalle de las letras, es el **ancho**: el mismo titular mide 495px en Archivo Expanded donde mide 392 en Inter, un 26% más. Esa diferencia sí se ve.
+
+**La regla de reparto, en una línea:** si se lee de un vistazo, es display; si se lee con atención, es Inter.
+
+| Elemento | Familia | Especificación |
+|---|---|---|
+| H1 (títulos de página) | Archivo Expanded | 30px, peso 800, `text-primary`, con el riel debajo |
+| H2 (encabezados de sección) | Archivo Expanded | 20px, peso 700, `text-primary` |
+| H3 (subencabezados) | Archivo Expanded | 16px, peso 700, `text-primary` |
+| Cifras héroe de KPI | Archivo Expanded | 2xl o mayor; de 4xl en adelante, peso 800 |
+| Cabeceras de tabla | Archivo Expanded | 11-12px, mayúsculas, `tracking-widest`, borde inferior 2px en `accent-primary` |
+| Cuerpo principal | Inter | 14px, peso 400, `text-primary`, line-height 1.5 |
+| Cuerpo secundario | Inter | 14px, peso 400, `text-secondary`, line-height 1.5 |
+| **Celdas de datos** | **Inter** | 13-14px. **Nunca display**, por grande que sea la tabla |
+| Labels y KPI pequeños | Inter | 12px, peso 500, mayúsculas, letter-spacing 0.5px, `text-secondary` |
+
+**Sin `letter-spacing` negativo en la display.** La expandida ya ocupa mucho; apretarla le quita justo lo que la hace distinta. `.tsi-display` fija `letter-spacing: 0`.
+
+**Placeholders.** Todo campo de texto lleva uno, y es un **ejemplo concreto**, no una instrucción: `Ej. TSI-002`, `+52 55 1234 5678`, `RFC o identificación fiscal`. Un placeholder existe para que no haya que leer la etiqueta ni adivinar el formato; "Escribe aquí" no cumple ninguna de las dos cosas. Se exceptúan `date`, `datetime-local` y `time`: el navegador pinta su propio formato y el placeholder nunca llega a verse.
+
+**Coste de red.** Ambas familias vienen de Google Fonts en un solo `<link>` con `display=swap`. Archivo se pide únicamente en el eje expandido y en tres pesos.
 
 ## 5. Componentes globales
 
@@ -129,6 +168,18 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 - Los badges y chips de estado usan `--radius-sm`, **no** full-round — un chip de estado ("Confirmado", "En_sitio") es información operativa, no un elemento decorativo, y debe leerse con la misma sobriedad que el resto del sistema
 - Tablas: el marco exterior usa `--radius-md`; las celdas internas quedan rectas por legibilidad de datos
 - Nunca usar 0-2px en ningún componente de la interfaz — esto es lo que se busca evitar deliberadamente ("muy cuadrado")
+
+**Paneles con esquina cortada (`.tsi-panel`):** toda card, panel o modal con padding de card real (`p-4` o más) lleva la esquina superior derecha cortada — la traducción de los lados en ángulo del hexágono, y la firma que aparece en todas las pantallas. El borde de 1px se consigue con dos capas recortadas y no con un `border`, porque un borde normal no sigue un `clip-path`: se cortaría en la diagonal.
+
+Dos excepciones, y las dos son técnicas, no estéticas:
+
+- **Elementos pequeños.** Un chip de estado o un overlay de mapa mide menos que el propio corte. Se quedan con la card redondeada de la escala.
+- **Elementos con sombra → `.tsi-panel--elevado`.** `clip-path` se aplica *después* de `filter` y `box-shadow`, así que un panel con sombra la pierde entera al recortarse. La variante invierte el reparto: el elemento lleva el `drop-shadow` y el recorte baja a dos pseudo-elementos, de forma que la sombra sigue la silueta ya recortada. Es lo que permite que los modales lleven la esquina.
+- **Superficie de marca → `.tsi-panel--marca`.** `.tsi-node-surface` pinta el degradado en el propio elemento, pero un panel recortado pinta su superficie en un pseudo-elemento. Combinarlos sin esta variante deja la banda en color plano.
+
+**Botones:** además de lo anterior, `.tsi-btn` lleva `border-radius: 8px 0 8px 8px` — la misma esquina recta que el panel, a otra escala. Se hace con `border-radius` y **no** con `clip-path` a propósito: un recorte se comería el anillo de foco del teclado, y eso es accesibilidad, no estética.
+
+**Navegación lateral — las vías:** cada grupo del sidebar es una vía. Una línea dormida en `border-default` lo recorre entero, con un nodo hexagonal de partida en `accent-flow` junto al nombre del grupo; cada item es una parada y el activo enciende su tramo con el riel. Es la traducción de la *idea* del isotipo —caminos que convergen en nodos— y va en el sidebar porque es la superficie que el usuario ve en todas las pantallas.
 
 **Header:** Fondo `bg-surface`, altura 64px, borde inferior `border-default`. Logo Nodo Integral (isotipo + wordmark; en viewports estrechos el wordmark se oculta y queda el isotipo) a la izquierda. A la derecha: saludo/contexto de usuario, avatar circular con iniciales (fondo `accent-primary`), notificaciones (campana con contador en color de alerta correspondiente), selector de región. Barra de búsqueda global centrada con input redondeado (Ley de Jakob: patrón esperado).
 
@@ -290,7 +341,7 @@ La eliminación **no usa el workpanel**. El ícono de papelera (`trash`, Tabler)
 
 **Espaciado y grid:** sistema de 8px (8, 16, 24, 32, 48, 64). Grid de 12 columnas, gutter 24px. Ancho máximo 1440px.
 
-**Iconografía semántica de severidad:** cada nivel de severidad tiene una forma/ícono fijo, no solo un color, para que el estado sea distinguible sin depender del color (accesibilidad para daltonismo, y legibilidad en condiciones de campo con mala luz). Set de íconos oficial del sistema: **Tabler Icons** — se elige por su cobertura amplia de casos específicos de TSI (mapas, dispatch/radio, cámara para evidencia) y por su geometría ligeramente angular que combina bien con la regla de radios sutiles (6-12px) del sistema, sin caer en formas ni muy orgánicas ni muy planas.
+**Iconografía semántica de severidad:** cada nivel de severidad tiene una forma/ícono fijo, no solo un color, para que el estado sea distinguible sin depender del color (accesibilidad para daltonismo, y legibilidad en condiciones de campo con mala luz). Set de íconos oficial del sistema: **Tabler Icons** — se elige por su cobertura amplia de casos específicos de TSI (mapas, dispatch/radio, cámara para evidencia) y por su geometría ligeramente angular, que rima con la esquina cortada y el nodo hexagonal de §3.1 sin caer en formas ni muy orgánicas ni muy planas.
 
 | Severidad | Ícono (Tabler) | Lógica de forma |
 |---|---|---|
