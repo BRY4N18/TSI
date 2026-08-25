@@ -237,7 +237,14 @@ html[data-theme='dark'] {
     justify-content: center;
     gap: 0.5rem;
     min-height: 2.75rem;
-    border-radius: 0.5rem;
+    /* La esquina superior derecha en angulo recto, igual que el corte de
+       `.tsi-panel`. Es el mismo gesto a otra escala: el sistema se reconoce
+       tanto en un panel de 800px como en un boton de 100.
+
+       Se hace con `border-radius` y no con `clip-path` a proposito — un
+       recorte se comeria el anillo de foco del teclado, y eso es
+       accesibilidad, no estetica. */
+    border-radius: 0.5rem 0 0.5rem 0.5rem;
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -452,6 +459,39 @@ html[data-theme='dark'] {
   /* El contenido tiene que ir por encima del ::before. */
   .tsi-panel > * {
     position: relative;
+  }
+
+  /* Panel elevado — la esquina cortada TAMBIEN en modales.
+
+     Por que hace falta una variante: `clip-path` se aplica DESPUES de `filter`
+     y de `box-shadow`, asi que un panel con sombra la pierde entera al
+     recortarse. Aqui el elemento deja de recortarse y pasa a llevar el
+     `drop-shadow`; el recorte baja a dos pseudo-elementos (borde y superficie),
+     y `drop-shadow` sigue la silueta ya recortada de esos hijos. Resultado: la
+     esquina cortada con su sombra, sin envoltorio extra en la plantilla. */
+  .tsi-panel--elevado {
+    background: transparent;
+    clip-path: none;
+    filter: drop-shadow(0 10px 24px color-mix(in srgb, #000 30%, transparent));
+  }
+
+  .tsi-panel--elevado::before {
+    inset: 0;
+    background: var(--border-default);
+  }
+
+  .tsi-panel--elevado::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: var(--bg-surface);
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--corte-nodo)) 0,
+      100% var(--corte-nodo),
+      100% 100%,
+      0 100%
+    );
   }
 
   /* Riel horizontal bajo el titulo de pagina: la firma estructural que §3.1

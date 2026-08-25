@@ -24,7 +24,7 @@
   } @else {
     <div class="grid gap-4 md:grid-cols-3">
       @for (s of pendientes(); track s.idsolicitud) {
-        <article class="grid content-start gap-3 rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
+        <article class="grid content-start gap-3 tsi-panel tsi-panel--elevado p-5">
           <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
             Solicitud #{{ s.idsolicitud }}
           </p>

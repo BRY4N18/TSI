@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Favicon del isotipo Nodo Integral, simplificado a proposito.
+
+    El PNG de 128px reproduce el logo entero, divisorias interiores incluidas.
+    A 16px —el tamano real de una pestana— esas lineas de 1px desaparecen y el
+    conjunto se vuelve una mancha azul indistinguible. Aqui se conserva solo lo
+    que sobrevive a ese tamano: el hexagono central y las tres vias que
+    convergen en el, en trazo grueso y a dos colores.
+  -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Las tres vias, hasta el borde del hexagono -->
+    <path d="M16 3 V10" stroke="#00A8E8" stroke-width="5.5"/>
+    <path d="M4.5 26 L10.5 20.5" stroke="#002B5B" stroke-width="5.5"/>
+    <path d="M27.5 26 L21.5 20.5" stroke="#00A8E8" stroke-width="5.5"/>
+    <!-- El nodo -->
+    <path d="M16 8.5 L22.5 12.25 L22.5 19.75 L16 23.5 L9.5 19.75 L9.5 12.25 Z"
+          stroke="#002B5B" stroke-width="4.5"/>
+  </g>
+</svg>

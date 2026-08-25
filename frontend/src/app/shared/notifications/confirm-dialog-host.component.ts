@@ -30,7 +30,7 @@ import { ConfirmDialogService } from './confirm-dialog.service';
           aria-modal="true"
           aria-labelledby="app-confirm-title"
           aria-describedby="app-confirm-message"
-          class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl"
+          class="w-full max-w-md tsi-panel tsi-panel--elevado p-6"
         >
           <h2 id="app-confirm-title" class="tsi-display m-0 mb-2 text-lg font-semibold text-text-primary">
             {{ d.title }}

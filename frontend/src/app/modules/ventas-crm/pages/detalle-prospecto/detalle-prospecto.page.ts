@@ -272,7 +272,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
         aria-modal="true"
         aria-labelledby="perdido-title"
       >
-        <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl">
+        <div class="w-full max-w-md tsi-panel tsi-panel--elevado p-6">
           <h2 id="perdido-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
             Marcar como perdido
           </h2>

@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
     <div class="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4">
       <dialog
         open
-        class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl"
+        class="w-full max-w-md tsi-panel tsi-panel--elevado p-6"
       >
         <h2 class="tsi-display m-0 mb-2 text-lg font-semibold text-text-primary">Posible duplicado</h2>
         <p class="m-0 mb-4 text-sm text-text-secondary">
