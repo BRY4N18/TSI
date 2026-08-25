@@ -31,7 +31,7 @@
       <a
         [routerLink]="['/evidencia-unidad/accidentes', idaccidente, 'galeria']"
         [queryParams]="soloLectura() ? { mode: 'view' } : {}"
-        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
       >
         <app-tabler-icon name="camera" [size]="16" />
         Galería
@@ -39,7 +39,7 @@
       <button
         type="button"
         (click)="recargar()"
-        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
       >
         <app-tabler-icon name="refresh" [size]="16" />
         Recargar
@@ -55,13 +55,13 @@
     <p class="text-sm text-text-secondary">Cargando…</p>
   } @else {
     <div class="grid gap-6 lg:grid-cols-2">
-      <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="rounded-md border border-border-default bg-bg-surface p-6">
         <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Clima y período</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
             Período del día
             <select
-              class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-70"
+              class="tsi-select mt-1 w-full min-w-0"
               [(ngModel)]="idperiododia"
               name="idperiododia"
               [disabled]="soloLectura()"
@@ -77,7 +77,7 @@
           <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
             Estado del clima
             <select
-              class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-70"
+              class="tsi-select mt-1 w-full min-w-0"
               [(ngModel)]="idestadoclima"
               name="idestadoclima"
               [disabled]="soloLectura()"
@@ -97,21 +97,21 @@
             data-testid="btn-guardar-clima"
             (click)="guardarClima()"
             [disabled]="guardando()"
-            class="mt-4 inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+            class="tsi-btn tsi-btn-primary mt-4"
           >
             Guardar clima
           </button>
         }
       </section>
 
-      <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="rounded-md border border-border-default bg-bg-surface p-6">
         <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Elementos físicos</h2>
         @if (!soloLectura()) {
           <div class="flex flex-wrap items-end gap-3">
             <label class="block min-w-[12rem] flex-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
               Elemento
               <select
-                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                class="tsi-select mt-1 w-full min-w-0"
                 [(ngModel)]="idelementofisico"
                 name="idelementofisico"
               >
@@ -127,7 +127,7 @@
               type="button"
               (click)="agregarFisico()"
               [disabled]="guardando()"
-              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+              class="tsi-btn tsi-btn-primary"
             >
               Agregar
             </button>
@@ -155,7 +155,7 @@
         </ul>
       </section>
 
-      <section class="rounded-lg border border-border-default bg-bg-surface p-6 lg:col-span-2">
+      <section class="rounded-md border border-border-default bg-bg-surface p-6 lg:col-span-2">
         <div class="mb-5">
           <h2 class="m-0 text-base font-semibold text-text-primary">Conductores y vehículos</h2>
           @if (!soloLectura()) {
@@ -180,7 +180,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
                 Identificación *
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="identificacion"
                   name="identificacion"
                   autocomplete="off"
@@ -189,7 +189,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Nombres *
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="nombres"
                   name="nombres"
                 />
@@ -197,7 +197,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Apellidos *
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="apellidos"
                   name="apellidos"
                 />
@@ -205,7 +205,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Género
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="genero"
                   name="genero"
                 />
@@ -213,7 +213,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Ciudad de residencia
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="ciudadresidencia"
                   name="ciudadresidencia"
                 />
@@ -221,7 +221,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Tipo de licencia
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="tipolicencia"
                   name="tipolicencia"
                 />
@@ -229,7 +229,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Estado de licencia
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="estadolicencia"
                   name="estadolicencia"
                 />
@@ -239,7 +239,7 @@
                 <input
                   type="number"
                   min="0"
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="aniosexperiencia"
                   name="aniosexperiencia"
                 />
@@ -303,7 +303,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
                 Tipo de vehículo *
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="tipovehiculo"
                   name="tipovehiculo"
                 />
@@ -311,7 +311,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Modelo
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="modelovehiculo"
                   name="modelovehiculo"
                 />
@@ -319,7 +319,7 @@
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Categoría de uso
                 <input
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="categoriausovehiculo"
                   name="categoriausovehiculo"
                 />
@@ -329,7 +329,7 @@
                 <input
                   type="number"
                   min="0"
-                  class="mt-1 w-full rounded-md border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+                  class="tsi-input mt-1 w-full"
                   [(ngModel)]="ejes"
                   name="ejes"
                 />
@@ -352,7 +352,7 @@
             type="button"
             (click)="registrarConductor()"
             [disabled]="guardando()"
-            class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+            class="tsi-btn tsi-btn-primary"
           >
             Registrar conductor y vehículo
           </button>
@@ -414,7 +414,7 @@
         </div>
       </section>
 
-      <section class="rounded-lg border border-border-default bg-bg-surface p-6 lg:col-span-2">
+      <section class="rounded-md border border-border-default bg-bg-surface p-6 lg:col-span-2">
         <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
           Implicados no conductores
         </h2>
@@ -423,7 +423,7 @@
             <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
               Tipo *
               <select
-                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                class="tsi-select mt-1 w-full min-w-0"
                 [(ngModel)]="tipoimplicado"
                 name="tipoimplicado"
               >
@@ -437,7 +437,7 @@
             <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
               Estado *
               <select
-                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                class="tsi-select mt-1 w-full min-w-0"
                 [(ngModel)]="estadoimplicado"
                 name="estadoimplicado"
               >
@@ -451,7 +451,7 @@
             <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
               Género
               <input
-                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                class="tsi-input mt-1 w-full"
                 [(ngModel)]="implicadoGenero"
                 name="implicadoGenero"
               />
@@ -461,7 +461,7 @@
               <input
                 type="number"
                 min="0"
-                class="mt-1 w-full rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm text-text-primary"
+                class="tsi-input mt-1 w-full"
                 [(ngModel)]="implicadoEdad"
                 name="implicadoEdad"
               />
@@ -472,7 +472,7 @@
               type="button"
               (click)="registrarImplicado()"
               [disabled]="guardando()"
-              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-50"
+              class="tsi-btn tsi-btn-primary"
             >
               Registrar implicado
             </button>

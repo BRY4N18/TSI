@@ -9,19 +9,19 @@
   </header>
 
   @if (message()) {
-    <p class="rounded-lg bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
+    <p class="rounded-md bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
       {{ message() }}
     </p>
   }
 
-  <section class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+  <section class="rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
     <h3 class="m-0 text-lg font-semibold">Nueva solicitud</h3>
     <div class="mt-4 grid gap-4 md:grid-cols-2">
       <div class="grid gap-1.5">
         <label for="plan" class="text-[0.8125rem] font-medium text-text-secondary">Plan destino</label>
         <select
           id="plan"
-          class="min-h-11 rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+          class="tsi-select"
           [(ngModel)]="idplansolicitado"
         >
           <option [ngValue]="null">Selecciona…</option>
@@ -36,7 +36,7 @@
         <label for="motivo" class="text-[0.8125rem] font-medium text-text-secondary">Motivo</label>
         <input
           id="motivo"
-          class="min-h-11 rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+          class="tsi-input"
           [(ngModel)]="motivo"
           placeholder="Opcional"
         />
@@ -45,7 +45,7 @@
     <div class="mt-4 flex flex-wrap gap-3">
       <button
         type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+        class="tsi-btn tsi-btn-primary"
         [disabled]="busy() || !idplansolicitado"
         (click)="solicitar()"
       >
@@ -54,7 +54,7 @@
     </div>
   </section>
 
-  <section class="rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+  <section class="rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
     <h3 class="m-0 text-lg font-semibold">Historial de solicitudes</h3>
     <div class="mt-4">
       @if (loading()) {

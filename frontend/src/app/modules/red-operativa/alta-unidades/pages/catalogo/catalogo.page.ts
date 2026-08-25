@@ -22,6 +22,7 @@ import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-stat
 import {
   LIST_ACTION_ICON_BTN_CLASS,
   LIST_FILTER_CONTROL_CLASS,
+  LIST_FILTER_SELECT_CLASS,
   LIST_MOBILE_CARD_CLASS,
   LIST_ROW_CLASS,
   LIST_TABLE_CLASS,
@@ -85,21 +86,21 @@ interface ReactivarDialogState {
           type="button"
           data-testid="btn-nueva-unidad"
           (click)="irNueva()"
-          class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary"
         >
           <app-tabler-icon name="plus" [size]="18" />
           Nueva unidad
         </button>
       </header>
 
-      <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-lg font-semibold text-text-primary">Mis unidades</h2>
           <button
             type="button"
             data-testid="btn-actualizar-lista"
             (click)="cargarUnidades()"
-            class="rounded-md border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/5"
+            class="tsi-btn tsi-btn-primary"
           >
             Actualizar
           </button>
@@ -128,7 +129,7 @@ interface ReactivarDialogState {
               [(ngModel)]="filtroEstado"
               (change)="onFiltroSelect()"
               data-testid="filtro-estado"
-              [class]="listFilterControlClass"
+              [class]="listFilterControlClassSelect"
             >
               <option value="todas">Todas</option>
               <option value="activa">Activa</option>
@@ -142,7 +143,7 @@ interface ReactivarDialogState {
               [(ngModel)]="filtroTipo"
               (change)="onFiltroSelect()"
               data-testid="filtro-tipo"
-              [class]="listFilterControlClass"
+              [class]="listFilterControlClassSelect"
             >
               <option value="">Todos</option>
               @for (t of tiposUnidad; track t) {
@@ -169,7 +170,7 @@ interface ReactivarDialogState {
               <button
                 type="button"
                 (click)="irNueva()"
-                class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-hover"
+                class="tsi-btn tsi-btn-primary"
               >
                 Nueva unidad
               </button>
@@ -344,7 +345,7 @@ interface ReactivarDialogState {
                 data-testid="btn-pagina-anterior"
                 [disabled]="!puedeAnterior || loading"
                 (click)="paginaAnterior()"
-                class="rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-40"
+                class="tsi-btn tsi-btn-secondary"
               >
                 Anterior
               </button>
@@ -353,7 +354,7 @@ interface ReactivarDialogState {
                 data-testid="btn-pagina-siguiente"
                 [disabled]="!puedeSiguiente || loading"
                 (click)="paginaSiguiente()"
-                class="rounded-md border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+                class="tsi-btn tsi-btn-primary"
               >
                 Siguiente
               </button>
@@ -362,7 +363,7 @@ interface ReactivarDialogState {
         }
       </section>
 
-      <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
         <button
           type="button"
           class="flex w-full items-center justify-between text-left"
@@ -382,13 +383,13 @@ interface ReactivarDialogState {
               type="file"
               accept=".csv"
               (change)="onArchivoSeleccionado($event)"
-              class="text-sm text-text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-accent-primary/10 file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-accent-primary"
+              class="tsi-input"
             />
             <button
               type="button"
               [disabled]="!archivoSeleccionado || importando"
               (click)="importarLote()"
-              class="rounded-md border border-accent-primary px-5 py-2.5 font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+              class="tsi-btn tsi-btn-primary"
             >
               {{ importando ? 'Importando…' : 'Importar' }}
             </button>
@@ -433,21 +434,21 @@ interface ReactivarDialogState {
               <input
                 [(ngModel)]="bajaDialog.motivo"
                 name="motivoBaja"
-                class="w-full rounded-md border border-border-default px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none"
+                class="tsi-input w-full"
               />
             </label>
             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 (click)="bajaDialog = null"
-                class="h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white"
+                class="tsi-btn tsi-btn-primary"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 (click)="bajaPaso2()"
-                class="h-11 rounded-md border border-alert-critical px-4 text-sm font-medium text-alert-critical"
+                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               >
                 Continuar
               </button>
@@ -462,7 +463,7 @@ interface ReactivarDialogState {
               <button
                 type="button"
                 (click)="bajaDialog = null"
-                class="h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white"
+                class="tsi-btn tsi-btn-primary"
               >
                 Cancelar
               </button>
@@ -470,7 +471,7 @@ interface ReactivarDialogState {
                 type="button"
                 (click)="confirmarBaja(false)"
                 [disabled]="bajaProcesando"
-                class="h-11 rounded-md border border-alert-critical px-4 text-sm font-medium text-alert-critical disabled:opacity-50"
+                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               >
                 {{ bajaProcesando ? 'Procesando…' : 'Dar de baja' }}
               </button>
@@ -484,7 +485,7 @@ interface ReactivarDialogState {
               <button
                 type="button"
                 (click)="bajaDialog = null"
-                class="h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white"
+                class="tsi-btn tsi-btn-primary"
               >
                 Cancelar
               </button>
@@ -492,7 +493,7 @@ interface ReactivarDialogState {
                 type="button"
                 (click)="confirmarBaja(true)"
                 [disabled]="bajaProcesando"
-                class="h-11 rounded-md border border-alert-critical px-4 text-sm font-medium text-alert-critical"
+                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               >
                 Forzar baja
               </button>
@@ -520,14 +521,14 @@ interface ReactivarDialogState {
               <button
                 type="button"
                 (click)="reactivarDialog = null"
-                class="h-11 rounded-md border border-border-default px-4 text-sm"
+                class="tsi-btn tsi-btn-secondary"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 (click)="reactivarDialog.step = 2"
-                class="h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white"
+                class="tsi-btn tsi-btn-primary"
               >
                 Continuar
               </button>
@@ -544,7 +545,7 @@ interface ReactivarDialogState {
               <button
                 type="button"
                 (click)="reactivarDialog = null"
-                class="h-11 rounded-md border border-border-default px-4 text-sm"
+                class="tsi-btn tsi-btn-secondary"
               >
                 Cancelar
               </button>
@@ -552,7 +553,7 @@ interface ReactivarDialogState {
                 type="button"
                 (click)="confirmarReactivar()"
                 [disabled]="reactivarProcesando"
-                class="h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white disabled:opacity-50"
+                class="tsi-btn tsi-btn-primary"
               >
                 {{ reactivarProcesando ? 'Procesando…' : 'Reactivar' }}
               </button>
@@ -583,6 +584,7 @@ export class CatalogoPage implements OnInit, OnDestroy {
   readonly listTableTdPrimaryClass = LIST_TABLE_TD_PRIMARY_CLASS;
   readonly listActionIconBtnClass = LIST_ACTION_ICON_BTN_CLASS;
   readonly listFilterControlClass = LIST_FILTER_CONTROL_CLASS;
+  readonly listFilterControlClassSelect = LIST_FILTER_SELECT_CLASS;
   readonly tiposUnidad: TipoUnidadEmergencia[] = [
     'Ambulancia',
     'Grúa',

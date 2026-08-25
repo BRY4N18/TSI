@@ -22,12 +22,12 @@ function isoDate(d: Date): string {
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-wrap items-end gap-3 rounded-lg border border-border-default bg-bg-surface p-3">
+    <div class="flex flex-wrap items-end gap-3 rounded-md border border-border-default bg-bg-surface p-3">
       <label class="flex flex-col text-xs text-text-secondary">
         Desde
         <input
           type="date"
-          class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+          class="tsi-input mt-1"
           [(ngModel)]="desde"
           (change)="emitir()"
         />
@@ -36,7 +36,7 @@ function isoDate(d: Date): string {
         Hasta
         <input
           type="date"
-          class="mt-1 rounded-md border border-border-default bg-transparent px-2 py-1 text-sm text-text-primary"
+          class="tsi-input mt-1"
           [(ngModel)]="hasta"
           (change)="emitir()"
         />

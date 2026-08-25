@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from core.repositories.despacho.geografia_repository import GeografiaRepository
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
     ESTADO_EN_MISION,
@@ -17,9 +18,11 @@ class DisponibilidadUnidadService:
         self,
         historial_repo: HistorialEstadoUnidadRepository | None = None,
         unidad_repo: UnidadEmergenciaRepository | None = None,
+        geografia_repo: GeografiaRepository | None = None,
     ):
         self.historial_repo = historial_repo or HistorialEstadoUnidadRepository()
         self.unidad_repo = unidad_repo or UnidadEmergenciaRepository()
+        self.geografia_repo = geografia_repo or GeografiaRepository()
 
     @staticmethod
     def incluido_en_despacho(estado_actual: str) -> bool:
@@ -34,6 +37,10 @@ class DisponibilidadUnidadService:
     def consultar(self, idunidademergencia: int) -> dict:
         unidad = self._resolve_unidad(idunidademergencia)
         estado_actual, fechahora = self.historial_repo.get_current_estado(idunidademergencia)
+        idcondado = unidad.get("idcondado")
+        condado = None
+        if idcondado is not None:
+            condado = self.geografia_repo.find_nombre(int(idcondado))
         return {
             "idunidademergencia": idunidademergencia,
             "estado_actual": estado_actual,
@@ -42,7 +49,8 @@ class DisponibilidadUnidadService:
             "placa": unidad.get("placa"),
             "tipounidademergencia": unidad.get("tipounidademergencia"),
             "capacidad": unidad.get("capacidad"),
-            "idcondado": unidad.get("idcondado"),
+            "idcondado": idcondado,
+            "condado": condado,
         }
 
     def consultar_por_usuario(self, idusuario: int) -> dict:

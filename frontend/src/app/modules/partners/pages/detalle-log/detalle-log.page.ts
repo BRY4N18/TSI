@@ -80,7 +80,7 @@ import type { LogLlamada } from '../../services/models/monitoreo.types';
           </span>
         </header>
 
-        <div class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
           <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
             <dt class="text-xs uppercase tracking-wide text-text-secondary">Id</dt>
             <dd class="m-0 font-mono text-text-primary">{{ l.idlogllamadaapi }}</dd>

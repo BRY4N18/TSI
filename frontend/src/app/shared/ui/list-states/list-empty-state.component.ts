@@ -10,10 +10,12 @@ import { TablerIconComponent, TablerIconName } from '../icon/tabler-icon.compone
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+      class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
       data-testid="empty-state"
     >
-      <app-tabler-icon [name]="icon" [size]="32" />
+      <span class="tsi-node h-14 w-12 bg-accent-primary/10 text-accent-primary" aria-hidden="true">
+        <app-tabler-icon [name]="icon" [size]="24" />
+      </span>
       <p class="m-0 text-sm text-text-secondary">{{ message }}</p>
       <ng-content />
     </div>

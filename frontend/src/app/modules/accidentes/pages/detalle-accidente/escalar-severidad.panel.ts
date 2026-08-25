@@ -14,7 +14,7 @@ import { SEVERIDADES } from '../../severidad.constants';
   imports: [FormsModule, TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+    <section class="rounded-md border border-border-default bg-bg-surface p-6">
       <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Escalar severidad</h2>
 
       @if (!confirmando()) {
@@ -23,7 +23,7 @@ import { SEVERIDADES } from '../../severidad.constants';
             <label for="escalarSeveridad" class="text-sm font-medium text-text-secondary">Nueva severidad</label>
             <select
               id="escalarSeveridad"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-select w-full min-w-0"
               [(ngModel)]="idseveridad"
               name="idseveridad"
             >
@@ -38,7 +38,7 @@ import { SEVERIDADES } from '../../severidad.constants';
               id="escalarHeridos"
               type="number"
               min="0"
-              class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              class="tsi-input w-full"
               [(ngModel)]="numheridos"
               name="numheridos"
             />
@@ -49,7 +49,7 @@ import { SEVERIDADES } from '../../severidad.constants';
             >
             <select
               id="escalarUnidadAdicional"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-select w-full min-w-0"
               [(ngModel)]="idunidademergenciaAdicional"
               name="idunidademergencia_adicional"
             >
@@ -65,7 +65,7 @@ import { SEVERIDADES } from '../../severidad.constants';
               id="escalarNota"
               rows="2"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-textarea w-full"
               [(ngModel)]="nota"
               name="nota"
             ></textarea>
@@ -74,14 +74,14 @@ import { SEVERIDADES } from '../../severidad.constants';
             <button
               type="submit"
               [disabled]="!nota.trim()"
-              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white disabled:opacity-50 [&:hover:not(:disabled)]:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary"
             >
               Escalar severidad
             </button>
           </div>
         </form>
       } @else {
-        <div class="grid gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4">
+        <div class="grid gap-3 rounded-md border border-alert-warning bg-alert-warning-bg p-4">
           <p class="m-0 flex items-center gap-2 text-sm font-medium text-alert-warning">
             <app-tabler-icon name="alert-triangle" [size]="18" />
             La severidad es un campo crítico. ¿Confirmas cambiarla a "{{ severidadLabel() }}"? Esta acción queda
@@ -91,7 +91,7 @@ import { SEVERIDADES } from '../../severidad.constants';
             <button
               type="button"
               [disabled]="enviando()"
-              class="inline-flex items-center gap-2 rounded-md bg-alert-warning px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+              class="tsi-btn bg-alert-warning text-white"
               (click)="confirmar()"
             >
               @if (enviando()) {
@@ -103,7 +103,7 @@ import { SEVERIDADES } from '../../severidad.constants';
             <button
               type="button"
               [disabled]="enviando()"
-              class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page"
+              class="tsi-btn tsi-btn-secondary"
               (click)="confirmando.set(false)"
             >
               Cancelar

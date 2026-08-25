@@ -25,7 +25,7 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
         <button
           type="button"
           [disabled]="loading()"
-          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+          class="tsi-btn tsi-btn-secondary"
           (click)="cargar()"
         >
           <app-tabler-icon name="refresh" [size]="16" />
@@ -49,14 +49,14 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
         </div>
       } @else if (error()) {
         <div
-          class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+          class="grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center"
           data-testid="error-state"
         >
           <app-tabler-icon name="alert-triangle" [size]="32" />
           <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+            class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
             (click)="cargar()"
           >
             <app-tabler-icon name="refresh" [size]="16" />
@@ -65,7 +65,7 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
         </div>
       } @else if (!casos().length) {
         <div
-          class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+          class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
           data-testid="empty-state"
         >
           <app-tabler-icon name="radio" [size]="32" />
@@ -77,7 +77,7 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
             <li>
               <a
                 [routerLink]="['/despacho/monitoreo', a.idaccidente]"
-                class="flex items-center justify-between gap-4 rounded-lg border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="flex items-center justify-between gap-4 rounded-md border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
               >
                 <div class="grid gap-1">
                   <span class="text-sm font-semibold text-text-primary">{{ a.idaccidente }}</span>

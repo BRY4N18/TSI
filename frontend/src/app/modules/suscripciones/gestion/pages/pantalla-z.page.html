@@ -14,7 +14,7 @@
 
     <div class="grid gap-4 lg:grid-cols-12">
       <article
-        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-7"
+        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-7"
         data-testid="zona-heroe"
         data-bloque-vista
       >
@@ -29,7 +29,7 @@
             <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaHeroe().error }}</p>
             <button
               type="button"
-              class="mt-2 rounded-md border border-accent-primary px-3 py-1 text-xs font-semibold text-accent-primary"
+              class="tsi-btn tsi-btn-ghost mt-2"
               (click)="reintentar(def.heroe.informes[0])"
             >
               Reintentar
@@ -99,7 +99,7 @@
       </div>
 
       <article
-        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-8"
+        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-8"
         data-testid="zona-visual"
         data-bloque-vista
       >
@@ -195,7 +195,7 @@
       </article>
 
       <article
-        class="rounded-lg border border-border-default bg-bg-surface p-5 lg:col-span-4"
+        class="rounded-md border border-border-default bg-bg-surface p-5 lg:col-span-4"
         data-testid="zona-lectura"
         data-bloque-vista
       >

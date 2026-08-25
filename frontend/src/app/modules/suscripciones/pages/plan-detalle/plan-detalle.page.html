@@ -28,7 +28,7 @@
       <a
         [routerLink]="['/suscripciones/planes', p.idplan, 'editar']"
         data-testid="btn-editar-desde-detalle"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+        class="tsi-btn tsi-btn-primary no-underline"
       >
         <app-tabler-icon name="pencil" [size]="18" />
         Editar
@@ -36,7 +36,7 @@
     </div>
 
     <section
-      class="mt-6 grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6"
+      class="mt-6 grid gap-6 rounded-md border border-border-default bg-bg-surface p-6"
       data-testid="plan-detalle-readonly"
     >
       <dl class="grid gap-4 sm:grid-cols-2">

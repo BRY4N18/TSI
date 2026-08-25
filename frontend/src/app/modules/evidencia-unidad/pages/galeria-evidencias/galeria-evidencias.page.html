@@ -41,7 +41,7 @@
           type="button"
           data-testid="btn-subir-evidencia"
           (click)="mostrarSubida.set(!mostrarSubida())"
-          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary"
         >
           <app-tabler-icon name="camera" [size]="16" />
           Subir evidencia
@@ -50,7 +50,7 @@
       <button
         type="button"
         (click)="recargar()"
-        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
       >
         <app-tabler-icon name="refresh" [size]="16" />
         Recargar
@@ -61,7 +61,7 @@
           data-testid="btn-sincronizar"
           (click)="sincronizar()"
           [disabled]="sincronizando()"
-          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-50"
+          class="tsi-btn tsi-btn-secondary"
         >
           @if (sincronizando()) {
             <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
@@ -92,7 +92,7 @@
         </div>
       } @else if (error()) {
         <div
-          class="grid place-items-center gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-10 text-center"
+          class="grid place-items-center gap-3 rounded-md border border-alert-warning bg-alert-warning-bg p-10 text-center"
           data-testid="error-state"
         >
           <app-tabler-icon name="alert-triangle" [size]="32" />
@@ -100,7 +100,7 @@
           <button
             type="button"
             (click)="recargar()"
-            class="inline-flex items-center gap-2 rounded-md border border-alert-warning px-4 py-2 text-sm font-medium text-alert-warning hover:bg-alert-warning-bg"
+            class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
           >
             <app-tabler-icon name="refresh" [size]="16" />
             Reintentar
@@ -112,7 +112,7 @@
             <button
               type="button"
               (click)="mostrarSubida.set(true)"
-              class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary"
             >
               <app-tabler-icon name="camera" [size]="16" />
               Subir evidencia
@@ -168,14 +168,14 @@
     </div>
 
     <div class="grid gap-4">
-      <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+      <div class="rounded-md border border-border-default bg-bg-surface p-6">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="m-0 text-base font-semibold text-text-primary">Notas de campo</h2>
           <button
             type="button"
             (click)="mostrarSubida.set(!mostrarSubida())"
             aria-label="Agregar nota de campo"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page"
+            class="tsi-hit-target inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page"
           >
             +
           </button>

@@ -44,11 +44,11 @@ import type { PartnerListItem } from '../../services/models/partner.types';
         Este reporte incluye únicamente consumo de <strong>producción</strong>.
       </p>
 
-      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-lg border border-border-default bg-bg-surface p-4">
+      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-md border border-border-default bg-bg-surface p-4">
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-xs uppercase tracking-wide text-text-secondary">Partner</span>
           <select
-            class="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-select"
             [ngModel]="idpartner()"
             (ngModelChange)="idpartner.set($event)"
             data-testid="select-partner"
@@ -63,7 +63,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
           <span class="text-xs uppercase tracking-wide text-text-secondary">Año</span>
           <input
             type="number"
-            class="w-24 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-input"
             [ngModel]="anio()"
             (ngModelChange)="anio.set(+$event)"
             data-testid="input-anio"
@@ -75,7 +75,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             type="number"
             min="1"
             max="12"
-            class="w-20 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-input"
             [ngModel]="mes()"
             (ngModelChange)="mes.set(+$event)"
             data-testid="input-mes"
@@ -95,7 +95,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             <span class="text-xs uppercase tracking-wide text-text-secondary">Año a comparar</span>
             <input
               type="number"
-              class="w-24 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+              class="tsi-input"
               [ngModel]="anioComparar()"
               (ngModelChange)="anioComparar.set(+$event)"
               data-testid="input-anio-comparar"
@@ -107,7 +107,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
               type="number"
               min="1"
               max="12"
-              class="w-20 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+              class="tsi-input"
               [ngModel]="mesComparar()"
               (ngModelChange)="mesComparar.set(+$event)"
               data-testid="input-mes-comparar"
@@ -116,7 +116,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
         }
         <button
           type="button"
-          class="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white"
+          class="tsi-btn tsi-btn-primary"
           (click)="consultar()"
           data-testid="btn-consultar"
         >
@@ -140,7 +140,7 @@ import type { PartnerListItem } from '../../services/models/partner.types';
             />
           } @else {
             <div class="mt-4 grid gap-4 sm:grid-cols-3">
-              <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+              <div class="rounded-md border border-border-default bg-bg-surface p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Llamadas</p>
                 <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-llamadas">
                   {{ r.llamadas.toLocaleString('es-EC') }}
@@ -154,13 +154,13 @@ import type { PartnerListItem } from '../../services/models/partner.types';
                   </p>
                 }
               </div>
-              <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+              <div class="rounded-md border border-border-default bg-bg-surface p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Errores</p>
                 <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-errores">
                   {{ r.errores.toLocaleString('es-EC') }}
                 </p>
               </div>
-              <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+              <div class="rounded-md border border-border-default bg-bg-surface p-6">
                 <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">
                   Latencia media
                 </p>

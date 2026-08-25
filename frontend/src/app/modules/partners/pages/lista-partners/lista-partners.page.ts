@@ -9,6 +9,7 @@ import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/
 import {
   LIST_ACTION_ICON_BTN_CLASS,
   LIST_FILTER_CONTROL_CLASS,
+  LIST_FILTER_SELECT_CLASS,
   LIST_MOBILE_CARD_CLASS,
   LIST_PAGE_SHELL_CLASS,
   LIST_ROW_CLASS,
@@ -57,7 +58,7 @@ const CLAVE_ULTIMO_ABIERTO = 'tsi.partners.ultimo-abierto';
         <a
           routerLink="/partners/consola/nuevo"
           data-testid="btn-registrar-partner"
-          class="inline-flex items-center gap-2 rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary"
         >
           <app-tabler-icon name="plus" [size]="18" />
           Registrar partner
@@ -71,7 +72,7 @@ const CLAVE_ULTIMO_ABIERTO = 'tsi.partners.ultimo-abierto';
         <select
           id="filtro-estado"
           data-testid="filtro-estado"
-          [class]="filtroClass"
+          [class]="filtroClassSelect"
           [ngModel]="estado()"
           (ngModelChange)="cambiarEstado($event)"
         >
@@ -169,7 +170,7 @@ const CLAVE_ULTIMO_ABIERTO = 'tsi.partners.ultimo-abierto';
             <button
               type="button"
               data-testid="btn-cargar-mas"
-              class="rounded-lg border border-accent-primary px-5 py-2.5 text-sm font-medium text-accent-primary hover:bg-bg-surface"
+              class="tsi-btn tsi-btn-ghost"
               [disabled]="cargandoMas()"
               (click)="cargarMas()"
             >
@@ -203,6 +204,7 @@ export class ListaPartnersPage implements OnInit {
   readonly accionClass = LIST_ACTION_ICON_BTN_CLASS;
   readonly cardClass = LIST_MOBILE_CARD_CLASS;
   readonly filtroClass = LIST_FILTER_CONTROL_CLASS;
+  readonly filtroClassSelect = LIST_FILTER_SELECT_CLASS;
 
   ngOnInit(): void {
     this.ultimoAbierto.set(this.leerUltimoAbierto());

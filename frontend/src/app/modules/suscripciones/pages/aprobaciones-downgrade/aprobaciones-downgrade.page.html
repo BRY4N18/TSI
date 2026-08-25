@@ -10,7 +10,7 @@
   </header>
 
   @if (message()) {
-    <p class="rounded-lg bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
+    <p class="rounded-md bg-alert-success-bg px-4 py-3 text-sm text-alert-success" role="status">
       {{ message() }}
     </p>
   }
@@ -24,7 +24,7 @@
   } @else {
     <div class="grid gap-4 md:grid-cols-3">
       @for (s of pendientes(); track s.idsolicitud) {
-        <article class="grid content-start gap-3 rounded-[10px] border border-border-default bg-bg-surface p-5 shadow-sm">
+        <article class="grid content-start gap-3 rounded-md border border-border-default bg-bg-surface p-5 shadow-sm">
           <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
             Solicitud #{{ s.idsolicitud }}
           </p>
@@ -39,7 +39,7 @@
             >
             <input
               [id]="'rej-' + s.idsolicitud"
-              class="min-h-11 rounded-lg border border-border-default bg-bg-page px-3 py-2 text-text-primary"
+              class="tsi-input"
               [(ngModel)]="motivos[s.idsolicitud!]"
               placeholder="Obligatorio para rechazar"
             />
@@ -47,7 +47,7 @@
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
-              class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+              class="tsi-btn tsi-btn-primary"
               [disabled]="busyId() === s.idsolicitud"
               (click)="aprobar(s)"
             >
@@ -55,7 +55,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex min-h-11 items-center justify-center rounded-lg border border-alert-critical/45 bg-transparent px-4 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:cursor-not-allowed disabled:opacity-55"
+              class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               [disabled]="busyId() === s.idsolicitud"
               (click)="rechazar(s)"
             >

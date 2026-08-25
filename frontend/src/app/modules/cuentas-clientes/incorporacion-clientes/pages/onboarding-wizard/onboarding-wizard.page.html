@@ -8,7 +8,7 @@
   <div class="flex flex-wrap gap-2">
     <button
       type="button"
-      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default bg-bg-surface px-5 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+      class="tsi-btn tsi-btn-secondary"
       (click)="reenviarInvitacion()"
       [disabled]="reenviando"
     >
@@ -18,7 +18,7 @@
   </div>
 
   @if (progreso) {
-    <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+    <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
       <p class="m-0 text-sm text-text-secondary">
         Estado: <span class="font-medium text-text-primary">{{ progreso.estado_onboarding }}</span>
         · Etapa:
@@ -54,7 +54,7 @@
             <button
               type="button"
               (click)="completarCambioPassword()"
-              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary"
             >
               Continuar
               <app-tabler-icon name="chevron-right" [size]="18" />
@@ -68,7 +68,7 @@
               <input
                 [(ngModel)]="perfil.razon_social"
                 name="razon_social"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
             <label class="block">
@@ -76,7 +76,7 @@
               <input
                 [(ngModel)]="perfil.nombre"
                 name="nombre"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
             <label class="block">
@@ -86,7 +86,7 @@
                 accept="image/png,image/jpeg,image/webp"
                 (change)="onLogoSeleccionado($event)"
                 name="logo"
-                class="block w-full text-sm text-text-secondary file:mr-3 file:inline-flex file:min-h-11 file:items-center file:rounded-md file:border-0 file:bg-accent-primary file:px-4 file:font-medium file:text-white"
+                class="tsi-input w-full"
               />
             </label>
             @if (logoFile) {
@@ -97,7 +97,7 @@
             }
             <button
               type="submit"
-              class="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary w-fit"
             >
               <app-tabler-icon name="circle-check" [size]="18" />
               Guardar perfil
@@ -120,7 +120,7 @@
             <button
               type="button"
               (click)="irAGestion()"
-              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary"
             >
               Ir a gestión de cuenta
               <app-tabler-icon name="chevron-right" [size]="18" />

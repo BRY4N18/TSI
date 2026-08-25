@@ -79,7 +79,7 @@ const COPY_ERROR: Record<string, string> = {
 
         @if (errorAccion()) {
           <div
-            class="mb-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
+            class="mb-4 rounded-md border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
             data-testid="banner-error"
             role="alert"
           >
@@ -97,7 +97,7 @@ const COPY_ERROR: Record<string, string> = {
         }
 
         <form [formGroup]="form" (ngSubmit)="guardar()" class="grid max-w-2xl gap-5">
-          <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <div class="rounded-md border border-border-default bg-bg-surface p-6">
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
 
             <label class="mb-1 block text-sm font-medium text-text-secondary" for="cliente">
@@ -117,7 +117,7 @@ const COPY_ERROR: Record<string, string> = {
             <input id="nombre" data-testid="input-nombre" [class]="inputClass" formControlName="nombrepartner" />
           </div>
 
-          <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <div class="rounded-md border border-border-default bg-bg-surface p-6">
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Contacto técnico</h2>
             <p class="mb-4 text-sm text-text-secondary">
               Recibirá los avisos de credenciales y de la promoción a producción.
@@ -138,7 +138,7 @@ const COPY_ERROR: Record<string, string> = {
             <button
               type="submit"
               data-testid="btn-guardar"
-              class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+              class="tsi-btn tsi-btn-primary"
               [disabled]="form.invalid || guardando()"
             >
               {{ guardando() ? 'Guardando…' : 'Guardar' }}
@@ -161,14 +161,14 @@ const COPY_ERROR: Record<string, string> = {
         </div>
 
         @if (errorAccion()) {
-          <div class="mb-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical" role="alert">
+          <div class="mb-4 rounded-md border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical" role="alert">
             {{ errorAccion() }}
           </div>
         }
 
         <!-- Modo Ver: <dl>, nunca <input disabled> (design-system § 5) -->
         <div class="grid gap-5 md:grid-cols-2">
-          <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <section class="rounded-md border border-border-default bg-bg-surface p-6">
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Identificación</h2>
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm" data-testid="dl-identificacion">
               <dt class="text-xs uppercase tracking-wide text-text-secondary">Contacto técnico</dt>
@@ -178,7 +178,7 @@ const COPY_ERROR: Record<string, string> = {
             </dl>
           </section>
 
-          <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <section class="rounded-md border border-border-default bg-bg-surface p-6">
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
               <dt class="text-xs uppercase tracking-wide text-text-secondary">Plan</dt>
@@ -199,7 +199,7 @@ const COPY_ERROR: Record<string, string> = {
                 <button
                   type="button"
                   data-testid="btn-asignar-plan"
-                  class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                  class="tsi-btn tsi-btn-primary"
                   [disabled]="asignando()"
                   (click)="asignarPlan(p)"
                 >
@@ -223,7 +223,7 @@ const COPY_ERROR: Record<string, string> = {
                   <button
                     type="button"
                     data-testid="btn-reactivar"
-                    class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                    class="tsi-btn tsi-btn-primary"
                     [disabled]="cambiandoAcceso()"
                     (click)="reactivar(p)"
                   >
@@ -237,7 +237,7 @@ const COPY_ERROR: Record<string, string> = {
                   <button
                     type="button"
                     data-testid="btn-suspender"
-                    class="rounded-lg border border-alert-critical px-5 py-2.5 text-sm font-medium text-alert-critical disabled:opacity-50"
+                    class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
                     [disabled]="cambiandoAcceso()"
                     (click)="suspender(p)"
                   >
@@ -253,7 +253,7 @@ const COPY_ERROR: Record<string, string> = {
             }
           </section>
 
-          <section class="rounded-lg border border-border-default bg-bg-surface p-6 md:col-span-2">
+          <section class="rounded-md border border-border-default bg-bg-surface p-6 md:col-span-2">
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Credenciales</h2>
             @if (p.credenciales.length === 0) {
               <p class="m-0 text-sm text-text-secondary">Este partner aún no ha emitido credenciales.</p>

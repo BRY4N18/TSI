@@ -25,7 +25,7 @@ import { PasswordResetService } from '../services/password-reset.service';
   template: `
     <main class="grid min-h-screen place-items-center bg-bg-page p-6">
       <section
-        class="grid w-full max-w-md gap-3 rounded-lg border border-border-default bg-bg-surface p-8 shadow-[0_4px_24px_rgba(26,29,41,0.06)]"
+        class="grid w-full max-w-md gap-3 rounded-md border border-border-default bg-bg-surface p-8 shadow-[0_4px_24px_rgba(26,29,41,0.06)]"
         aria-labelledby="reset-title"
       >
         <h1 id="reset-title" class="m-0 text-xl font-bold text-text-primary">
@@ -42,7 +42,7 @@ import { PasswordResetService } from '../services/password-reset.service';
             <input
               id="actual"
               type="password"
-              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input"
               formControlName="passwordActual"
               autocomplete="current-password"
             />
@@ -51,7 +51,7 @@ import { PasswordResetService } from '../services/password-reset.service';
             <input
               id="nueva"
               type="password"
-              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input"
               formControlName="passwordNueva"
               autocomplete="new-password"
             />
@@ -61,7 +61,7 @@ import { PasswordResetService } from '../services/password-reset.service';
             <input
               id="repetir"
               type="password"
-              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input"
               formControlName="passwordRepetida"
               autocomplete="new-password"
             />
@@ -73,7 +73,7 @@ import { PasswordResetService } from '../services/password-reset.service';
             <button
               type="submit"
               data-testid="btn-cambiar-password"
-              class="mt-2 rounded-md bg-accent-primary p-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              class="tsi-btn tsi-btn-primary mt-2"
               [disabled]="changeForm.invalid || loading()"
             >
               {{ loading() ? 'Guardando…' : 'Guardar contraseña' }}
@@ -89,7 +89,7 @@ import { PasswordResetService } from '../services/password-reset.service';
             <input
               id="gmail"
               type="email"
-              class="rounded-md border border-border-default px-3 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input"
               formControlName="gmail"
               autocomplete="username"
               [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
@@ -105,7 +105,7 @@ import { PasswordResetService } from '../services/password-reset.service';
 
             <button
               type="submit"
-              class="mt-2 rounded-md bg-accent-primary p-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              class="tsi-btn tsi-btn-primary mt-2"
               [disabled]="form.invalid || loading()"
             >
               {{ loading() ? 'Enviando…' : 'Enviar contraseña temporal' }}

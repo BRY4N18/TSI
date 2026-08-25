@@ -7,6 +7,436 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-24 — El cian y el hexágono dejan de ser papel (design-system v7.4)
+
+**Causa:** auditando lo desplegado apareció lo incómodo — `--accent-flow` tenía **cero
+consumidores** en toda la UI. Existía como token y con trabajo asignado en §3.1, pero
+ningún componente lo usaba; el SVG del panel de marca usa el hex crudo. Es exactamente la
+crítica que se le hizo a la propuesta de paleta original ("el cian quedó como referencia de
+matiz y ahí murió") repetida en el propio sistema. El nodo hexagonal solo aparecía en
+estados vacíos, y los pines de mapa —descritos en §3.1 como "la decisión con más retorno"—
+seguían siendo la gota genérica.
+
+**Efecto verificado:**
+
+- Nuevo `shared/ui/map/map-pins.ts` con la implementación única de los pines. Estaban
+  duplicados casi letra por letra entre `read-only-route-map.component.ts` y
+  `mapa-seguimiento.page.ts`, más una tercera variante en `location-picker-map.component.ts`.
+- **El pin pasa a ser el nodo hexagonal de §3.1.** La punta inferior sigue siendo el punto
+  de anclaje, así que no se pierde precisión respecto a la gota. El color y el ícono de
+  dentro siguen siendo los tokens semánticos de severidad: la forma es de marca, el color es
+  información.
+- **El marcador de unidad se mantiene circular a propósito.** El hexágono es el nodo (un
+  punto fijo) y la unidad es lo que se mueve hacia él por las vías; darles la misma forma
+  borraría esa lectura.
+- **La ruta hacia un caso activo se dibuja como el riel**: vía gruesa en `accent-flow` con
+  la divisoria interior encima. Es la construcción del isotipo sobre un mapa real, y le da
+  al cian su primer trabajo de verdad: flujo en curso, nunca severidad.
+
+**Detalle de implementación que no era obvio:** el riel son dos polilíneas superpuestas, y
+el mapa de seguimiento reajusta el extremo de la ruta en vivo con `setLatLngs()` sin
+recalcularla. Guardarlas como `L.LayerGroup` habría perdido ese método, así que la caché de
+ruta guarda las dos polilíneas por separado y mueve ambas a la vez.
+
+**Contradicción propia corregida:** §3.1 reclamaba el "punto de estado en vivo" para el
+cian, pero §5 define ese dot como verde/ámbar/gris según el estado de conexión. Ese punto es
+semántico, no de marca. §5 tiene razón y §3.1 deja de reclamarlo.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+**Verificado en navegador** (`sofia.castro.operador`, rol Operador, en
+`/accidentes/registro`): el mapa renderiza el pin con el path del hexágono
+(`M12 0 L24 8 L24 24 L12 32 L0 24 L0 8 Z`) y cero gotas antiguas.
+
+**Pendiente y consciente:** los ring charts que §5 describe y a los que §3.1 asigna el arco
+"en proceso" **no existen en el código**. Es una brecha spec-vs-realidad que hay que decidir:
+construirlos o quitarlos del documento.
+
+---
+
+## 2026-08-24 — El panel de marca no se estiraba: el host del componente iba sin estilo
+
+**Regresión propia, introducida al extraer `app-brand-panel`.** En login y registro el panel
+no llenaba el alto de la columna: la marca, el titular y el indicador de estado quedaban
+apelotonados arriba y el patrón salía desproporcionado y recortado.
+
+**Causa:** el elemento que entra en la rejilla de la pantalla es el host
+`<app-brand-panel>`, no el `<section>` que yo había dejado dentro del template. El host
+quedaba sin estilos, así que la sección interna tenía altura automática — no se estiraba a
+la fila — y `justify-between` no tenía espacio que repartir. Los estilos pasan al host vía
+`host: { class: … }` y desaparece el envoltorio.
+
+**Segundo defecto, visible solo una vez arreglado el alto:** las tres vías terminaban en el
+aire dentro del panel en vez de salirse por los bordes. Con `preserveAspectRatio` por
+defecto (meet) el viewBox no cubre todo el ancho del panel — en login, 720 de 1040px — así
+que un tramo que acabe en el borde del viewBox queda *dentro* del panel y se ve el remate
+redondeado del trazo colgando. Los tramos de entrada ahora arrancan muy por fuera del
+viewBox; el SVG recorta a su viewport, no al viewBox, así que el sobrante simplemente se
+sale. (El `preserveAspectRatio="slice"` que llevaba antes tapaba esto, pero a cambio
+ampliaba el motivo 3x y lo recortaba.)
+
+**Verificado en navegador** a 1600x900: login con panel de 1040x900 llenando la fila,
+columnas 65/35 exactas, y los tres tramos arrancando en x=-740, x=1780 e y=-720 — los tres
+fuera del panel, cero remates colgando. Registro igual, con el panel a 963px de alto
+siguiendo al formulario. En tablet el panel cae a `display: none` y el formulario ocupa el
+ancho completo, como manda `hidden lg:flex`.
+
+**Suites:** `ng test` completo, 1425 passed.
+
+---
+
+## 2026-08-24 — Departamentos 6 y 7: el resto del sistema, y cierre de la deuda de radios
+
+**Efecto verificado:** 204 elementos migrados a las clases canónicas de §5 (82 en
+Cuentas-clientes + Accidentes, 122 en Partners, Red Operativa, Estratégico, Emergencias y
+Ventas-CRM interno) y el resto de cards a `--radius-md`.
+
+**Cierre de la escala de radios.** Se barrieron también los 10 `rounded-lg` que quedaban
+fuera de `modules/` (`detalle-prospecto`, los dos hosts de diálogo, los componentes de
+informes y el mapa de solo lectura) y los 16 `rounded-[10px]` — valores arbitrarios que
+coincidían con `--radius-md` pero se saltaban el token, que es justo lo que §5 prohíbe.
+
+**Estado final de la deuda que abrió este trabajo:**
+
+| Métrica | Al empezar | Ahora |
+|---|---|---|
+| `rounded-lg` fuera de la escala | 228 | 0 |
+| Radios arbitrarios (`rounded-[…]`) | 16 | 0 |
+| Hex crudos en plantillas | 12 | 0 |
+| `!important` sobre clases canónicas | 5 | 0 |
+
+Adopción: `.tsi-btn` 401, `.tsi-badge` 63, `.tsi-input` 106, `.tsi-select` 70,
+`.tsi-textarea` 13, `.tsi-hit-target` 12, `.tsi-node` 7, `.tsi-rail` 1.
+
+**Última ambigüedad del documento cerrada:** §5 describía el modal de Alert con "esquinas
+10-12px", que es exactamente el rango que la escala de tres pasos vino a eliminar. Pasa a
+nombrar el token: un modal `max-w-md` es un contenedor mediano (`--radius-md`), no un panel
+grande.
+
+**Corrección de un diagnóstico anterior:** en el inventario inicial se señaló
+`preferencias` y `transferencia` como "las de peor deuda del repo". Era falso, y el error
+estaba en la métrica: se contaban menciones de clases canónicas por archivo, así que las
+páginas pequeñas puntuaban bajo por ser pequeñas, no por estar sin migrar. Ambas tienen
+28-32 líneas y ya usaban `.tsi-select` y `.tsi-btn`.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+---
+
+## 2026-08-24 — Departamento 5: Soporte-cliente y Seguimiento
+
+**Punto de partida distinto al de los anteriores:** Soporte-cliente ya usaba en buena parte
+las clases canónicas de §5. El trabajo aquí no fue migrar, sino cerrar los tres huecos que
+quedaban.
+
+**Efecto verificado:** 21 elementos migrados y 40 cards de `rounded-lg` a `rounded-md`
+entre los dos módulos.
+
+**Tres `<textarea>` estaban parcheados con `!important`.** Llevaban
+`class="tsi-input !h-auto min-h-24 py-2.5"` — alguien se topó exactamente con el problema
+que motivó `.tsi-textarea` (el `height: 2.75rem` de `.tsi-input` colapsa un textarea a una
+línea) y lo resolvió sobrescribiendo la clase canónica desde la plantilla. Ahora usan
+`.tsi-textarea` y desaparecen los `!important`. Verificado en vivo: el textarea de
+`mis-tickets` mide 96px de alto real, con el radio y el foco del sistema.
+Estaban en `mis-tickets`, `detalle-ticket` y — fuera de este departamento —
+`cuentas-clientes/gestion-cuenta/baja`, que se corrigió también por ser el mismo defecto.
+
+**"Tomar" y "Resolver" de la cola de tickets estaban por debajo del mínimo de Fitts.**
+Llevaban `!min-h-9` (36px) para caber en la fila de badges. La caja compacta es una
+decisión de layout razonable; el área de toque no puede encogerse con ella, y §5 pide 44px
+justamente en acciones críticas — tomar o resolver un ticket lo son. Se les añade
+`.tsi-hit-target`, que mantiene el aspecto compacto y restaura el objetivo de 44px.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+**Verificado en navegador** (`lucia.vera.soporte`, rol de agente): en `/soporte-cliente/cola`
+los tres botones con área extendida miden 36px de caja y 44px de área de toque, **sin
+ningún par solapado** — que es la condición de uso que §5 impone a `.tsi-hit-target`. Cero
+`rounded-lg` residuales y cero `!h-auto` en todo el repo.
+
+**Deuda restante de radios: 188** (era 228). Partners 78, Cuentas-clientes 29, Estratégico
+24, Accidentes 20, Ventas-CRM interno 16, Red Operativa 14, Emergencias 7.
+
+---
+
+## 2026-08-24 — NG04014: una ruta rompía el módulo de Suscripciones entero
+
+**Bug preexistente, ajeno al trabajo de diseño.** Apareció al intentar verificar las
+pantallas de Suscripciones en el navegador: cualquier ruta bajo `/suscripciones`
+renderizaba una página en blanco y la consola daba `NG04014: Invalid configuration of
+route 'suscripciones/…'`.
+
+**Causa:** la última ruta hija de `SUSCRIPCIONES_ROUTES` era
+
+```ts
+{ path: '', pathMatch: 'full', canActivate: [suscripcionesHomeRedirect] },
+```
+
+Una ruta con solo `canActivate` no tiene nada que renderizar. Angular no la ignora: rechaza
+**toda la configuración del módulo**, no solo esa entrada, así que las 10 pantallas de
+Suscripciones estaban caídas en runtime.
+
+**Efecto verificado:** se le añade `children: []`, que satisface al validador sin cambiar
+el comportamiento — `suscripcionesHomeRedirect` redirige devolviendo un `UrlTree`, no
+renderizando. `/suscripciones/catalogo-planes` y `/suscripciones/aprobaciones-downgrade`
+vuelven a cargar, con el shell y sin errores de consola.
+
+**Por qué la suite no lo cazaba:** los 1425 tests unitarios no montan la configuración de
+rutas de la aplicación, así que un `Routes` inválido pasa verde. `ng build` tampoco lo ve:
+es una validación de runtime, no de tipos. Es el mismo hueco que ya está anotado para las
+plantillas (`tsc --noEmit` no las valida) — aquí el hueco es el router.
+
+**Archivo:** `frontend/src/app/modules/suscripciones/suscripciones.routes.ts`.
+Se comprobó que es la única ruta del repo con ese patrón.
+
+---
+
+## 2026-08-24 — Área de toque de los botones de solo ícono
+
+**Causa:** 10 botones de solo ícono medían 28-36px, por debajo del mínimo de 44px que §5
+exige por Ley de Fitts. Se habían dejado fuera del barrido del departamento 3 por miedo a
+romper el layout de las barras donde viven.
+
+**Efecto verificado:** nueva utilidad `.tsi-hit-target`, que extiende el área de toque a
+44x44 con un pseudo-elemento centrado, **sin ocupar espacio en el layout**. Es la técnica
+que el propio §5 ya implicaba para la columna de acciones de las tablas: lo que debe medir
+44 es el objetivo del dedo, no el dibujo. Aplicada a los 10 (5 en el header del shell, 3 en
+la galería de evidencias, 1 en el visor, 1 en el mapa de seguimiento).
+
+**Condición de uso documentada en §5:** no puede haber dos `.tsi-hit-target` con centros a
+menos de 44px, porque sus áreas se solaparían y la última en el DOM taparía a la anterior.
+Comprobado en vivo en el header, que es el caso más denso: cajas de 36px con `gap-3`
+dejan los centros a 48px, y las áreas de 44 no llegan a tocarse.
+
+---
+
+## 2026-08-24 — Departamento 4: Suscripciones
+
+**Efecto verificado:** 47 elementos migrados a las clases canónicas de §5 y 19 cards de
+`rounded-lg` a `rounded-md`, en las 10 pantallas del módulo. Mismo barrido por tipo de
+elemento que el departamento 3.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+**Verificado en navegador** (`carlos.mendoza.admin`, rol Administrador): botones a 8px de
+radio y 44px de alto, cero `rounded-lg` residuales, ningún `<select>` desbordando su
+columna, y el riel de nav activa y el nodo hexagonal presentes en el chrome.
+
+**Nota sobre finales de línea:** los scripts del barrido reescriben los archivos con LF.
+En los archivos donde no había cambios de contenido (varios `.routes.ts` que se pasaron al
+barrido sin coincidencias) eso deja un `M` en `git status` con diff de 0 líneas. Git
+normaliza a LF al commitear, así que el contenido versionado no cambia.
+
+---
+
+## 2026-08-24 — Departamento 3: Despacho, Evidencia-Unidad y los estados de listado compartidos
+
+**Causa:** las 6 pantallas de Despacho y Evidencia-Unidad tenían **cero** uso de las
+clases canónicas de §5: cada botón, input y select estaba repintado a mano, con 38
+variantes distintas de la misma cosa. Es el núcleo operativo del sistema, donde la
+coherencia importa más porque el operador lee bajo presión.
+
+**Efecto verificado:** 55 elementos migrados a `.tsi-btn` / `.tsi-input` /
+`.tsi-select` / `.tsi-textarea`, y 17 cards de `rounded-lg` (12px) a `rounded-md`
+(10px). El barrido se hizo **por tipo de elemento, no por cadena de clases**: la misma
+cadena aparecía en `<input>` y en `<select>` de estas páginas, y cada uno necesita una
+clase distinta.
+
+**Nueva primitiva `.tsi-textarea`.** `.tsi-input` fija `height: 2.75rem`, así que
+aplicarla a un `<textarea>` lo colapsa a una línea. La variante comparte borde, radio,
+fondo y anillo de foco, pero cambia el alto fijo por `min-height` del mismo valor.
+Documentada en §5.
+
+**Los estados de listado compartidos también entraron, y no eran de este departamento.**
+Verificando `/evidencia-unidad/flota` apareció un `rounded-lg` residual y un botón
+"Reintentar" que no era canónico. Venían de `shared/ui/list-states/`, que usan *todos*
+los módulos — deberían haber ido en la base. Se corrigieron aquí porque benefician a
+los departamentos que faltan:
+
+- `app-list-empty-state` y `app-list-error-state`: card a `rounded-md`, botón canónico,
+  y el ícono pasa al nodo hexagonal de §3.1 — que es exactamente el caso de uso que esa
+  sección le asigna.
+- `LIST_TABLE_CLASS` y `LIST_MOBILE_CARD_CLASS` a `rounded-md`.
+
+**Bug de API compartida corregido:** `LIST_FILTER_CONTROL_CLASS` era una sola constante
+aplicada tanto a `<input>` como a `<select>` en 5 componentes. Con las clases canónicas
+eso deja de ser válido: `.tsi-select` aporta `appearance: none` y el chevron por tema,
+que un input no debe llevar. Se separa en `LIST_FILTER_INPUT_CLASS` y
+`LIST_FILTER_SELECT_CLASS`; la constante vieja queda como alias del input para no romper
+importaciones. 9 `<select>` repartidos por Partners, Red Operativa, Ventas-CRM e Informes
+pasan a la clase correcta.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+**Verificado en navegador** (usuario `julio.herrera.despacho`, rol Despacho): botones
+canónicos a 8px de radio y 44px de alto mínimo — el mínimo de Fitts que §5 exige y que
+varias de las variantes a mano no cumplían —, cards a 10px de forma uniforme, cero
+`rounded-lg` residuales y el nodo hexagonal recortando correctamente.
+
+**Límite de esta verificación:** el backend Docker devuelve 403 para los endpoints de
+despacho con los usuarios demo disponibles, así que solo se pudieron ver los estados de
+error de esas pantallas, no las poblacionadas. La corrección es mecánica y está cubierta
+por la suite, pero conviene una pasada visual cuando haya datos.
+
+**Fuera del barrido, a propósito:** los botones de solo ícono de estas páginas miden
+28-36px, por debajo del mínimo de 44px de §5. `.tsi-btn-icon` los llevaría a 44px, lo
+que cambia el layout de las barras donde viven — es un cambio de diseño, no de estilo, y
+merece su propia decisión.
+
+**Deuda restante de radios**, para dimensionar lo que falta: Partners 78, Suscripciones
+38, Cuentas-clientes 29, Soporte-cliente 28, Estratégico 24, Accidentes 20, Ventas-CRM
+interno 16, Red Operativa 14, Seguimiento 12, Emergencias 7.
+
+---
+
+## 2026-08-24 — Departamento 1: Auth y portal público de Ventas-CRM
+
+**Causa:** el panel de marca de las pantallas públicas estaba duplicado literal entre
+`login.page.html` y `registro-publico.page.html` — mismo SVG, mismos hex crudos
+(`#14161f`, `#ffffff`), copiados a mano. Eran los 12 últimos hex hardcodeados en
+plantillas del sistema. Además el patrón de líneas no decía nada del logo: dos trazos
+sueltos y tres puntos, decoración genérica de "red".
+
+**Efecto verificado** (dev server :4300 contra backend Docker, ambos temas):
+
+- Nuevo `app-brand-panel` (`shared/brand/brand-panel.component.ts`) con el panel
+  completo parametrizado por `eyebrow` / `headline` / `body` / `status`. El fondo deja
+  el hex fijo y pasa a `.tsi-node-surface`, así que ahora sigue el tema.
+- El patrón pasa a ser el isotipo de verdad: **tres vías que convergen en el hexágono**,
+  cada una dibujada dos veces — trazo grueso en cian y divisoria fina encima, la misma
+  construcción del logo. Es el rol que §3.1 le da al cian sobre esa superficie: trazo,
+  no relleno.
+- `catalogo-planes`, `registro-publico`, `login`, `access-denied` y `password-reset`
+  pasan a las clases canónicas de §5 (`.tsi-btn`, `.tsi-input`, `.tsi-select`) en vez de
+  repintar cada control a mano. Radios alineados a la escala: cards a `rounded-md`
+  (10px), botones y badges a `rounded-sm` (8px).
+- `catalogo-planes`: los estados de error y vacío no tenían ícono, que §5 exige. El
+  vacío usa el nodo hexagonal de §3.1; el de error, `alert-octagon`.
+
+**Bug de tema encontrado y corregido:** los dos `<select>` de `registro-publico` traían
+el chevron como `style` inline con el gris `#6b7280` escrito a mano — un color que no
+es de la paleta y que no cambia con el tema, así que en modo oscuro quedaba
+prácticamente invisible sobre `bg-page`. `.tsi-select` ya trae un chevron por tema;
+verificado en vivo que ahora resuelve a `#5a5e70` en claro y `#8a8da0` en oscuro.
+
+**Hex crudos en plantillas: 0.** Era 12 al empezar el departamento.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio.
+
+**Verificado en navegador:** panel con el degradado de convergencia en ambos temas
+(claro `#001A38→#00558F`, oscuro `#0A0F1C→#00558F`), 8 paths (4 vías × 2 capas),
+cards a 10px, botones y badges a 8px, cero `rounded-lg` y cero radios arbitrarios en
+las tres pantallas públicas, sin errores de consola.
+
+**No incluido (siguiente tanda):** las páginas *internas* de Ventas-CRM
+(`gestion/pantalla-z`, `pipeline-board`, `detalle-prospecto`, `entrada-directa`,
+`informes/indice`) siguen con cards en `rounded-lg` (12px donde la escala pide 10px).
+Pertenecen al módulo interno, no al portal público.
+
+---
+
+## 2026-08-24 — El riel llega al shell y a la navegación
+
+**Causa:** las primitivas de §3.1 quedaron definidas pero sin aplicar. El shell es
+el primer sitio donde deben materializarse porque es el único archivo que toca las
+~55 vistas del sistema a la vez.
+
+**Efecto verificado** (dev server en :4300 contra el backend Docker, sesión
+`carlos.mendoza.admin@demo.tsi.com`, ambos temas):
+
+- El item activo del sidebar deja el `border-l-4` plano y pasa al riel `.tsi-rail`.
+  El hueco de 5px se reserva también en los items inactivos, para que la etiqueta no
+  salte al navegar. El riel lleva margen vertical para que el radio del item no le
+  corte la divisoria.
+- Estado vacío del sidebar ("Tu rol no tiene módulos…"): pasa de un `<p>` suelto al
+  nodo hexagonal `.tsi-node` con ícono, que es el contenedor de ícono que §5 pide
+  para estados vacíos.
+- Radios alineados a la escala nueva: los controles del header (menú, tema, región,
+  campana, cerrar sesión) bajan de `rounded-md` a `rounded-sm`, que es el paso de la
+  escala que corresponde a botones. El chip de roles deja `rounded-full` — §5 exige
+  que los chips de estado **no** sean full-round; el avatar sí lo conserva, que es la
+  única excepción declarada.
+
+**El riel mide 5px, no 4 — y el motivo importa.** La primera versión usaba 4px con
+reparto 1.5/1/1.5. Medido en navegador a `devicePixelRatio: 1`, esa divisoria caía
+entre los píxeles 13.5 y 14.5: se repartía al 50% entre dos píxeles y se pintaba como
+un borrón gris en vez de una línea, perdiendo justo lo que hace reconocible a la
+primitiva. Con 5px el reparto es 2/1/2 y el groove cae sobre un píxel entero
+(verificado: 14→15). La regla queda escrita en §3.1: **ancho impar, groove de 1px**.
+
+**Anillo de foco verificado en vivo:** `.tsi-input:focus` resuelve a navy `#002B5B` al
+15% y borde navy, siguiendo el tema. Es la comprobación de que el `#2E6FF2` que la
+entrada de v7 daba por eliminado está realmente muerto.
+
+**Archivos:** `frontend/src/app/shared/layout/app-shell.component.ts`,
+`frontend/src/styles.css`, `.specify/docs/design/design-system.md` §3.1, §5.
+
+**Suites:** `ng test` completo, 1425 passed. `ng build` limpio (los avisos de
+`TablerIconComponent` sin usar y los de `DetalleAccidentePage` son preexistentes y de
+módulos no tocados aquí).
+
+**Deuda detectada, no corregida aquí:** `rounded-md` pasó de 8px a 10px al fijar la
+escala, así que los ~596 usos repartidos por las páginas ahora valen 10px. Para los
+contenedores es correcto; para los botones ad hoc de cada módulo el paso correcto es
+`rounded-sm` (8px). Los botones canónicos (`.tsi-btn`) ya estaban en 8px y no se ven
+afectados. La corrección va en el barrido por departamento. Página de Prospectos
+verificada como muestra: usa `<select>` planos en vez de `.tsi-select`, misma deuda.
+
+---
+
+## 2026-08-24 — Lenguaje de forma Nodo Integral (design-system v7.2)
+
+**Causa:** la identidad Nodo Integral se había resuelto solo como paleta. Navy + cian
+es la combinación de buena parte del software institucional: sin geometría propia, el
+sistema seguía leyéndose genérico. La §3 describía el isotipo (tres vías con divisoria
+interior convergiendo en un hexágono) pero nada de esa forma existía en la UI, y el
+cian quedaba declarado como "referencia de matiz" sin ningún trabajo asignado.
+
+**Efecto verificado:**
+
+- Nueva §3.1 con tres primitivas derivadas del isotipo: `.tsi-rail` (barra de 4px con
+  divisoria de 1px por dentro — nav activa, spine de sección), `.tsi-node` (recorte
+  hexagonal — contenedor de ícono en vacíos, pines de mapa) y `.tsi-node-surface`
+  (degradado de convergencia — solo chrome de marca). Las tres bajo la regla de §1:
+  solo donde ya hay estructura, nunca como ornamentación suelta.
+- El cian pasa a token con rol definido: `--accent-flow` = `#0090C8` en claro (3.6:1
+  sobre `bg-surface`, cumple el mínimo 3:1 de componente no textual) y `#00A8E8` en
+  oscuro (6.1:1). Es trazo e indicador, nunca relleno con texto encima: el cian crudo
+  da 2.7:1 tanto bajo texto blanco como sobre blanco.
+- `--gradient-node` se detiene en `#00558F` en vez de llegar al cian del logo: con
+  texto blanco encima, el peor punto del degradado queda en 7.8:1 en vez de 2.7:1.
+- Ring charts: el arco "en proceso" pasa de `accent-hover` a `accent-flow`.
+  `accent-hover` es estado de interacción, no un segundo color de marca.
+
+**Contradicción de radios corregida:** §5 fijaba cards en 8-10px y §5 "Layout general"
+las fijaba en 12-16px, en el mismo documento. La escala se reduce a tres tokens sin
+solapamiento (`--radius-sm` 8px / `--radius-md` 10px / `--radius-lg` 12px) y el layout
+pasa a `--radius-md`; 16px caía de lleno en la "suavidad excesiva" que §1 descarta.
+
+**Deuda de v7 cerrada:** la entrada de v7 daba por hecho que los `rgba(46,111,242,…)`
+del azul eléctrico ya habían pasado a `color-mix` sobre el token. No era así: seguían
+vivos en `styles.css` en el anillo de foco de `.tsi-input`/`.tsi-select` y en el hover
+de `.tsi-btn-ghost`, ignorando el tema. Ahora usan `--accent-ring` y `--accent-soft`.
+
+**Archivos:** `frontend/src/styles.css`, `.specify/docs/design/design-system.md`
+§3.1 (nueva), §5.
+
+**Pendiente (no incluido aquí):** las primitivas están definidas pero aún no aplicadas
+a pantallas. El despliegue va por etapas: shell + navegación primero (toca todas las
+vistas), luego departamento por departamento.
+
+---
+
+## 2026-08-24 — D2: el toast de éxito se leía como un chip ajeno
+
+**Causa:** `app-toast-host` pintaba una card `bg-surface` con el texto/ícono teñidos de verde y una X tipográfica. Tras la paleta Nodo Integral (navy/cian), ese bloque flotante no comparte ni fondo ni geometría con el resto del chrome.
+
+**Efecto verificado:** el toast de éxito usa `exito-bg` + borde izquierdo semántico + ícono Tabler; el mensaje queda en `text-primary`. En oscuro se separa del `bg-page` con `border-default` y sombra negra (la sombra clara anterior era invisible). El host ya no cubre un rectángulo de 400px que intercepta clics sobre el historial a la derecha (`pointer-events` solo en el toast).
+
+**Archivos:** `frontend/src/app/shared/notifications/toast-host.component.ts`, `frontend/src/styles.css`, `.specify/docs/design/design-system.md` §5.
+
+---
+
 ## 2026-08-24 — Paleta Nodo Integral (design-system v7)
 
 El acento de UI deja el azul eléctrico genérico (`#2E6FF2`) y se deriva del logo

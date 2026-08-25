@@ -1,46 +1,10 @@
 <main class="grid min-h-screen bg-bg-page lg:grid-cols-[55%_45%]">
-  <section
-    class="relative hidden overflow-hidden bg-[#14161f] p-12 lg:flex lg:flex-col lg:justify-between"
-    aria-hidden="true"
-  >
-    <svg
-      class="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
-      viewBox="0 0 400 500"
-      fill="none"
-    >
-      <path d="M-10 430 L150 430 L190 350 L410 350" stroke="#ffffff" stroke-width="2" />
-      <path d="M70 510 L70 270 L270 270 L270 -10" stroke="#ffffff" stroke-width="2" />
-      <circle cx="190" cy="350" r="5" fill="#ffffff" />
-      <circle cx="270" cy="270" r="4" fill="#ffffff" />
-      <circle cx="70" cy="270" r="4" fill="#ffffff" />
-    </svg>
-
-    <div class="relative flex items-center gap-3">
-      <span
-        class="grid h-10 w-10 place-items-center rounded-md bg-white text-sm font-bold text-accent-primary"
-        >TSI</span
-      >
-      <span class="text-base font-semibold text-white">Tráfico Seguro Integral</span>
-    </div>
-
-    <div class="relative grid max-w-sm gap-4">
-      <p class="m-0 text-xs font-medium uppercase tracking-wide text-white/60">
-        Portal comercial
-      </p>
-      <p class="m-0 text-[28px] font-bold leading-tight text-white">
-        Cuéntanos de tu flota. Un ejecutivo te contactará.
-      </p>
-      <p class="m-0 text-sm leading-relaxed text-white/70">
-        Registro sin compromiso para evaluar el plan que mejor se adapta a tus operaciones de
-        emergencia.
-      </p>
-    </div>
-
-    <div class="relative flex items-center gap-2 text-xs text-white/70">
-      <span class="h-2 w-2 rounded-full bg-alert-success motion-safe:animate-pulse"></span>
-      Respuesta comercial en horario hábil
-    </div>
-  </section>
+  <app-brand-panel
+    eyebrow="Portal comercial"
+    headline="Cuéntanos de tu flota. Un ejecutivo te contactará."
+    body="Registro sin compromiso para evaluar el plan que mejor se adapta a tus operaciones de emergencia."
+    status="Respuesta comercial en horario hábil"
+  />
 
   <section
     class="relative grid place-items-center overflow-y-auto p-6 lg:p-10"
@@ -50,10 +14,7 @@
       class="relative z-10 my-4 grid w-full max-w-lg gap-6 overflow-hidden rounded-md border border-border-default bg-bg-surface p-6 shadow-[0_4px_24px_rgba(26,29,41,0.06)] sm:p-8 lg:-ml-8"
     >
       <div class="flex items-center gap-3 lg:hidden">
-        <span
-          class="grid h-8 w-8 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
-          >TSI</span
-        >
+        <app-brand-mark size="sm" [decorative]="true" />
         <span class="text-sm font-semibold text-text-primary">Tráfico Seguro Integral</span>
       </div>
 
@@ -78,14 +39,14 @@
             <a
               [routerLink]="['/ventas-crm/demo']"
               [queryParams]="demoQueryParams()"
-              class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary no-underline"
             >
               Probar la demo interactiva ahora
             </a>
           }
           <a
             routerLink="/ventas-crm/planes"
-            class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary bg-transparent px-4 text-sm font-semibold text-accent-primary no-underline transition-colors hover:bg-accent-primary/10"
+            class="tsi-btn tsi-btn-ghost no-underline"
           >
             Volver al catálogo de planes
           </a>
@@ -161,9 +122,6 @@
               <select
                 id="tipo_organizacion"
                 [class]="selectClass('tipo_organizacion')"
-                style="
-                  background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27%3E%3Cpath d=%27m4 6 4 4 4-4%27/%3E%3C/svg%3E');
-                "
                 formControlName="tipo_organizacion"
               >
                 <option value="Privado">Privado</option>
@@ -208,9 +166,6 @@
             <select
               id="como_nos_conocio"
               [class]="selectClass('fuente')"
-              style="
-                background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27%3E%3Cpath d=%27m4 6 4 4 4-4%27/%3E%3C/svg%3E');
-              "
               formControlName="fuente"
             >
               <option value="" disabled>Selecciona una opción</option>
@@ -247,7 +202,7 @@
 
           <button
             type="submit"
-            class="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-5 text-sm font-semibold text-white transition-colors [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            class="tsi-btn tsi-btn-primary mt-1 w-full"
             [class.opacity-80]="loading()"
             [disabled]="form.invalid || loading()"
           >
@@ -283,13 +238,13 @@
       <div class="grid gap-2 border-t border-border-default pt-5">
         <a
           routerLink="/cuentas-clientes/auth/login"
-          class="inline-flex h-11 w-full items-center justify-center rounded-md border border-accent-primary bg-transparent px-4 text-sm font-semibold text-accent-primary no-underline transition-colors hover:bg-accent-primary/10"
+          class="tsi-btn tsi-btn-ghost w-full no-underline"
         >
           Iniciar sesión
         </a>
         <a
           routerLink="/ventas-crm/planes"
-          class="inline-flex h-11 w-full items-center justify-center rounded-md border border-border-default bg-bg-page px-4 text-sm font-medium text-text-primary no-underline transition-colors hover:border-accent-primary/40 hover:bg-bg-surface"
+          class="tsi-btn tsi-btn-secondary w-full no-underline"
         >
           Volver a planes
         </a>

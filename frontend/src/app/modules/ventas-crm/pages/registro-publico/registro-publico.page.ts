@@ -10,6 +10,8 @@ import { RouterLink } from '@angular/router';
 
 import { DEMO_QUERY_PARAM_GRANT, DEMO_QUERY_PARAM_IDPROSPECTO } from '../../models/notificacion-ventas.types';
 
+import { BrandMarkComponent } from '../../../../shared/brand/brand-mark.component';
+import { BrandPanelComponent } from '../../../../shared/brand/brand-panel.component';
 import { ProspectoApiService } from '../../services/prospecto-api.service';
 import { RegistroProspectoRequest, TipoOrganizacion } from '../../models/prospectos.types';
 
@@ -38,7 +40,7 @@ function telefonoValidator(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-registro-publico',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, BrandMarkComponent, BrandPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './registro-publico.page.html',
 })
@@ -109,23 +111,20 @@ export class RegistroPublicoPage implements OnInit {
   inputClass(
     name: 'nombres' | 'apellidos' | 'gmail' | 'empresa' | 'cargo' | 'telefono' | 'fuente' | 'fuente_otro',
   ): string {
-    const base =
-      'box-border h-11 w-full min-w-0 rounded-md border bg-bg-page px-3 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:ring-4 focus:ring-accent-primary/15';
-    const invalid = this.fieldError(name);
-    return invalid
+    // `.tsi-input` (design-system.md §5) ya resuelve alto, radio, foco y tema;
+    // aqui solo se anade el estado invalido, que la clase canonica no cubre.
+    const base = 'tsi-input w-full';
+    return this.fieldError(name)
       ? `${base} border-alert-critical focus:border-alert-critical`
-      : `${base} border-border-default focus:border-accent-primary`;
+      : base;
   }
 
   selectClass(name: 'fuente' | 'tipo_organizacion'): string {
-    const base =
-      'box-border h-11 w-full min-w-0 appearance-none rounded-md border bg-bg-page bg-[length:1rem] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-10 text-sm text-text-primary outline-none transition-[border-color,box-shadow] focus:ring-4 focus:ring-accent-primary/15';
-    const invalid =
-      name === 'fuente' ? this.fieldError('fuente') : null;
-    const border = invalid
-      ? 'border-alert-critical focus:border-alert-critical'
-      : 'border-border-default focus:border-accent-primary';
-    return `${base} ${border}`;
+    // `.tsi-select` trae el chevron por tema; el que habia aqui era un SVG gris
+    // fijo en la plantilla, invisible sobre fondo oscuro.
+    const base = 'tsi-select w-full min-w-0';
+    const invalid = name === 'fuente' ? this.fieldError('fuente') : null;
+    return invalid ? `${base} border-alert-critical focus:border-alert-critical` : base;
   }
 
   private resolverComoNosConocio(): string {

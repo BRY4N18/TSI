@@ -6,6 +6,7 @@ import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import {
   LIST_FILTER_CONTROL_CLASS,
+  LIST_FILTER_SELECT_CLASS,
   LIST_PAGE_SHELL_CLASS,
 } from '../../../../shared/ui/list-states/list-table.styles';
 import { ContratoApiService } from '../../services/contrato-api.service';
@@ -61,7 +62,7 @@ const SERVICIOS = [
         <select
           id="servicio"
           data-testid="selector-servicio"
-          [class]="filtroClass"
+          [class]="filtroClassSelect"
           [ngModel]="idServicio()"
           (ngModelChange)="cambiarServicio($event)"
         >
@@ -79,7 +80,7 @@ const SERVICIOS = [
         <!-- El alias "as" solo se admite en el @if primario, no en un @else if -->
         @if (contrato(); as c) {
         <div
-          class="rounded-lg border border-accent-primary bg-bg-surface p-6"
+          class="rounded-md border border-accent-primary bg-bg-surface p-6"
           data-testid="version-vigente"
         >
           <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
@@ -113,7 +114,7 @@ const SERVICIOS = [
           <ul class="grid gap-2" data-testid="lista-versiones">
             @for (v of c.versiones; track v.idversion) {
               <li
-                class="flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-4 text-sm"
+                class="flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-bg-surface p-4 text-sm"
                 [attr.data-testid]="'version-' + v.idversion"
               >
                 <span class="font-mono font-semibold text-text-primary">{{ v.version }}</span>
@@ -147,6 +148,7 @@ export class ContratoIntegracionPage implements OnInit {
   readonly servicios = SERVICIOS;
   readonly shellClass = LIST_PAGE_SHELL_CLASS;
   readonly filtroClass = LIST_FILTER_CONTROL_CLASS;
+  readonly filtroClassSelect = LIST_FILTER_SELECT_CLASS;
 
   ngOnInit(): void {
     this.cargar();

@@ -40,7 +40,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
         <p class="mt-1 text-sm text-text-secondary">CU-O55 — Ejecutar protocolo de validación.</p>
       </header>
 
-      <section class="space-y-5 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="space-y-5 rounded-md border border-border-default bg-bg-surface p-6">
         <form (ngSubmit)="ejecutarValidacion()" class="space-y-5">
           <fieldset class="space-y-3 rounded-md border border-border-default p-4">
             <legend class="px-1 text-sm font-semibold text-text-primary">Región</legend>
@@ -52,7 +52,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                 [(ngModel)]="idregionoperativa"
                 name="idregionoperativa"
                 type="number"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
             @if (!idregionoperativa) {
@@ -64,7 +64,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                     name="idestado"
                     type="number"
                     required
-                    class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                    class="tsi-input w-full"
                   />
                 </label>
                 <label class="block">
@@ -73,7 +73,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                     [(ngModel)]="nombreregion"
                     name="nombreregion"
                     required
-                    class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                    class="tsi-input w-full"
                   />
                 </label>
               </div>
@@ -99,7 +99,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                   [(ngModel)]="motivo"
                   name="motivo"
                   required
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                  class="tsi-input w-full"
                 />
               </label>
             }
@@ -107,7 +107,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
 
           <button
             type="submit"
-            class="rounded-md bg-accent-primary px-5 py-2.5 font-medium text-white transition-colors hover:bg-accent-hover"
+            class="tsi-btn tsi-btn-primary"
           >
             Ejecutar validación
           </button>
@@ -137,13 +137,13 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
       </section>
 
       @if (idregionoperativa) {
-        <section class="space-y-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="space-y-4 rounded-md border border-border-default bg-bg-surface p-6">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold text-text-primary">Historial de validaciones</h2>
             <button
               type="button"
               (click)="cargarHistorial()"
-              class="rounded-md border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/5"
+              class="tsi-btn tsi-btn-primary"
             >
               Cargar historial
             </button>
@@ -159,7 +159,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
               message="Esta región todavía no tiene validaciones registradas."
             />
           } @else if (historial.length) {
-            <div class="overflow-x-auto rounded-lg border border-border-default">
+            <div class="overflow-x-auto rounded-md border border-border-default">
               <table class="w-full text-left text-sm">
                 <thead class="bg-bg-page">
                   <tr>
@@ -202,7 +202,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
               <button
                 type="button"
                 (click)="rechazarDefinitivamente()"
-                class="rounded-md border border-alert-critical px-5 py-2.5 font-medium text-alert-critical transition-colors hover:bg-alert-critical-bg"
+                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
               >
                 Marcar rechazo definitivo
               </button>

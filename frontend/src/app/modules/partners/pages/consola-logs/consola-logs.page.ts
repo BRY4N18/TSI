@@ -73,7 +73,7 @@ const REFRESCO_MS = 30_000;
         <div class="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary"
+            class="tsi-btn tsi-btn-ghost"
             (click)="consultar()"
             data-testid="btn-actualizar"
           >
@@ -98,11 +98,11 @@ const REFRESCO_MS = 30_000;
       </p>
 
       <!-- Filtros. Cada cambio consulta a la base: no se filtra en memoria. -->
-      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-lg border border-border-default bg-bg-surface p-4">
+      <div class="mt-4 flex flex-wrap items-end gap-4 rounded-md border border-border-default bg-bg-surface p-4">
         <label class="flex flex-col gap-1 text-sm">
           <span class="text-xs uppercase tracking-wide text-text-secondary">Partner</span>
           <select
-            class="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-select"
             [ngModel]="idpartner()"
             (ngModelChange)="cambiarPartner($event)"
             data-testid="select-partner"
@@ -128,7 +128,7 @@ const REFRESCO_MS = 30_000;
           <span class="text-xs uppercase tracking-wide text-text-secondary">Código HTTP</span>
           <input
             type="number"
-            class="w-28 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-input"
             placeholder="Ej. 429"
             [ngModel]="filtroCodigo()"
             (ngModelChange)="cambiarCodigo($event)"
@@ -140,7 +140,7 @@ const REFRESCO_MS = 30_000;
           <span class="text-xs uppercase tracking-wide text-text-secondary">Desde</span>
           <input
             type="date"
-            class="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-input"
             [ngModel]="filtroDesde()"
             (ngModelChange)="cambiarDesde($event)"
             data-testid="input-desde"
@@ -151,7 +151,7 @@ const REFRESCO_MS = 30_000;
           <span class="text-xs uppercase tracking-wide text-text-secondary">Hasta</span>
           <input
             type="date"
-            class="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+            class="tsi-input"
             [ngModel]="filtroHasta()"
             (ngModelChange)="cambiarHasta($event)"
             data-testid="input-hasta"
@@ -179,7 +179,7 @@ const REFRESCO_MS = 30_000;
           icon="list"
         />
       } @else {
-        <div class="mt-4 overflow-hidden rounded-lg border border-border-default">
+        <div class="mt-4 overflow-hidden rounded-md border border-border-default">
           <table class="hidden w-full border-collapse text-sm md:table">
             <thead>
               <tr class="bg-bg-surface text-left text-xs uppercase text-text-primary">
@@ -233,7 +233,7 @@ const REFRESCO_MS = 30_000;
 
           <ul class="m-0 list-none space-y-3 p-3 md:hidden">
             @for (log of logs(); track log.idlogllamadaapi) {
-              <li class="rounded-lg border border-border-default bg-bg-surface p-4 text-sm">
+              <li class="rounded-md border border-border-default bg-bg-surface p-4 text-sm">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-mono text-text-primary">{{ log.metodohttp }} {{ log.endpoint }}</span>
                   <span class="rounded-md px-2 py-1 text-xs font-medium" [class]="tono(log.codigohttp)">
@@ -252,7 +252,7 @@ const REFRESCO_MS = 30_000;
           <div class="mt-4 flex justify-center">
             <button
               type="button"
-              class="rounded-lg border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary disabled:opacity-50"
+              class="tsi-btn tsi-btn-ghost"
               [disabled]="cargandoMas()"
               (click)="cargarMas()"
               data-testid="btn-cargar-mas"

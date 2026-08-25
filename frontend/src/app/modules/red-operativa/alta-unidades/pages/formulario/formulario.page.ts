@@ -88,7 +88,7 @@ const FORM_VACIO: UnidadFormState = {
           <button
             type="button"
             (click)="cancelar()"
-            class="inline-flex h-11 items-center gap-2 rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+            class="tsi-btn tsi-btn-secondary"
           >
             Cancelar
           </button>
@@ -97,7 +97,7 @@ const FORM_VACIO: UnidadFormState = {
             data-testid="btn-guardar"
             [disabled]="guardando || cargando"
             (click)="guardar()"
-            class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-80"
+            class="tsi-btn tsi-btn-primary"
           >
             @if (guardando) {
               Guardando…
@@ -112,7 +112,7 @@ const FORM_VACIO: UnidadFormState = {
         <p class="mt-6 text-sm text-text-secondary">Cargando unidad…</p>
       } @else {
         <form
-          class="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+          class="mt-6 grid grid-cols-1 gap-4 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
           (ngSubmit)="guardar()"
         >
           @if (mode === 'edit') {
@@ -130,7 +130,7 @@ const FORM_VACIO: UnidadFormState = {
               (ngModelChange)="onPaisChange($event)"
               name="cascadaPais"
               data-testid="select-pais"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-select w-full min-w-0"
             >
               <option [ngValue]="null">— Selecciona —</option>
               @for (p of paises; track p.id) {
@@ -147,7 +147,7 @@ const FORM_VACIO: UnidadFormState = {
               name="cascadaEstado"
               data-testid="select-estado"
               [disabled]="!cascadaPais"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+              class="tsi-select w-full min-w-0"
             >
               <option [ngValue]="null">— Selecciona —</option>
               @for (e of estados; track e.id) {
@@ -165,7 +165,7 @@ const FORM_VACIO: UnidadFormState = {
               data-testid="select-condado"
               required
               [disabled]="!cascadaEstado"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+              class="tsi-select w-full min-w-0"
             >
               <option [ngValue]="null">— Selecciona —</option>
               @for (c of condados; track c.id) {
@@ -179,7 +179,7 @@ const FORM_VACIO: UnidadFormState = {
             <select
               [(ngModel)]="form.tipopropiedad"
               name="tipopropiedad"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none"
+              class="tsi-select w-full min-w-0"
             >
               <option value="Propia">Propia</option>
               <option value="Externa">Externa</option>
@@ -193,7 +193,7 @@ const FORM_VACIO: UnidadFormState = {
               name="placa"
               [disabled]="mode === 'edit'"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 font-mono text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15 disabled:bg-bg-page disabled:opacity-80"
+              class="tsi-input w-full"
             />
           </label>
 
@@ -202,7 +202,7 @@ const FORM_VACIO: UnidadFormState = {
             <input
               [(ngModel)]="form.capacidad"
               name="capacidad"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
 
@@ -212,7 +212,7 @@ const FORM_VACIO: UnidadFormState = {
               <input
                 [(ngModel)]="form.contactoproveedor"
                 name="contactoproveedor"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
           }
@@ -223,7 +223,7 @@ const FORM_VACIO: UnidadFormState = {
               [(ngModel)]="form.unidademergencia"
               name="unidademergencia"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
 
@@ -232,7 +232,7 @@ const FORM_VACIO: UnidadFormState = {
             <select
               [(ngModel)]="form.tipounidademergencia"
               name="tipounidademergencia"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none"
+              class="tsi-select w-full min-w-0"
             >
               <option value="Ambulancia">Ambulancia</option>
               <option value="Grúa">Grúa</option>
@@ -253,7 +253,7 @@ const FORM_VACIO: UnidadFormState = {
                 [(ngModel)]="form.gmail"
                 name="gmail"
                 data-testid="input-gmail"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
           }
@@ -266,7 +266,7 @@ const FORM_VACIO: UnidadFormState = {
                 step="any"
                 [(ngModel)]="form.latitud"
                 name="latitud"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
             <label class="block">
@@ -276,7 +276,7 @@ const FORM_VACIO: UnidadFormState = {
                 step="any"
                 [(ngModel)]="form.longitud"
                 name="longitud"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+                class="tsi-input w-full"
               />
             </label>
           }
@@ -294,7 +294,7 @@ const FORM_VACIO: UnidadFormState = {
             <button
               type="button"
               (click)="guardar(true)"
-              class="rounded-md border border-alert-warning px-4 py-2 text-sm font-medium text-alert-warning hover:bg-alert-warning/10"
+              class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
             >
               Confirmar edición crítica
             </button>
@@ -313,7 +313,7 @@ const FORM_VACIO: UnidadFormState = {
               data-testid="btn-reenviar-invitacion"
               [disabled]="reenviando"
               (click)="reenviarInvitacion()"
-              class="rounded-md border border-alert-warning px-4 py-2 text-sm font-medium hover:bg-alert-warning/10 disabled:opacity-50"
+              class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
             >
               {{ reenviando ? 'Reenviando…' : 'Reenviar' }}
             </button>

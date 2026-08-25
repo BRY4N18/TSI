@@ -10,19 +10,19 @@
   @if (loading()) {
     <div class="mt-4 grid gap-2" data-testid="loading-skeleton">
       @for (i of [1, 2, 3]; track i) {
-        <div class="h-16 animate-pulse rounded-lg bg-bg-surface"></div>
+        <div class="h-16 animate-pulse rounded-md bg-bg-surface"></div>
       }
     </div>
   } @else if (loadError()) {
     <div
-      class="mt-4 grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      class="mt-4 grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center"
       data-testid="error-state"
     >
       <app-tabler-icon name="alert-triangle" [size]="32" />
       <p class="m-0 text-sm text-alert-critical">{{ loadError() }}</p>
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
         (click)="cargar()"
       >
         <app-tabler-icon name="refresh" [size]="16" />
@@ -57,7 +57,7 @@
         <button
           type="button"
           data-testid="btn-save-header"
-          class="inline-flex min-h-11 items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:opacity-60"
+          class="tsi-btn tsi-btn-primary"
           [disabled]="saving()"
           (click)="guardar()"
         >
@@ -77,7 +77,7 @@
     <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <!-- Columna principal: datos del caso -->
       <div class="grid gap-4 lg:col-span-2">
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Información del incidente</h2>
           <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -117,7 +117,7 @@
         <section
           #impactoSection
           id="impacto"
-          class="rounded-lg border border-border-default bg-bg-surface p-6"
+          class="rounded-md border border-border-default bg-bg-surface p-6"
         >
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Impacto</h2>
           <form (ngSubmit)="guardar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -129,7 +129,7 @@
                 id="numvehiculos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 [(ngModel)]="numvehiculos"
                 name="numvehiculos"
                 [disabled]="!esModoEditar()"
@@ -142,7 +142,7 @@
                 id="numheridos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 [(ngModel)]="numheridos"
                 name="numheridos"
                 [disabled]="!esModoEditar()"
@@ -155,7 +155,7 @@
                 id="numfallecidos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 [(ngModel)]="numfallecidos"
                 name="numfallecidos"
                 [disabled]="!esModoEditar()"
@@ -167,7 +167,7 @@
               <textarea
                 id="descripcion"
                 rows="3"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary disabled:cursor-not-allowed disabled:opacity-70"
+                class="tsi-textarea w-full"
                 [(ngModel)]="descripcion"
                 name="descripcion"
                 [disabled]="!esModoEditar()"
@@ -177,7 +177,7 @@
           </form>
         </section>
 
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="m-0 text-base font-semibold text-text-primary">Evidencia</h2>
             @if (evidencias().length) {
@@ -210,7 +210,7 @@
           }
         </section>
 
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 class="m-0 text-base font-semibold text-text-primary">Datos del siniestro</h2>
@@ -221,7 +221,7 @@
             @if (esModoEditar()) {
               <a
                 [routerLink]="['/evidencia-unidad/accidentes', a.idaccidente, 'enriquecimiento']"
-                class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover"
+                class="tsi-btn tsi-btn-primary"
               >
                 Completar en sitio
               </a>
@@ -229,7 +229,7 @@
               <a
                 [routerLink]="['/evidencia-unidad/accidentes', a.idaccidente, 'enriquecimiento']"
                 [queryParams]="{ mode: 'view' }"
-                class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2.5 text-sm font-semibold text-text-primary hover:bg-bg-page"
+                class="tsi-btn tsi-btn-secondary"
                 data-testid="link-ver-siniestro"
               >
                 Ver datos del siniestro
@@ -242,7 +242,7 @@
           <div>
             <button
               type="button"
-              class="inline-flex items-center gap-2 rounded-md border border-alert-warning px-4 py-2 text-sm font-medium text-alert-warning hover:bg-alert-warning-bg"
+              class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
               (click)="descartar()"
             >
               Descartar caso
@@ -253,7 +253,7 @@
 
       <!-- Columna lateral: actividad del caso -->
       <div class="grid gap-4">
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Historial</h2>
           @if (a.historial_estados.length) {
             <ol class="m-0 grid gap-4 border-l-2 border-border-default pl-4">
@@ -275,7 +275,7 @@
         </section>
 
         @if (puedeVerDespacho()) {
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades involucradas</h2>
           @if (!unidades().length) {
             <p class="m-0 text-sm text-text-secondary">Sin unidades asignadas todavía.</p>
@@ -313,7 +313,7 @@
              §3.6.4) y el endpoint exige el rol Unidad: aquí el panel respondía
              siempre 403. Vive ahora en «Mi seguimiento». -->
         @if (a.estado_actual === 'ASIGNADO' || a.estado_actual === 'EN_ATENCIÓN') {
-          <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+          <section class="rounded-md border border-border-default bg-bg-surface p-6">
             <h2 class="m-0 mb-2 text-base font-semibold text-text-primary">Severidad en sitio</h2>
             <p class="m-0 text-sm text-text-secondary">
               La actualiza la unidad que está atendiendo el caso, con lo que observa en el

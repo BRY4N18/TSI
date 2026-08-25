@@ -134,6 +134,8 @@ export interface DisponibilidadUnidadData {
   tipounidademergencia: string | null;
   capacidad: string | null;
   idcondado: number | null;
+  /** Nombre legible de Dim_Condado; el id viaja en payload, no se pinta. */
+  condado: string | null;
 }
 
 export interface HistorialEstadoUnidadData {

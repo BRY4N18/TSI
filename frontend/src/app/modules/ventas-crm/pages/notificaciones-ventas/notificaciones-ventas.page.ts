@@ -39,7 +39,7 @@ import { NotificacionApiService } from '../../services/notificacion-api.service'
         <button
           type="button"
           data-testid="btn-actualizar-notificaciones"
-          class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default bg-bg-surface px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+          class="tsi-btn tsi-btn-secondary"
           (click)="cargar()"
         >
           Actualizar

@@ -1,56 +1,17 @@
 <main class="grid min-h-screen bg-bg-page lg:grid-cols-[65%_35%]">
-  <section
-    class="relative hidden overflow-hidden bg-[#14161f] p-12 lg:flex lg:flex-col lg:justify-between"
-    aria-hidden="true"
-  >
-    <svg
-      class="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
-      viewBox="0 0 400 500"
-      fill="none"
-    >
-      <path d="M-10 430 L150 430 L190 350 L410 350" stroke="#ffffff" stroke-width="2" />
-      <path d="M70 510 L70 270 L270 270 L270 -10" stroke="#ffffff" stroke-width="2" />
-      <circle cx="190" cy="350" r="5" fill="#ffffff" />
-      <circle cx="270" cy="270" r="4" fill="#ffffff" />
-      <circle cx="70" cy="270" r="4" fill="#ffffff" />
-    </svg>
-
-    <div class="relative flex items-center gap-3">
-      <span
-        class="grid h-10 w-10 place-items-center rounded-md bg-white text-sm font-bold text-accent-primary"
-        >TSI</span
-      >
-      <span class="text-base font-semibold text-white">Tráfico Seguro Integral</span>
-    </div>
-
-    <div class="relative grid max-w-sm gap-4">
-      <p class="m-0 text-xs font-medium uppercase tracking-wide text-white/60">
-        Centro de operaciones
-      </p>
-      <p class="m-0 text-[28px] font-bold leading-tight text-white">
-        Un caso reportado, una unidad en camino.
-      </p>
-      <p class="m-0 text-sm leading-relaxed text-white/70">
-        Registro, despacho y seguimiento de accidentes de tránsito, coordinados desde un solo
-        sistema.
-      </p>
-    </div>
-
-    <div class="relative flex items-center gap-2 text-xs text-white/70">
-      <span class="h-2 w-2 rounded-full bg-alert-success motion-safe:animate-pulse"></span>
-      Monitoreo en vivo
-    </div>
-  </section>
+  <app-brand-panel
+    eyebrow="Centro de operaciones"
+    headline="Un caso reportado, una unidad en camino."
+    body="Registro, despacho y seguimiento de accidentes de tránsito, coordinados desde un solo sistema."
+    status="Monitoreo en vivo"
+  />
 
   <section class="relative grid place-items-center p-6 lg:p-12" aria-labelledby="login-title">
     <div
       class="relative z-10 grid w-full max-w-sm gap-6 rounded-md border border-border-default bg-bg-surface p-8 shadow-[0_4px_24px_rgba(26,29,41,0.06)] lg:-ml-12"
     >
       <div class="flex items-center gap-3 lg:hidden">
-        <span
-          class="grid h-8 w-8 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
-          >TSI</span
-        >
+        <app-brand-mark size="sm" [decorative]="true" />
         <span class="text-sm font-semibold text-text-primary">Tráfico Seguro Integral</span>
       </div>
 
@@ -71,7 +32,7 @@
           <input
             id="gmail"
             type="email"
-            class="rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary outline-none focus:border-accent-primary focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input"
             formControlName="gmail"
             autocomplete="username"
             [attr.aria-invalid]="form.controls.gmail.invalid && form.controls.gmail.touched"
@@ -85,7 +46,7 @@
           <input
             id="password"
             type="password"
-            class="rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary outline-none focus:border-accent-primary focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input"
             formControlName="password"
             autocomplete="current-password"
             [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
@@ -104,7 +65,7 @@
 
         <button
           type="submit"
-          class="mt-1 inline-flex items-center justify-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 font-semibold text-white transition-opacity [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed"
+          class="tsi-btn tsi-btn-primary mt-1"
           [class.opacity-80]="loading()"
           [class.opacity-50]="!loading() && form.invalid"
           [disabled]="form.invalid || loading()"

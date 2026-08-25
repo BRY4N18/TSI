@@ -77,7 +77,7 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
             <!-- Lectura permitida estando suspendido (RN-APM-017): es lo que le
                  permite entender su situación. -->
             <div
-              class="mt-4 rounded-lg border border-border-default bg-alert-info-bg p-4 text-sm text-alert-info"
+              class="mt-4 rounded-md border border-border-default bg-alert-info-bg p-4 text-sm text-alert-info"
               data-testid="banner-suspendido"
             >
               Tu acceso de integración está suspendido. Puedes seguir consultando tu consumo y tu
@@ -87,7 +87,7 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 1 — Cupo. Tono informativo en TODOS los estados. -->
           <div
-            class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6"
+            class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
             data-testid="bloque-cupo"
           >
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Cupo del período</h2>
@@ -112,19 +112,19 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 2 — Actividad -->
           <div class="mt-4 grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <div class="rounded-md border border-border-default bg-bg-surface p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Llamadas</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-llamadas">
                 {{ c.llamadas.toLocaleString('es-EC') }}
               </p>
             </div>
-            <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <div class="rounded-md border border-border-default bg-bg-surface p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Errores</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-errores">
                 {{ c.errores.toLocaleString('es-EC') }}
               </p>
             </div>
-            <div class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <div class="rounded-md border border-border-default bg-bg-surface p-6">
               <p class="m-0 text-xs uppercase tracking-wide text-text-secondary">Latencia media</p>
               <p class="m-0 mt-1 font-mono text-xl text-text-primary" data-testid="kpi-latencia">
                 {{ c.latencia_media_ms }} ms
@@ -135,7 +135,7 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
           <!-- Bloque 4 — Excedente: solo si hay algo que decir -->
           @if (mostrarExcedente(c)) {
             <div
-              class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6"
+              class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
               data-testid="bloque-excedente"
             >
               <h2 class="m-0 mb-2 text-lg font-semibold text-text-primary">Excedente estimado</h2>
@@ -151,7 +151,7 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
 
           <!-- Bloque 3 — Errores del partner: autodiagnóstico (RN-APM-009) -->
           <div
-            class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6"
+            class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
             data-testid="bloque-errores"
           >
             <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">

@@ -74,7 +74,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
 
         <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div class="grid gap-4 lg:col-span-2">
-            <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <section class="rounded-md border border-border-default bg-bg-surface p-6">
               <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
                 Información del prospecto
               </h2>
@@ -119,7 +119,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
             </section>
 
             @if (p.activo) {
-              <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+              <section class="rounded-md border border-border-default bg-bg-surface p-6">
                 <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Acciones</h2>
                 <div class="flex flex-wrap gap-2">
                   @if (nextEtapa()) {
@@ -219,7 +219,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
 
             @if (actionError()) {
               <div
-                class="flex flex-wrap items-center gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4"
+                class="flex flex-wrap items-center gap-3 rounded-md border border-alert-warning bg-alert-warning-bg p-4"
                 role="alert"
               >
                 <app-tabler-icon name="alert-triangle" [size]="20" />
@@ -238,7 +238,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
           </div>
 
           <div class="grid gap-4">
-            <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+            <section class="rounded-md border border-border-default bg-bg-surface p-6">
               <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Resumen</h2>
               <dl class="grid gap-3 text-sm">
                 <div class="flex justify-between gap-2">
@@ -271,7 +271,7 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
         aria-modal="true"
         aria-labelledby="perdido-title"
       >
-        <div class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl">
+        <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl">
           <h2 id="perdido-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
             Marcar como perdido
           </h2>

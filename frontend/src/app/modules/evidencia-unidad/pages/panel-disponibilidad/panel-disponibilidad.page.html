@@ -1,114 +1,123 @@
-<div class="mx-auto max-w-2xl p-8">
+<div class="mx-auto max-w-6xl p-8">
   <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Disponibilidad de unidad</h1>
   <p class="m-0 mb-6 text-sm text-text-secondary">
     Declara tu estado actual para que el sistema te incluya o excluya del despacho automático.
   </p>
 
   @if (loading()) {
-    <app-list-loading-skeleton [count]="1" />
+    <app-list-loading-skeleton [count]="3" />
   } @else if (error()) {
-    <div class="mb-4">
-      <app-list-error-state [message]="error()!" (retry)="cargar()" />
-    </div>
-  } @else if (disponibilidad()) {
-    <!-- Bloque 1: estado actual + acción de cambio -->
-    <div class="mb-6 flex items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-6">
-      <app-tabler-icon name="radio" [size]="28" />
-      <div>
-        <p class="m-0 text-sm font-semibold text-text-primary" data-testid="estado-actual">
-          Estado actual: {{ disponibilidad()!.estado_actual }}
-        </p>
-        <p class="m-0 text-xs text-text-secondary" data-testid="incluido-despacho">
-          Incluido en despacho: {{ disponibilidad()!.incluido_en_despacho ? 'Sí' : 'No' }}
-        </p>
-      </div>
-    </div>
+    <app-list-error-state [message]="error()!" (retry)="cargar()" />
+  } @else {
+    <div class="grid items-start gap-8 lg:grid-cols-[3fr_2fr]">
+      <div class="flex min-w-0 flex-col gap-6">
+        @if (disponibilidad()) {
+          <div class="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-6">
+            <app-tabler-icon name="radio" [size]="28" />
+            <div>
+              <p class="m-0 text-sm font-semibold text-text-primary" data-testid="estado-actual">
+                Estado actual: {{ disponibilidad()!.estado_actual }}
+              </p>
+              <p class="m-0 text-xs text-text-secondary" data-testid="incluido-despacho">
+                Incluido en despacho: {{ disponibilidad()!.incluido_en_despacho ? 'Sí' : 'No' }}
+              </p>
+            </div>
+          </div>
 
-    <!-- Bloque 2: datos de la unidad -->
-    <div class="mb-6 grid gap-3 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2">
-      <div>
-        <p class="m-0 text-xs text-text-secondary">Placa</p>
-        <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-placa">
-          {{ disponibilidad()!.placa ?? '—' }}
-        </p>
+          <div class="grid gap-3 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2">
+            <div>
+              <p class="m-0 text-xs text-text-secondary">Placa</p>
+              <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-placa">
+                {{ disponibilidad()!.placa ?? '—' }}
+              </p>
+            </div>
+            <div>
+              <p class="m-0 text-xs text-text-secondary">Tipo de unidad</p>
+              <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-tipo">
+                {{ disponibilidad()!.tipounidademergencia ?? '—' }}
+              </p>
+            </div>
+            <div>
+              <p class="m-0 text-xs text-text-secondary">Capacidad</p>
+              <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-capacidad">
+                {{ disponibilidad()!.capacidad ?? '—' }}
+              </p>
+            </div>
+            <div>
+              <p class="m-0 text-xs text-text-secondary">Condado</p>
+              <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-zona">
+                {{ disponibilidad()!.condado ?? '—' }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <form class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end" (ngSubmit)="declararEstado()">
+          <div class="grid gap-1.5">
+            <label for="estadoSeleccionado" class="text-sm font-medium text-text-secondary">Nuevo estado</label>
+            <select
+              id="estadoSeleccionado"
+              name="estado"
+              class="tsi-select w-full min-w-0"
+              [(ngModel)]="estadoSeleccionado"
+              required
+            >
+              @for (estado of estados; track estado) {
+                <option [value]="estado">{{ estado }}</option>
+              }
+            </select>
+          </div>
+          <button
+            type="submit"
+            [disabled]="cargando()"
+            class="tsi-btn tsi-btn-primary"
+          >
+            @if (cargando()) {
+              Actualizando…
+            } @else {
+              Actualizar disponibilidad
+            }
+          </button>
+        </form>
       </div>
-      <div>
-        <p class="m-0 text-xs text-text-secondary">Tipo de unidad</p>
-        <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-tipo">
-          {{ disponibilidad()!.tipounidademergencia ?? '—' }}
-        </p>
-      </div>
-      <div>
-        <p class="m-0 text-xs text-text-secondary">Capacidad</p>
-        <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-capacidad">
-          {{ disponibilidad()!.capacidad ?? '—' }}
-        </p>
-      </div>
-      <div>
-        <p class="m-0 text-xs text-text-secondary">Condado</p>
-        <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-zona">
-          {{ disponibilidad()!.idcondado ?? '—' }}
-        </p>
-      </div>
+
+      <section
+        class="min-w-0 border-t border-border-default pt-6 lg:self-stretch lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"
+        aria-labelledby="historial-title"
+        data-testid="historial-panel"
+      >
+        <h2 id="historial-title" class="m-0 mb-4 text-sm font-semibold text-text-primary">
+          Historial de cambios
+        </h2>
+        <div>
+          @if (historialLoading()) {
+            <div class="h-16 animate-pulse rounded-md bg-bg-page" data-testid="historial-loading"></div>
+          } @else if (historialError()) {
+            <p class="m-0 text-sm text-alert-critical" data-testid="historial-error">{{ historialError() }}</p>
+          } @else if (historialReciente().length === 0) {
+            <p class="m-0 text-sm text-text-secondary">Sin cambios registrados.</p>
+          } @else {
+            <table class="w-full text-left text-sm" data-testid="historial-tabla">
+              <thead>
+                <tr class="text-xs text-text-secondary">
+                  <th class="pb-2 font-medium">Estado anterior</th>
+                  <th class="pb-2 font-medium">Estado nuevo</th>
+                  <th class="pb-2 font-medium">Fecha/hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of historialReciente(); track item.idhistorialestadosunidadesemergencias) {
+                  <tr class="border-t border-border-default">
+                    <td class="py-2 text-text-secondary">{{ item.estadoanterior }}</td>
+                    <td class="py-2 font-medium text-text-primary">{{ item.estadonuevo }}</td>
+                    <td class="py-2 text-text-secondary">{{ item.fechahora | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </section>
     </div>
   }
-
-  <form class="mb-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end" (ngSubmit)="declararEstado()">
-    <div class="grid gap-1.5">
-      <label for="estadoSeleccionado" class="text-sm font-medium text-text-secondary">Nuevo estado</label>
-      <select
-        id="estadoSeleccionado"
-        name="estado"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
-        [(ngModel)]="estadoSeleccionado"
-        required
-      >
-        @for (estado of estados; track estado) {
-          <option [value]="estado">{{ estado }}</option>
-        }
-      </select>
-    </div>
-    <button
-      type="submit"
-      [disabled]="cargando()"
-      class="inline-flex items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-    >
-      @if (cargando()) {
-        Actualizando…
-      } @else {
-        Actualizar disponibilidad
-      }
-    </button>
-  </form>
-
-  <!-- Bloque 3: historial de cambios -->
-  <div class="rounded-lg border border-border-default bg-bg-surface p-6">
-    <h2 class="m-0 mb-4 text-sm font-semibold text-text-primary">Historial de cambios</h2>
-    @if (historialLoading()) {
-      <div class="h-16 animate-pulse rounded-md bg-bg-page" data-testid="historial-loading"></div>
-    } @else if (historialError()) {
-      <p class="m-0 text-sm text-alert-critical" data-testid="historial-error">{{ historialError() }}</p>
-    } @else if (historial().length === 0) {
-      <p class="m-0 text-sm text-text-secondary">Sin cambios registrados.</p>
-    } @else {
-      <table class="w-full text-left text-sm" data-testid="historial-tabla">
-        <thead>
-          <tr class="text-xs text-text-secondary">
-            <th class="pb-2 font-medium">Estado anterior</th>
-            <th class="pb-2 font-medium">Estado nuevo</th>
-            <th class="pb-2 font-medium">Fecha/hora</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of historial(); track item.idhistorialestadosunidadesemergencias) {
-            <tr class="border-t border-border-default">
-              <td class="py-2 text-text-secondary">{{ item.estadoanterior }}</td>
-              <td class="py-2 font-medium text-text-primary">{{ item.estadonuevo }}</td>
-              <td class="py-2 text-text-secondary">{{ item.fechahora | date: 'short' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </div>
 </div>

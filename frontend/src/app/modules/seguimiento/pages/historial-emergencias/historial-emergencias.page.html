@@ -7,7 +7,7 @@
       <label for="filtroPais" class="text-sm font-medium text-text-secondary">País</label>
       <select
         id="filtroPais"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idpais"
       >
         <option [ngValue]="null">Todos</option>
@@ -21,7 +21,7 @@
       <label for="filtroEstadoRegion" class="text-sm font-medium text-text-secondary">Estado/Región</label>
       <select
         id="filtroEstadoRegion"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idestadoregion"
       >
         <option [ngValue]="null">Todos</option>
@@ -35,7 +35,7 @@
       <label for="filtroSeveridad" class="text-sm font-medium text-text-secondary">Severidad</label>
       <select
         id="filtroSeveridad"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idseveridad"
       >
         <option [ngValue]="null">Todas</option>
@@ -49,7 +49,7 @@
       <label for="filtroEstado" class="text-sm font-medium text-text-secondary">Estado del caso</label>
       <select
         id="filtroEstado"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="estado"
       >
         <option [ngValue]="null">Todos</option>
@@ -63,7 +63,7 @@
       <label for="filtroUnidad" class="text-sm font-medium text-text-secondary">Unidad</label>
       <select
         id="filtroUnidad"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idunidademergencia"
       >
         <option [ngValue]="null">Todas</option>
@@ -78,7 +78,7 @@
       <input
         id="filtroFechaDesde"
         type="date"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-input w-full"
         formControlName="fechaDesde"
       />
     </div>
@@ -88,7 +88,7 @@
       <input
         id="filtroFechaHasta"
         type="date"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-input w-full"
         formControlName="fechaHasta"
       />
     </div>
@@ -101,7 +101,7 @@
   } @else if (!items().length) {
     <app-list-empty-state icon="history" message="No hay casos que coincidan con estos filtros." />
   } @else {
-    <table class="w-full border-collapse overflow-hidden rounded-lg border border-border-default">
+    <table class="w-full border-collapse overflow-hidden rounded-md border border-border-default">
       <thead>
         <tr class="bg-bg-surface">
           <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">ID</th>
@@ -175,7 +175,7 @@
         <button
           type="button"
           [disabled]="loadingMas()"
-          class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page disabled:opacity-50"
+          class="tsi-btn tsi-btn-secondary"
           (click)="cargarMas()"
         >
           @if (loadingMas()) {

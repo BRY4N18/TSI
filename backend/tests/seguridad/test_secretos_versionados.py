@@ -121,6 +121,12 @@ def test_la_clave_privada_jwt_no_esta_versionada():
     **existe** en local —hace falta para arrancar— y lo que importa es que no
     esté seguido.
     """
+    # `git` puede no estar en el PATH (una imagen slim, por ejemplo). Sin esta
+    # guarda la prueba no fallaba: **reventaba** con FileNotFoundError, que es un
+    # error distinto y con un mensaje que no dice nada del secreto.
+    if not shutil.which("git"):
+        pytest.skip("git no disponible: no se puede consultar el indice")
+
     resultado = subprocess.run(
         ["git", "ls-files", "--error-unmatch", "backend/config/keys/jwt_private.pem"],
         cwd=RAIZ,

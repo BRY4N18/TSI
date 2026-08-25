@@ -10,16 +10,18 @@ import { TablerIconComponent } from '../icon/tabler-icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      class="grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center"
       data-testid="error-state"
       role="alert"
     >
-      <app-tabler-icon name="alert-triangle" [size]="32" />
+      <span class="tsi-node h-14 w-12 bg-alert-critical text-alert-critical-bg" aria-hidden="true">
+        <app-tabler-icon name="alert-triangle" [size]="24" />
+      </span>
       <p class="m-0 text-sm text-alert-critical">{{ message }}</p>
       <button
         type="button"
         data-testid="btn-reintentar-lista"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
         (click)="retry.emit()"
       >
         <app-tabler-icon name="refresh" [size]="16" />

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthApiService } from '../../modules/cuentas-clientes/auth/services/auth-api.service';
+import { BrandMarkComponent } from '../brand/brand-mark.component';
 import { ThemeService } from '../theme/theme.service';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { NAV_LINKS, NavLink } from './nav-links';
@@ -18,6 +19,7 @@ interface NavGroup {
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
+    BrandMarkComponent,
     TablerIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,17 +36,14 @@ interface NavGroup {
         <div class="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-primary sm:hidden"
+            class="tsi-hit-target flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-primary sm:hidden"
             (click)="toggleSidebar()"
             aria-label="Abrir menú de navegación"
           >
             <app-tabler-icon name="menu" [size]="22" />
           </button>
-          <div class="flex min-w-0 items-center gap-3">
-            <span
-              class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-accent-primary text-xs font-bold text-white"
-              >TSI</span
-            >
+          <div class="flex min-w-0 items-center gap-2.5">
+            <app-brand-mark />
             <!-- Se trunca de forma fluida cuando hay sitio; en pantallas muy
                  estrechas se oculta, porque "Tr…" no informa de nada y el
                  logotipo ya identifica el producto. -->
@@ -69,7 +68,7 @@ interface NavGroup {
           @if (!searchExpanded()) {
             <button
               type="button"
-              class="flex h-9 w-9 items-center justify-center text-text-secondary sm:hidden"
+              class="tsi-hit-target flex h-9 w-9 items-center justify-center text-text-secondary sm:hidden"
               (click)="toggleSearch()"
               aria-label="Buscar"
             >
@@ -92,7 +91,7 @@ interface NavGroup {
         <div class="ml-auto flex min-w-0 items-center gap-3 text-sm">
           <button
             type="button"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
+            class="tsi-hit-target flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
             (click)="themeService.toggle()"
             [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
             [attr.aria-pressed]="themeService.isDark()"
@@ -104,7 +103,7 @@ interface NavGroup {
                disponible para el usuario autenticado todavía. -->
           <button
             type="button"
-            class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary opacity-60 disabled:cursor-not-allowed sm:flex"
+            class="tsi-hit-target hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary opacity-60 disabled:cursor-not-allowed sm:flex"
             disabled
             title="Región: Todas las regiones"
           >
@@ -115,7 +114,7 @@ interface NavGroup {
           <div class="relative shrink-0">
             <button
               type="button"
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
+              class="tsi-hit-target flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
               (click)="toggleNotifications()"
               aria-label="Notificaciones"
             >
@@ -144,14 +143,14 @@ interface NavGroup {
               >
               <span class="hidden truncate text-text-primary sm:block">{{ profile.gmail }}</span>
               <span
-                class="hidden shrink truncate rounded-full border border-border-default bg-bg-page px-2 py-0.5 text-xs text-text-secondary md:block"
+                class="hidden shrink truncate rounded-sm border border-border-default bg-bg-page px-2 py-0.5 text-xs text-text-secondary md:block"
                 >{{ profile.roles.join(', ') }}</span
               >
             </div>
           }
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border-default px-3 py-1.5 font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-border-default px-3 py-1.5 font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary"
             (click)="logout()"
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
@@ -180,31 +179,52 @@ interface NavGroup {
                 >
                 @for (link of group.links; track link.path) {
                   <a
-                    class="flex items-center gap-3 rounded-md border-l-4 px-3 py-2.5 text-sm font-medium transition-colors"
+                    class="flex items-stretch rounded-md text-sm font-medium transition-colors"
                     [routerLink]="link.path"
                     routerLinkActive
                     #rla="routerLinkActive"
-                    [class.border-transparent]="!rla.isActive"
                     [class.text-text-secondary]="!rla.isActive"
                     [class.hover:bg-bg-page]="!rla.isActive"
                     [class.hover:text-text-primary]="!rla.isActive"
-                    [class.border-accent-primary]="rla.isActive"
                     [class.text-accent-primary]="rla.isActive"
                     [class.font-semibold]="rla.isActive"
                     [style.background-color]="rla.isActive ? 'color-mix(in srgb, var(--accent-primary) 10%, transparent)' : null"
                     [title]="link.description"
                     (click)="closeSidebar()"
                   >
-                    <app-tabler-icon [name]="link.icon" [size]="24" />
-                    <span>{{ link.label }}</span>
+                    <!-- Riel Nodo Integral (design-system.md §3.1): la divisoria
+                         interior de las vías del isotipo marca el item activo. El
+                         hueco de 4px se reserva siempre —también inactivo— para
+                         que la etiqueta no salte al navegar. El margen vertical lo
+                         mantiene dentro del radio del item, sin que las esquinas
+                         redondeadas corten la divisoria. -->
+                    <span
+                      class="my-1.5 w-[5px] shrink-0"
+                      [class.tsi-rail]="rla.isActive"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="flex items-center gap-3 px-3 py-2.5">
+                      <app-tabler-icon [name]="link.icon" [size]="24" />
+                      <span>{{ link.label }}</span>
+                    </span>
                   </a>
                 }
               </div>
             }
           } @else {
-            <p class="p-2 text-sm text-text-secondary">
-              Tu rol no tiene módulos operativos asignados todavía.
-            </p>
+            <!-- Estado vacío con el nodo hexagonal de §3.1: el hexágono es el
+                 contenedor de ícono del sistema, no una ilustración añadida. -->
+            <div class="flex flex-col items-center gap-3 px-3 py-8 text-center">
+              <span
+                class="tsi-node h-12 w-11 bg-accent-primary/10 text-accent-primary"
+                aria-hidden="true"
+              >
+                <app-tabler-icon name="dashboard" [size]="20" />
+              </span>
+              <p class="text-sm text-text-secondary">
+                Tu rol no tiene módulos operativos asignados todavía.
+              </p>
+            </div>
           }
         </aside>
 

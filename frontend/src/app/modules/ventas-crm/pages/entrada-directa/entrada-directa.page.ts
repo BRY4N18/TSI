@@ -39,14 +39,14 @@ import { TipoCliente } from '../../models/prospectos.types';
 
       @if (success()) {
         <section
-          class="grid place-items-center gap-3 rounded-lg border border-alert-success bg-alert-success-bg p-10 text-center"
+          class="grid place-items-center gap-3 rounded-md border border-alert-success bg-alert-success-bg p-10 text-center"
           data-testid="entrada-directa-ok"
         >
           <app-tabler-icon name="circle-check" [size]="32" />
           <p class="m-0 text-sm text-alert-success">Cliente creado correctamente.</p>
           <button
             type="button"
-            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-hover"
+            class="tsi-btn tsi-btn-primary"
             (click)="reset()"
           >
             Crear otro
@@ -54,7 +54,7 @@ import { TipoCliente } from '../../models/prospectos.types';
         </section>
       } @else {
         <form
-          class="grid max-w-xl gap-4 rounded-lg border border-border-default bg-bg-surface p-6"
+          class="grid max-w-xl gap-4 rounded-md border border-border-default bg-bg-surface p-6"
           [formGroup]="form"
           (ngSubmit)="enviar()"
         >
@@ -64,21 +64,21 @@ import { TipoCliente } from '../../models/prospectos.types';
             Nombre
             <input
               formControlName="nombre"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Razón social
             <input
               formControlName="razon_social"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Tipo
             <select
               formControlName="tipo"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-select w-full min-w-0"
             >
               <option value="Municipio">Municipio</option>
               <option value="Aseguradora">Aseguradora</option>
@@ -90,7 +90,7 @@ import { TipoCliente } from '../../models/prospectos.types';
             NIT
             <input
               formControlName="nit_identificacion"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
 
@@ -102,14 +102,14 @@ import { TipoCliente } from '../../models/prospectos.types';
             Nombres
             <input
               formControlName="admin_nombres"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
             Apellidos
             <input
               formControlName="admin_apellidos"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
           <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
@@ -117,7 +117,7 @@ import { TipoCliente } from '../../models/prospectos.types';
             <input
               type="email"
               formControlName="admin_gmail"
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-input w-full"
             />
           </label>
 
@@ -134,7 +134,7 @@ import { TipoCliente } from '../../models/prospectos.types';
           <button
             type="submit"
             data-testid="btn-crear-cliente-directo"
-            class="inline-flex min-h-11 w-fit items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+            class="tsi-btn tsi-btn-primary w-fit"
             [disabled]="loading() || form.invalid"
           >
             @if (loading()) {

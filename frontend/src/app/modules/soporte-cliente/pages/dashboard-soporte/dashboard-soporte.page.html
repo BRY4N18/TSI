@@ -19,7 +19,7 @@
 
       @if (error()) {
         <div
-          class="flex items-center gap-2 rounded-lg border border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
+          class="flex items-center gap-2 rounded-md border border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
           data-testid="error-state"
         >
           <app-tabler-icon name="alert-triangle" [size]="16" />
@@ -30,20 +30,20 @@
       @if (cargando() && !metricas()) {
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="loading-skeleton">
           @for (i of [1, 2, 3, 4]; track i) {
-            <div class="h-28 animate-pulse rounded-lg bg-bg-surface"></div>
+            <div class="h-28 animate-pulse rounded-md bg-bg-surface"></div>
           }
         </div>
       } @else if (metricas()) {
         @let m = metricas()!;
         <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="kpi-grid">
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Total tickets
             </p>
             <p class="m-0 mt-2 text-3xl font-bold text-text-primary">{{ m.total_tickets }}</p>
           </article>
 
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA en riesgo
             </p>
@@ -51,7 +51,7 @@
             <p class="m-0 mt-1 text-xs text-text-secondary">Umbral 80% (próximos a vencer)</p>
           </article>
 
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               SLA vencidos
             </p>
@@ -59,7 +59,7 @@
             <p class="m-0 mt-1 text-xs text-text-secondary">sla_status = incumplido</p>
           </article>
 
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tasa de reapertura
             </p>
@@ -70,7 +70,7 @@
         </section>
 
         <section class="grid gap-3 sm:grid-cols-2" data-testid="tiempos-promedio">
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tiempo promedio 1.ª respuesta
             </p>
@@ -78,7 +78,7 @@
               {{ formatDuration(m.tiempo_promedio_primera_respuesta_ms) }}
             </p>
           </article>
-          <article class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <article class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Tiempo promedio resolución
             </p>
@@ -90,7 +90,7 @@
 
         <section class="grid gap-4 lg:grid-cols-2">
           <article
-            class="rounded-lg border border-border-default bg-bg-surface p-4"
+            class="rounded-md border border-border-default bg-bg-surface p-4"
             data-testid="por-estado"
           >
             <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por estado</h2>
@@ -117,7 +117,7 @@
           </article>
 
           <article
-            class="rounded-lg border border-border-default bg-bg-surface p-4"
+            class="rounded-md border border-border-default bg-bg-surface p-4"
             data-testid="por-prioridad"
           >
             <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por prioridad</h2>
@@ -146,7 +146,7 @@
 
         <section class="grid gap-4 lg:grid-cols-2">
           <article
-            class="rounded-lg border border-border-default bg-bg-surface p-4"
+            class="rounded-md border border-border-default bg-bg-surface p-4"
             data-testid="por-tipo"
           >
             <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
@@ -169,7 +169,7 @@
           </article>
 
           <article
-            class="rounded-lg border border-border-default bg-bg-surface p-4"
+            class="rounded-md border border-border-default bg-bg-surface p-4"
             data-testid="por-cliente"
           >
             <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Por cliente</h2>

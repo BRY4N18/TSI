@@ -48,7 +48,7 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
            restituidas es justo lo que el administrador necesita leer entonces. -->
       @if (resultado(); as r) {
         <div
-          class="mb-4 rounded-lg border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success"
+          class="mb-4 rounded-md border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success"
           data-testid="resultado-accion"
         >
           {{ r }}
@@ -68,7 +68,7 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
         <ul class="grid gap-3">
           @for (p of filas(); track p.idpartner) {
             <li
-              class="rounded-lg border border-border-default bg-bg-surface p-5"
+              class="rounded-md border border-border-default bg-bg-surface p-5"
               [attr.data-testid]="'fila-' + p.idpartner"
             >
               <div class="flex flex-wrap items-start justify-between gap-3">
@@ -102,7 +102,7 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
                     type="button"
                     [attr.data-testid]="'btn-suspender-' + p.idpartner"
                     [disabled]="enCurso() === p.idpartner"
-                    class="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-50"
+                    class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
                     (click)="suspender(p)"
                   >
                     <app-tabler-icon name="x" [size]="16" />
@@ -113,7 +113,7 @@ import { PartnerColaAcceso } from '../../services/models/partner.types';
                     type="button"
                     [attr.data-testid]="'btn-reactivar-' + p.idpartner"
                     [disabled]="enCurso() === p.idpartner"
-                    class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                    class="tsi-btn tsi-btn-primary"
                     (click)="reactivar(p)"
                   >
                     <app-tabler-icon name="circle-check" [size]="16" />

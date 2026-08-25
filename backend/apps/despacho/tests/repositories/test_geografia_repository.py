@@ -15,6 +15,13 @@ class TestGeografiaRepository:
         # Assert
         assert idcondado == 1
 
+    def test_find_nombre_when_condado_exists_returns_texto(self, mock_pinot, mock_kafka):
+        # Arrange
+        repo = GeografiaRepository()
+
+        # Act / Assert
+        assert repo.find_nombre(1) == "Cuauhtémoc"
+
     def test_list_condados_vecinos_when_configured_returns_neighbors(self, mock_pinot, mock_kafka):
         # Arrange
         repo = GeografiaRepository()

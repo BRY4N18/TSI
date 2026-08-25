@@ -4,7 +4,7 @@
     @if (puedeRegistrar()) {
       <a
         routerLink="/accidentes/registro"
-        class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+        class="tsi-btn tsi-btn-primary"
       >
         Nuevo registro
       </a>
@@ -24,7 +24,7 @@
           id="filtroBusqueda"
           type="text"
           placeholder="Ej. ACC-1785696743941-6704"
-          class="w-full rounded-md border border-border-default bg-bg-surface py-2.5 pl-9 pr-3.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+          class="tsi-input w-full"
           formControlName="busqueda"
         />
       </div>
@@ -35,7 +35,7 @@
       <label for="filtroPais" class="text-sm font-medium text-text-secondary">País</label>
       <select
         id="filtroPais"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idpais"
       >
         <option [ngValue]="null">Todos</option>
@@ -49,7 +49,7 @@
       <label for="filtroEstadoRegion" class="text-sm font-medium text-text-secondary">Estado/Región</label>
       <select
         id="filtroEstadoRegion"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idestadoregion"
       >
         <option [ngValue]="null">Todos</option>
@@ -63,7 +63,7 @@
       <label for="filtroSeveridad" class="text-sm font-medium text-text-secondary">Severidad</label>
       <select
         id="filtroSeveridad"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="idseveridad"
       >
         <option [ngValue]="null">Todas</option>
@@ -77,7 +77,7 @@
       <label for="filtroEstado" class="text-sm font-medium text-text-secondary">Estado</label>
       <select
         id="filtroEstado"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-select w-full min-w-0"
         formControlName="estado"
       >
         <option [ngValue]="null">Todos</option>
@@ -92,7 +92,7 @@
       <input
         id="filtroFechaDesde"
         type="date"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-input w-full"
         formControlName="fechaDesde"
       />
     </div>
@@ -102,7 +102,7 @@
       <input
         id="filtroFechaHasta"
         type="date"
-        class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+        class="tsi-input w-full"
         formControlName="fechaHasta"
       />
     </div>
@@ -122,14 +122,14 @@
     </div>
   } @else if (error()) {
     <div
-      class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+      class="grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center"
       data-testid="error-state"
     >
       <app-tabler-icon name="alert-triangle" [size]="32" />
       <p class="m-0 text-sm text-alert-critical">{{ error() }}</p>
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+        class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
         (click)="cargar()"
       >
         <app-tabler-icon name="refresh" [size]="16" />
@@ -138,21 +138,21 @@
     </div>
   } @else if (!accidentes().length) {
     <div
-      class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+      class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
       data-testid="empty-state"
     >
       <app-tabler-icon name="car-crash" [size]="32" />
       <p class="m-0 text-sm text-text-secondary">Sin accidentes activos</p>
       <a
         routerLink="/accidentes/registro"
-        class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+        class="tsi-btn tsi-btn-primary"
       >
         Registrar nuevo caso
       </a>
     </div>
   } @else {
     <!-- Desktop/tablet: tabla -->
-    <table class="hidden w-full border-collapse overflow-hidden rounded-lg border border-border-default md:table">
+    <table class="hidden w-full border-collapse overflow-hidden rounded-md border border-border-default md:table">
       <thead>
         <tr class="bg-bg-surface">
           <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
@@ -316,7 +316,7 @@
         <button
           type="button"
           data-testid="btn-pagina-anterior"
-          class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-40"
+          class="tsi-btn tsi-btn-secondary"
           [disabled]="!puedeAnterior"
           (click)="paginaAnterior()"
         >
@@ -325,7 +325,7 @@
         <button
           type="button"
           data-testid="btn-pagina-siguiente"
-          class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+          class="tsi-btn tsi-btn-primary"
           [disabled]="!puedeSiguiente"
           (click)="paginaSiguiente()"
         >

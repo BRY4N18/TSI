@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
     <div class="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4">
       <dialog
         open
-        class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl"
+        class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl"
       >
         <h2 class="m-0 mb-2 text-lg font-semibold text-text-primary">Posible duplicado</h2>
         <p class="m-0 mb-4 text-sm text-text-secondary">
@@ -23,21 +23,21 @@ import { FormsModule } from '@angular/forms';
         </label>
         <input
           id="idPrincipal"
-          class="mb-4 w-full rounded-md border border-border-default px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+          class="tsi-input mb-4 w-full"
           [(ngModel)]="idPrincipal"
           name="idPrincipal"
         />
         <div class="flex justify-end gap-3">
           <button
             type="button"
-            class="rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page"
+            class="tsi-btn tsi-btn-secondary"
             (click)="cancelar.emit()"
           >
             Cancelar
           </button>
           <button
             type="button"
-            class="rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover"
+            class="tsi-btn tsi-btn-primary"
             (click)="confirmar.emit(idPrincipal)"
           >
             Fusionar

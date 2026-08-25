@@ -18,6 +18,7 @@ class TestDisponibilidadUnidadService:
         assert data["estado_actual"] == "Fuera de servicio"
         assert data["incluido_en_despacho"] is False
         assert data["fechahora_ultimo_cambio"] is None
+        assert data["condado"] == "Cuauhtémoc"
 
     def test_declarar_estado_when_valid_updates_state(
         self, mock_pinot, mock_kafka, unidad_con_estado_activa

@@ -23,14 +23,14 @@
 
     @if (gpsError()) {
       <div
-        class="mb-4 flex items-center gap-3 rounded-lg border border-alert-warning bg-alert-warning-bg p-4 text-sm text-alert-warning"
+        class="mb-4 flex items-center gap-3 rounded-md border border-alert-warning bg-alert-warning-bg p-4 text-sm text-alert-warning"
         data-testid="gps-error"
       >
         <app-tabler-icon name="alert-triangle" [size]="20" />
         <span class="flex-1">{{ gpsError() }}</span>
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-md border border-alert-warning px-3 py-1.5 text-xs font-medium hover:bg-alert-warning-bg"
+          class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
           (click)="reintentarGps()"
         >
           <app-tabler-icon name="refresh" [size]="14" />
@@ -41,7 +41,7 @@
 
     @if (apiError()) {
       <div
-        class="mb-4 flex items-center gap-2 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
+        class="mb-4 flex items-center gap-2 rounded-md border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
         data-testid="api-error"
       >
         <app-tabler-icon name="alert-triangle" [size]="18" />
@@ -49,7 +49,7 @@
       </div>
     }
 
-    <div class="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-6">
+    <div class="mb-6 flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-bg-surface p-6">
       <app-tabler-icon name="map-pin" [size]="28" />
       <div class="flex-1">
         <p class="m-0 text-sm font-semibold text-text-primary">Despacho #{{ despacho()!.iddespacho }}</p>
@@ -60,7 +60,7 @@
       <a
         [routerLink]="['/evidencia-unidad/accidentes', despacho()!.idaccidente, 'galeria']"
         data-testid="link-evidencia"
-        class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
       >
         <app-tabler-icon name="camera" [size]="16" />
         Evidencia del caso
@@ -72,7 +72,7 @@
         <button
           type="button"
           [disabled]="registrandoLlegada()"
-          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          class="tsi-btn tsi-btn-primary"
           (click)="registrarLlegada()"
         >
           <app-tabler-icon name="circle-check" [size]="16" />
@@ -86,7 +86,7 @@
         @if (!confirmandoAbortar()) {
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-md border border-alert-critical px-4 py-2.5 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg"
+            class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
             (click)="iniciarAbortar()"
           >
             <app-tabler-icon name="x" [size]="16" />
@@ -96,14 +96,14 @@
       </div>
 
       @if (confirmandoAbortar()) {
-        <div class="mt-4 grid gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-4" data-testid="abortar-panel">
+        <div class="mt-4 grid gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-4" data-testid="abortar-panel">
           <label for="motivoAbortar" class="text-sm font-medium text-text-primary">
             ¿Por qué deseas abortar la misión? (opcional)
           </label>
           <textarea
             id="motivoAbortar"
             rows="2"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+            class="tsi-textarea w-full"
             [(ngModel)]="motivoAbortar"
             name="motivoAbortar"
           ></textarea>
@@ -123,7 +123,7 @@
             <button
               type="button"
               [disabled]="abortando()"
-              class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-page"
+              class="tsi-btn tsi-btn-secondary"
               (click)="cancelarAbortar()"
             >
               Cancelar
@@ -132,7 +132,7 @@
         </div>
       }
     } @else if (estado() === 'en_sitio') {
-      <div class="flex items-center gap-2 rounded-lg border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success">
+      <div class="flex items-center gap-2 rounded-md border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success">
         <app-tabler-icon name="circle-check" [size]="18" />
         Ya registraste tu llegada. Adjunta la evidencia de lo que observas en
         <a
@@ -158,7 +158,7 @@
           type="button"
           data-testid="btn-finalizar-atencion"
           [disabled]="finalizando()"
-          class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-accent-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          class="tsi-btn tsi-btn-primary"
           (click)="finalizarAtencion()"
         >
           <app-tabler-icon name="circle-check" [size]="16" />
@@ -170,7 +170,7 @@
         </button>
       </div>
     } @else {
-      <div class="flex items-center gap-2 rounded-lg border border-border-default bg-bg-surface p-4 text-sm text-text-secondary">
+      <div class="flex items-center gap-2 rounded-md border border-border-default bg-bg-surface p-4 text-sm text-text-secondary">
         <app-tabler-icon name="info-circle" [size]="18" />
         Esta misión fue abortada. Volviendo a Mi Despacho…
       </div>

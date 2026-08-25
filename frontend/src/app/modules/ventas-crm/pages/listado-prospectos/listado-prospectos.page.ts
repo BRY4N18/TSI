@@ -21,6 +21,7 @@ import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/
 import {
   LIST_ACTION_ICON_BTN_CLASS,
   LIST_FILTER_CONTROL_CLASS,
+  LIST_FILTER_SELECT_CLASS,
   LIST_MOBILE_CARD_CLASS,
   LIST_PAGE_SHELL_CLASS,
   LIST_ROW_CLASS,
@@ -95,7 +96,7 @@ type EstadoFiltro = 'todas' | 'activo' | 'inactivo';
             [(ngModel)]="filtroEstado"
             (ngModelChange)="onFiltroChange()"
             data-testid="filtro-activo"
-            [class]="filterControl"
+            [class]="filterControlSelect"
           >
             <option value="todas">Todas</option>
             <option value="activo">Activo</option>
@@ -110,7 +111,7 @@ type EstadoFiltro = 'todas' | 'activo' | 'inactivo';
             [(ngModel)]="filtroEtapa"
             (ngModelChange)="onFiltroChange()"
             data-testid="filtro-etapa"
-            [class]="filterControl"
+            [class]="filterControlSelect"
           >
             <option value="">Todas</option>
             @for (e of etapas; track e) {
@@ -260,6 +261,7 @@ export class ListadoProspectosPage implements OnInit, OnDestroy {
 
   readonly pageShell = LIST_PAGE_SHELL_CLASS;
   readonly filterControl = LIST_FILTER_CONTROL_CLASS;
+  readonly filterControlSelect = LIST_FILTER_SELECT_CLASS;
   readonly tableClass = LIST_TABLE_CLASS;
   readonly thClass = LIST_TABLE_TH_CLASS;
   readonly thRightClass = LIST_TABLE_TH_RIGHT_CLASS;

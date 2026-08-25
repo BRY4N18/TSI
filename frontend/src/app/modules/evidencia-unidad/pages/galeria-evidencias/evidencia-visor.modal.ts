@@ -44,7 +44,7 @@ import { EvidenciaFotoItem } from '../../services/models/evidencia-unidad.types'
             type="button"
             (click)="cerrar.emit()"
             aria-label="Cerrar"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-md text-white/80 hover:bg-white/10"
+            class="tsi-hit-target inline-flex h-9 w-9 items-center justify-center rounded-md text-white/80 hover:bg-white/10"
           >
             <app-tabler-icon name="x" [size]="20" />
           </button>

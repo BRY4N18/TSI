@@ -57,7 +57,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
             <span class="text-xs uppercase tracking-wide text-text-secondary">Año</span>
             <input
               type="number"
-              class="w-24 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+              class="tsi-input"
               [ngModel]="anio()"
               (ngModelChange)="anio.set(+$event)"
               data-testid="input-anio"
@@ -69,7 +69,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
               type="number"
               min="1"
               max="12"
-              class="w-20 rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm"
+              class="tsi-input"
               [ngModel]="mes()"
               (ngModelChange)="mes.set(+$event)"
               data-testid="input-mes"
@@ -77,7 +77,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
           </label>
           <button
             type="button"
-            class="rounded-lg border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary"
+            class="tsi-btn tsi-btn-ghost"
             (click)="cargar()"
             data-testid="btn-consultar"
           >
@@ -102,7 +102,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
           {{ contadorNoTarificables() }} sin tarifa configurada
         </p>
 
-        <div class="mt-3 overflow-hidden rounded-lg border border-border-default">
+        <div class="mt-3 overflow-hidden rounded-md border border-border-default">
           <table class="hidden w-full border-collapse text-sm md:table">
             <thead>
               <tr class="bg-bg-surface text-left text-xs uppercase text-text-primary">
@@ -149,7 +149,7 @@ const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {
 
           <ul class="m-0 list-none space-y-3 p-3 md:hidden">
             @for (e of excepciones(); track e.idpartner + e.tipo + e.periodo) {
-              <li class="rounded-lg border border-border-default bg-bg-surface p-4 text-sm">
+              <li class="rounded-md border border-border-default bg-bg-surface p-4 text-sm">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-medium text-text-primary">{{ e.nombrepartner }}</span>
                   <span

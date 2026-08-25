@@ -39,7 +39,7 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
             <a
               [routerLink]="['/soporte-cliente/informes', informe.id]"
               [attr.data-testid]="'enlace-' + informe.id"
-              class="flex items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-4 text-text-primary hover:border-accent-primary"
+              class="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-4 text-text-primary hover:border-accent-primary"
             >
               <app-tabler-icon name="list" [size]="20" />
               <span class="text-sm font-medium">{{ informe.titulo }}</span>

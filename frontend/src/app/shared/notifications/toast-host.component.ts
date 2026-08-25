@@ -17,27 +17,31 @@ const TONE_ICON: Record<ToastTone, TablerIconName> = {
   imports: [TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed bottom-4 right-4 z-[2000] flex w-full max-w-sm flex-col gap-2 sm:max-w-[400px]">
+    <div
+      class="pointer-events-none fixed inset-x-4 bottom-4 z-[2000] flex flex-col items-stretch gap-2 sm:inset-x-auto sm:right-4 sm:w-[360px]"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
       @for (t of notifications.toasts(); track t.id) {
         <div
-          class="flex items-start gap-2 rounded-md border-l-4 bg-bg-surface p-3 text-sm shadow-md"
-          [class.border-alert-critical]="t.tone === 'critical'"
-          [class.text-alert-critical]="t.tone === 'critical'"
-          [class.border-alert-urgent]="t.tone === 'urgent'"
-          [class.text-alert-urgent]="t.tone === 'urgent'"
-          [class.border-alert-warning]="t.tone === 'warning'"
-          [class.text-alert-warning]="t.tone === 'warning'"
-          [class.border-alert-success]="t.tone === 'success'"
-          [class.text-alert-success]="t.tone === 'success'"
-          [class.border-alert-info]="t.tone === 'info'"
-          [class.text-alert-info]="t.tone === 'info'"
+          class="tsi-toast pointer-events-auto"
+          [class.tsi-toast--success]="t.tone === 'success'"
+          [class.tsi-toast--info]="t.tone === 'info'"
+          [class.tsi-toast--warning]="t.tone === 'warning'"
+          [class.tsi-toast--urgent]="t.tone === 'urgent'"
+          [class.tsi-toast--critical]="t.tone === 'critical'"
+          role="status"
+          data-testid="app-toast"
+          [attr.data-tone]="t.tone"
         >
-          <app-tabler-icon [name]="toneIcon[t.tone]" [size]="18" />
-          <span class="flex-1 text-text-primary">{{ t.message }}</span>
+          <span class="tsi-toast__icon" aria-hidden="true">
+            <app-tabler-icon [name]="toneIcon[t.tone]" [size]="18" />
+          </span>
+          <span class="min-w-0 flex-1 text-text-primary">{{ t.message }}</span>
           @if (t.actionLabel && t.onAction) {
             <button
               type="button"
-              class="shrink-0 text-sm font-semibold uppercase tracking-wide text-accent-primary hover:text-accent-hover"
+              class="shrink-0 text-sm font-semibold text-accent-primary hover:text-accent-hover"
               (click)="t.onAction()"
             >
               {{ t.actionLabel }}
@@ -45,11 +49,11 @@ const TONE_ICON: Record<ToastTone, TablerIconName> = {
           }
           <button
             type="button"
-            class="text-text-secondary hover:text-text-primary"
+            class="shrink-0 text-text-secondary hover:text-text-primary"
             aria-label="Cerrar notificación"
             (click)="notifications.dismissToast(t.id)"
           >
-            ×
+            <app-tabler-icon name="x" [size]="16" />
           </button>
         </div>
       }

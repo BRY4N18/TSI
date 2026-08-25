@@ -30,7 +30,7 @@
         <button
           type="button"
           data-testid="btn-descargar-pdf"
-          class="inline-flex min-h-11 items-center gap-2 rounded-md border border-accent-primary px-5 py-2.5 text-sm font-semibold text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+          class="tsi-btn tsi-btn-primary"
           [disabled]="descargando()"
           (click)="descargarPdf()"
         >
@@ -47,7 +47,7 @@
         </button>
       </div>
 
-      <section class="mt-6 grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="mt-6 grid gap-6 rounded-md border border-border-default bg-bg-surface p-6">
         <h2 class="m-0 text-base font-semibold text-text-primary">Datos del caso</h2>
         <dl class="grid gap-4 sm:grid-cols-2">
           <div class="grid gap-1.5">
@@ -87,7 +87,7 @@
         </dl>
       </section>
 
-      <section class="mt-6 grid gap-6 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="mt-6 grid gap-6 rounded-md border border-border-default bg-bg-surface p-6">
         <h2 class="m-0 text-base font-semibold text-text-primary">Contenido del expediente</h2>
         <dl class="grid gap-4 sm:grid-cols-4">
           <div class="grid gap-1.5">

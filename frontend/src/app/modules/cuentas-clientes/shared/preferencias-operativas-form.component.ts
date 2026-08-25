@@ -112,7 +112,7 @@ export function deserializarPreferencias(
           type="number"
           min="1"
           data-testid="pref-umbral-llegada"
-          class="w-full max-w-xs rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          class="tsi-input w-full"
           [(ngModel)]="valor.tiempoLlegadaMaxMin"
           name="umbral"
         />
@@ -128,7 +128,7 @@ export function deserializarPreferencias(
         <select
           id="canales"
           data-testid="pref-canales"
-          class="w-full max-w-xs rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          class="tsi-select w-full min-w-0"
           [(ngModel)]="valor.canales"
           name="canales"
         >
@@ -144,7 +144,7 @@ export function deserializarPreferencias(
           <input
             id="telefono"
             data-testid="pref-telefono"
-            class="w-full max-w-xs rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input w-full"
             [(ngModel)]="valor.telefonoSms"
             name="telefono"
           />
@@ -161,7 +161,7 @@ export function deserializarPreferencias(
           <select
             data-testid="pref-pais"
             aria-label="País"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+            class="tsi-select w-full min-w-0"
             [ngModel]="paisSel()"
             (ngModelChange)="onPais($event)"
             name="pais"
@@ -175,7 +175,7 @@ export function deserializarPreferencias(
           <select
             data-testid="pref-estado"
             aria-label="Estado o región"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+            class="tsi-select w-full min-w-0"
             [ngModel]="estadoSel()"
             (ngModelChange)="onEstado($event)"
             [disabled]="!paisSel()"
@@ -190,7 +190,7 @@ export function deserializarPreferencias(
           <select
             data-testid="pref-condado"
             aria-label="Condado"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+            class="tsi-select w-full min-w-0"
             [ngModel]="condadoSel()"
             (ngModelChange)="agregarCondado($event)"
             [disabled]="!estadoSel()"
@@ -232,7 +232,7 @@ export function deserializarPreferencias(
           id="destinatarios"
           data-testid="pref-destinatarios"
           placeholder="correo@empresa.com, otro@empresa.com"
-          class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+          class="tsi-input w-full"
           [(ngModel)]="valor.destinatarios"
           name="destinatarios"
         />
@@ -246,7 +246,7 @@ export function deserializarPreferencias(
       <button
         type="submit"
         data-testid="pref-guardar"
-        class="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white hover:bg-accent-hover"
+        class="tsi-btn tsi-btn-primary w-fit"
       >
         {{ submitLabel }}
       </button>

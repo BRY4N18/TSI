@@ -82,7 +82,7 @@ export const AUSENTE = '—';
     } @else if (error() !== null) {
       <!-- El alias "as" no se admite en un @else if; el error se lee del input. -->
       <div
-        class="grid place-items-center gap-3 rounded-lg border border-alert-critical bg-alert-critical-bg p-10 text-center"
+        class="grid place-items-center gap-3 rounded-md border border-alert-critical bg-alert-critical-bg p-10 text-center"
         [attr.data-testid]="'error-' + error()!.tipo"
         role="alert"
       >

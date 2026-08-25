@@ -16,3 +16,4 @@ class TestConsultarMiDisponibilidadContract:
         assert data["idunidademergencia"] == 1
         assert data["estado_actual"] == "Fuera de servicio"
         assert data["incluido_en_despacho"] is False
+        assert data["condado"] == "Cuauhtémoc"

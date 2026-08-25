@@ -126,7 +126,7 @@ export class ListaAccidentesPage implements OnInit {
   }
 
   cardSeleccionadaClass(idaccidente: string): string {
-    const base = 'rounded-lg border border-border-default bg-bg-surface p-4';
+    const base = 'rounded-md border border-border-default bg-bg-surface p-4';
     return this.esSeleccionado(idaccidente)
       ? `${base} bg-accent-primary/10 border-l-4 border-l-accent-primary`
       : base;

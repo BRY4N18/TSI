@@ -2,6 +2,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { BrandMarkComponent } from '../../../../shared/brand/brand-mark.component';
 import { ThemeService } from '../../../../shared/theme/theme.service';
 import { TablerIconComponent, TablerIconName } from '../../../../shared/ui/icon/tabler-icon.component';
 import { PlanPublico, SeveridadPlan } from '../../models/prospectos.types';
@@ -28,7 +29,7 @@ const LABELS_LIMITES: Record<string, string> = {
 @Component({
   selector: 'app-catalogo-planes',
   standalone: true,
-  imports: [CommonModule, RouterLink, CurrencyPipe, TablerIconComponent],
+  imports: [CommonModule, RouterLink, CurrencyPipe, TablerIconComponent, BrandMarkComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './catalogo-planes.page.html',
 })
@@ -127,7 +128,7 @@ export class CatalogoPlanesPage implements OnInit {
 
   cardClass(plan: PlanPublico): string {
     const base =
-      'relative grid h-full content-start gap-4 rounded-[10px] border bg-bg-surface p-5 pt-6 transition-[border-color,box-shadow,transform] duration-200';
+      'relative grid h-full content-start gap-4 rounded-md border bg-bg-surface p-5 pt-6 transition-[border-color,box-shadow,transform] duration-200';
     if (this.esPopular(plan)) {
       return `${base} z-[1] border-2 border-accent-primary md:-translate-y-1`;
     }
@@ -135,12 +136,10 @@ export class CatalogoPlanesPage implements OnInit {
   }
 
   ctaClass(plan: PlanPublico): string {
-    const base =
-      'mt-auto inline-flex min-h-11 w-full items-center justify-center rounded-lg px-5 text-center text-sm font-medium transition-colors';
-    if (this.esPopular(plan)) {
-      return `${base} bg-accent-primary text-white hover:bg-accent-hover`;
-    }
-    return `${base} border border-accent-primary bg-transparent text-accent-primary hover:bg-accent-primary/10`;
+    // El CTA del plan usa las clases canonicas de boton (design-system.md §5)
+    // en vez de repintar el primario/ghost a mano.
+    const base = 'tsi-btn mt-auto w-full text-center no-underline';
+    return this.esPopular(plan) ? `${base} tsi-btn-primary` : `${base} tsi-btn-ghost`;
   }
 
   priceClass(plan: PlanPublico): string {

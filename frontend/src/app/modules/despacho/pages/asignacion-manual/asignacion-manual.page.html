@@ -10,7 +10,7 @@
   <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Asignación manual</h1>
   <p class="m-0 mb-6 font-mono text-sm text-text-secondary">{{ idaccidente }}</p>
 
-  <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+  <section class="rounded-md border border-border-default bg-bg-surface p-6">
     <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades candidatas</h2>
 
     @if (loading()) {
@@ -25,7 +25,7 @@
           Unidad
           <select
             [(ngModel)]="unidadSeleccionada"
-            class="rounded-md border border-border-default bg-transparent px-3 py-2.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-select"
           >
             @for (c of candidatas(); track c.idunidademergencia) {
               <option [ngValue]="c.idunidademergencia">
@@ -40,7 +40,7 @@
           type="button"
           [disabled]="asignando()"
           (click)="asignar()"
-          class="inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-accent-primary px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-80"
+          class="tsi-btn tsi-btn-primary w-fit"
         >
           @if (asignando()) {
             <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>

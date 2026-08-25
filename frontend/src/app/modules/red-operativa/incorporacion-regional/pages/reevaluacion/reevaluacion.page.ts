@@ -27,7 +27,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
         <p class="mt-1 text-sm text-text-secondary">CU-O61 — Región habilitada en producción.</p>
       </header>
 
-      <section class="space-y-5 rounded-lg border border-border-default bg-bg-surface p-6">
+      <section class="space-y-5 rounded-md border border-border-default bg-bg-surface p-6">
         <form (ngSubmit)="reevaluar()" class="space-y-4">
           <div class="flex gap-6">
             <label class="flex items-center gap-2 text-sm text-text-primary">
@@ -57,7 +57,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
               [(ngModel)]="motivo"
               name="motivo"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
           <button

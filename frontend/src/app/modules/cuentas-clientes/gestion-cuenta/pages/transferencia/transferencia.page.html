@@ -16,7 +16,7 @@
     <p class="m-0 text-sm text-alert-critical">{{ error }}</p>
   }
 
-  <form class="grid max-w-md gap-3 rounded-lg border border-border-default bg-bg-surface p-4" (ngSubmit)="transferir()">
+  <form class="grid max-w-md gap-3 rounded-md border border-border-default bg-bg-surface p-4" (ngSubmit)="transferir()">
     <label class="grid gap-1 text-sm font-medium text-text-secondary">
       Nuevo responsable
       <select class="tsi-select" [(ngModel)]="selectedId" name="responsable">

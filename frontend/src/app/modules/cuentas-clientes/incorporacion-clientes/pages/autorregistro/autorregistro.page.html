@@ -10,7 +10,7 @@
   @if (enviado && idSolicitud) {
     <section
       role="status"
-      class="space-y-3 rounded-lg border border-border-default border-l-4 border-l-alert-info bg-alert-info-bg p-6"
+      class="space-y-3 rounded-md border border-border-default border-l-4 border-l-alert-info bg-alert-info-bg p-6"
     >
       <div class="flex items-center gap-2 text-alert-info">
         <app-tabler-icon name="info-circle" [size]="22" />
@@ -27,14 +27,14 @@
       <button
         type="button"
         (click)="nuevaSolicitud()"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border-default bg-bg-surface px-5 text-sm font-medium text-text-primary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
       >
         <app-tabler-icon name="refresh" [size]="18" />
         Enviar otra solicitud
       </button>
     </section>
   } @else {
-    <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+    <section class="rounded-md border border-border-default bg-bg-surface p-6">
       <form (ngSubmit)="enviar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label class="block sm:col-span-2">
           <span class="mb-1 block text-sm font-medium text-text-secondary">Razón social</span>
@@ -42,7 +42,7 @@
             [(ngModel)]="form.razon_social"
             name="razon_social"
             required
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input w-full"
           />
         </label>
         <label class="block">
@@ -50,7 +50,7 @@
           <input
             [(ngModel)]="form.nombre"
             name="nombre"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input w-full"
           />
         </label>
         <label class="block">
@@ -58,7 +58,7 @@
           <select
             [(ngModel)]="form.tipo"
             name="tipo"
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-select w-full min-w-0"
           >
             @for (t of tipos; track t) {
               <option [value]="t">{{ t }}</option>
@@ -71,7 +71,7 @@
             [(ngModel)]="form.nit_identificacion"
             name="nit"
             required
-            class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+            class="tsi-input w-full"
           />
         </label>
 
@@ -83,7 +83,7 @@
               [(ngModel)]="form.admin_local.nombres"
               name="nombres"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
           <label class="block">
@@ -92,7 +92,7 @@
               [(ngModel)]="form.admin_local.apellidos"
               name="apellidos"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
           <label class="block sm:col-span-2">
@@ -102,7 +102,7 @@
               [(ngModel)]="form.admin_local.gmail"
               name="gmail"
               required
-              class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:border-accent-primary focus:outline-none focus:ring-4 focus:ring-accent-primary/15"
+              class="tsi-input w-full"
             />
           </label>
         </fieldset>
@@ -111,7 +111,7 @@
           <button
             type="submit"
             [disabled]="enviando"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-primary px-5 font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+            class="tsi-btn tsi-btn-primary"
             [class.opacity-80]="enviando"
           >
             @if (enviando) {

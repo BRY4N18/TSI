@@ -55,7 +55,7 @@ const BOARD_LIMIT = 100;
         <button
           type="button"
           data-testid="btn-actualizar-board"
-          class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default bg-bg-surface px-4 text-sm font-medium hover:bg-bg-page"
+          class="tsi-btn tsi-btn-secondary"
           (click)="cargar()"
         >
           Actualizar
@@ -74,7 +74,7 @@ const BOARD_LIMIT = 100;
           data-testid="pipeline-board-columns"
         >
           @for (col of columnas; track col) {
-            <div class="min-w-[12rem] rounded-lg border border-border-default bg-bg-surface p-3">
+            <div class="min-w-[12rem] rounded-md border border-border-default bg-bg-surface p-3">
               <h2 class="m-0 mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
                 {{ col }}
               </h2>
@@ -101,7 +101,7 @@ const BOARD_LIMIT = 100;
                       @if (nextOf(p)) {
                         <button
                           type="button"
-                          class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-accent-primary hover:bg-accent-primary/10 disabled:opacity-40"
+                          class="tsi-btn tsi-btn-primary"
                           [disabled]="busyId() === p.idprospecto"
                           (click)="avanzar(p)"
                         >
@@ -127,14 +127,14 @@ const BOARD_LIMIT = 100;
 
       @if (actionError()) {
         <div
-          class="flex flex-wrap items-center gap-3 rounded-lg border border-l-4 border-border-default border-l-alert-warning bg-alert-warning-bg p-4"
+          class="flex flex-wrap items-center gap-3 rounded-md border border-l-4 border-border-default border-l-alert-warning bg-alert-warning-bg p-4"
           role="alert"
         >
           <p class="m-0 flex-1 text-sm">{{ actionError() }}</p>
           <button
             type="button"
             data-testid="btn-refrescar-board"
-            class="inline-flex min-h-11 items-center rounded-md border border-border-default px-4 text-sm"
+            class="tsi-btn tsi-btn-secondary"
             (click)="cargar()"
           >
             Refrescar
@@ -149,25 +149,25 @@ const BOARD_LIMIT = 100;
         role="dialog"
         aria-modal="true"
       >
-        <div class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6">
+        <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-2 text-lg font-semibold">Marcar perdido — {{ target.empresa }}</h2>
           <form [formGroup]="perdidaForm" (ngSubmit)="confirmarPerdido()" class="grid gap-3">
             <input
               formControlName="motivo_perdida"
               placeholder="Motivo obligatorio"
-              class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm"
+              class="tsi-input"
             />
             <div class="flex justify-end gap-2">
               <button
                 type="button"
-                class="inline-flex min-h-11 rounded-md bg-accent-primary px-4 text-sm font-medium text-white"
+                class="tsi-btn tsi-btn-primary"
                 (click)="perdidoTarget.set(null)"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                class="inline-flex min-h-11 rounded-md border border-alert-critical/45 px-4 text-sm font-medium text-alert-critical disabled:opacity-55"
+                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
                 [disabled]="perdidaForm.invalid || busyId() != null"
               >
                 Confirmar

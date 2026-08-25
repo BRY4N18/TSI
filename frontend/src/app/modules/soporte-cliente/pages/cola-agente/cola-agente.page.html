@@ -64,10 +64,10 @@
         <div class="grid flex-1 gap-3 lg:grid-cols-[minmax(280px,360px)_1fr]" data-testid="loading-skeleton">
           <div class="space-y-2">
             @for (i of [1, 2, 3]; track i) {
-              <div class="h-24 animate-pulse rounded-lg bg-bg-surface"></div>
+              <div class="h-24 animate-pulse rounded-md bg-bg-surface"></div>
             }
           </div>
-          <div class="h-64 animate-pulse rounded-lg bg-bg-surface"></div>
+          <div class="h-64 animate-pulse rounded-md bg-bg-surface"></div>
         </div>
       } @else if (!tickets().length) {
         <div class="grid flex-1">
@@ -78,13 +78,13 @@
           class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]"
           data-testid="master-detail"
         >
-          <aside class="min-h-0 overflow-y-auto rounded-lg border border-border-default bg-bg-surface p-2">
+          <aside class="min-h-0 overflow-y-auto rounded-md border border-border-default bg-bg-surface p-2">
             <ul class="m-0 flex list-none flex-col gap-2 p-0">
               @for (t of tickets(); track t.id_reclamo) {
                 <li>
                   <button
                     type="button"
-                    class="w-full rounded-lg border bg-bg-page p-3 text-left transition-colors hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                    class="w-full rounded-md border bg-bg-page p-3 text-left transition-colors hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
                     [class.border-accent-primary]="seleccionadoId() === t.id_reclamo"
                     [class.border-border-default]="seleccionadoId() !== t.id_reclamo"
                     [attr.data-testid]="'ticket-card-' + t.id_reclamo"
@@ -128,7 +128,7 @@
           </aside>
 
           <section
-            class="flex min-h-0 flex-col rounded-lg border border-border-default bg-bg-surface"
+            class="flex min-h-0 flex-col rounded-md border border-border-default bg-bg-surface"
             data-testid="panel-detalle"
           >
             @if (detalleCargando()) {
@@ -158,7 +158,7 @@
                     <button
                       type="button"
                       data-testid="btn-tomar"
-                      class="tsi-btn tsi-btn-primary !min-h-9 !px-3 !py-1.5"
+                      class="tsi-btn tsi-btn-primary tsi-hit-target !min-h-9 !px-3 !py-1.5"
                       [disabled]="accionEnCurso()"
                       (click)="tomar()"
                     >
@@ -169,7 +169,7 @@
                     <button
                       type="button"
                       data-testid="btn-resolver"
-                      class="tsi-btn tsi-btn-ghost !min-h-9 !px-3 !py-1.5"
+                      class="tsi-btn tsi-btn-ghost tsi-hit-target !min-h-9 !px-3 !py-1.5"
                       [disabled]="accionEnCurso()"
                       (click)="resolver()"
                     >

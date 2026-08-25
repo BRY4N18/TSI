@@ -32,7 +32,7 @@ import { NotificationService } from './notification.service';
           aria-modal="true"
           aria-labelledby="app-alert-title"
           aria-describedby="app-alert-message"
-          class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl"
+          class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl"
         >
           <h2 id="app-alert-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
             {{ a.title }}

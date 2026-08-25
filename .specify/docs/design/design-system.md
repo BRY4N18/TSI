@@ -1,6 +1,6 @@
 # Sistema de Diseño (UX/UI) — TSI
 **Ubicación de este archivo:** `docs/diseno/design-system.md`
-**Última actualización:** 2026-08-24 (v7 — paleta Nodo Integral: `accent-primary`/`accent-hover` derivados del logo navy/cian, distintos por tema para conservar contraste de botones y texto). Anterior: 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend).
+**Última actualización:** 2026-08-24 (v7.4 — §5 Mapa: los pines pasan al nodo hexagonal y la ruta al riel; §3.1 deja de reclamar el punto de sincronización para el cian, que es semántico por §5). Anterior en el mismo día: v7.3 — §3.1: se documenta `app-brand-panel` como aplicación canónica de la superficie de convergencia, tras aplicarla a las pantallas públicas). Anterior en el mismo día: v7.2 — nueva §3.1 Lenguaje de forma: riel, nodo hexagonal y superficie de convergencia; §5 escala de radios reducida a tres tokens, resolviendo la contradicción 8-10px vs 12-16px). Anterior en el mismo día: v7.1 — §5 Toast: cuerpo con fondo semántico, no card `bg-surface`; cierra D2). Anterior en el mismo día: v7 paleta Nodo Integral. Anterior: 2026-08-12 (v6 — §11: los overlays bloqueantes deben anunciarse como diálogo, con foco y Escape, y los Alert de error muestran el detalle accionable del backend).
 
 ---
 
@@ -74,6 +74,32 @@ Paleta alineada con la identidad **Nodo Integral** (isotipo de tres vías que co
 
 El mapa (Leaflet) también sigue esta regla: tiles claros de OpenStreetMap en modo claro, tiles oscuros de CartoDB Dark Matter en modo oscuro, cambiando en vivo junto con el resto de la interfaz.
 
+## 3.1 Lenguaje de forma — el nodo, el riel y la convergencia
+
+La paleta por sí sola no da identidad: navy + cian es la combinación de buena parte del software institucional. Lo que hace propio a TSI es la **geometría del isotipo** — tres vías con una divisoria interior que convergen en un hexágono implícito. Esta sección convierte esa geometría en tres primitivas de sistema, para que la marca se exprese en la forma y no solo en el color.
+
+Regla que gobierna las tres (extensión de §1): **se aplican solo donde ya existe estructura** — un estado activo, un límite de sección, un pin que ya iba a estar ahí. Nunca se añade un elemento a una pantalla *para* mostrar la marca. Si al quitar la primitiva no se pierde información ni jerarquía, era ornamentación y no debía estar.
+
+| Primitiva | Clase | Qué es | Dónde sí | Dónde no |
+|---|---|---|---|---|
+| **Riel** | `.tsi-rail` | Barra de 5px con una divisoria de 1px corriendo por dentro | Borde izquierdo de nav activa; ruta activa sobre el mapa (§5 Mapa) | Bordes de card, separadores de tabla, cualquier línea que solo divide |
+| **Nodo hexagonal** | `.tsi-node` | Contenedor recortado en hexágono vertical | Contenedor de ícono en estados vacíos, pines de mapa | Avatares (siguen full-round, Ley de Jakob), badges, botones |
+| **Superficie de convergencia** | `.tsi-node-surface` | Degradado navy → azul luminoso | Chrome de marca: paneles de auth/registro, cabecera de onboarding | Detrás de datos operativos, cards de KPI, cualquier fondo de contenido |
+
+**El riel es la marca más apropiable del sistema.** La divisoria interior de las vías del isotipo es una línea de carretera vista desde arriba: es el detalle que ningún otro producto tiene. Un borde izquierdo plano de 4px en la nav activa lo tiene cualquier framework; ese mismo borde con la divisoria corriendo por dentro se lee como TSI de inmediato. El cian (`accent-flow`) marca **activo / en curso**, nunca severidad — esa sigue siendo competencia exclusiva de los tokens de alerta; hoy su uso es la ruta del mapa. No existen variantes del riel declaradas "por si acaso": cuando aparezca el caso (spine de timeline, separador de sección) se añade entonces, que es lo que exige la regla de esta misma sección.
+
+**Por qué el riel mide 5px y no 4:** la divisoria tiene que caer sobre un píxel entero. Con un riel de 4px el único reparto centrado es 1.5 / 1 / 1.5, y a `devicePixelRatio: 1` esa banda se reparte al 50% entre dos píxeles: el groove se pinta como un borrón gris en vez de una línea, y la primitiva pierde justo lo que la hace reconocible. Con 5px el reparto es 2 / 1 / 2 — entero, centrado y nítido tanto a dpr 1 como a dpr 2. Cualquier variante futura del riel debe conservar esta propiedad: **ancho impar, groove de 1px**.
+
+**El panel de marca de las pantallas públicas** (login, registro) es la aplicación canónica de la superficie de convergencia: implementado en `app-brand-panel`, combina `.tsi-node-surface` de fondo con el patrón de las tres vías dibujado encima en cian. Ese patrón se construye igual que el isotipo — cada vía se traza dos veces, primero el trazo grueso y luego la divisoria fina — y es el único sitio del sistema donde el cian crudo `#00A8E8` aparece, porque ahí es trazo sobre fondo oscuro y no relleno bajo texto. Cualquier pantalla pública nueva usa ese componente; no se vuelve a copiar el SVG.
+
+**El hexágono en el mapa es la decisión con más retorno.** Un pin hexagonal *es* el nodo de convergencia del logo, y además separa visualmente a TSI de la gota genérica de Google Maps sin inventar un lenguaje nuevo: el ícono de severidad dentro del pin y su color siguen siendo los mismos tokens de §5, tal como ya exige la regla de mapa.
+
+**El cian tiene un trabajo, no un lugar.** `accent-flow` es trazo e indicador — riel de flujo, ruta activa en el mapa, arco "en proceso" de un ring chart. **No** el punto de sincronización: ese dot es verde/ámbar/gris según el estado de conexión (§5) y su color es información, no marca. No es relleno de superficie ni color de texto de cuerpo. La razón es de contraste, no estética: el cian crudo del isotipo (`#00A8E8`) da 2.7:1 con texto blanco encima y 2.7:1 como texto sobre blanco — falla en ambos sentidos. Por eso el token vale `#0090C8` en modo claro (3.6:1 sobre `bg-surface`, cumple el mínimo 3:1 de componente no textual) y `#00A8E8` en oscuro (6.1:1, donde el cian de marca sí es legible sin ajuste).
+
+**Por qué el degradado se detiene antes del cian:** `--gradient-node` va de `#001A38` a `#00558F`, no al cian del logo. Sobre un panel con texto blanco, terminar en cian daría 2.7:1 en el extremo claro; deteniéndolo en `#00558F` el peor punto del degradado queda en 7.8:1. El cian aparece en ese panel como **trazo del patrón de vías encima**, que es exactamente su rol en el isotipo.
+
+---
+
 ## 4. Tipografía
 
 La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos no demasiado rígidos, buen interlineado (line-height 1.4-1.6 en cuerpo de texto), y letras que respiren dentro de sus contenedores redondeados — nunca texto pegado al borde de una card o botón.
@@ -91,17 +117,22 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 
 ## 5. Componentes globales
 
-**Radios de esquina (regla global, aplica a TODA la app):**
-- Botones e inputs: 6-8px
-- Cards, modales, contenedores medianos: 8-10px
-- Avatares: full-round (999px) — se mantiene porque es un patrón universal (Ley de Jakob) y no afecta la percepción de seriedad institucional
-- Badges y chips de estado: 6-8px (no full-round) — un chip de estado ("Confirmado", "En_sitio") es información operativa, no un elemento decorativo, y debe leerse con la misma sobriedad que el resto del sistema
-- Tablas: esquinas del contenedor general en 8px (las celdas internas quedan rectas por legibilidad de datos, pero el marco exterior sigue la regla)
+**Radios de esquina (regla global, aplica a TODA la app):** la escala tiene **tres pasos y solo tres**, expuestos como tokens en `styles.css` (`--radius-sm` / `--radius-md` / `--radius-lg`). Ningún componente inventa un valor intermedio.
+
+| Token | Valor | Aplica a |
+|---|---|---|
+| `--radius-sm` | 8px | Botones, inputs, selects, badges y chips de estado |
+| `--radius-md` | 10px | Cards, modales, contenedores medianos, marco exterior de tabla |
+| `--radius-lg` | 12px | Paneles grandes: workpanel, drawer de sidebar en mobile, overlays a ancho casi completo |
+
+- Avatares: full-round (999px) — única excepción a la escala; se mantiene porque es un patrón universal (Ley de Jakob) y no afecta la percepción de seriedad institucional
+- Los badges y chips de estado usan `--radius-sm`, **no** full-round — un chip de estado ("Confirmado", "En_sitio") es información operativa, no un elemento decorativo, y debe leerse con la misma sobriedad que el resto del sistema
+- Tablas: el marco exterior usa `--radius-md`; las celdas internas quedan rectas por legibilidad de datos
 - Nunca usar 0-2px en ningún componente de la interfaz — esto es lo que se busca evitar deliberadamente ("muy cuadrado")
 
 **Header:** Fondo `bg-surface`, altura 64px, borde inferior `border-default`. Logo Nodo Integral (isotipo + wordmark; en viewports estrechos el wordmark se oculta y queda el isotipo) a la izquierda. A la derecha: saludo/contexto de usuario, avatar circular con iniciales (fondo `accent-primary`), notificaciones (campana con contador en color de alerta correspondiente), selector de región. Barra de búsqueda global centrada con input redondeado (Ley de Jakob: patrón esperado).
 
-**Navegación lateral (sidebar):** Fondo `bg-surface`, ancho 240px, borde derecho `border-default`. Items con ícono 24x24px, contenedor de item con radio 8-10px al hacer hover/activo (no un rectángulo pegado al borde). Item activo: fondo `accent-primary` al ~10% de opacidad (`color-mix` sobre el token, nunca un rgba con hex fijo), borde izquierdo 4px `accent-primary`, texto `accent-primary` en bold. Agrupaciones por Gestalt dentro de cada sidebar, separadas por 24px mínimo.
+**Navegación lateral (sidebar):** Fondo `bg-surface`, ancho 240px, borde derecho `border-default`. Items con ícono 24x24px, contenedor de item con radio 8-10px al hacer hover/activo (no un rectángulo pegado al borde). Item activo: fondo `accent-primary` al ~10% de opacidad (`color-mix` sobre el token, nunca un rgba con hex fijo), borde izquierdo con el **riel** `.tsi-rail` de §3.1 (no un borde plano de 4px), texto `accent-primary` en bold. Agrupaciones por Gestalt dentro de cada sidebar, separadas por 24px mínimo.
 
 **Regla de sidebar por rol:** cada rol del sistema (operador, unidad de emergencia, técnico de campo) tiene su **propio sidebar**, compuesto únicamente por los módulos a los que ese rol tiene acceso — nunca un sidebar único con ítems ocultos u ocultos/deshabilitados por permisos. Esto reduce carga cognitiva (Ley de Hick) y evita que un usuario descubra la existencia de módulos fuera de su alcance. El listado concreto de qué módulos ve cada rol se define en `module-map.md`; este documento solo fija el patrón visual y estructural del sidebar, no su contenido.
 
@@ -111,16 +142,18 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 - **Departamentos distintos** (ej. Director de Operaciones en Emergencias + Gerente de Ventas en Ventas y CRM): el sidebar **no se fusiona**. En su lugar, el header muestra un selector explícito de rol/departamento (junto al avatar de usuario, mismo patrón de ubicación que el selector de región ya definido en "Header"), y el sidebar se reemplaza por completo al cambiar de selección — cada contexto de trabajo mantiene su propio sidebar íntegro, sin mezclar KPIs ni módulos de departamentos que no comparten propósito.
 
 **Layout general de la aplicación (aplica a cualquier pantalla, no solo dashboards):**
-- Grid principal: sidebar fija + área de contenido con cards de esquinas redondeadas (12-16px)
-- Bloques de KPIs con indicadores circulares de progreso (ring charts) donde tenga sentido mostrar métricas — máximo 3-4 rings visibles a la vez (Ley de Hick + carga cognitiva). El arco completado usa `accent-primary`; un estado activo o en proceso usa `accent-hover`
+- Grid principal: sidebar fija + área de contenido con cards en `--radius-md` (10px). **Corregido v7.2:** esta línea decía 12-16px y contradecía la escala de radios de esta misma sección; 16px cae de lleno en la "suavidad excesiva" que §1 descarta
+- Bloques de KPIs con indicadores circulares de progreso (ring charts) donde tenga sentido mostrar métricas — máximo 3-4 rings visibles a la vez (Ley de Hick + carga cognitiva). El arco completado usa `accent-primary`; el arco "en proceso" usa `accent-flow` (§3.1) — no `accent-hover`, que es estado de interacción y no un segundo color de marca
 - Listados de eventos/actividad agrupados por proximidad temporal, en cards individuales redondeadas, no en tablas densas cuando el contenido es narrativo
 - Máximo 6-8 bloques de información simultáneos por vista, en cualquier módulo del sistema (despacho, analítica, administración, etc.)
 
-**Botones:** Primario `accent-primary` texto blanco, hover `accent-hover`, radio 8-10px. Secundario borde `accent-primary` texto `accent-primary` sobre fondo transparente/claro, hover con fondo `accent-primary` al ~5% y borde `accent-hover`. Crítico destructivo: color de alerta crítica (texto/ícono del token `alerta-critica`) con ícono de advertencia explícito + confirmación en 2 pasos (nunca solo el color para distinguirlo de un botón primario normal — y ahora, al no compartir hex con el acento de marca, la distinción es aún más clara). Advertencia: color de alerta media, texto sobre ese fondo. Deshabilitado opacidad 0.5. Padding 10px 20px. Área mínima de toque 44x44px (Ley de Fitts) en acciones críticas.
+**Botones:** Primario `accent-primary` texto blanco, hover `accent-hover`, radio 8-10px. Secundario borde `accent-primary` texto `accent-primary` sobre fondo transparente/claro, hover con fondo `--accent-soft` y borde `accent-hover`. Crítico destructivo: color de alerta crítica (texto/ícono del token `alerta-critica`) con ícono de advertencia explícito + confirmación en 2 pasos (nunca solo el color para distinguirlo de un botón primario normal — y ahora, al no compartir hex con el acento de marca, la distinción es aún más clara). Advertencia: color de alerta media, texto sobre ese fondo. Deshabilitado opacidad 0.5. Padding 10px 20px. Área mínima de toque 44x44px (Ley de Fitts) en acciones críticas.
+
+**Botones de solo ícono en barras densas:** cuando la caja visible tiene que ser menor de 44px (header de 64px, cabecera de modal, chip de archivo adjunto), el botón lleva `.tsi-hit-target`, que extiende el área de toque a 44x44 con un pseudo-elemento centrado sin ocupar espacio en el layout. Es la misma regla que ya rige la columna de acciones de las tablas — lo que debe medir 44 es el objetivo del dedo, no el dibujo. **Condición de uso:** no puede haber dos `.tsi-hit-target` con centros a menos de 44px, porque sus áreas se solaparían y la última en el DOM taparía a la anterior; en grupos densos hay que agrandar las cajas de verdad.
 
 **Estado "en carga" (acciones críticas — ej. Asignar unidad, Confirmar despacho):** al activarse la acción, el botón se deshabilita para evitar doble-submit, el texto cambia a su forma en gerundio (ej. "Asignar unidad" → "Asignando…"), y se agrega un spinner de 16px a la izquierda del texto, dentro del propio botón — nunca un spinner flotante aparte. El fondo mantiene `accent-primary` con opacidad ~0.8 (distinta del disabled real en 0.5, para diferenciar "procesando" de "no disponible"). Si no hay respuesta del backend en 10-15s, el botón vuelve a su estado normal y dispara el feedback de error correspondiente (Toast o Alert según gravedad) — nunca queda cargando indefinidamente.
 
-**Formularios:** Inputs borde `border-default`, radio 8-10px, padding 10px 14px, fondo `bg-surface`. Foco borde `accent-primary` + anillo `accent-primary` al 15% de opacidad (`ring-accent-primary/15` o equivalente con `color-mix` sobre el token — nunca un rgba con hex fijo). Labels `text-secondary`, 14px, peso 500.
+**Formularios:** Inputs borde `border-default`, radio 8-10px, padding 10px 14px, fondo `bg-surface`. Foco borde `accent-primary` + anillo `--accent-ring` (el token ya resuelve `color-mix` sobre `accent-primary` al 15% — nunca un rgba con hex fijo). Labels `text-secondary`, 14px, peso 500. Los `<textarea>` usan `.tsi-textarea`, no `.tsi-input`: comparten borde, radio, fondo y anillo de foco, pero el textarea cambia el alto fijo de 2.75rem por un `min-height` del mismo valor, para poder crecer con el contenido en vez de colapsar a una linea.
 
 **Validación semántica en formularios:**
 - **Error:** borde y texto de ayuda en color de alerta crítica, ícono de error. Campo obligatorio faltante o dato inválido.
@@ -131,7 +164,7 @@ La tipografía debe reforzar la misma sensación de suavidad del sistema: pesos 
 
 **Definición (importante, no confundir con Snackbar ni Alert — ver comparación abajo):** un Toast es una confirmación **pasiva y no intrusiva** de que una acción se completó. No requiere ninguna acción del usuario, no interrumpe su flujo de trabajo, y siempre se desvanece solo tras un tiempo determinado — incluso el tipo Crítico. El usuario puede opcionalmente cerrarlo antes con una X pequeña si lo desea, pero esta X es un atajo de conveniencia, no una condición obligatoria: el toast desaparece igual sin que nadie lo toque. Un Toast **nunca** lleva botón de acción (ni "Deshacer" ni nada similar) — si la acción es reversible, corresponde a un Snackbar. Si un evento requiere que el operador reconozca o actúe obligatoriamente (ej. "sin unidades disponibles en zona", alerta dentro de CU-O34), ese evento no es un Toast — corresponde a un Alert.
 
-Todos los toasts comparten: esquinas redondeadas 8px (consistente con la regla general de la sección 5), sombra suave (nunca fuerte), borde izquierdo 4px de color semántico, ícono correspondiente, X de cierre opcional en la esquina superior derecha del toast (ícono pequeño, sutil, `text-secondary`), auto-dismiss siempre activo.
+Todos los toasts comparten: esquinas redondeadas 8px (consistente con la regla general de la sección 5), sombra suave (nunca fuerte), borde izquierdo 4px de color semántico, ícono correspondiente, X de cierre opcional en la esquina superior derecha del toast (ícono Tabler `x` pequeño, sutil, `text-secondary`), auto-dismiss siempre activo. El cuerpo usa el **fondo semántico** del tipo (`exito-bg`, `informacion-bg`, …) y el texto del mensaje queda en `text-primary`; el color de alerta pinta solo el borde y el ícono. Pintarlo como una card `bg-surface` con un check verde (o el texto entero teñido) se lee como un chip ajeno al sistema, no como feedback de TSI.
 
 **Posición y comportamiento:** esquina **inferior derecha** de la pantalla, apilados de abajo hacia arriba cuando hay más de uno (el más reciente aparece abajo, empujando a los anteriores hacia arriba). Animación de entrada suave (slide + fade desde la derecha). Esta posición se elige deliberadamente distinta a la de la campana de notificaciones del header (arriba-derecha, ver sección "Header"): separa lo persistente/revisable a demanda (campana) de lo efímero/pasivo (toast), siguiendo el mismo patrón que usan sistemas operativos y apps de escritorio (Ley de Jakob).
 
@@ -177,7 +210,7 @@ Cada token resuelve automáticamente a los valores de fondo/texto definidos en l
 - Advertencia de sesión por expirar u otras interrupciones que de verdad necesitan decisión inmediata.
 
 **Dos formatos, según el nivel de bloqueo necesario:**
-1. **Modal de Alert** (bloqueo total) — overlay oscuro semitransparente sobre toda la pantalla, diálogo centrado con esquinas 10-12px, fondo `bg-surface`, título (H3, `text-primary`), mensaje descriptivo (14px, `text-secondary`), y 1-2 botones de acción siguiendo el estilo de botones ya definido (primario `accent-primary`, secundario con borde). Para acciones destructivas: el botón de confirmación destructiva debe ser el secundario visualmente débil y el de cancelar/volver el más prominente, o bien requerir un paso adicional de confirmación explícita (ya definido en la sección de Botones: "confirmación en 2 pasos").
+1. **Modal de Alert** (bloqueo total) — overlay oscuro semitransparente sobre toda la pantalla, diálogo centrado en `--radius-md` (un modal `max-w-md` es un contenedor mediano, no un panel grande), fondo `bg-surface`, título (H3, `text-primary`), mensaje descriptivo (14px, `text-secondary`), y 1-2 botones de acción siguiendo el estilo de botones ya definido (primario `accent-primary`, secundario con borde). Para acciones destructivas: el botón de confirmación destructiva debe ser el secundario visualmente débil y el de cancelar/volver el más prominente, o bien requerir un paso adicional de confirmación explícita (ya definido en la sección de Botones: "confirmación en 2 pasos").
 2. **Banner de Alert** (bloqueo parcial, sección específica) — franja horizontal anclada arriba de una sección o vista (no de toda la pantalla), fondo semántico igual que Toast/Snackbar (token `alerta-critica` para crítico), pero con botón de acción visible y sin auto-dismiss. Útil para CU-O44: el operador sigue viendo el resto del panel de despacho, pero el banner permanece hasta que resuelve la situación.
 
 **Colores semánticos (reutilizan los mismos tokens que Toast, para coherencia del sistema):** Crítico → token `alerta-critica`, Advertencia → token `alerta-media`, Informativo → token `informacion`. Cada uno resuelve automáticamente a los valores de la sección 3 según el tema activo.
@@ -281,7 +314,7 @@ El copy específico de cada estado (qué dice exactamente el mensaje vacío o de
 
 **Indicador de sincronización/conexión:** un punto de estado (*dot*) + texto corto, ubicado junto al título de cualquier módulo que dependa de datos en tiempo real (ej. "Casos activos"): punto verde + "En vivo", ámbar + "Reconectando…", o gris + "Sin conexión". Se evita deliberadamente el ícono de wifi como elemento principal, por asociarse más a apps de consumo/OS que a software de control profesional. Para el técnico de campo, además, se agrega un banner no bloqueante en la parte superior del formulario activo cuando se pierde conexión ("Guardado localmente, se sincronizará al reconectar") — esto es la expresión visual concreta de la regla de resiliencia de captura en campo ya definida en la sección 2.
 
-**Mapa (referencia):** los pines de ubicación en el mapa reutilizan los mismos tokens e iconografía semántica de severidad ya definidos en esta sección — nunca una paleta o set de formas nueva exclusiva del mapa. La elección de proveedor (Mapbox, Google Maps, Leaflet), su estilo dark correspondiente, y el comportamiento de clustering son decisiones técnicas que se documentan en `infrastructure.md`, no en este archivo.
+**Mapa (referencia):** los pines de ubicación usan el **nodo hexagonal** de §3.1 —la punta inferior sigue siendo el punto de anclaje, así que no se pierde precisión respecto a la gota— y reutilizan los mismos tokens e iconografía semántica de severidad ya definidos en esta sección: la forma es de marca, el color es información. El marcador de unidad se mantiene circular a propósito: el hexágono es el nodo (un punto fijo) y la unidad es lo que se mueve hacia él por las vías; darles la misma forma borraría esa lectura. La ruta hacia un caso activo se dibuja como el **riel** de §3.1 (vía en `accent-flow` + divisoria interior), que es el trabajo que esa sección le asigna al cian: flujo en curso, nunca severidad. Implementación única en `shared/ui/map/map-pins.ts`; ninguna pantalla vuelve a construir un pin a mano. La elección de proveedor (Mapbox, Google Maps, Leaflet), su estilo dark correspondiente, y el comportamiento de clustering son decisiones técnicas que se documentan en `infrastructure.md`, no en este archivo.
 
 **Responsividad (aplica a todo el sistema, breakpoints estándar):**
 

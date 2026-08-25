@@ -16,7 +16,7 @@
     <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensaje() }}</p>
   }
 
-  <details class="rounded-lg border border-border-default bg-bg-surface p-4" open>
+  <details class="rounded-md border border-border-default bg-bg-surface p-4" open>
     <summary class="cursor-pointer text-sm font-semibold text-text-primary">
       Registrar nuevo ticket
     </summary>
@@ -28,7 +28,7 @@
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Descripción
         <textarea
-          class="tsi-input !h-auto min-h-24 py-2.5"
+          class="tsi-textarea min-h-24"
           name="descripcion"
           [(ngModel)]="descripcion"
           required
@@ -80,7 +80,7 @@
         <li>
           <a
             [routerLink]="['/soporte-cliente', 'tickets', t.id_reclamo]"
-            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
           >
             <div class="grid gap-1">
               <span class="font-mono text-xs font-semibold text-text-secondary">#{{ t.id_reclamo }}</span>

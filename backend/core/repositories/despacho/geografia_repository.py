@@ -22,6 +22,16 @@ class GeografiaRepository:
         )
         return int(ciudades[0]["idcondado"]) if ciudades else None
 
+    def find_nombre(self, idcondado: int) -> str | None:
+        rows = self.pinot.query(
+            "SELECT condado FROM Dim_Condado WHERE idcondado = %(idcondado)s LIMIT 1",
+            {"idcondado": idcondado},
+        )
+        if not rows:
+            return None
+        nombre = rows[0].get("condado")
+        return str(nombre) if nombre else None
+
     def list_condados_vecinos(self, idcondado: int) -> list[int]:
         rows = self.pinot.query(
             """

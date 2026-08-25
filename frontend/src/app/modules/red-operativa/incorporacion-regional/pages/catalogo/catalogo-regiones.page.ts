@@ -48,14 +48,14 @@ const ESTADO_BADGE: Record<EstadoRegion, string> = {
         <div class="flex gap-2">
           <a
             routerLink="/red-operativa/incorporacion-regional/validacion"
-            class="rounded-md bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+            class="tsi-btn tsi-btn-primary"
           >
             Nueva validación
           </a>
           <button
             type="button"
             (click)="cargar()"
-            class="rounded-md border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/5"
+            class="tsi-btn tsi-btn-primary"
           >
             Actualizar
           </button>

@@ -30,7 +30,7 @@
       </ul>
       <button
         type="button"
-        class="mt-3 rounded-md border border-alert-warning px-3 py-1.5 text-sm font-medium text-alert-warning hover:bg-alert-warning-bg"
+        class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg mt-3"
         (click)="confirmarBorrador()"
       >
         Confirmar reporte
@@ -42,7 +42,7 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
       <!-- Columna izquierda -->
       <div class="grid gap-6">
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="m-0 text-base font-semibold text-text-primary">Ubicación y hora</h2>
             <span class="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="sync-status">
@@ -108,7 +108,7 @@
                 >
                 <select
                   id="cascadaPais"
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary"
+                  class="tsi-select w-full min-w-0"
                   [ngModel]="cascadaPais()"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onCascadaPaisChange($event)"
@@ -126,7 +126,7 @@
                 >
                 <select
                   id="cascadaEstado"
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  class="tsi-select w-full min-w-0"
                   [ngModel]="cascadaEstado()"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onCascadaEstadoChange($event)"
@@ -145,7 +145,7 @@
                 >
                 <select
                   id="cascadaCondado"
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  class="tsi-select w-full min-w-0"
                   [ngModel]="cascadaCondado()"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onCascadaCondadoChange($event)"
@@ -164,7 +164,7 @@
                 >
                 <select
                   id="cascadaCiudad"
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  class="tsi-select w-full min-w-0"
                   [ngModel]="cascadaCiudad()"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onCascadaCiudadChange($event)"
@@ -183,7 +183,7 @@
                 >
                 <select
                   id="cascadaCalle"
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  class="tsi-select w-full min-w-0"
                   [ngModel]="null"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onCascadaCalleChange($event)"
@@ -206,7 +206,7 @@
               <input
                 id="codigopostal"
                 type="text"
-                class="w-full rounded-md border border-border-default px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="tsi-input w-full"
                 formControlName="codigopostal"
               />
             </div>
@@ -217,7 +217,7 @@
               <input
                 id="fechahoraaccidente"
                 type="datetime-local"
-                class="w-full rounded-md border px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="tsi-input w-full"
                 [class.border-border-default]="!isInvalid('fechahoraaccidente')"
                 [class.border-alert-critical]="isInvalid('fechahoraaccidente')"
                 formControlName="fechahoraaccidente"
@@ -247,7 +247,7 @@
               <textarea
                 id="justificacionRetrospectiva"
                 rows="2"
-                class="w-full rounded-md border px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="tsi-textarea w-full"
                 [class.border-border-default]="
                   !form.errors?.['justificacionRequerida'] || !form.touched
                 "
@@ -260,7 +260,7 @@
           }
         </section>
 
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
             Narrativa del incidente
           </h2>
@@ -271,7 +271,7 @@
             <textarea
               id="descripcion"
               rows="4"
-              class="w-full rounded-md border px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+              class="tsi-textarea w-full"
               [class.border-border-default]="!isInvalid('descripcion')"
               [class.border-alert-critical]="isInvalid('descripcion')"
               formControlName="descripcion"
@@ -283,7 +283,7 @@
 
       <!-- Columna derecha -->
       <div class="grid gap-6">
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
             Severidad e impacto inicial
           </h2>
@@ -325,7 +325,7 @@
                 id="numvehiculos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 formControlName="numvehiculos"
               />
             </div>
@@ -337,7 +337,7 @@
                 id="numheridos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 formControlName="numheridos"
               />
             </div>
@@ -349,7 +349,7 @@
                 id="numvictimas"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 formControlName="numvictimas"
               />
             </div>
@@ -361,14 +361,14 @@
                 id="numfallecidos"
                 type="number"
                 min="0"
-                class="w-full [appearance:textfield] rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                class="tsi-input w-full"
                 formControlName="numfallecidos"
               />
             </div>
           </div>
         </section>
 
-        <section class="rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Origen del reporte</h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="grid gap-1.5">
@@ -377,7 +377,7 @@
               >
               <select
                 id="idtiporeportado"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="tsi-select w-full min-w-0"
                 formControlName="idtiporeportado"
               >
                 <option [ngValue]="null">— Sin especificar —</option>
@@ -392,7 +392,7 @@
               >
               <select
                 id="idreferenciaestacion"
-                class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="tsi-select w-full min-w-0"
                 formControlName="idreferenciaestacion"
               >
                 <option [ngValue]="null">— Sin especificar —</option>
@@ -407,14 +407,14 @@
         <div class="grid gap-3">
           <button
             type="submit"
-            class="inline-flex items-center justify-center gap-2 rounded-md bg-accent-primary px-5 py-3 font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+            class="tsi-btn tsi-btn-primary"
             [disabled]="form.invalid || loading()"
           >
             {{ loading() ? 'Registrando…' : 'Registrar accidente' }}
           </button>
           <button
             type="button"
-            class="inline-flex items-center justify-center gap-2 rounded-md border border-border-default px-5 py-3 font-semibold text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-60"
+            class="tsi-btn tsi-btn-secondary"
             [disabled]="form.invalid || loading()"
             (click)="registrar(true)"
           >

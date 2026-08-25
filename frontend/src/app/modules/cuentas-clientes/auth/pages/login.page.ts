@@ -4,13 +4,15 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { MOTIVO_SESION_EXPIRADA } from '../../../../core/interceptors/sesion-expirada.interceptor';
+import { BrandMarkComponent } from '../../../../shared/brand/brand-mark.component';
+import { BrandPanelComponent } from '../../../../shared/brand/brand-panel.component';
 import { AuthApiService } from '../services/auth-api.service';
 import { resolvePostLoginPath } from '../services/post-login-home';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, BrandMarkComponent, BrandPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login.page.html',
 })

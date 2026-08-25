@@ -11,7 +11,7 @@
       <button
         type="button"
         data-testid="btn-actualizar-planes"
-        class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default bg-bg-surface px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+        class="tsi-btn tsi-btn-secondary"
         (click)="cargar()"
       >
         Actualizar
@@ -20,7 +20,7 @@
         <a
           routerLink="/suscripciones/planes/nuevo"
           data-testid="btn-crear-plan"
-          class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white no-underline hover:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary shrink-0 no-underline"
         >
           Crear plan
         </a>
@@ -30,7 +30,7 @@
 
   <div
     data-testid="catalogo-planes-filtros"
-    class="grid gap-3 rounded-lg border border-border-default bg-bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4"
+    class="grid gap-3 rounded-md border border-border-default bg-bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4"
   >
     <label class="grid gap-1 text-xs font-medium text-text-secondary">
       Buscar nombre
@@ -40,7 +40,7 @@
         [(ngModel)]="filtroQ"
         (ngModelChange)="onFiltroTexto()"
         data-testid="filtro-q"
-        class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+        class="tsi-input"
         placeholder="Texto en nombre…"
       />
     </label>
@@ -52,7 +52,7 @@
           [(ngModel)]="filtroEstado"
           (ngModelChange)="onFiltroSelect()"
           data-testid="filtro-estado"
-          class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+          class="tsi-select"
         >
           <option value="todas">Todas</option>
           <option value="activo">Activo</option>
@@ -67,7 +67,7 @@
         [(ngModel)]="filtroNivel"
         (ngModelChange)="onFiltroSelect()"
         data-testid="filtro-nivel"
-        class="min-h-11 rounded-md border border-border-default bg-bg-page px-3 text-sm text-text-primary"
+        class="tsi-select"
       >
         <option value="">Todos</option>
         @for (n of niveles; track n) {
@@ -86,7 +86,7 @@
       @if (esDirector()) {
         <a
           routerLink="/suscripciones/planes/nuevo"
-          class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white no-underline [&:hover:not(:disabled)]:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary no-underline"
         >
           Crear plan
         </a>
@@ -161,7 +161,7 @@
                     <button
                       type="button"
                       data-testid="btn-reactivar-plan"
-                      class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+                      class="tsi-btn tsi-btn-primary"
                       (click)="reactivar(p)"
                     >
                       Reactivar
@@ -252,7 +252,7 @@
                 <button
                   type="button"
                   data-testid="btn-reactivar-plan"
-                  class="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium text-accent-primary hover:bg-accent-primary/10"
+                  class="tsi-btn tsi-btn-primary"
                   (click)="reactivar(p)"
                 >
                   Reactivar
@@ -264,7 +264,7 @@
       }
     </div>
 
-    <section class="overflow-hidden rounded-lg border border-border-default bg-bg-surface">
+    <section class="overflow-hidden rounded-md border border-border-default bg-bg-surface">
       <div
         class="flex flex-wrap items-center justify-between gap-3 border-t border-border-default px-4 py-3"
         data-testid="catalogo-planes-pager"
@@ -276,7 +276,7 @@
           <button
             type="button"
             data-testid="btn-pagina-anterior"
-            class="inline-flex min-h-11 items-center justify-center rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-40"
+            class="tsi-btn tsi-btn-secondary"
             [disabled]="!puedeAnterior"
             (click)="paginaAnterior()"
           >
@@ -285,7 +285,7 @@
           <button
             type="button"
             data-testid="btn-pagina-siguiente"
-            class="inline-flex min-h-11 items-center justify-center rounded-md border border-accent-primary px-4 text-sm font-medium text-accent-primary hover:bg-accent-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+            class="tsi-btn tsi-btn-primary"
             [disabled]="!puedeSiguiente"
             (click)="paginaSiguiente()"
           >
@@ -304,7 +304,7 @@
     aria-modal="true"
     aria-labelledby="desactivar-plan-title"
   >
-    <div class="w-full max-w-md rounded-lg border border-border-default bg-bg-surface p-6 shadow-xl">
+    <div class="w-full max-w-md rounded-md border border-border-default bg-bg-surface p-6 shadow-xl">
       <h2 id="desactivar-plan-title" class="m-0 mb-2 text-lg font-semibold text-text-primary">
         Desactivar plan
       </h2>
@@ -315,7 +315,7 @@
       <div class="flex flex-wrap justify-end gap-3">
         <button
           type="button"
-          class="inline-flex min-h-11 items-center justify-center rounded-md bg-accent-primary px-4 text-sm font-medium text-white hover:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary"
           [disabled]="desactivando()"
           (click)="cancelarDesactivar()"
         >
@@ -323,7 +323,7 @@
         </button>
         <button
           type="button"
-          class="inline-flex min-h-11 items-center justify-center rounded-md border border-alert-critical/45 px-4 text-sm font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-55"
+          class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
           [disabled]="desactivando()"
           (click)="confirmarDesactivar()"
         >

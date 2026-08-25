@@ -14,7 +14,7 @@ export interface BloqueApoyo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <details
-      class="rounded-lg border border-border-default bg-bg-surface"
+      class="rounded-md border border-border-default bg-bg-surface"
       data-testid="zona-apoyo"
     >
       <summary

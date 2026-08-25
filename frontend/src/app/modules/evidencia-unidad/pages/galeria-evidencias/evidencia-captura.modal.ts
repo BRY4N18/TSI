@@ -56,7 +56,7 @@ const FOCUSABLE_SELECTOR =
             type="button"
             (click)="cerrar.emit()"
             aria-label="Cerrar"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page"
+            class="tsi-hit-target inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page"
           >
             <app-tabler-icon name="x" [size]="18" />
           </button>
@@ -117,7 +117,7 @@ const FOCUSABLE_SELECTOR =
                   type="button"
                   (click)="archivoFoto = null"
                   aria-label="Quitar foto"
-                  class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-bg-surface"
+                  class="tsi-hit-target inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-bg-surface"
                 >
                   <app-tabler-icon name="x" [size]="14" />
                 </button>
@@ -129,7 +129,7 @@ const FOCUSABLE_SELECTOR =
                 type="button"
                 (click)="subirFoto()"
                 [disabled]="!archivoFoto || cargando()"
-                class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                class="tsi-btn tsi-btn-primary"
               >
                 @if (cargando()) {
                   <app-tabler-icon name="refresh" [size]="14" />
@@ -142,7 +142,7 @@ const FOCUSABLE_SELECTOR =
                 type="button"
                 (click)="guardarFotoOffline()"
                 [disabled]="!archivoFoto || cargando()"
-                class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-50"
+                class="tsi-btn tsi-btn-secondary"
               >
                 Guardar offline
               </button>
@@ -162,7 +162,7 @@ const FOCUSABLE_SELECTOR =
                   name="tipo"
                   [(ngModel)]="tipoNota"
                   required
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                  class="tsi-select w-full min-w-0"
                 >
                   @for (tipo of tiposNota; track tipo) {
                     <option [value]="tipo">{{ tipo }}</option>
@@ -178,7 +178,7 @@ const FOCUSABLE_SELECTOR =
                   rows="3"
                   [(ngModel)]="textoNota"
                   required
-                  class="w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                  class="tsi-textarea w-full"
                 ></textarea>
               </div>
 
@@ -186,7 +186,7 @@ const FOCUSABLE_SELECTOR =
                 <button
                   type="submit"
                   [disabled]="cargando()"
-                  class="inline-flex items-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-sm font-semibold text-white [&:hover:not(:disabled)]:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  class="tsi-btn tsi-btn-primary"
                 >
                   @if (cargando()) {
                     <app-tabler-icon name="refresh" [size]="14" />
@@ -199,7 +199,7 @@ const FOCUSABLE_SELECTOR =
                   type="button"
                   (click)="guardarNotaOffline()"
                   [disabled]="cargando()"
-                  class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page disabled:cursor-not-allowed disabled:opacity-50"
+                  class="tsi-btn tsi-btn-secondary"
                 >
                   Guardar offline
                 </button>
@@ -212,7 +212,7 @@ const FOCUSABLE_SELECTOR =
           <button
             type="button"
             (click)="cerrar.emit()"
-            class="inline-flex items-center gap-2 rounded-md border border-border-default px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-page"
+            class="tsi-btn tsi-btn-secondary"
           >
             Cerrar
           </button>

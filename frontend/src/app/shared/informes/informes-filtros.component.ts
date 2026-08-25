@@ -25,7 +25,7 @@ import {
   ValoresFiltro,
 } from './informes-listado.types';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
-import { LIST_FILTER_CONTROL_CLASS } from '../ui/list-states/list-table.styles';
+import { LIST_FILTER_CONTROL_CLASS, LIST_FILTER_SELECT_CLASS } from '../ui/list-states/list-table.styles';
 import { humanizar } from './informes-opciones';
 
 @Component({
@@ -35,7 +35,7 @@ import { humanizar } from './informes-opciones';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form
-      class="mb-6 grid gap-4 rounded-lg border border-border-default bg-bg-surface p-4 md:grid-cols-3"
+      class="mb-6 grid gap-4 rounded-md border border-border-default bg-bg-surface p-4 md:grid-cols-3"
       data-testid="filtros-informe"
       (ngSubmit)="aplicar()"
     >
@@ -46,7 +46,7 @@ import { humanizar } from './informes-opciones';
           @switch (filtro.tipo) {
             @case ('enumeracion') {
               <select
-                [class]="controlClass"
+                [class]="controlClassSelect"
                 [attr.data-testid]="'filtro-' + filtro.nombre"
                 [ngModel]="valorDe(filtro.nombre)"
                 [name]="filtro.nombre"
@@ -60,7 +60,7 @@ import { humanizar } from './informes-opciones';
             }
             @case ('catalogo') {
               <select
-                [class]="controlClass"
+                [class]="controlClassSelect"
                 [attr.data-testid]="'filtro-' + filtro.nombre"
                 [disabled]="cargandoCatalogos()"
                 [ngModel]="valorDe(filtro.nombre)"
@@ -86,7 +86,7 @@ import { humanizar } from './informes-opciones';
             }
             @case ('booleano') {
               <select
-                [class]="controlClass"
+                [class]="controlClassSelect"
                 [attr.data-testid]="'filtro-' + filtro.nombre"
                 [ngModel]="valorDe(filtro.nombre)"
                 [name]="filtro.nombre"
@@ -196,6 +196,7 @@ export class InformesFiltrosComponent {
   @Output() readonly aplicados = new EventEmitter<ValoresFiltro>();
 
   readonly controlClass = LIST_FILTER_CONTROL_CLASS;
+  readonly controlClassSelect = LIST_FILTER_SELECT_CLASS;
 
   private valores: ValoresFiltro = {};
 

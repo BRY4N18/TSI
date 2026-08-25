@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
@@ -18,6 +18,8 @@ const ESTADOS_SELECCIONABLES: EstadoDisponibilidadUnidadSeleccionable[] = [
   'Ocupada',
   'Fuera de servicio',
 ];
+
+const HISTORIAL_RECIENTES = 10;
 
 @Component({
   selector: 'app-panel-disponibilidad',
@@ -46,6 +48,7 @@ export class PanelDisponibilidadPage {
   readonly historial = signal<HistorialEstadoUnidadItem[]>([]);
   readonly historialLoading = signal(false);
   readonly historialError = signal<string | null>(null);
+  readonly historialReciente = computed(() => this.historial().slice(0, HISTORIAL_RECIENTES));
 
   constructor() {
     this.cargar();
@@ -75,7 +78,7 @@ export class PanelDisponibilidadPage {
   cargarHistorial(idunidademergencia: number): void {
     this.historialLoading.set(true);
     this.historialError.set(null);
-    this.disponibilidadApi.consultarHistorial(idunidademergencia).subscribe({
+    this.disponibilidadApi.consultarHistorial(idunidademergencia, { limit: HISTORIAL_RECIENTES }).subscribe({
       next: (res) => {
         this.historial.set(res.data.items);
         this.historialLoading.set(false);

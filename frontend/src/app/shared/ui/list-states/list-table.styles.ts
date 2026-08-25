@@ -3,7 +3,7 @@
  * patrón lista-accidentes). Reutilizar en módulos fuera de Accidentes.
  */
 export const LIST_TABLE_CLASS =
-  'hidden w-full border-collapse overflow-hidden rounded-lg border border-border-default md:table';
+  'hidden w-full border-collapse overflow-hidden rounded-md border border-border-default md:table';
 
 export const LIST_TABLE_TH_CLASS =
   'border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary';
@@ -21,9 +21,19 @@ export const LIST_ACTION_ICON_BTN_CLASS =
   'inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary';
 
 export const LIST_MOBILE_CARD_CLASS =
-  'rounded-lg border border-border-default bg-bg-surface p-4';
+  'rounded-md border border-border-default bg-bg-surface p-4';
 
-export const LIST_FILTER_CONTROL_CLASS =
-  'w-full rounded-md border border-border-default bg-bg-surface px-3.5 py-2.5 text-text-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary';
+/**
+ * Habia una sola constante para los controles de filtro, aplicada tanto a
+ * `<input>` como a `<select>`. Las clases canonicas de §5 no son
+ * intercambiables — `.tsi-select` aporta `appearance: none` y el chevron por
+ * tema — asi que se separan. `LIST_FILTER_CONTROL_CLASS` se mantiene como
+ * alias del input para no romper importaciones existentes.
+ */
+export const LIST_FILTER_INPUT_CLASS = 'tsi-input w-full';
+
+export const LIST_FILTER_SELECT_CLASS = 'tsi-select w-full min-w-0';
+
+export const LIST_FILTER_CONTROL_CLASS = LIST_FILTER_INPUT_CLASS;
 
 export const LIST_PAGE_SHELL_CLASS = 'mx-auto max-w-6xl p-8';

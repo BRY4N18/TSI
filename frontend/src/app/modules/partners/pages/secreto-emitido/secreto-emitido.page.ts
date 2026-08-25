@@ -51,7 +51,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
         <!-- El aviso va ANTES del valor: cuando el usuario lo lee, todavía
              está a tiempo de prepararse para guardarlo. -->
         <div
-          class="mt-6 rounded-lg border border-alert-media bg-alert-media-bg p-4"
+          class="mt-6 rounded-md border border-alert-media bg-alert-media-bg p-4"
           data-testid="aviso-irreversible"
           role="alert"
         >
@@ -65,7 +65,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
         </div>
 
         <div class="mt-4 grid gap-4">
-          <div class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <div class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
               Client ID
             </p>
@@ -76,7 +76,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
               <button
                 type="button"
                 data-testid="btn-copiar-id"
-                class="inline-flex items-center gap-1.5 rounded-md border border-border-default px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary"
+                class="tsi-btn tsi-btn-secondary"
                 (click)="copiar(c.client_id, 'id')"
               >
                 <app-tabler-icon name="copy" [size]="14" />
@@ -85,7 +85,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
             </div>
           </div>
 
-          <div class="rounded-lg border border-border-default bg-bg-surface p-4">
+          <div class="rounded-md border border-border-default bg-bg-surface p-4">
             <p class="m-0 mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
               Client secret
             </p>
@@ -98,7 +98,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
               <button
                 type="button"
                 data-testid="btn-copiar-secreto"
-                class="inline-flex items-center gap-1.5 rounded-md border border-accent-primary px-3 py-1.5 text-xs font-medium text-accent-primary hover:bg-bg-page"
+                class="tsi-btn tsi-btn-ghost"
                 (click)="copiar(c.client_secret, 'secreto')"
               >
                 <app-tabler-icon name="copy" [size]="14" />
@@ -127,7 +127,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
           <button
             type="button"
             data-testid="btn-continuar"
-            class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+            class="tsi-btn tsi-btn-primary"
             [disabled]="!confirmado()"
             (click)="continuar()"
           >
@@ -145,7 +145,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
           El secreto ya no está disponible
         </h1>
         <div
-          class="rounded-lg border border-border-default bg-bg-surface p-6"
+          class="rounded-md border border-border-default bg-bg-surface p-6"
           data-testid="secreto-no-disponible"
         >
           <p class="m-0 text-sm text-text-secondary">
@@ -159,7 +159,7 @@ export const ESTADO_CREDENCIAL_EMITIDA = 'credencialEmitida';
           <a
             routerLink="/partners/portal"
             data-testid="link-volver-integracion"
-            class="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white"
+            class="tsi-btn tsi-btn-primary mt-4"
           >
             <app-tabler-icon name="arrow-left" [size]="16" />
             Volver a mi integración

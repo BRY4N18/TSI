@@ -29,7 +29,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
           <button
             type="button"
             (click)="volver()"
-            class="inline-flex h-11 items-center gap-2 rounded-md border border-border-default px-4 text-sm font-medium text-text-primary hover:bg-bg-page"
+            class="tsi-btn tsi-btn-secondary"
           >
             <app-tabler-icon name="arrow-left" [size]="18" />
             Volver
@@ -39,7 +39,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
               type="button"
               data-testid="btn-editar-desde-detalle"
               (click)="irEditar()"
-              class="inline-flex h-11 items-center gap-2 rounded-md bg-accent-primary px-4 text-sm font-semibold text-white hover:bg-accent-hover"
+              class="tsi-btn tsi-btn-primary"
             >
               <app-tabler-icon name="pencil" [size]="18" />
               Editar
@@ -50,7 +50,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
 
       @if (cargando) {
         <div
-          class="mt-6 space-y-3 rounded-lg border border-border-default bg-bg-surface p-6"
+          class="mt-6 space-y-3 rounded-md border border-border-default bg-bg-surface p-6"
           data-testid="detalle-loading"
         >
           <p class="text-sm text-text-secondary">Cargando unidad…</p>
@@ -67,7 +67,7 @@ import { UnidadEmergenciaData } from '../../models/unidad-emergencia.contract';
         </div>
       } @else if (unidad) {
         <dl
-          class="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
+          class="mt-6 grid grid-cols-1 gap-4 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2"
           data-testid="detalle-campos"
         >
           <div class="sm:col-span-2">

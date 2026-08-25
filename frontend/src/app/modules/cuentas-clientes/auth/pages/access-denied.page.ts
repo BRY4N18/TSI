@@ -23,11 +23,13 @@ import { homePathForRoles } from '../services/post-login-home';
   template: `
     <div class="mx-auto max-w-6xl p-8">
       <div
-        class="grid place-items-center gap-3 rounded-lg border border-border-default bg-bg-surface p-10 text-center"
+        class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
         data-testid="access-denied"
         role="alert"
       >
-        <app-tabler-icon name="alert-triangle" [size]="32" />
+        <span class="tsi-node h-14 w-12 bg-alert-warning-bg text-alert-warning" aria-hidden="true">
+          <app-tabler-icon name="alert-triangle" [size]="24" />
+        </span>
         <h1 class="m-0 text-2xl font-bold text-text-primary">Acceso denegado</h1>
         <p class="m-0 max-w-md text-sm text-text-secondary">
           Tu sesión sigue activa, pero tu rol no tiene permiso para abrir esta sección.
@@ -39,7 +41,7 @@ import { homePathForRoles } from '../services/post-login-home';
         <a
           [routerLink]="inicio()"
           data-testid="btn-volver-inicio"
-          class="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-accent-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+          class="tsi-btn tsi-btn-primary mt-2 no-underline"
         >
           <app-tabler-icon name="arrow-left" [size]="16" />
           Volver a mi inicio

@@ -77,7 +77,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         @if (partner(); as p) {
         <!-- Estado + qué sigue: un estado sin siguiente paso deja al partner
              sin saber qué hacer (FR-UI-015). -->
-        <div class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
           <span
             class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
             [class]="presentacion(p.estado).tono"
@@ -98,7 +98,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         @if (acceso(); as a) {
           @if (!a.activo) {
             <div
-              class="mt-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-6"
+              class="mt-4 rounded-md border border-alert-critical bg-alert-critical-bg p-6"
               data-testid="panel-suspension"
             >
               <h2 class="m-0 mb-2 flex items-center gap-2 text-lg font-semibold text-alert-critical">
@@ -145,7 +145,7 @@ const TIMEOUT_ACCION_MS = 15_000;
           }
         }
 
-        <div class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <div class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-4 text-lg font-semibold text-text-primary">Plan y cupo</h2>
           <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
             <dt class="text-xs uppercase tracking-wide text-text-secondary">Plan</dt>
@@ -159,7 +159,7 @@ const TIMEOUT_ACCION_MS = 15_000;
 
         @if (errorAccion()) {
           <div
-            class="mt-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
+            class="mt-4 rounded-md border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
             data-testid="banner-error"
             role="alert"
           >
@@ -171,7 +171,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         @for (e of entornos; track e) {
           @if (mostrarGrupo(e)) {
             <section
-              class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6"
+              class="mt-4 rounded-md border border-border-default bg-bg-surface p-6"
               [attr.data-testid]="'grupo-' + e"
             >
               <header class="mb-1 flex flex-wrap items-center gap-2">
@@ -207,7 +207,7 @@ const TIMEOUT_ACCION_MS = 15_000;
                         <button
                           type="button"
                           [attr.data-testid]="'btn-regenerar-' + c.idcredencial"
-                          class="rounded-md border border-accent-primary px-3 py-1.5 text-xs font-medium text-accent-primary"
+                          class="tsi-btn tsi-btn-ghost"
                           [disabled]="emitiendo()"
                           (click)="regenerar(c)"
                         >
@@ -224,7 +224,7 @@ const TIMEOUT_ACCION_MS = 15_000;
                         <button
                           type="button"
                           [attr.data-testid]="'btn-revocar-' + c.idcredencial"
-                          class="ml-auto rounded-md border border-alert-critical px-3 py-1.5 text-xs font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-50"
+                          class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg ml-auto"
                           [disabled]="revocando() === c.idcredencial"
                           (click)="revocar(c)"
                         >
@@ -262,7 +262,7 @@ const TIMEOUT_ACCION_MS = 15_000;
                   <button
                     type="submit"
                     [attr.data-testid]="'btn-emitir-' + e"
-                    class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                    class="tsi-btn tsi-btn-primary"
                     [disabled]="form.invalid || nombreDuplicado(e) || emitiendo()"
                   >
                     {{ emitiendo() ? 'Emitiendo…' : 'Emitir credencial' }}
@@ -279,7 +279,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         }
 
         <!-- Solicitar producción: solo desde «Pruebas activo» (FR-UI-026) -->
-        <section class="mt-4 rounded-lg border border-border-default bg-bg-surface p-6">
+        <section class="mt-4 rounded-md border border-border-default bg-bg-surface p-6">
           <h2 class="m-0 mb-3 text-lg font-semibold text-text-primary">Paso a producción</h2>
           @if (p.estado === 'Pruebas activo') {
             <form [formGroup]="formProduccion" (ngSubmit)="solicitarProduccion()" class="grid gap-2 sm:flex sm:items-end">
@@ -297,7 +297,7 @@ const TIMEOUT_ACCION_MS = 15_000;
               <button
                 type="submit"
                 data-testid="btn-solicitar-produccion"
-                class="rounded-lg bg-accent-primary px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                class="tsi-btn tsi-btn-primary"
                 [disabled]="formProduccion.invalid || solicitando()"
               >
                 {{ solicitando() ? 'Solicitando…' : 'Solicitar paso a producción' }}

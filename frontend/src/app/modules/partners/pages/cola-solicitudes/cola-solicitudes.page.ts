@@ -57,7 +57,7 @@ const TIMEOUT_ACCION_MS = 15_000;
 
       @if (avisoConcurrencia()) {
         <div
-          class="mb-4 rounded-lg border border-alert-media bg-alert-media-bg p-4 text-sm text-alert-media"
+          class="mb-4 rounded-md border border-alert-media bg-alert-media-bg p-4 text-sm text-alert-media"
           data-testid="aviso-ya-resuelta"
           role="alert"
         >
@@ -67,7 +67,7 @@ const TIMEOUT_ACCION_MS = 15_000;
 
       @if (errorAccion()) {
         <div
-          class="mb-4 rounded-lg border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
+          class="mb-4 rounded-md border border-alert-critical bg-alert-critical-bg p-4 text-sm text-alert-critical"
           data-testid="banner-error"
           role="alert"
         >
@@ -77,7 +77,7 @@ const TIMEOUT_ACCION_MS = 15_000;
 
       @if (confirmacion()) {
         <div
-          class="mb-4 rounded-lg border border-exito bg-exito-bg p-4 text-sm text-exito"
+          class="mb-4 rounded-md border border-exito bg-exito-bg p-4 text-sm text-exito"
           data-testid="banner-confirmacion"
           role="status"
         >
@@ -98,7 +98,7 @@ const TIMEOUT_ACCION_MS = 15_000;
         <ul class="grid gap-3">
           @for (s of solicitudes(); track s.idpartner) {
             <li
-              class="rounded-lg border border-border-default bg-bg-surface p-5"
+              class="rounded-md border border-border-default bg-bg-surface p-5"
               [attr.data-testid]="'solicitud-' + s.idpartner"
             >
               <div class="flex flex-wrap items-start justify-between gap-4">
@@ -112,7 +112,7 @@ const TIMEOUT_ACCION_MS = 15_000;
                     <button
                       type="button"
                       [attr.data-testid]="'btn-aprobar-' + s.idpartner"
-                      class="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      class="tsi-btn tsi-btn-primary"
                       [disabled]="resolviendo()"
                       (click)="pedirConfirmacionAprobar(s)"
                     >
@@ -121,7 +121,7 @@ const TIMEOUT_ACCION_MS = 15_000;
                     <button
                       type="button"
                       [attr.data-testid]="'btn-rechazar-' + s.idpartner"
-                      class="rounded-lg border border-alert-critical px-4 py-2 text-sm font-medium text-alert-critical disabled:opacity-50"
+                      class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
                       [disabled]="resolviendo()"
                       (click)="abrirRechazo(s)"
                     >
@@ -147,14 +147,14 @@ const TIMEOUT_ACCION_MS = 15_000;
                     <button
                       type="button"
                       [attr.data-testid]="'btn-confirmar-aprobar-' + s.idpartner"
-                      class="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white"
+                      class="tsi-btn tsi-btn-primary"
                       (click)="aprobar(s)"
                     >
                       Confirmar aprobación
                     </button>
                     <button
                       type="button"
-                      class="rounded-lg border border-border-default px-4 py-2 text-sm font-medium text-text-secondary"
+                      class="tsi-btn tsi-btn-secondary"
                       (click)="cancelar()"
                     >
                       Cancelar
@@ -195,14 +195,14 @@ const TIMEOUT_ACCION_MS = 15_000;
                     <button
                       type="submit"
                       [attr.data-testid]="'btn-confirmar-rechazo-' + s.idpartner"
-                      class="rounded-lg bg-alert-critical px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      class="rounded-md bg-alert-critical px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                       [disabled]="formRechazo.invalid || resolviendo()"
                     >
                       {{ resolviendo() ? 'Rechazando…' : 'Confirmar rechazo' }}
                     </button>
                     <button
                       type="button"
-                      class="rounded-lg border border-border-default px-4 py-2 text-sm font-medium text-text-secondary"
+                      class="tsi-btn tsi-btn-secondary"
                       (click)="cancelar()"
                     >
                       Cancelar
