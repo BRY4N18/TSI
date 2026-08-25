@@ -18,6 +18,16 @@
   --accent-ring: color-mix(in srgb, var(--accent-primary) 15%, transparent);
   --accent-soft: color-mix(in srgb, var(--accent-primary) 8%, transparent);
   --rail-groove: var(--bg-surface);
+
+  /* PILOTO DE IDENTIDAD — pendiente de consolidar en design-system.md §1/§4.
+     Titulares en Archivo: es una grotesca de linaje de senalizacion, que es
+     justo el dominio del producto (carretera), y su peso alto recoge el
+     wordmark del logo. El cuerpo y los datos siguen en Inter, que es donde la
+     legibilidad bajo estres manda mas que el caracter. */
+  --font-display: 'Archivo', 'Inter', system-ui, sans-serif;
+
+  /* Tamano del corte de esquina; ver .tsi-panel. */
+  --corte-nodo: 20px;
   --gradient-node: linear-gradient(140deg, #001a38 0%, #002b5b 55%, #00558f 100%);
 
   /* Tokens semánticos de alerta — design-system.md §3, valores de modo claro */
@@ -391,6 +401,70 @@ html[data-theme='dark'] {
   .tsi-node-surface {
     background: var(--gradient-node);
     color: #fff;
+  }
+
+  /* ---------------------------------------------------------------------
+     PILOTO DE IDENTIDAD. Estas tres clases son el experimento a evaluar; si
+     se aprueban, pasan a design-system.md con su justificacion.
+     --------------------------------------------------------------------- */
+
+  /* Titulares. Solo H1/H2, KPIs y cabeceras de tabla: el cuerpo sigue en
+     Inter a proposito. */
+  .tsi-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  /* Panel con la esquina cortada — el corte viene de los lados en angulo del
+     hexagono del isotipo. Es la firma que aparece en todas las pantallas, no
+     solo en las de marca.
+
+     El borde de 1px se consigue con dos capas recortadas iguales (fondo del
+     color del borde, interior en `inset: 1px`) porque un `border` normal no
+     sigue un `clip-path`: se cortaria en la diagonal. */
+  .tsi-panel {
+    position: relative;
+    background: var(--border-default);
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--corte-nodo)) 0,
+      100% var(--corte-nodo),
+      100% 100%,
+      0 100%
+    );
+  }
+
+  .tsi-panel::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: var(--bg-surface);
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--corte-nodo)) 0,
+      100% var(--corte-nodo),
+      100% 100%,
+      0 100%
+    );
+  }
+
+  /* El contenido tiene que ir por encima del ::before. */
+  .tsi-panel > * {
+    position: relative;
+  }
+
+  /* Riel horizontal bajo el titulo de pagina: la firma estructural que §3.1
+     define y que hasta ahora solo estaba en la nav activa. */
+  .tsi-rail-h {
+    height: 5px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--accent-primary) 0 2px,
+      var(--rail-groove) 2px 3px,
+      var(--accent-primary) 3px 5px
+    );
   }
 
   /* Toast — design-system.md §5: fondo semántico, no card bg-surface. */

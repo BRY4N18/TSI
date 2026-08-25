@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-6xl p-8">
-  <h1 class="m-0 mb-6 text-2xl font-bold text-text-primary">Mi despacho</h1>
+  <h1 class="tsi-display m-0 mb-6 text-3xl font-extrabold text-text-primary">Mi despacho</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
   @if (loading()) {
     <app-list-loading-skeleton [count]="3" />
@@ -36,7 +37,7 @@
                 {{ severidad(p.idseveridad).label }}
               </span>
               <div>
-                <h2 class="m-0 text-lg font-bold text-text-primary">{{ p.idaccidente }}</h2>
+                <h2 class="tsi-display m-0 text-lg font-bold text-text-primary">{{ p.idaccidente }}</h2>
                 @if (p.descripcion) {
                   <p class="m-0 text-sm text-text-secondary">{{ p.descripcion }}</p>
                 }
@@ -166,7 +167,7 @@
       <!-- Sidebar: estado de unidad + cola -->
       <div class="grid content-start gap-4">
         <div class="rounded-xl border border-border-default bg-bg-surface p-5">
-          <h3 class="m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">Estado de unidad</h3>
+          <h3 class="tsi-display m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">Estado de unidad</h3>
           <div class="flex items-center gap-3">
             <span class="grid h-10 w-10 place-items-center rounded-md bg-accent-primary/15 text-accent-primary">
               <app-tabler-icon name="radio" [size]="22" />
@@ -180,7 +181,7 @@
 
         @if (colaPendientes().length) {
           <div class="rounded-xl border border-border-default bg-bg-surface p-5">
-            <h3 class="m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+            <h3 class="tsi-display m-0 mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
               También pendientes ({{ colaPendientes().length }})
             </h3>
             <div class="grid gap-2">

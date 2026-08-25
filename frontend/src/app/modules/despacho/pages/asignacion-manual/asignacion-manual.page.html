@@ -7,11 +7,12 @@
     Volver al monitoreo
   </a>
 
-  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Asignación manual</h1>
+  <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Asignación manual</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
   <p class="m-0 mb-6 font-mono text-sm text-text-secondary">{{ idaccidente }}</p>
 
-  <section class="rounded-md border border-border-default bg-bg-surface p-6">
-    <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades candidatas</h2>
+  <section class="tsi-panel p-6">
+    <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Unidades candidatas</h2>
 
     @if (loading()) {
       <app-list-loading-skeleton [count]="3" />

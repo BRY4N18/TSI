@@ -10,9 +10,10 @@
   <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
       <div class="flex items-center gap-2">
-        <h1 class="m-0 text-2xl font-bold text-text-primary">
+        <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">
           {{ soloLectura() ? 'Datos del siniestro (solo lectura)' : 'Enriquecimiento en sitio' }}
         </h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <span
           class="flex items-center gap-1.5 text-xs font-medium text-text-secondary"
           data-testid="conexion"
@@ -55,8 +56,8 @@
     <p class="text-sm text-text-secondary">Cargando…</p>
   } @else {
     <div class="grid gap-6 lg:grid-cols-2">
-      <section class="rounded-md border border-border-default bg-bg-surface p-6">
-        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Clima y período</h2>
+      <section class="tsi-panel p-6">
+        <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Clima y período</h2>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
             Período del día
@@ -104,8 +105,8 @@
         }
       </section>
 
-      <section class="rounded-md border border-border-default bg-bg-surface p-6">
-        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Elementos físicos</h2>
+      <section class="tsi-panel p-6">
+        <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Elementos físicos</h2>
         @if (!soloLectura()) {
           <div class="flex flex-wrap items-end gap-3">
             <label class="block min-w-[12rem] flex-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
@@ -155,9 +156,9 @@
         </ul>
       </section>
 
-      <section class="rounded-md border border-border-default bg-bg-surface p-6 lg:col-span-2">
+      <section class="tsi-panel p-6 lg:col-span-2">
         <div class="mb-5">
-          <h2 class="m-0 text-base font-semibold text-text-primary">Conductores y vehículos</h2>
+          <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Conductores y vehículos</h2>
           @if (!soloLectura()) {
             <p class="m-0 mt-1 text-sm text-text-secondary">
               Complete primero los datos del conductor y luego los del vehículo. El máximo de
@@ -170,7 +171,7 @@
         <div class="grid gap-5 lg:grid-cols-2">
           <!-- Conductor -->
           <div class="rounded-md border border-border-default bg-bg-page/40 p-4">
-            <h3 class="m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
+            <h3 class="tsi-display m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
               <app-tabler-icon name="user" [size]="16" />
               Conductor
             </h3>
@@ -293,7 +294,7 @@
 
           <!-- Vehículo -->
           <div class="rounded-md border border-border-default bg-bg-page/40 p-4">
-            <h3 class="m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
+            <h3 class="tsi-display m-0 mb-1 flex items-center gap-2 text-sm font-semibold text-text-primary">
               <app-tabler-icon name="car" [size]="16" />
               Vehículo
             </h3>
@@ -360,7 +361,7 @@
         }
 
         <div class="mt-6">
-          <h3 class="m-0 mb-3 text-sm font-semibold text-text-primary">Registrados en el caso</h3>
+          <h3 class="tsi-display m-0 mb-3 text-sm font-semibold text-text-primary">Registrados en el caso</h3>
           <ul class="m-0 list-none space-y-2 p-0" data-testid="conductores-lista">
             @for (item of data()?.conductores ?? []; track item.idconductoraccidente) {
               <li
@@ -414,8 +415,8 @@
         </div>
       </section>
 
-      <section class="rounded-md border border-border-default bg-bg-surface p-6 lg:col-span-2">
-        <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
+      <section class="tsi-panel p-6 lg:col-span-2">
+        <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">
           Implicados no conductores
         </h2>
         @if (!soloLectura()) {

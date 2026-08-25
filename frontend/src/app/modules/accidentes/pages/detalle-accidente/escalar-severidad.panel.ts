@@ -14,8 +14,8 @@ import { SEVERIDADES } from '../../severidad.constants';
   imports: [FormsModule, TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-md border border-border-default bg-bg-surface p-6">
-      <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Escalar severidad</h2>
+    <section class="tsi-panel p-6">
+      <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Escalar severidad</h2>
 
       @if (!confirmando()) {
         <form (ngSubmit)="pedirConfirmacion()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">

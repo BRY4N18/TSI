@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-2xl p-8">
-  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Mi seguimiento</h1>
+  <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Mi seguimiento</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
   @if (cargando()) {
     <app-list-loading-skeleton [count]="1" />
@@ -49,7 +50,7 @@
       </div>
     }
 
-    <div class="mb-6 flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-bg-surface p-6">
+    <div class="mb-6 flex flex-wrap items-center gap-3 tsi-panel p-6">
       <app-tabler-icon name="map-pin" [size]="28" />
       <div class="flex-1">
         <p class="m-0 text-sm font-semibold text-text-primary">Despacho #{{ despacho()!.iddespacho }}</p>
@@ -170,7 +171,7 @@
         </button>
       </div>
     } @else {
-      <div class="flex items-center gap-2 rounded-md border border-border-default bg-bg-surface p-4 text-sm text-text-secondary">
+      <div class="flex items-center gap-2 tsi-panel p-4 text-sm text-text-secondary">
         <app-tabler-icon name="info-circle" [size]="18" />
         Esta misión fue abortada. Volviendo a Mi Despacho…
       </div>

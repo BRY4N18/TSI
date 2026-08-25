@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-6xl p-8">
-  <h1 class="m-0 mb-6 text-2xl font-bold text-text-primary">Registro de accidente</h1>
+  <h1 class="tsi-display m-0 mb-6 text-3xl font-extrabold text-text-primary">Registro de accidente</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
 
   @if (draftRestored()) {
     <div
@@ -42,9 +43,9 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
       <!-- Columna izquierda -->
       <div class="grid gap-6">
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
+        <section class="tsi-panel p-6">
           <div class="mb-4 flex items-center justify-between">
-            <h2 class="m-0 text-base font-semibold text-text-primary">Ubicación y hora</h2>
+            <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Ubicación y hora</h2>
             <span class="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="sync-status">
               <span
                 class="h-2 w-2 rounded-full"
@@ -260,8 +261,8 @@
           }
         </section>
 
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">
             Narrativa del incidente
           </h2>
           <div class="grid gap-1.5">
@@ -283,8 +284,8 @@
 
       <!-- Columna derecha -->
       <div class="grid gap-6">
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">
             Severidad e impacto inicial
           </h2>
 
@@ -368,8 +369,8 @@
           </div>
         </section>
 
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Origen del reporte</h2>
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Origen del reporte</h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="grid gap-1.5">
               <label for="idtiporeportado" class="text-sm font-medium text-text-secondary"

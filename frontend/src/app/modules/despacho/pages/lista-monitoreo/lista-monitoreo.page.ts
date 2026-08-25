@@ -19,7 +19,8 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
     <div class="mx-auto max-w-5xl p-8">
       <div class="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Monitoreo de despacho</h1>
+          <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Monitoreo de despacho</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 text-sm text-text-secondary">Casos con búsqueda o asignación de unidad en curso.</p>
         </div>
         <button
@@ -65,7 +66,7 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
         </div>
       } @else if (!casos().length) {
         <div
-          class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
+          class="grid place-items-center gap-3 tsi-panel p-10 text-center"
           data-testid="empty-state"
         >
           <app-tabler-icon name="radio" [size]="32" />
@@ -77,7 +78,7 @@ const ESTADOS_EN_DESPACHO: EstadoAccidente[] = ['BUSCANDO_UNIDAD', 'ASIGNADO', '
             <li>
               <a
                 [routerLink]="['/despacho/monitoreo', a.idaccidente]"
-                class="flex items-center justify-between gap-4 rounded-md border border-border-default bg-bg-surface p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+                class="flex items-center justify-between gap-4 tsi-panel p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
               >
                 <div class="grid gap-1">
                   <span class="text-sm font-semibold text-text-primary">{{ a.idaccidente }}</span>

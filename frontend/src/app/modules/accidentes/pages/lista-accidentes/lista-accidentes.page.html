@@ -1,6 +1,10 @@
 <div class="mx-auto max-w-6xl p-8">
-  <div class="mb-6 flex items-center justify-between">
-    <h1 class="m-0 text-2xl font-bold text-text-primary">Accidentes activos</h1>
+  <div class="mb-2 flex items-end justify-between gap-4">
+    <div class="grid gap-2">
+      <h1 class="tsi-display m-0 text-3xl text-text-primary">Accidentes activos</h1>
+      <!-- Riel de pagina: la firma estructural, visible en cada pantalla. -->
+      <div class="tsi-rail-h w-24" aria-hidden="true"></div>
+    </div>
     @if (puedeRegistrar()) {
       <a
         routerLink="/accidentes/registro"
@@ -11,7 +15,7 @@
     }
   </div>
 
-  <form [formGroup]="filtros" class="mb-6 flex flex-col gap-4">
+  <form [formGroup]="filtros" class="tsi-panel mb-6 flex flex-col gap-4 p-5">
     <div class="grid gap-1.5">
       <label for="filtroBusqueda" class="text-sm font-medium text-text-secondary">Buscar por ID</label>
       <div class="relative">
@@ -94,7 +98,8 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaDesde"
-      />
+          placeholder="Escribe para filtrar…"
+        />
     </div>
 
     <div class="grid gap-1.5">
@@ -104,11 +109,14 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaHasta"
-      />
+          placeholder="Escribe para filtrar…"
+        />
     </div>
 
     <div class="flex items-end gap-2 pb-2.5">
-      <input id="filtroActivo" type="checkbox" formControlName="activo" />
+      <input id="filtroActivo" type="checkbox" formControlName="activo"
+          placeholder="Escribe para filtrar…"
+        />
       <label for="filtroActivo" class="text-sm text-text-primary">Solo activos</label>
     </div>
     </div>
@@ -138,7 +146,7 @@
     </div>
   } @else if (!accidentes().length) {
     <div
-      class="grid place-items-center gap-3 rounded-md border border-border-default bg-bg-surface p-10 text-center"
+      class="grid place-items-center gap-3 tsi-panel p-10 text-center"
       data-testid="empty-state"
     >
       <app-tabler-icon name="car-crash" [size]="32" />
@@ -155,22 +163,22 @@
     <table class="hidden w-full border-collapse overflow-hidden rounded-md border border-border-default md:table">
       <thead>
         <tr class="bg-bg-surface">
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
             ID
           </th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
             Fecha/Hora
           </th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
             Severidad
           </th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
             Ubicación
           </th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
             Estado
           </th>
-          <th class="border-b border-border-default px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-text-primary">
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-right text-xs uppercase tracking-widest text-text-primary">
             Acciones
           </th>
         </tr>
@@ -189,13 +197,24 @@
             </td>
             <td class="px-4 py-3">
               <span
-                class="inline-flex items-center gap-1.5 text-sm font-medium"
+                class="inline-flex items-center gap-2 text-sm font-medium"
                 [class.text-alert-success]="severidadInfo(a.idseveridad).tone === 'success'"
                 [class.text-alert-warning]="severidadInfo(a.idseveridad).tone === 'warning'"
                 [class.text-alert-urgent]="severidadInfo(a.idseveridad).tone === 'urgent'"
                 [class.text-alert-critical]="severidadInfo(a.idseveridad).tone === 'critical'"
               >
-                <app-tabler-icon [name]="severidadInfo(a.idseveridad).icon" [size]="16" />
+                <!-- El nodo del isotipo como portador de la severidad: aparece
+                     en cada fila, no solo en estados vacios. -->
+                <span
+                  class="tsi-node h-6 w-5 shrink-0 text-bg-surface"
+                  [class.bg-alert-success]="severidadInfo(a.idseveridad).tone === 'success'"
+                  [class.bg-alert-warning]="severidadInfo(a.idseveridad).tone === 'warning'"
+                  [class.bg-alert-urgent]="severidadInfo(a.idseveridad).tone === 'urgent'"
+                  [class.bg-alert-critical]="severidadInfo(a.idseveridad).tone === 'critical'"
+                  aria-hidden="true"
+                >
+                  <app-tabler-icon [name]="severidadInfo(a.idseveridad).icon" [size]="12" />
+                </span>
                 {{ severidadInfo(a.idseveridad).label }}
               </span>
             </td>

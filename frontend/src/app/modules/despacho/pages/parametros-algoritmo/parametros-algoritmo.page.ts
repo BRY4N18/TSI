@@ -11,6 +11,7 @@ import { ParametrosDespachoData } from '../../services/models/despacho.types';
   template: `
     <section>
       <h1>Parámetros del algoritmo</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       @if (parametros()) {
         <label>
           Timeout (s)

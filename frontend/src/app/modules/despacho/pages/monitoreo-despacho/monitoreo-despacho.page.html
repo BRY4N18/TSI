@@ -15,7 +15,8 @@
     @let e = estado()!;
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">{{ idaccidente }}</h1>
+        <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">{{ idaccidente }}</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
         <span
           class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold"
           [class.bg-alert-warning-bg]="estado_(e.estado_caso).tone === 'warning'"
@@ -76,7 +77,7 @@
         class="mb-4 rounded-md border border-alert-warning bg-alert-warning-bg p-6"
         data-testid="alertas-caso"
       >
-        <h2 class="m-0 mb-3 flex items-center gap-2 text-base font-semibold text-alert-warning">
+        <h2 class="tsi-display m-0 mb-3 flex items-center gap-2 text-base font-semibold text-alert-warning">
           <app-tabler-icon name="alert-triangle" [size]="18" />
           Avisos del caso
         </h2>
@@ -97,8 +98,8 @@
       </section>
     }
 
-    <section class="mb-4 rounded-md border border-border-default bg-bg-surface p-6">
-      <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades activas</h2>
+    <section class="mb-4 tsi-panel p-6">
+      <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Unidades activas</h2>
       @if (!e.unidades_activas.length) {
         <p class="m-0 text-sm text-text-secondary">Todavía no hay ninguna unidad confirmada.</p>
       } @else {
@@ -151,8 +152,8 @@
     <!-- Cierre del caso (SRS §3.6.4). Antes no existía ninguna acción de
          cierre en toda la aplicación: los casos no podían terminar. -->
     @if (puedeCerrarse(e.estado_caso)) {
-      <section class="mb-4 rounded-md border border-border-default bg-bg-surface p-6">
-        <h2 class="m-0 mb-1 text-base font-semibold text-text-primary">Cierre del caso</h2>
+      <section class="mb-4 tsi-panel p-6">
+        <h2 class="tsi-display m-0 mb-1 text-base font-semibold text-text-primary">Cierre del caso</h2>
         <p class="m-0 mb-4 text-sm text-text-secondary">
           El caso solo puede cerrarse cuando todas las unidades se han retirado. La evidencia
           adjunta no es requisito para cerrar.
@@ -220,8 +221,8 @@
       </section>
     }
 
-    <section class="rounded-md border border-border-default bg-bg-surface p-6">
-      <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Historial de intentos</h2>
+    <section class="tsi-panel p-6">
+      <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Historial de intentos</h2>
       @if (!e.intentos.length) {
         <p class="m-0 text-sm text-text-secondary">Todavía no se ha intentado despachar ninguna unidad.</p>
       } @else {

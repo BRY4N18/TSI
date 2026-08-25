@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-6xl p-8">
-  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Historial de emergencias</h1>
+  <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Historial de emergencias</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
   <p class="m-0 mb-6 text-sm text-text-secondary">Casos atendidos, con tiempos de respuesta y cierre.</p>
 
   <form [formGroup]="filtros" class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
@@ -80,7 +81,8 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaDesde"
-      />
+          placeholder="Escribe para filtrar…"
+        />
     </div>
 
     <div class="grid gap-1.5">
@@ -90,7 +92,8 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaHasta"
-      />
+          placeholder="Escribe para filtrar…"
+        />
     </div>
   </form>
 
@@ -104,14 +107,14 @@
     <table class="w-full border-collapse overflow-hidden rounded-md border border-border-default">
       <thead>
         <tr class="bg-bg-surface">
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">ID</th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Fecha</th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Ubicación</th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Severidad</th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Estado</th>
-          <th class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary">Unidad</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">ID</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">Fecha</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">Ubicación</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">Severidad</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">Estado</th>
+          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">Unidad</th>
           <th
-            class="border-b border-border-default px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-text-primary"
+            class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary"
             title="R = Respuesta, T = Tránsito, A = Atención, Total = duración completa del caso, en minutos"
           >
             Tiempos (min)

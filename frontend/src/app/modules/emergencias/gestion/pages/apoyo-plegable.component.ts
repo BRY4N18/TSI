@@ -30,7 +30,7 @@ export interface BloqueApoyo {
       <div class="grid gap-3 border-t border-border-default p-4 sm:grid-cols-2">
         @for (bloque of bloques(); track bloque.informe) {
           <article class="rounded-md border border-border-default bg-bg-page p-3">
-            <h3 class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
+            <h3 class="tsi-display m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
               {{ bloque.titulo }}
             </h3>
             @switch (bloque.carga.estado) {

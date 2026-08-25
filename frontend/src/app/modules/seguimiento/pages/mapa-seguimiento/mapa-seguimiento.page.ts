@@ -83,7 +83,7 @@ function distanciaMetros(a: L.LatLng, b: L.LatLng): number {
 
       <!-- Estado de sincronización — flotante arriba-derecha -->
       <div
-        class="absolute right-4 top-4 z-[1000] flex items-center gap-1.5 rounded-md border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary shadow"
+        class="absolute right-4 top-4 z-[1000] flex items-center gap-1.5 tsi-panel px-3 py-1.5 text-xs font-medium text-text-secondary shadow"
       >
         <span
           class="h-2 w-2 rounded-full"

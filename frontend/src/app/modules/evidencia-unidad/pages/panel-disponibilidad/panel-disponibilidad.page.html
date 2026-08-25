@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-6xl p-8">
-  <h1 class="m-0 mb-1 text-2xl font-bold text-text-primary">Disponibilidad de unidad</h1>
+  <h1 class="tsi-display m-0 mb-1 text-3xl font-extrabold text-text-primary">Disponibilidad de unidad</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
   <p class="m-0 mb-6 text-sm text-text-secondary">
     Declara tu estado actual para que el sistema te incluya o excluya del despacho automático.
   </p>
@@ -12,7 +13,7 @@
     <div class="grid items-start gap-8 lg:grid-cols-[3fr_2fr]">
       <div class="flex min-w-0 flex-col gap-6">
         @if (disponibilidad()) {
-          <div class="flex items-center gap-3 rounded-md border border-border-default bg-bg-surface p-6">
+          <div class="flex items-center gap-3 tsi-panel p-6">
             <app-tabler-icon name="radio" [size]="28" />
             <div>
               <p class="m-0 text-sm font-semibold text-text-primary" data-testid="estado-actual">
@@ -24,7 +25,7 @@
             </div>
           </div>
 
-          <div class="grid gap-3 rounded-md border border-border-default bg-bg-surface p-6 sm:grid-cols-2">
+          <div class="grid gap-3 tsi-panel p-6 sm:grid-cols-2">
             <div>
               <p class="m-0 text-xs text-text-secondary">Placa</p>
               <p class="m-0 text-sm font-medium text-text-primary" data-testid="unidad-placa">
@@ -86,7 +87,7 @@
         aria-labelledby="historial-title"
         data-testid="historial-panel"
       >
-        <h2 id="historial-title" class="m-0 mb-4 text-sm font-semibold text-text-primary">
+        <h2 id="historial-title" class="tsi-display m-0 mb-4 text-sm font-semibold text-text-primary">
           Historial de cambios
         </h2>
         <div>

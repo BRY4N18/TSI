@@ -48,7 +48,7 @@ const FOCUSABLE_SELECTOR =
         <div class="flex items-center justify-between border-b border-border-default px-6 py-4">
           <div class="flex items-center gap-2">
             <app-tabler-icon name="upload" [size]="20" />
-            <h2 id="evidencia-modal-titulo" class="m-0 text-base font-semibold text-text-primary">
+            <h2 id="evidencia-modal-titulo" class="tsi-display m-0 text-base font-semibold text-text-primary">
               Subir evidencia y notas
             </h2>
           </div>

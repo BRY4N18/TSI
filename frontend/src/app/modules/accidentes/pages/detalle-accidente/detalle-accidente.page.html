@@ -37,7 +37,8 @@
           {{ tituloModo() }}
         </p>
         <div class="mt-1 flex flex-wrap items-center gap-3">
-          <h1 class="m-0 text-2xl font-bold text-text-primary">{{ a.idaccidente }}</h1>
+          <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">{{ a.idaccidente }}</h1>
+<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <span
             class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold"
             [class.bg-alert-success-bg]="estado(a.estado_actual).tone === 'success'"
@@ -77,8 +78,8 @@
     <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <!-- Columna principal: datos del caso -->
       <div class="grid gap-4 lg:col-span-2">
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Información del incidente</h2>
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Información del incidente</h2>
           <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <dt class="text-xs font-medium uppercase tracking-wide text-text-secondary">Severidad</dt>
@@ -117,9 +118,9 @@
         <section
           #impactoSection
           id="impacto"
-          class="rounded-md border border-border-default bg-bg-surface p-6"
+          class="tsi-panel p-6"
         >
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Impacto</h2>
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Impacto</h2>
           <form (ngSubmit)="guardar()" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="grid gap-1.5">
               <label for="numvehiculos" class="text-sm font-medium text-text-secondary">
@@ -177,9 +178,9 @@
           </form>
         </section>
 
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
+        <section class="tsi-panel p-6">
           <div class="mb-4 flex items-center justify-between">
-            <h2 class="m-0 text-base font-semibold text-text-primary">Evidencia</h2>
+            <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Evidencia</h2>
             @if (evidencias().length) {
               <span class="rounded-md bg-bg-page px-2.5 py-1 text-xs font-medium text-text-secondary">
                 {{ evidencias().length }} elemento(s)
@@ -210,10 +211,10 @@
           }
         </section>
 
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
+        <section class="tsi-panel p-6">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="m-0 text-base font-semibold text-text-primary">Datos del siniestro</h2>
+              <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Datos del siniestro</h2>
               <p class="m-0 mt-1 text-sm text-text-secondary">
                 Clima, elementos físicos y conductores/vehículos en sitio.
               </p>
@@ -253,8 +254,8 @@
 
       <!-- Columna lateral: actividad del caso -->
       <div class="grid gap-4">
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Historial</h2>
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Historial</h2>
           @if (a.historial_estados.length) {
             <ol class="m-0 grid gap-4 border-l-2 border-border-default pl-4">
               @for (h of a.historial_estados; track h.fechahoramodificado) {
@@ -275,8 +276,8 @@
         </section>
 
         @if (puedeVerDespacho()) {
-        <section class="rounded-md border border-border-default bg-bg-surface p-6">
-          <h2 class="m-0 mb-4 text-base font-semibold text-text-primary">Unidades involucradas</h2>
+        <section class="tsi-panel p-6">
+          <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Unidades involucradas</h2>
           @if (!unidades().length) {
             <p class="m-0 text-sm text-text-secondary">Sin unidades asignadas todavía.</p>
           } @else {
@@ -313,8 +314,8 @@
              §3.6.4) y el endpoint exige el rol Unidad: aquí el panel respondía
              siempre 403. Vive ahora en «Mi seguimiento». -->
         @if (a.estado_actual === 'ASIGNADO' || a.estado_actual === 'EN_ATENCIÓN') {
-          <section class="rounded-md border border-border-default bg-bg-surface p-6">
-            <h2 class="m-0 mb-2 text-base font-semibold text-text-primary">Severidad en sitio</h2>
+          <section class="tsi-panel p-6">
+            <h2 class="tsi-display m-0 mb-2 text-base font-semibold text-text-primary">Severidad en sitio</h2>
             <p class="m-0 text-sm text-text-secondary">
               La actualiza la unidad que está atendiendo el caso, con lo que observa en el
               lugar. Los cambios aparecen en el historial de este expediente.
