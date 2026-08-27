@@ -250,7 +250,11 @@ class TestLasFuentesDelFlujoYLasDeLaLogica:
 
         # Se llama a `extraer` con consultas de mentira: interesan las **claves**,
         # no los datos, y así la prueba no necesita ni Pinot ni el almacén.
-        claves = set(extraer(lambda _sql: [], lambda _sql: []))
+        # el tercero es la lectura paginada de accidentes: sin sustituirlo,
+        # este test saldria a Pinot de verdad.
+        claves = set(
+            extraer(lambda _sql: [], lambda _sql: [], lambda *_a, **_kw: [])
+        )
 
         assert claves == set(FUENTES), (
             f"sobran o faltan fuentes en el flujo: {claves ^ set(FUENTES)}. "

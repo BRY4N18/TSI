@@ -25,7 +25,7 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
           Re-evaluar/despublicar región #{{ idregionoperativa }}
         </h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
-        <p class="mt-1 text-sm text-text-secondary">CU-O61 — Región habilitada en producción.</p>
+        <p class="mt-1 text-sm text-text-secondary">Región habilitada en producción.</p>
       </header>
 
       <section class="space-y-5 tsi-panel p-6">

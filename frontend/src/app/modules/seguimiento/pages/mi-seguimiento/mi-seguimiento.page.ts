@@ -46,10 +46,24 @@ export class MiSeguimientoPage implements OnInit, OnDestroy {
   readonly finalizando = signal(false);
   readonly abortando = signal(false);
   readonly confirmandoAbortar = signal(false);
+  readonly modalEscalarAbierto = signal(false);
   motivoAbortar = '';
 
   private watchId: number | null = null;
   private ultimoEnvioMs = 0;
+
+  abrirModalEscalar(): void {
+    this.modalEscalarAbierto.set(true);
+  }
+
+  cerrarModalEscalar(): void {
+    this.modalEscalarAbierto.set(false);
+  }
+
+  onEscalado(): void {
+    this.cerrarModalEscalar();
+    this.cargarActual();
+  }
 
   ngOnInit(): void {
     this.cargarActual();

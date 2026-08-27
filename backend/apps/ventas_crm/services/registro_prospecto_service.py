@@ -7,6 +7,7 @@ from core.repositories.ventas_crm.prospecto_repository import ProspectoRepositor
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _TELEFONO_RE = re.compile(r"^\+?[0-9]{7,15}$")
+_TEXTO_RE = re.compile(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s'-]+$")
 
 
 class RegistroProspectoService:
@@ -40,10 +41,10 @@ class RegistroProspectoService:
         telefono = re.sub(r"[\s\-()]", "", str(data["telefono"]).strip())
         como_nos_conocio = str(data["como_nos_conocio"]).strip()
 
-        if len(nombres) < 2:
-            raise ValidationError("nombres debe tener al menos 2 caracteres")
-        if len(apellidos) < 2:
-            raise ValidationError("apellidos debe tener al menos 2 caracteres")
+        if len(nombres) < 2 or not _TEXTO_RE.match(nombres):
+            raise ValidationError("nombres debe tener al menos 2 caracteres y contener solo letras")
+        if len(apellidos) < 2 or not _TEXTO_RE.match(apellidos):
+            raise ValidationError("apellidos debe tener al menos 2 caracteres y contener solo letras")
         if not _EMAIL_RE.match(gmail):
             raise ValidationError("gmail inválido")
         if len(empresa) < 2:

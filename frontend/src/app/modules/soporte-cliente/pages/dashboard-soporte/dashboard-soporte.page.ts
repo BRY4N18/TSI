@@ -1,4 +1,4 @@
-import { DecimalPipe, NgClass } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { TicketApiService } from '../../services/ticket-api.service';
 import { DashboardSoporteData } from '../../services/models/soporte.types';
@@ -16,7 +17,7 @@ type DistEntry = { key: string; label: string; count: number; pct: number };
 @Component({
   selector: 'app-dashboard-soporte',
   standalone: true,
-  imports: [DecimalPipe, NgClass, TablerIconComponent],
+  imports: [DecimalPipe, TablerIconComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard-soporte.page.html',
 })
@@ -35,6 +36,55 @@ export class DashboardSoportePage {
     this.toDist(this.metricas()?.por_tipo_incidencia, (k) => k || 'Sin tipo'),
   );
   readonly porCliente = computed(() => this.toDist(this.metricas()?.por_cliente));
+
+  // ── Distribuciones como gráficos (design-system.md §5.1) ──────────────
+  //
+  // Las cuatro son repartos de un total entre categorías, así que las
+  // cuatro son barras. Lo que cambia es la ESCALA DE COLOR, y ahí está la
+  // única decisión real:
+  //
+  // - estado, tipo y cliente son categorías **nominales**: ordenarlas de
+  //   otra forma no cambiaría lo que significan. Van todas del mismo color
+  //   y ordenadas por magnitud, que es lo que ayuda a compararlas.
+  // - prioridad es **ordinal**: Baja < Media < Alta < Crítico. Ahí el orden
+  //   sí significa, así que se ordena por rango (no por conteo, como las
+  //   otras) y se pinta con la rampa de un tono, para que la gravedad
+  //   creciente se vea en el color y no haya que leer las etiquetas.
+
+  readonly barrasEstado = computed<BarDatum[]>(() =>
+    this.porEstado().map((r) => ({ etiqueta: r.label, valor: r.count })),
+  );
+
+  readonly barrasPrioridad = computed<BarDatum[]>(() =>
+    [...this.porPrioridad()]
+      .sort((a, b) => this.rangoPrioridad(a.key) - this.rangoPrioridad(b.key))
+      .map((r) => ({ etiqueta: r.label, valor: r.count })),
+  );
+
+  readonly barrasTipo = computed<BarDatum[]>(() =>
+    this.porTipo().map((r) => ({ etiqueta: r.label, valor: r.count })),
+  );
+
+  readonly barrasCliente = computed<BarDatum[]>(() =>
+    this.porCliente().map((r) => ({ etiqueta: `Cliente #${r.key}`, valor: r.count })),
+  );
+
+  /** Rango de gravedad; lo desconocido cae al final, no en medio. */
+  private rangoPrioridad(prioridad: string): number {
+    switch (prioridad.toLowerCase()) {
+      case 'baja':
+        return 0;
+      case 'media':
+        return 1;
+      case 'alta':
+        return 2;
+      case 'critico':
+      case 'crítico':
+        return 3;
+      default:
+        return 99;
+    }
+  }
 
   constructor() {
     this.cargar();
@@ -79,37 +129,7 @@ export class DashboardSoportePage {
     return prioridad.charAt(0).toUpperCase() + prioridad.slice(1);
   }
 
-  estadoBadge(estado: string): string {
-    switch (estado) {
-      case 'Resuelto':
-      case 'Cerrado':
-        return 'tsi-badge-success';
-      case 'Escalado':
-      case 'Pendiente_de_clasificacion':
-        return 'tsi-badge-urgent';
-      case 'En_progreso':
-      case 'Reabierto':
-        return 'tsi-badge-info';
-      case 'Abierto':
-        return 'tsi-badge-warning';
-      default:
-        return 'tsi-badge-neutral';
-    }
-  }
 
-  prioridadBadge(prioridad: string): string {
-    const p = prioridad.toLowerCase();
-    if (p === 'crítico' || p === 'critico') {
-      return 'tsi-badge-critical';
-    }
-    if (p === 'alta') {
-      return 'tsi-badge-urgent';
-    }
-    if (p === 'media') {
-      return 'tsi-badge-warning';
-    }
-    return 'tsi-badge-neutral';
-  }
 
   private toDist(
     map: Record<string, number> | undefined,

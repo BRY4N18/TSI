@@ -58,6 +58,7 @@ from core.auth.roles_tacticos import (  # noqa: E402
     ROL_DIRECTOR_MARKETING,
     ROL_DIRECTOR_OPERACIONES,
     ROL_DIRECTOR_TECNOLOGICO,
+    ROL_GERENTE,
     ROL_GERENTE_EXITO_CLIENTE,
 )
 
@@ -104,6 +105,11 @@ TACTICOS = {
         "director.datos@demo.tsi.com",
         ("Daniela", "Nunez"),
     ),
+    ROL_GERENTE: (
+        "Tablero estrategico integral: los seis objetivos, porque cruza departamentos",
+        "gerente@demo.tsi.com",
+        ("Gonzalo", "Reyes"),
+    ),
     # Estos dos ya existen como rol. Se listan igual para darles usuario propio:
     # el rol sin nadie que lo lleve no se puede probar por login.
     ROL_DIRECTOR_TECNOLOGICO: (
@@ -118,16 +124,17 @@ TACTICOS = {
     ),
 }
 
-#: ⚠️ Entorno de pruebas. Ver el docstring.
-CLAVE = "Tactico2026!"
+#: Contraseña estándar de cuentas demo de desarrollo/pruebas.
+CLAVE = "password123"
 
 
 def main() -> int:
     servicio = UserManagementService()
     roles_repo = servicio.role_repo
+    cred_repo = servicio.credential_repo
     admin = ["Administrador"]
 
-    creados_rol, creados_usuario, ya_estaban = [], [], []
+    creados_rol, creados_usuario, credenciales_actualizadas, ya_estaban = [], [], [], []
 
     for rol, (descripcion, gmail, (nombres, apellidos)) in TACTICOS.items():
         existente = roles_repo.find_role_by_name(rol)
@@ -139,9 +146,18 @@ def main() -> int:
 
         usuario = servicio.user_repo.find_by_gmail(gmail)
         if usuario:
-            # El usuario ya existe: solo se asegura el vinculo con su rol, que es
-            # idempotente en el repositorio.
-            roles_repo.assign_role_to_user(int(usuario["idusuario"]), idrol)
+            user_id = int(usuario["idusuario"])
+            roles_repo.assign_role_to_user(user_id, idrol)
+            
+            # Garantizar que la credencial exista y tenga la contraseña conocida
+            cred = cred_repo.find_by_user_id(user_id)
+            if not cred:
+                cred_repo.create(user_id, CLAVE)
+                credenciales_actualizadas.append(f"{gmail} (creada)")
+            else:
+                cred_repo.activate_credential(user_id, CLAVE)
+                credenciales_actualizadas.append(f"{gmail} (actualizada)")
+                
             ya_estaban.append(f"{rol} -> {gmail}")
             continue
 
@@ -156,20 +172,19 @@ def main() -> int:
                 },
                 admin_roles=admin,
             )
+            creados_usuario.append(f"{rol} -> {gmail} (id {nuevo['idusuario']})")
         except UserManagementError as exc:
             print(f"  FALLA {rol}: {exc}")
             continue
-        creados_usuario.append(f"{rol} -> {gmail} (id {nuevo['idusuario']})")
 
-    print("\nRoles creados     :", creados_rol or "ninguno (ya estaban todos)")
-    print("Usuarios creados  :")
+    print("\nRoles creados            :", creados_rol or "ninguno (ya estaban todos)")
+    print("Usuarios creados         :")
     for linea in creados_usuario or ["  ninguno"]:
         print("   ", linea)
-    if ya_estaban:
-        print("Ya existian       :")
-        for linea in ya_estaban:
-            print("   ", linea)
-    print(f"\nClave de todos    : {CLAVE}   (entorno de pruebas)")
+    print("Credenciales sincronizadas :")
+    for linea in credenciales_actualizadas or ["  ninguna"]:
+        print("   ", linea)
+    print(f"\nClave de todos           : {CLAVE}   (entorno de pruebas)")
     return 0
 
 

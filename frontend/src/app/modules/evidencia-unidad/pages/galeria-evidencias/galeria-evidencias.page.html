@@ -44,7 +44,6 @@
           (click)="mostrarSubida.set(!mostrarSubida())"
           class="tsi-btn tsi-btn-primary"
         >
-          <app-tabler-icon name="camera" [size]="16" />
           Subir evidencia
         </button>
       }
@@ -53,7 +52,6 @@
         (click)="recargar()"
         class="tsi-btn tsi-btn-secondary"
       >
-        <app-tabler-icon name="refresh" [size]="16" />
         Recargar
       </button>
       @if (!soloLectura()) {
@@ -103,7 +101,6 @@
             (click)="recargar()"
             class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
           >
-            <app-tabler-icon name="refresh" [size]="16" />
             Reintentar
           </button>
         </div>
@@ -115,7 +112,6 @@
               (click)="mostrarSubida.set(true)"
               class="tsi-btn tsi-btn-primary"
             >
-              <app-tabler-icon name="camera" [size]="16" />
               Subir evidencia
             </button>
           }
@@ -172,14 +168,16 @@
       <div class="tsi-panel p-6">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Notas de campo</h2>
-          <button
-            type="button"
-            (click)="mostrarSubida.set(!mostrarSubida())"
-            aria-label="Agregar nota de campo"
-            class="tsi-hit-target inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page"
-          >
-            +
-          </button>
+          @if (!soloLectura()) {
+            <button
+              type="button"
+              (click)="mostrarSubida.set(!mostrarSubida())"
+              aria-label="Agregar nota de campo"
+              class="tsi-hit-target inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-default text-text-secondary hover:bg-bg-page"
+            >
+              +
+            </button>
+          }
         </div>
 
         @if (!notas().length) {

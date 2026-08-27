@@ -51,26 +51,11 @@ export const INFORMES_SOPORTE: Record<string, DefinicionListado> = {
       { campo: 'cuenta', etiqueta: 'Cuenta' },
       { campo: 'asunto', etiqueta: 'Asunto' },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
-      // ⚠️ Estas dos también son enumeraciones del origen, aunque su filtro sea
-      // de texto libre y no un desplegable: pintaban `emergencia_activa` y
-      // `tecnica` en crudo. El detector que encontró las otras dieciocho se
-      // apoya en el filtro, así que estas no salían.
       { campo: 'prioridad', etiqueta: 'Prioridad', formato: 'enumeracion' },
-      { campo: 'tipo_incidencia', etiqueta: 'Tipo', soloEscritorio: true, formato: 'enumeracion' },
-      // ⚠️ **La columna «Servicio» se retiró el 2026-08-19: estaba vacía en el
-      // 100 % de las filas.** `idservicio` es nulo en el origen para todos los
-      // tickets, y el informe compuesto de Soporte **se niega a ofrecer ese eje
-      // por eso mismo** —lo declara con «la operación no asigna servicio»—.
-      //
-      // Tener las dos cosas a la vez era lo contradictorio: una parte del
-      // sistema declaraba el dato inservible y la otra lo pintaba como una
-      // columna de guiones, que se lee como «falta rellenarlo» en vez de «esto
-      // no se registra». Vuelve el día que la operación asigne servicio.
-      // Ausente si nadie lo ha tomado. **La fila no se omite**: un ticket sin
-      // agente es el que más hay que ver.
+      { campo: 'tipo_incidencia', etiqueta: 'Tipo', soloDetalle: true, formato: 'enumeracion' },
       { campo: 'agente_asignado', etiqueta: 'Agente' },
-      { campo: 'situacion_compromiso', etiqueta: 'Compromiso', formato: 'enumeracion' },
-      { campo: 'factura_vinculada', etiqueta: 'Factura', soloEscritorio: true },
+      { campo: 'situacion_compromiso', etiqueta: 'Compromiso', formato: 'enumeracion', soloDetalle: true },
+      { campo: 'factura_vinculada', etiqueta: 'Factura', soloDetalle: true },
       { campo: 'fecha_registro', etiqueta: 'Registrado', formato: 'fecha_hora' },
     ],
     filtros: [
@@ -105,11 +90,8 @@ export const INFORMES_SOPORTE: Record<string, DefinicionListado> = {
       { campo: 'numero_ticket', etiqueta: 'Ticket', principal: true },
       { campo: 'cuenta', etiqueta: 'Cuenta' },
       { campo: 'tipo_escalado', etiqueta: 'Tipo', formato: 'enumeracion' },
-      { campo: 'estado_anterior', etiqueta: 'Estado anterior', soloEscritorio: true },
+      { campo: 'estado_anterior', etiqueta: 'Estado anterior', soloDetalle: true },
       { campo: 'estado_nuevo', etiqueta: 'Estado nuevo' },
-      // ⚠️ Ausente en los automáticos, y eso es **la respuesta correcta**: no
-      // hubo persona que lo decidiera. El supervisor que lo recibe es
-      // destinatario, no autor — atribuírselo fue un defecto ya corregido.
       { campo: 'autor', etiqueta: 'Autor' },
       { campo: 'fecha', etiqueta: 'Fecha', formato: 'fecha_hora' },
     ],

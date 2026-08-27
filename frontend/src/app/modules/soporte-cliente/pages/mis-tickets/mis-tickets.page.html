@@ -1,80 +1,42 @@
-<div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="mis-tickets">
-  <header class="flex flex-wrap items-end justify-between gap-4">
+<div class="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="mis-tickets">
+  <header class="flex flex-wrap items-center justify-between gap-4 border-b border-border-default pb-4">
     <div>
-      <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Mis tickets de soporte</h1>
-<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
+      <h1 class="tsi-display m-0 text-2xl font-bold tracking-tight text-text-primary">Mis tickets de soporte</h1>
       <p class="m-0 mt-1 text-sm text-text-secondary">
         Registra incidencias y da seguimiento a tus tickets.
       </p>
     </div>
-    <button type="button" class="tsi-btn tsi-btn-secondary" [disabled]="cargando()" (click)="cargar()">
-      <app-tabler-icon name="refresh" [size]="16" />
-      Actualizar
-    </button>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        class="tsi-btn tsi-btn-secondary inline-flex items-center gap-1.5"
+        [disabled]="cargando()"
+        (click)="cargar()"
+      >
+        <app-tabler-icon name="refresh" [size]="16" />
+        Actualizar
+      </button>
+      <button
+        type="button"
+        class="tsi-btn tsi-btn-primary inline-flex items-center gap-1.5"
+        data-testid="btn-abrir-modal-ticket"
+        (click)="abrirModal()"
+      >
+        <app-tabler-icon name="plus" [size]="16" />
+        Registrar ticket
+      </button>
+    </div>
   </header>
 
   @if (mensaje()) {
-    <p class="m-0 text-sm text-accent-primary" data-testid="mensaje">{{ mensaje() }}</p>
+    <div
+      class="flex items-center gap-2 rounded-lg border border-accent-primary/30 bg-accent-primary/10 p-3.5 text-sm text-accent-primary"
+      role="status"
+    >
+      <app-tabler-icon name="circle-check" [size]="18" />
+      <span data-testid="mensaje">{{ mensaje() }}</span>
+    </div>
   }
-
-  <details class="tsi-panel p-4" open>
-    <summary class="cursor-pointer text-sm font-semibold text-text-primary">
-      Registrar nuevo ticket
-    </summary>
-    <form class="mt-4 grid max-w-xl gap-3" (ngSubmit)="registrar()">
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Asunto
-        <input class="tsi-input" name="asunto" [(ngModel)]="asunto" required
-          placeholder="Resume el problema en una línea"
-        />
-      </label>
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Descripción
-        <textarea
-          class="tsi-textarea min-h-24"
-          name="descripcion"
-          [(ngModel)]="descripcion"
-          required
-          placeholder="Qué ocurrió, en una o dos frases"
-        ></textarea>
-      </label>
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Tipo
-        <select class="tsi-select" name="tipo" [(ngModel)]="tipo">
-          <option value="tecnico">Técnico</option>
-          <option value="acceso">Acceso</option>
-          <option value="operativo">Operativo</option>
-        </select>
-      </label>
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Servicio afectado (opcional)
-        <select class="tsi-select" name="idservicio" [(ngModel)]="idservicio">
-          <option [ngValue]="null">— Sin especificar —</option>
-          @for (s of servicios(); track s.id) {
-            <option [ngValue]="s.id">{{ s.nombre }}</option>
-          }
-        </select>
-      </label>
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Factura en disputa (opcional)
-        <select class="tsi-select" name="idfactura" [(ngModel)]="idfactura">
-          <option [ngValue]="null">— Ninguna —</option>
-          @for (f of facturasDisputables(); track f.id_factura) {
-            <option [ngValue]="f.id_factura">
-              {{ f.numero_factura }} — {{ f.periodo }}
-            </option>
-          }
-        </select>
-        <!-- Se dice lo que hace, no solo lo que es: el efecto sobre el cobro es
-             la razon por la que el cliente rellena este campo. -->
-        <span class="text-xs font-normal text-text-secondary">
-          Si eliges una factura, el cobro automatico de ese importe se detiene hasta
-          que se resuelva el ticket.
-        </span>
-      </label>
-      <button type="submit" class="tsi-btn tsi-btn-primary w-fit">Enviar</button>
-    </form>
-  </details>
 
   @if (cargando() && !tickets().length) {
     <app-list-loading-skeleton [count]="3" />
@@ -84,7 +46,7 @@
         <li>
           <a
             [routerLink]="['/soporte-cliente', 'tickets', t.id_reclamo]"
-            class="flex flex-wrap items-center justify-between gap-3 tsi-panel p-4 hover:border-accent-primary focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary"
+            class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-default bg-bg-surface p-4 transition-all hover:border-accent-primary hover:shadow-sm focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-accent-primary no-underline"
           >
             <div class="grid gap-1">
               <span class="font-mono text-xs font-semibold text-text-secondary">#{{ t.id_reclamo }}</span>
@@ -92,7 +54,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
               <span class="tsi-badge tsi-badge-neutral">{{ labelEstado(t.estado) }}</span>
-              <span>SLA: {{ t.sla_status ?? 'sin asignar' }}</span>
+              <span class="rounded bg-bg-page px-2 py-0.5 font-medium">SLA: {{ t.sla_status ?? 'sin asignar' }}</span>
             </div>
           </a>
         </li>
@@ -101,4 +63,129 @@
   } @else {
     <app-list-empty-state icon="list" message="No tienes tickets registrados." />
   }
+
+  <!-- Modal de registro de ticket -->
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in"
+    [class.hidden]="!modalAbierto()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-ticket-title"
+  >
+    <div
+      class="w-full max-w-xl rounded-xl border border-border-default bg-bg-surface p-6 shadow-2xl animate-in zoom-in-95"
+    >
+      <div class="flex items-center justify-between border-b border-border-default pb-4">
+        <div>
+          <h2 id="modal-ticket-title" class="tsi-display m-0 text-lg font-semibold text-text-primary">
+            Registrar ticket de soporte
+          </h2>
+          <p class="m-0 text-xs text-text-secondary">Describe el problema para que nuestro equipo pueda asistirte.</p>
+        </div>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-bg-page hover:text-text-primary"
+          aria-label="Cerrar"
+          [disabled]="guardando()"
+          (click)="cerrarModal()"
+        >
+          <app-tabler-icon name="x" [size]="20" />
+        </button>
+      </div>
+
+      <form class="mt-4 grid gap-4" (ngSubmit)="registrar()">
+        <div class="grid gap-1.5">
+          <label for="ticket-asunto" class="text-xs font-semibold text-text-secondary">
+            Asunto <span class="text-alert-danger">*</span>
+          </label>
+          <input
+            id="ticket-asunto"
+            class="tsi-input w-full"
+            name="asunto"
+            [(ngModel)]="asunto"
+            required
+            placeholder="Resume el problema en una línea"
+          />
+        </div>
+
+        <div class="grid gap-1.5">
+          <label for="ticket-desc" class="text-xs font-semibold text-text-secondary">
+            Descripción <span class="text-alert-danger">*</span>
+          </label>
+          <textarea
+            id="ticket-desc"
+            class="tsi-textarea min-h-24 w-full"
+            name="descripcion"
+            [(ngModel)]="descripcion"
+            required
+            placeholder="Qué ocurrió, en una o dos frases"
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="grid gap-1.5">
+            <label for="ticket-tipo" class="text-xs font-semibold text-text-secondary">Tipo</label>
+            <select id="ticket-tipo" class="tsi-select w-full" name="tipo" [(ngModel)]="tipo">
+              <option value="tecnico">Técnico</option>
+              <option value="acceso">Acceso</option>
+              <option value="operativo">Operativo</option>
+            </select>
+          </div>
+
+          <div class="grid gap-1.5">
+            <label for="ticket-servicio" class="text-xs font-semibold text-text-secondary">
+              Servicio afectado (opcional)
+            </label>
+            <select id="ticket-servicio" class="tsi-select w-full" name="idservicio" [(ngModel)]="idservicio">
+              <option [ngValue]="null">— Sin especificar —</option>
+              @for (s of servicios(); track s.id) {
+                <option [ngValue]="s.id">{{ s.nombre }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="grid gap-1.5">
+          <label for="ticket-factura" class="text-xs font-semibold text-text-secondary">
+            Factura en disputa (opcional)
+          </label>
+          <select id="ticket-factura" class="tsi-select w-full" name="idfactura" [(ngModel)]="idfactura">
+            <option [ngValue]="null">— Ninguna —</option>
+            @for (f of facturasDisputables(); track f.id_factura) {
+              <option [ngValue]="f.id_factura">
+                {{ f.numero_factura }} — {{ f.periodo }}
+              </option>
+            }
+          </select>
+          <span class="text-xs text-text-secondary">
+            Si eliges una factura, el cobro automatico de ese importe se detiene hasta que se resuelva el ticket.
+          </span>
+        </div>
+
+        <div class="mt-2 flex items-center justify-end gap-3 border-t border-border-default pt-4">
+          <button
+            type="button"
+            class="tsi-btn tsi-btn-ghost"
+            [disabled]="guardando()"
+            (click)="cerrarModal()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="tsi-btn tsi-btn-primary inline-flex items-center gap-2"
+            [disabled]="guardando() || !asunto.trim() || !descripcion.trim()"
+          >
+            @if (guardando()) {
+              <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
+              Enviando...
+            } @else {
+              <app-tabler-icon name="circle-check" [size]="16" />
+              Enviar ticket
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

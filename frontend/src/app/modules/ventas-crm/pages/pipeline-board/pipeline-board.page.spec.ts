@@ -34,7 +34,19 @@ describe('PipelineBoardPage', () => {
     pipelineApi = jasmine.createSpyObj('PipelineApiService', ['registrarTransicion']);
     api.listar.and.returnValue(of({ data: [sample], meta: {} }));
     pipelineApi.registrarTransicion.and.returnValue(
-      of({ data: { prospecto: { ...sample, etapa_actual: 'Contactado' as const } } }),
+      of({
+        data: {
+          prospecto: { ...sample, etapa_actual: 'Contactado' as const },
+          // El endpoint devuelve también la fila de `Fact_Pipeline`; el detalle
+          // del prospecto la usa para pintar el historial sin releer de Pinot.
+          transicion: {
+            id_transicion: 1,
+            id_prospecto: sample.idprospecto,
+            etapa_anterior: 'Nuevo',
+            etapa_nueva: 'Contactado',
+          },
+        },
+      }),
     );
 
     await TestBed.configureTestingModule({

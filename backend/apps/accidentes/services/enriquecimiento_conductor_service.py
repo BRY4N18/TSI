@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.audit.evidencia_service import AuditEvidenciaService
+from core.validacion import campos
 from core.repositories.evidencia.accidente_read_repository import AccidenteReadRepository
 from core.repositories.evidencia.catalogo_enriquecimiento_repository import (
     CatalogoEnriquecimientoRepository,
@@ -93,11 +94,21 @@ class EnriquecimientoConductorService:
         if not self.catalogo_repo.find_estado_conductor(idestadoconductor):
             raise ValueError("idestadoconductor inválido")
 
-        identificacion = str(conductor.get("identificacion") or "").strip()
-        if not identificacion or not conductor.get("nombres") or not conductor.get("apellidos"):
-            raise ValueError("conductor.identificacion, nombres y apellidos son requeridos")
+        # RN-VAL-CAMPOS — formato, no solo presencia.
+        #
+        # Antes bastaba con que los tres campos no estuvieran vacíos: la cédula
+        # aceptaba letras y símbolos, y los nombres cualquier cosa. Como el
+        # conductor se reutiliza por identificación (RN-EVI-019), una cédula mal
+        # capturada no ensucia un registro: parte la identidad en dos.
+        conductor_valido = self._validar_conductor(conductor)
+        identificacion = conductor_valido["identificacion"]
+
         if not vehiculo.get("tipovehiculo"):
             raise ValueError("vehiculo.tipovehiculo es requerido")
+        try:
+            campos.entero(vehiculo.get("ejes"), "vehiculo.ejes", minimo=1, maximo=20)
+        except campos.CampoInvalido as exc:
+            raise ValueError(str(exc)) from exc
 
         # RN-EVI-022 — tope = Fact_Accidente.numvehiculos
         accidente = self.accidente_repo.find_by_id(idaccidente)
@@ -123,18 +134,7 @@ class EnriquecimientoConductorService:
         if existing:
             conductor_row = existing
         else:
-            conductor_row = self.conductor_repo.create(
-                {
-                    "identificacion": identificacion,
-                    "nombres": conductor["nombres"],
-                    "apellidos": conductor["apellidos"],
-                    "genero": conductor.get("genero"),
-                    "tipolicencia": conductor.get("tipolicencia"),
-                    "estadolicencia": conductor.get("estadolicencia"),
-                    "ciudadresidencia": conductor.get("ciudadresidencia"),
-                    "aniosexperiencia": conductor.get("aniosexperiencia"),
-                }
-            )
+            conductor_row = self.conductor_repo.create(conductor_valido)
 
         idvehiculo = vehiculo.get("idvehiculo")
         if idvehiculo:
@@ -165,6 +165,46 @@ class EnriquecimientoConductorService:
             idconductoraccidente=vinculo["idconductoraccidente"],
         )
         return self._enrich_vinculo(vinculo)
+
+    #: Catálogos cerrados que hasta ahora viajaban como texto libre. Se validan
+    #: aquí para que el modelo analítico no acabe con "M", "Masc." y "masculino"
+    #: como tres géneros distintos.
+    GENEROS = frozenset({"Masculino", "Femenino", "Otro", "No informa"})
+    ESTADOS_LICENCIA = frozenset({"Vigente", "Caducada", "Suspendida", "Sin licencia"})
+
+    def _validar_conductor(self, conductor: dict[str, Any]) -> dict[str, Any]:
+        """Normaliza y valida el conductor. Levanta ValueError con el campo culpable."""
+        try:
+            return {
+                "identificacion": campos.cedula(
+                    conductor.get("identificacion"), "conductor.identificacion"
+                ),
+                "nombres": campos.nombre(conductor.get("nombres"), "conductor.nombres"),
+                "apellidos": campos.nombre(conductor.get("apellidos"), "conductor.apellidos"),
+                "genero": campos.de_catalogo(
+                    conductor.get("genero"), "conductor.genero", self.GENEROS, requerido=False
+                ),
+                "tipolicencia": conductor.get("tipolicencia") or None,
+                "estadolicencia": campos.de_catalogo(
+                    conductor.get("estadolicencia"),
+                    "conductor.estadolicencia",
+                    self.ESTADOS_LICENCIA,
+                    requerido=False,
+                ),
+                "ciudadresidencia": campos.nombre(
+                    conductor.get("ciudadresidencia"),
+                    "conductor.ciudadresidencia",
+                    requerido=False,
+                ),
+                "aniosexperiencia": campos.entero(
+                    conductor.get("aniosexperiencia"),
+                    "conductor.aniosexperiencia",
+                    minimo=0,
+                    maximo=80,
+                ),
+            }
+        except campos.CampoInvalido as exc:
+            raise ValueError(str(exc)) from exc
 
     def desactivar(
         self, *, idaccidente: str, idconductoraccidente: int, idusuario: int

@@ -140,26 +140,9 @@
           }
           @default {
             @if (idPantalla() === 'consumo') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['clase_resultado']) + texto(fila['codigo_http'])) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">
-                        {{ texto(fila['clase_resultado']) }} · {{ texto(fila['codigo_http']) }}
-                      </span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ num(fila['llamadas']) | number }} · {{ pct(num(fila['pct'])) }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="(num(fila['pct']) ?? 0) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasConsumo()" formato="porcentaje" [maximo]="100" />
+              </div>
             }
             @if (idPantalla() === 'incorporacion') {
               <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
@@ -174,27 +157,9 @@
               </ul>
             }
             @if (idPantalla() === 'entrega') {
-              @let maxExp = maxDe(cargaVisual().data, 'expedientes');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['cliente']) + texto(fila['canal'])) {
-                  <li data-testid="fila-canal">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">
-                        {{ etiquetaCanal(fila) }}
-                      </span>
-                      <span class="font-semibold text-text-primary">
-                        {{ num(fila['expedientes']) | number }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['expedientes']) ?? 0) / maxExp) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="fila-canal">
+                <app-bar-chart [datos]="barrasEntrega()" />
+              </div>
             }
           }
         }

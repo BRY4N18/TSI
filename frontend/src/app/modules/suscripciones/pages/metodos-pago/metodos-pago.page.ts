@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -13,7 +14,7 @@ import {
   LIST_TABLE_TD_PRIMARY_CLASS,
   LIST_TABLE_TH_CLASS,
 } from '../../../../shared/ui/list-states/list-table.styles';
-import { MetodoPago, TipoMetodoPago } from '../../services/models/suscripciones.types';
+import { MetodoPago } from '../../services/models/suscripciones.types';
 import { MetodoPagoApiService } from '../../services/metodo-pago-api.service';
 import { billingBadge } from '../../billing-ui';
 
@@ -23,6 +24,7 @@ import { billingBadge } from '../../billing-ui';
   imports: [
     CommonModule,
     FormsModule,
+    TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
     ListEmptyStateComponent,
@@ -46,9 +48,78 @@ export class MetodosPagoPage implements OnInit {
   readonly message = signal<string | null>(null);
   readonly busy = signal(false);
 
-  tipo: TipoMetodoPago = 'tarjeta';
-  numero = '';
-  fechaexpiracion = '';
+  // Estado del Modal de registro
+  readonly modalAbierto = signal(false);
+
+  // Campos del formulario exclusivo de Tarjeta
+  numeroTarjeta = '';
+  fechaExpiracion = '';
+  cvv = '';
+  titular = '';
+
+  // Validaciones en tiempo real
+  readonly numeroLimpio = computed(() => this.numeroTarjeta.replace(/\D/g, ''));
+  readonly numeroValido = computed(() => {
+    const digitos = this.numeroLimpio();
+    return digitos.length >= 13 && digitos.length <= 19;
+  });
+
+  readonly expiracionValida = computed(() => {
+    const exp = this.fechaExpiracion.trim();
+    const match = exp.match(/^(\d{2})\/(\d{2})$/);
+    if (!match) return false;
+    const mes = parseInt(match[1], 10);
+    return mes >= 1 && mes <= 12;
+  });
+
+  readonly cvvValido = computed(() => {
+    const c = this.cvv.trim();
+    return /^\d{3,4}$/.test(c);
+  });
+
+  readonly formularioValido = computed(() => {
+    return this.numeroValido() && this.expiracionValida() && this.cvvValido();
+  });
+
+  onNumeroInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digitos = input.value.replace(/\D/g, '').slice(0, 19);
+    const grupos = digitos.match(/.{1,4}/g);
+    this.numeroTarjeta = grupos ? grupos.join(' ') : digitos;
+    input.value = this.numeroTarjeta;
+  }
+
+  onExpiracionInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/[^\d/]/g, '');
+    if (val.length === 2 && !val.includes('/') && (event as InputEvent).inputType !== 'deleteContentBackward') {
+      val = val + '/';
+    }
+    val = val.slice(0, 5);
+    this.fechaExpiracion = val;
+    input.value = val;
+  }
+
+  onCvvInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value.replace(/\D/g, '').slice(0, 4);
+    this.cvv = val;
+    input.value = val;
+  }
+
+  abrirModal(): void {
+    this.numeroTarjeta = '';
+    this.fechaExpiracion = '';
+    this.cvv = '';
+    this.titular = '';
+    this.modalAbierto.set(true);
+  }
+
+  cerrarModal(): void {
+    if (!this.busy()) {
+      this.modalAbierto.set(false);
+    }
+  }
 
   /**
    * `fechaexpiracion` viaja como epoch en milisegundos porque la columna de
@@ -93,29 +164,32 @@ export class MetodosPagoPage implements OnInit {
   }
 
   registrar(): void {
+    if (!this.formularioValido()) return;
+
     this.busy.set(true);
     this.message.set(null);
     this.api
       .registrar(
         {
-          tipo: this.tipo,
+          tipo: 'tarjeta',
           datos_pasarela: {
-            numero: this.numero,
-            fechaexpiracion: this.fechaexpiracion || undefined,
+            numero: this.numeroLimpio(),
+            fechaexpiracion: this.fechaExpiracion || undefined,
+            cvv: this.cvv,
+            titular: this.titular.trim() || undefined,
           },
         },
         crypto.randomUUID(),
       )
       .subscribe({
         next: () => {
-          this.message.set('Método registrado. El PAN no se almacena; solo token y últimos dígitos.');
-          this.numero = '';
-          this.fechaexpiracion = '';
+          this.message.set('Tarjeta registrada exitosamente. Los datos sensibles se tokenizan; no se persiste el número completo.');
           this.busy.set(false);
+          this.modalAbierto.set(false);
           this.cargar();
         },
         error: (err) => {
-          this.message.set(err?.error?.detail ?? 'No se pudo registrar el método.');
+          this.message.set(err?.error?.detail ?? 'No se pudo registrar la tarjeta.');
           this.busy.set(false);
         },
       });

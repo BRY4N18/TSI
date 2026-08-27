@@ -4,11 +4,10 @@
       <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Configuración de SLA</h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
       <p class="m-0 mt-1 text-sm text-text-secondary">
-        Reglas de tiempo de respuesta y resolución por plan, tipo y prioridad (CU-O97).
+        Reglas de tiempo de respuesta y resolución por plan, tipo y prioridad.
       </p>
     </div>
     <button type="button" class="tsi-btn tsi-btn-secondary" [disabled]="cargando()" (click)="cargar()">
-      <app-tabler-icon name="refresh" [size]="16" />
       Actualizar
     </button>
   </header>
@@ -41,7 +40,9 @@
           @for (r of reglas(); track r.idslaconfig) {
             <tr [class]="listRowClass">
               <td [class]="listTableTdPrimaryClass + ' font-mono'">{{ r.idslaconfig }}</td>
-              <td [class]="listTableTdClass">{{ r.idplan }}</td>
+              <td [class]="listTableTdClass">
+                <span class="font-medium text-text-primary">{{ nombrePlan(r.idplan) }}</span>
+              </td>
               <td [class]="listTableTdClass">{{ r.tipoincidencia }}</td>
               <td [class]="listTableTdClass">
                 <span class="tsi-badge tsi-badge-neutral">{{ r.prioridad }}</span>
@@ -79,7 +80,7 @@
             <dl class="grid gap-1 text-sm">
               <div class="flex justify-between gap-2">
                 <dt class="text-text-secondary">Plan</dt>
-                <dd class="font-medium text-text-primary">{{ r.idplan }}</dd>
+                <dd class="font-medium text-text-primary">{{ nombrePlan(r.idplan) }}</dd>
               </div>
               <div class="flex justify-between gap-2">
                 <dt class="text-text-secondary">Tipo</dt>
@@ -108,10 +109,19 @@
     <h2 class="tsi-display m-0 mb-4 text-base font-semibold text-text-primary">Nueva regla</h2>
     <form class="grid gap-3" (ngSubmit)="crear()">
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        Plan (ID)
-        <input class="tsi-input" type="number" name="idplan" [(ngModel)]="idplan"
-          placeholder="ID numérico del plan"
-        />
+        Plan
+        <select class="tsi-select" name="idplan" [(ngModel)]="idplan">
+          @if (planes().length > 0) {
+            @for (p of planes(); track p.idplan) {
+              <option [ngValue]="p.idplan">{{ p.nombre }} (#{{ p.idplan }})</option>
+            }
+          } @else {
+            <option [ngValue]="1">Básico (#1)</option>
+            <option [ngValue]="2">Estándar (#2)</option>
+            <option [ngValue]="3">Empresarial (#3)</option>
+            <option [ngValue]="4">Premium (#4)</option>
+          }
+        </select>
       </label>
       <label class="grid gap-1 text-sm font-medium text-text-secondary">
         Tipo de incidencia

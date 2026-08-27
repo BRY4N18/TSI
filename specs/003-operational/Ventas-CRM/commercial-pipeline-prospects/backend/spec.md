@@ -266,16 +266,44 @@ No se exige que ya exista una fila `Ganado` previa: la conversión es atómica.
 
 **Comportamiento (transacción lógica única):**
 1. INSERT `Fact_Pipeline` con `etapa_nueva='Ganado'`.
-2. INSERT `Dim_Cliente` con:
+2. **Provisión del administrador local y sus credenciales** (ver corrección 2026-08-26 abajo): crea
+   `Dim_Usuarios` con la identidad del contacto del prospecto (`nombres`, `apellidos`, `gmail`),
+   su `Dim_Credencial` temporal (`estadocredencial='Cambio contraseña'`) y el rol `Cliente` en
+   `Dim_Usuario_Rol` — mismo mecanismo que RF-CPP-007 y que `autorregistro-proveedor`.
+   - Si el `gmail` **ya existe** en `Dim_Usuarios`, se reutiliza ese usuario y **no** se emite clave
+     nueva: el contacto pudo autorregistrarse antes de que Ventas cerrara el trato, y pisarle la
+     contraseña a alguien que ya entra sería peor que no avisarle.
+   - Si el prospecto no tiene `gmail` (dato que `RegistrarProspectoService` exige, pero que puede
+     faltar en registros antiguos), la conversión **no se cae**: la cuenta se crea sin admin local,
+     se registra `conversion_prospecto_sin_gmail` en el log y queda para asignar a mano.
+3. INSERT `Dim_Cliente` con:
    - `idprospecto` = FK al prospecto
    - `nombre` = concatenación `nombres + ' ' + apellidos`
    - `razon_social` = `empresa`
    - `tipo` = valor **explícito** del request, restringido a `Proveedor` \| `Aseguradora` \| `Municipio` \| `Smart City` (sugerencia UI: `'Público'`→`Municipio`, `'Privado'`→`Aseguradora`; no se fuerza)
    - `nit_identificacion` = valor **obligatorio del request** (no existe en `Dim_Prospecto`)
    - `estado='Activo'`, `estado_onboarding='Pendiente'`
-   - `plan_suscripcion`, `logo_url`, `admin_local_id` en valor inicial vacío/NULL según permita el modelo; formalización en Cuentas-Clientes
+   - `admin_local_id` = id del usuario del paso 2
+   - `plan_suscripcion`, `logo_url` en valor inicial vacío/NULL; formalización en Cuentas-Clientes
    - `fecha_inicio_contrato=now`
-3. UPDATE `Dim_Prospecto`: `activo=false`, `motivo_inactividad='convertido'`, `etapa_actual='Ganado'`.
+4. UPDATE `Dim_Prospecto`: `activo=false`, `motivo_inactividad='convertido'`, `etapa_actual='Ganado'`.
+5. **Envío de la invitación con credenciales**, y su resultado viaja en la respuesta:
+   `invitacion_enviada` (BOOLEAN) y, cuando es `false`, `invitacion_error` con el texto para la UI.
+
+**Corrección 2026-08-26 (revisión de calidad 24/08/2026, hallazgo #15):** hasta esta fecha la
+conversión creaba `Dim_Cliente` con `admin_local_id=NULL` y ahí terminaba — sin usuario, sin
+contraseña temporal y sin correo. El prospecto pasaba a cliente y **no recibía nada con qué
+entrar**: ese es el síntoma reportado, "no llega el correo con las credenciales… cuando pasas de
+un prospecto a un cliente".
+
+Es exactamente el mismo defecto que RF-CPP-007 corrigió el 2026-08-08 ("creaba `Dim_Cliente` con
+`admin_local_id=NULL` y ningún acceso, dejando la cuenta huérfana"), y se resuelve replicando ese
+camino. La redacción anterior de este RF —`admin_local_id` vacío, "formalización en
+Cuentas-Clientes"— queda **superada**: no había ninguna otra vía que formalizara ese acceso.
+
+El resultado del envío **no se traga**. Una cuenta creada cuyo correo de bienvenida falló es una
+cuenta sin acceso; si nadie lo ve, nadie la rescata. Mismo criterio que `RegistroUnidadService`,
+que ya reportaba `invitacion_error` con "Use Reenviar".
 
 **Errores:** rechazar si `activo=false`, si `etapa_actual ≠ 'Negociación'`, si falta `tipo` **o** no pertenece a `{Proveedor, Aseguradora, Municipio, Smart City}`, si falta `nit_identificacion`, si ya existe cualquier `Dim_Cliente` con el mismo `nit_identificacion` (RN-CPP-010), o si la `etapa_actual` esperada no coincide (RN-CPP-011). La validación de `tipo` (presencia + enum) y la de NIT son errores independientes con mensajes propios — no deben compartir el mismo mensaje de error.
 
@@ -289,6 +317,66 @@ No se exige que ya exista una fila `Ganado` previa: la conversión es atómica.
 - No crea filas en `Dim_Prospecto`, `Fact_Asignacion` ni `Fact_Pipeline`.
 - **Error:** rechazar si falta `tipo` o no pertenece a `{Proveedor, Aseguradora, Municipio, Smart City}` (mismo enum que RF-CPP-006); rechazar si `nit_identificacion` ya existe en cualquier `Dim_Cliente` (RN-CPP-010); rechazar si falta `admin_local` (`nombres`, `apellidos`, `gmail`) o si el `gmail` ya está registrado en `Dim_Usuarios`.
 - Reporting: métricas de conversión de embudo deben filtrar `idprospecto IS NOT NULL`.
+
+### RF-CPP-000b — El portal público habla el idioma del visitante, no el del sistema
+
+Correcciones al catálogo público tras la revisión del 24/08/2026 (hallazgos #1 y #2).
+
+**Hallazgo #1 — la primera pantalla.** «La información mostrada en la primera pantalla del sistema
+es un poco confusa; para captar nuevos usuarios es muy importante la primera información que se
+lee». El encabezado describía la plataforma en su propio vocabulario —"planes según la severidad
+que tu flota puede atender"—: decía **qué es**, no **qué resuelve**, y "severidad" solo significa
+algo para quien ya usa el sistema. Ahora se nombra el problema y el resultado, se dice a quién va
+dirigido, y se añade un **«Cómo funciona» en tres pasos** antes de los precios: sin entender el
+ciclo, los planes no significan nada.
+
+**Hallazgo #2 — la elección de plan.** «El cliente debería tener un poco más de información de por
+qué tal plan le resulta mejor… puede haber términos que un cliente nuevo no entienda». Tres
+cambios:
+
+1. El término **severidad se explica una vez**, antes de que aparezca en las tarjetas, con ejemplos
+   reales de cada nivel en lugar de la etiqueta suelta.
+2. Cada tarjeta abre con **qué puedes atender** en una frase («Tu flota puede atender incidentes
+   leves y accidentes con heridos») y añade **para quién** es el plan, para que la elección no sea
+   solo por precio.
+3. Cada **límite se explica**: "Unidades máx." dice cuánto, no de qué — ahora acompaña "ambulancias,
+   grúas o patrullas que puedes tener dadas de alta".
+
+**⚠️ Defecto de datos corregido en el camino.** El tipo del cliente declaraba las severidades como
+`'Baja' | 'Media' | 'Alta'`, vocabulario **anterior** a la migración del 2026-08-11
+(`database/migra_severidades_plan_a_idseveridad.py`), mientras el backend resuelve los ids de
+`Dim_Severidad` y devuelve `Leve | Moderado | Grave | Fatal`. Nunca coincidían: el badge de color
+caía siempre al caso por defecto y **un plan que cubre siniestros fatales se pintaba en verde** en
+la página de ventas. Corregido a los cuatro nombres reales, con su color por nivel.
+
+**Pendiente de datos, no de código:** el plan *Básico* tiene `severidades_desbloqueadas` vacío en
+la base, así que la tarjeta muestra "Nivel por confirmar". Es un hueco de configuración de
+`Dim_Plan`, no un defecto de la pantalla.
+
+### RF-CPP-007b — Correcciones de la vista de detalle del prospecto (revisión 24/08/2026)
+
+Hallazgo #14: «en el apartado de ventas, los datos mostrados del prospecto no se
+actualizan». Se corrigieron dos causas distintas, ambas del lado del cliente:
+
+1. **El rastro no se mostraba.** `GET /prospectos/{id}` ya devuelve
+   `historial_pipeline` e `historial_asignacion` —lo exige RF-CPP-008— y la
+   pantalla los descartaba. No había forma de ver quién tuvo el prospecto ni por
+   qué etapas pasó, así que cada acción parecía no dejar huella. Ahora se pintan
+   ambos, del más reciente hacia atrás.
+
+2. **El rastro se alimenta de la respuesta, no de una relectura.** Las respuestas
+   de transición y asignación devuelven la fila de `Fact_Pipeline` /
+   `Fact_Asignacion` recién creada, y la pantalla la **añade** al historial en
+   memoria. Recargar del servidor sería peor: esas tablas se escriben por Kafka y
+   Pinot tarda en ingerirlas, así que un `GET` inmediato devolvería el historial
+   **sin** la fila que el usuario acaba de provocar.
+
+3. **`idusuario_esperado` se envía siempre.** Es el control de concurrencia
+   optimista de la reasignación (`data.get("idusuario_esperado") != owner` → `409`).
+   La pantalla no lo enviaba, de modo que el backend comparaba contra `None`: la
+   guarda quedaba **inerte** para el caso de huérfano y habría rechazado toda
+   reasignación de un prospecto con dueño. Deja de ser opcional en el contrato del
+   cliente.
 
 ### RF-CPP-008 — Consultar prospectos y pipeline
 

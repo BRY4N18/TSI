@@ -35,15 +35,6 @@
       </nav>
 
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-        <button
-          type="button"
-          class="tsi-btn tsi-btn-secondary tsi-btn-icon"
-          (click)="themeService.toggle()"
-          [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
-          [attr.aria-pressed]="themeService.isDark()"
-        >
-          <app-tabler-icon [name]="themeService.isDark() ? 'sun' : 'moon'" [size]="20" />
-        </button>
         <a
           routerLink="/cuentas-clientes/auth/login"
           class="tsi-btn tsi-btn-secondary no-underline"
@@ -72,9 +63,25 @@
       Una emergencia reportada. Una unidad en camino.
     </h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
+    <!--
+      Hallazgo #1: «la información mostrada en la primera pantalla es un poco
+      confusa; para captar nuevos usuarios es muy importante la primera
+      información que se lee».
+
+      El texto anterior describía la plataforma en su propio vocabulario
+      ("planes según la severidad que tu flota puede atender"): dice QUÉ ES,
+      no QUÉ RESUELVE, y "severidad" solo significa algo para quien ya usa el
+      sistema. Aquí se nombra el problema y el resultado; el vocabulario propio
+      se explica más abajo, cuando ya hace falta.
+    -->
     <p class="m-0 max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
-      Plataforma B2B para registrar accidentes, despachar unidades y dar seguimiento operativo —
-      con planes según la severidad que tu flota puede atender.
+      Cuando ocurre un accidente, cada minuto cuenta. TSI recibe el reporte, elige la unidad más
+      cercana que puede atenderlo y te deja seguir el caso hasta que se cierra — desde un solo
+      lugar y con el registro de todo lo que pasó.
+    </p>
+    <p class="m-0 max-w-2xl text-sm leading-relaxed text-text-secondary">
+      Para empresas que operan ambulancias, grúas o patrullas: aseguradoras, municipios y
+      proveedores de asistencia vial.
     </p>
     <div class="flex flex-wrap gap-3">
       <button
@@ -90,6 +97,33 @@
       >
         Solicitar demo
       </a>
+    </div>
+  </section>
+
+  <!-- Cómo funciona: tres pasos antes de hablar de precios. Un visitante nuevo
+       necesita entender el ciclo para que los planes signifiquen algo. -->
+  <section class="border-y border-border-default bg-bg-surface" aria-labelledby="como-title">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12">
+      <div class="grid max-w-2xl gap-2">
+        <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">
+          Cómo funciona
+        </p>
+        <h2 id="como-title" class="tsi-display m-0 text-2xl font-bold">De la llamada al cierre</h2>
+      </div>
+      <ol class="m-0 grid list-none gap-4 p-0 sm:grid-cols-3">
+        @for (paso of comoFunciona; track paso.titulo) {
+          <li class="grid gap-2 rounded-md border border-border-default bg-bg-page p-5">
+            <span
+              class="grid h-8 w-8 place-items-center rounded-full bg-accent-primary text-sm font-bold text-white"
+              aria-hidden="true"
+            >
+              {{ $index + 1 }}
+            </span>
+            <h3 class="tsi-display m-0 text-base font-semibold">{{ paso.titulo }}</h3>
+            <p class="m-0 text-sm leading-normal text-text-secondary">{{ paso.detalle }}</p>
+          </li>
+        }
+      </ol>
     </div>
   </section>
 
@@ -127,9 +161,40 @@
       <p class="m-0 text-xs font-medium uppercase tracking-wider text-accent-primary">Catálogo público</p>
       <h2 id="planes-title" class="tsi-display m-0 text-2xl font-bold">Planes de suscripción</h2>
       <p class="m-0 text-sm leading-normal text-text-secondary">
-        Precios, límites y severidades desbloqueadas. Sin iniciar sesión.
+        Precios y capacidad de cada plan. Sin iniciar sesión.
       </p>
     </div>
+
+    <!--
+      Hallazgo #2: el cliente veía "Severidades desbloqueadas: Alta, Media" sin
+      saber qué es una severidad ni por qué le cambia el precio. Se explica el
+      término UNA vez, aquí, antes de que aparezca en las tarjetas.
+    -->
+    <aside class="grid gap-3 rounded-md border border-border-default bg-bg-surface p-5">
+      <h3 class="tsi-display m-0 text-base font-semibold">
+        Qué determina el plan que necesitas
+      </h3>
+      <p class="m-0 text-sm leading-relaxed text-text-secondary">
+        No todos los accidentes exigen lo mismo. TSI los clasifica por gravedad y cada plan
+        habilita hasta qué nivel puede responder tu flota: cuanto más grave el caso, más
+        coordinación, unidades y tiempo de atención requiere.
+      </p>
+      <ul class="m-0 grid list-none gap-2 p-0 sm:grid-cols-3">
+        @for (s of nivelesSeveridad; track s) {
+          <li class="grid gap-1 rounded-sm border border-border-default p-3">
+            <span
+              class="w-fit rounded-sm px-2 py-1 text-xs font-medium"
+              [ngClass]="badgeClass(s)"
+            >
+              {{ explicacionSeveridad(s)?.titulo }}
+            </span>
+            <span class="text-xs leading-normal text-text-secondary">
+              {{ explicacionSeveridad(s)?.ejemplo }}
+            </span>
+          </li>
+        }
+      </ul>
+    </aside>
 
     @if (loading()) {
       <div class="grid gap-5 md:grid-cols-3" aria-busy="true" aria-label="Cargando planes">
@@ -212,19 +277,29 @@
 
             <p class="m-0 min-h-10 text-sm leading-normal text-text-secondary">{{ slogan(p) }}</p>
 
+            <!-- A quién le sirve, para que la elección no sea solo por precio. -->
+            @if (paraQuien(p)) {
+              <p class="m-0 rounded-sm bg-bg-page px-3 py-2 text-xs leading-normal text-text-secondary">
+                {{ paraQuien(p) }}
+              </p>
+            }
+
             <div class="grid gap-2.5 border-t border-border-default pt-3">
               <p class="m-0 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Severidades desbloqueadas
+                Qué puedes atender
               </p>
+              <!-- La frase primero, las etiquetas después: el cliente entiende
+                   antes de tener que descifrar el vocabulario (hallazgo #2). -->
+              <p class="m-0 text-sm leading-normal text-text-primary">{{ queAtiende(p) }}</p>
               <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
                 @if (p.severidades_desbloqueadas.length === 0) {
                   <li class="rounded-sm bg-alert-info-bg px-2 py-1 text-xs font-medium text-alert-info">
-                    Sin mapeo de severidad
+                    Nivel por confirmar
                   </li>
                 } @else {
                   @for (s of p.severidades_desbloqueadas; track s) {
                     <li class="rounded-sm px-2 py-1 text-xs font-medium" [ngClass]="badgeClass(s)">
-                      {{ s }}
+                      {{ explicacionSeveridad(s)?.titulo ?? s }}
                     </li>
                   }
                 }
@@ -237,9 +312,19 @@
               </p>
               <ul class="m-0 grid list-none gap-1.5 p-0">
                 @for (item of limitesComoLista(p.limites); track item.label) {
-                  <li class="flex items-baseline justify-between gap-4 py-1 text-sm leading-snug">
-                    <span class="text-text-secondary">{{ item.label }}</span>
-                    <span class="font-semibold tabular-nums text-text-primary">{{ item.value }}</span>
+                  <li class="grid gap-0.5 py-1 text-sm leading-snug">
+                    <span class="flex items-baseline justify-between gap-4">
+                      <span class="text-text-secondary">{{ item.label }}</span>
+                      <span class="font-semibold tabular-nums text-text-primary">
+                        {{ item.value }}
+                      </span>
+                    </span>
+                    <!-- Qué es ese límite, no solo cuánto vale. -->
+                    @if (ayudaLimite(item.clave)) {
+                      <span class="text-xs leading-normal text-text-secondary">
+                        {{ ayudaLimite(item.clave) }}
+                      </span>
+                    }
                   </li>
                 }
               </ul>

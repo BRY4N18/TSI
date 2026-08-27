@@ -19,7 +19,8 @@ function fillRequiredFields(component: RegistroAccidentePage): void {
     descripcion: 'Choque leve',
     idcalle: 5,
     codigopostal: '',
-    numvehiculos: 0,
+    // RN-REG-012: obligatorio y >= 1 (de aquí sale el tope de conductores).
+    numvehiculos: 2,
     numheridos: 0,
     numvictimas: 0,
     numfallecidos: 0,

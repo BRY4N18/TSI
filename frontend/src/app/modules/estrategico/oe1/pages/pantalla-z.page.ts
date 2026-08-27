@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-oe1.definiciones';
@@ -37,7 +38,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-oe1',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, FormsModule, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -80,6 +81,37 @@ export class PantallaZPage {
   });
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /** MRR por plan: los planes son categorías nominales. */
+  readonly barrasCartera = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: texto(f['plan']),
+      valor: num(f['mrr']),
+    })),
+  );
+
+  /** Orden real del pipeline (`pipeline-board.page.ts`) — el API no lo garantiza. */
+  private static readonly ORDEN_ETAPA = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación'];
+
+  /**
+   * Transiciones por etapa: ordinal, y por eso se ordena por la etapa REAL
+   * antes de pintarla — sin este `sort` la rampa cuenta el orden de llegada
+   * del API, no el avance real del pipeline.
+   */
+  readonly barrasCaptacion = computed<BarDatum[]>(() =>
+    [...this.cargaVisual().data]
+      .sort(
+        (a, b) =>
+          PantallaZPage.ORDEN_ETAPA.indexOf(texto(a['etapa'])) -
+          PantallaZPage.ORDEN_ETAPA.indexOf(texto(b['etapa'])),
+      )
+      .map((f) => ({
+        etiqueta: texto(f['etapa']),
+        valor: num(f['transiciones']),
+      })),
+  );
   readonly texto = texto;
 
   constructor() {
@@ -120,10 +152,6 @@ export class PantallaZPage {
     return `${(valor * 100).toFixed(1)} %`;
   }
 
-  maxDe(filas: Record<string, unknown>[], campo: string): number {
-    const vals = filas.map((f) => num(f[campo]) ?? 0);
-    return Math.max(1, ...vals);
-  }
 
   private emitirVista(desde: string, hasta: string): void {
     const vista: PeriodoVista = {

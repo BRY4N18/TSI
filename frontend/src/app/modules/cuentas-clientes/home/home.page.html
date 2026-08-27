@@ -1,4 +1,7 @@
 <div class="flex min-h-0 flex-1 flex-col gap-6 p-6 lg:p-8" data-testid="cuentas-home">
+  @if (accesoDenegado()) {
+    <p class="m-0 text-sm text-alert-critical" data-testid="acceso-denegado">{{ accesoDenegado() }}</p>
+  }
   <!-- La banda de convergencia: este es el nodo, y de aqui sale todo. Es la
        unica superficie de marca dentro de la aplicacion — hasta ahora solo la
        veia quien estaba sin sesion. -->
@@ -64,7 +67,7 @@
           <app-tabler-icon name="camera" [size]="20" />
         </span>
         <p class="m-0 font-semibold text-text-primary">Disponibilidad</p>
-        <p class="m-0 mt-1 text-sm text-text-secondary">Declarar disponibilidad (CU-O30)</p>
+        <p class="m-0 mt-1 text-sm text-text-secondary">Declarar disponibilidad de la unidad</p>
       </a>
     }
 

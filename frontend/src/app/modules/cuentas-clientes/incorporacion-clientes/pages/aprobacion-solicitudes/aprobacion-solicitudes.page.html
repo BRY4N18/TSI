@@ -14,7 +14,6 @@
       [disabled]="cargando"
       class="tsi-btn tsi-btn-secondary"
     >
-      <app-tabler-icon name="refresh" [size]="18" [class.animate-spin]="cargando" />
       {{ cargando ? 'Actualizando…' : 'Actualizar' }}
     </button>
   </header>
@@ -37,7 +36,6 @@
               [disabled]="procesando"
               class="tsi-btn tsi-btn-primary"
             >
-              <app-tabler-icon name="circle-check" [size]="18" />
               Aprobar
             </button>
             <button
@@ -46,7 +44,6 @@
               [disabled]="procesando"
               class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
             >
-              <app-tabler-icon name="alert-triangle" [size]="18" />
               Rechazar
             </button>
             <button
@@ -55,7 +52,6 @@
               [disabled]="procesando"
               class="tsi-btn tsi-btn-secondary"
             >
-              <app-tabler-icon name="refresh" [size]="18" />
               Reenviar invitación
             </button>
           </div>
@@ -92,7 +88,6 @@
             [disabled]="procesando"
             class="tsi-btn tsi-btn-secondary"
           >
-            <app-tabler-icon name="refresh" [size]="18" />
             Anular rechazo
           </button>
         </li>

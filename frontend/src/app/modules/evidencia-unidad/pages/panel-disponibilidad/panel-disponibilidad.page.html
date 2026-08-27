@@ -118,6 +118,54 @@
             </table>
           }
         </div>
+
+        <!--
+          Historial de SALIDAS. El de arriba solo cuenta cambios de estado
+          (Activa / En misión / Fuera de servicio): saber cuándo la unidad
+          estuvo disponible no dice a qué acudió, que es lo que la revisión
+          echó en falta (hallazgo #13).
+        -->
+        <h2 class="tsi-display m-0 mb-4 mt-8 text-sm font-semibold text-text-primary">
+          Historial de despachos
+        </h2>
+        <div>
+          @if (despachosLoading()) {
+            <div class="h-16 animate-pulse rounded-md bg-bg-page" data-testid="despachos-loading"></div>
+          } @else if (despachosError()) {
+            <p class="m-0 text-sm text-alert-critical" data-testid="despachos-error">
+              {{ despachosError() }}
+            </p>
+          } @else if (despachos().length === 0) {
+            <p class="m-0 text-sm text-text-secondary">Esta unidad aún no ha sido despachada.</p>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[26rem] text-left text-sm" data-testid="despachos-tabla">
+                <thead>
+                  <tr class="text-xs text-text-secondary">
+                    <th class="pb-2 font-medium">Caso</th>
+                    <th class="pb-2 font-medium">Despachada</th>
+                    <th class="pb-2 font-medium">Llegada</th>
+                    <th class="pb-2 font-medium">Situación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (d of despachos(); track d.iddespacho) {
+                    <tr class="border-t border-border-default">
+                      <td class="py-2 font-medium text-text-primary">{{ d.idaccidente }}</td>
+                      <td class="py-2 text-text-secondary">
+                        {{ d.fechahoradespacho | date: 'short' }}
+                      </td>
+                      <td class="py-2 text-text-secondary">
+                        {{ d.fechahorallegada ? (d.fechahorallegada | date: 'short') : '—' }}
+                      </td>
+                      <td class="py-2 text-text-secondary">{{ d.fase }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
       </section>
     </div>
   }

@@ -295,6 +295,52 @@ Ante detección de posible duplicado, el sistema preselecciona como caso padre e
 
 El escalamiento de severidad en sitio solo puede ser ejecutado por una **Unidad de emergencia** con un despacho activo y confirmado para ese accidente, cuando el caso está en estado **ASIGNADO** o **EN_ATENCIÓN**. No modifica el estado del caso.
 
+### RN-REG-012 — `numvehiculos` es obligatorio y ≥ 1
+
+Un accidente de tránsito involucra al menos un vehículo, y ese número **no es
+informativo**: es el tope de conductores/vehículos que la unidad puede
+enriquecer en el sitio (RN-EVI-022, módulo `evidencia-unidad`).
+
+Origen (revisión de calidad 24/08/2026, hallazgo #8): el campo era opcional y
+llegaba en `0`, así que el tope quedaba en cero y la unidad **no podía registrar
+ni un solo conductor**; con `1` solo cabía uno aunque el siniestro tuviera varios
+implicados. La revisora lo describió como "no se debería de poder agregar solo la
+información de cómo se encontraba un solo conductor, sino que dependiendo de
+quienes estaban conduciendo los medios de transporte involucrados".
+
+El rechazo es bloqueante (`400`) y explica la consecuencia, no solo la falta:
+«Indique cuántos vehículos están involucrados (al menos 1). De ese número depende
+cuántos conductores puede registrar la unidad en el sitio.»
+
+### RN-SEV-COHERENCIA — La severidad declarada debe sostenerse con las víctimas registradas
+
+`idseveridad` no es un dato declarativo libre: tiene que ser coherente con `numheridos` y
+`numfallecidos`. Se define un **piso mínimo de severidad** derivable de los conteos:
+
+| Condición | Severidad mínima exigible | Efecto |
+|---|---|---|
+| `numfallecidos ≥ 1` | 4 Fatal | **Bloqueante** |
+| `numheridos ≥ 5` | 3 Grave | **Bloqueante** |
+| `numheridos ≥ 1` | 2 Moderado | Advertencia |
+| `idseveridad = 4` con `numfallecidos = 0` | — | Advertencia |
+
+Los dos niveles son deliberados y reutilizan el mecanismo que ya tiene
+`ValidacionAccidenteService`: **bloqueante** cuando el dato contradice frontalmente lo declarado,
+**advertencia** —que el Operador confirma y sigue— cuando es sospechoso pero puede ser legítimo
+(un solo herido puede ser un rasguño; daños catastróficos sin heridos existen).
+
+La regla **no adivina** la severidad ni la sobrescribe: quien registra sigue decidiendo, solo que
+ahora tiene que sostener su decisión.
+
+Se aplica en **los dos** puntos de entrada: el registro inicial (CU-O56) y el escalamiento en sitio
+(CU-O73, RN-REG-011). Implementación única en `apps/accidentes/severidad_coherencia.py`; el
+catálogo canónico de severidades es `Dim_Severidad` (el id **es** el nivel, orden ascendente).
+
+Origen (revisión de calidad 24/08/2026, hallazgo #4): el sistema aceptaba un accidente con 200
+heridos marcado como *Leve*. Como la severidad gobierna el despacho, un "Leve" mal elegido manda
+la unidad equivocada. Que existiera "Escalar severidad" no cubría el hueco: escalar corrige
+*después*, cuando la unidad ya llegó al sitio — y esa es precisamente la llamada que se decidió mal.
+
 ## 7. Entradas
 
 ### Para registro de accidente (CU-O56)

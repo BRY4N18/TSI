@@ -4,10 +4,8 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  Injector,
   OnDestroy,
   ViewChild,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -17,7 +15,6 @@ import { TablerIconComponent, TablerIconName } from '../../../../shared/ui/icon/
 import { capasDeRuta, nodoPin, unidadPin } from '../../../../shared/ui/map/map-pins';
 import { SEVERIDAD_INFO } from '../../../accidentes/severidad.constants';
 import { RutaService } from '../../../../shared/services/ruta.service';
-import { ThemeService } from '../../../../shared/theme/theme.service';
 import { crearTileLayer } from '../../../../shared/ui/map/map-tile';
 import { SeguimientoApiService } from '../../services/seguimiento-api.service';
 import { SeguimientoSseService } from '../../services/seguimiento-sse.service';
@@ -160,8 +157,6 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
   private readonly sse = inject(SeguimientoSseService);
   private readonly rutaService = inject(RutaService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly themeService = inject(ThemeService);
-  private readonly injector = inject(Injector);
 
   @ViewChild('mapContainer', { static: true }) private readonly mapContainer!: ElementRef<HTMLDivElement>;
 
@@ -177,22 +172,10 @@ export class MapaSeguimientoPage implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapContainer.nativeElement, { zoomControl: false }).setView(DEFAULT_CENTER, 12);
-    this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
+    this.tileLayer = crearTileLayer().addTo(this.map);
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
     // Tras layout flex del shell, el contenedor a veces mide 0 al primer paint.
     queueMicrotask(() => this.map?.invalidateSize());
-
-    effect(
-      () => {
-        const isDark = this.themeService.isDark();
-        if (!this.map) {
-          return;
-        }
-        this.tileLayer?.remove();
-        this.tileLayer = crearTileLayer(isDark).addTo(this.map);
-      },
-      { injector: this.injector },
-    );
 
     this.cargar();
     this.conectarSse();

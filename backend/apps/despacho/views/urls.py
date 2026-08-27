@@ -10,6 +10,7 @@ from apps.despacho.views.disponibilidad_views import (
     MiDisponibilidadView,
     UnidadDisponibilidadView,
     UnidadesEmergenciaListView,
+    UnidadHistorialDespachosView,
     UnidadHistorialEstadoView,
 )
 from apps.despacho.views.mi_despacho_views import (
@@ -34,6 +35,11 @@ urlpatterns = [
     path(
         "unidades-emergencia/<int:idunidademergencia>/historial-estado",
         UnidadHistorialEstadoView.as_view(),
+    ),
+    path(
+        "unidades-emergencia/<int:idunidademergencia>/historial-despachos",
+        UnidadHistorialDespachosView.as_view(),
+        name="despacho-unidad-historial-despachos",
     ),
     path("mi-despacho/pendientes", MiDespachoPendientesView.as_view()),
     path("mi-despacho/<int:idnotificaciondespacho>", MiDespachoDetalleView.as_view()),

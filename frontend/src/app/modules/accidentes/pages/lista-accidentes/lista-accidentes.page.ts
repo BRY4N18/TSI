@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 
+import { CaseCardComponent } from '../../../../shared/ui/case-card/case-card.component';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
 import { ListaSeleccionStorage } from '../../lista-seleccion.storage';
@@ -21,7 +22,7 @@ import { ESTADOS, EstadoInfo, estadoInfo as estadoInfoOf } from '../../estado.co
 @Component({
   selector: 'app-lista-accidentes',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, TablerIconComponent, DatePipe],
+  imports: [RouterLink, ReactiveFormsModule, TablerIconComponent, CaseCardComponent, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './lista-accidentes.page.html',
 })
@@ -116,20 +117,6 @@ export class ListaAccidentesPage implements OnInit {
 
   esSeleccionado(idaccidente: string): boolean {
     return this.selectedId() === idaccidente;
-  }
-
-  filaSeleccionadaClass(idaccidente: string): string {
-    const base = 'border-b border-border-default last:border-b-0';
-    return this.esSeleccionado(idaccidente)
-      ? `${base} bg-accent-primary/10 border-l-4 border-l-accent-primary`
-      : base;
-  }
-
-  cardSeleccionadaClass(idaccidente: string): string {
-    const base = 'rounded-md border border-border-default bg-bg-surface p-4';
-    return this.esSeleccionado(idaccidente)
-      ? `${base} bg-accent-primary/10 border-l-4 border-l-accent-primary`
-      : base;
   }
 
   abrirCaso(idaccidente: string, focus: 'view' | 'edit' = 'view'): void {

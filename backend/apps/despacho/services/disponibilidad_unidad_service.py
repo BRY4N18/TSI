@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from core.repositories.despacho.despacho_repository import DespachoRepository
 from core.repositories.despacho.geografia_repository import GeografiaRepository
 from core.repositories.despacho.historial_estado_unidad_repository import (
     ESTADO_ACTIVA,
@@ -19,10 +20,12 @@ class DisponibilidadUnidadService:
         historial_repo: HistorialEstadoUnidadRepository | None = None,
         unidad_repo: UnidadEmergenciaRepository | None = None,
         geografia_repo: GeografiaRepository | None = None,
+        despacho_repo: DespachoRepository | None = None,
     ):
         self.historial_repo = historial_repo or HistorialEstadoUnidadRepository()
         self.unidad_repo = unidad_repo or UnidadEmergenciaRepository()
         self.geografia_repo = geografia_repo or GeografiaRepository()
+        self.despacho_repo = despacho_repo or DespachoRepository()
 
     @staticmethod
     def incluido_en_despacho(estado_actual: str) -> bool:
@@ -131,3 +134,52 @@ class DisponibilidadUnidadService:
             for r in rows
         ]
         return items, next_cursor
+
+    def listar_historial_despachos(
+        self,
+        idunidademergencia: int,
+        *,
+        limit: int = 20,
+        cursor: int | None = None,
+    ) -> tuple[list[dict], int | None]:
+        """Despachos que ha atendido la unidad, del más reciente hacia atrás.
+
+        Complementa `listar_historial`, que solo cuenta cambios de estado
+        (Activa / En misión / Fuera de servicio). Saber cuándo una unidad estuvo
+        disponible no dice **a qué acudió**, y eso es lo que la revisión del
+        24/08/2026 echó en falta (hallazgo #13).
+
+        Cada fila trae la fase alcanzada —despachada, en sitio, retirada— para
+        que se lea de un vistazo cómo terminó cada salida.
+        """
+        self._resolve_unidad(idunidademergencia)
+        rows, next_cursor = self.despacho_repo.list_historial_by_unidad(
+            idunidademergencia, limit=limit, cursor=cursor
+        )
+        items = [
+            {
+                "iddespacho": r.get("iddespacho"),
+                "idaccidente": r.get("idaccidente"),
+                "fechahoradespacho": r.get("fechahoradespacho"),
+                "fechahorallegada": r.get("fechahorallegada"),
+                "fechahoraretiro": r.get("fechahoraretiro"),
+                "retiro_forzado": bool(r.get("retiro_forzado")),
+                "activo": bool(r.get("activo")),
+                "fase": self._fase_despacho(r),
+            }
+            for r in rows
+        ]
+        return items, next_cursor
+
+    @staticmethod
+    def _fase_despacho(despacho: dict) -> str:
+        """Fase alcanzada, derivada de los sellos de tiempo del propio despacho.
+
+        Se deriva aquí y no en el cliente para que la lista y cualquier informe
+        futuro cuenten la misma historia.
+        """
+        if despacho.get("fechahoraretiro"):
+            return "Retiro forzado" if despacho.get("retiro_forzado") else "Retirada"
+        if despacho.get("fechahorallegada"):
+            return "En sitio"
+        return "En camino" if despacho.get("activo") else "Sin llegada registrada"

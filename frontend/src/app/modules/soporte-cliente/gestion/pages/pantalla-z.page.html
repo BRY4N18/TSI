@@ -191,59 +191,19 @@
           }
           @default {
             @if (idPantalla() === 'cumplimiento') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['plan']) || 'sin plan' }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ pct(num(fila['pct_cumplimiento'])) }}
-                        · {{ pct(num(fila['pct_sin_compromiso'])) }} sin compromiso
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="num(fila['pct_cumplimiento']) ?? 0"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasCumplimiento()" formato="porcentaje" [maximo]="100" />
+              </div>
             }
             @if (idPantalla() === 'cola') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li class="flex items-center justify-between gap-2 text-sm" data-testid="punto-evolucion">
-                    <span class="text-text-secondary">{{ texto(fila['periodo']) }}</span>
-                    <span class="font-semibold tabular-nums text-text-primary">
-                      {{ num(fila['tickets']) | number }} tickets ·
-                      {{ num(fila['incumplidos']) | number }} incumplidos
-                    </span>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="punto-evolucion">
+                <app-line-chart [etiquetas]="etiquetasCola()" [series]="seriesCola()" />
+              </div>
             }
             @if (idPantalla() === 'tendencias') {
-              @let maxCreados = maxDe(cargaVisual().data, 'creados');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['dia'])) {
-                  <li data-testid="dia-carga">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['dia']) }}</span>
-                      <span class="font-semibold text-text-primary">
-                        {{ num(fila['creados']) | number }} / {{ num(fila['resueltos']) | number }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['creados']) ?? 0) / maxCreados) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="dia-carga">
+                <app-line-chart [etiquetas]="etiquetasTendencias()" [series]="seriesTendencias()" />
+              </div>
             }
           }
         }

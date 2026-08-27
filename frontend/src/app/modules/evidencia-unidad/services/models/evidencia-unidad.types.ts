@@ -151,6 +151,23 @@ export interface HistorialEstadoUnidadItem extends HistorialEstadoUnidadData {
   idusuario: number;
 }
 
+/**
+ * Una salida de la unidad. Rastro de a QUÉ acudió, no solo de cuándo estuvo
+ * disponible — que es lo único que contaba `HistorialEstadoUnidadItem`
+ * (hallazgo #13).
+ */
+export interface HistorialDespachoUnidadItem {
+  iddespacho: number;
+  idaccidente: string;
+  fechahoradespacho: number | null;
+  fechahorallegada: number | null;
+  fechahoraretiro: number | null;
+  retiro_forzado: boolean;
+  activo: boolean;
+  /** Fase alcanzada, derivada en el backend para que todos la cuenten igual. */
+  fase: string;
+}
+
 export interface UnidadEmergenciaResumen {
   idunidademergencia: number;
   nombre?: string;

@@ -9,6 +9,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from django.conf import settings
+from django.template.loader import render_to_string
+
 from core.notificaciones.email_sender import EmailNotificationSender, EmailSendError
 from core.repositories.cuentas_clientes.role_repository import RoleRepository
 from core.repositories.cuentas_clientes.user_repository import UserRepository
@@ -42,11 +45,31 @@ class AlertaAdminService:
             return 0
 
         subject = f"[TSI] Sin unidades disponibles — {idaccidente}"
+        url_caso = f"{settings.CONSOLA_BASE_URL}/despacho/monitoreo/{idaccidente}"
+        # El texto plano se conserva como parte `text/plain` del multipart:
+        # es lo que ve quien tiene el HTML desactivado y lo que queda si un
+        # filtro lo elimina. No es un respaldo del que se pueda prescindir.
         body = (
             f"Alerta crítica de despacho ({contexto}).\n"
             f"Accidente: {idaccidente}\n"
             "No hay unidades candidatas. Se requiere intervención manual.\n"
+            f"Ver el caso: {url_caso}\n"
         )
+        # Fail-open, igual que el resto del servicio: si la plantilla fallara,
+        # el aviso debe salir igual en texto plano. Una alerta crítica que no
+        # se envía porque no se pudo maquetar sería el peor resultado posible.
+        try:
+            html_body: str | None = render_to_string(
+                "emails/alerta_critica_despacho.html",
+                {"idaccidente": idaccidente, "contexto": contexto, "url_caso": url_caso},
+            )
+        except Exception:  # noqa: BLE001 — fail-open
+            logger.exception(
+                "alerta_admin_render_failed",
+                extra={"idaccidente": idaccidente, "contexto": contexto},
+            )
+            html_body = None
+
         enviados = 0
         for admin in admins:
             gmail = admin.get("gmail")
@@ -59,6 +82,7 @@ class AlertaAdminService:
                     gmail=str(gmail),
                     subject=subject,
                     body=body,
+                    html_body=html_body,
                 )
                 enviados += 1
             except EmailSendError:

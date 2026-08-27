@@ -68,11 +68,11 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
         etiqueta: 'Cupo minuto',
         formato: 'numero',
         alineacion: 'derecha',
-        soloEscritorio: true,
+        soloDetalle: true,
       },
-      { campo: 'contacto_tecnico', etiqueta: 'Contacto', soloEscritorio: true },
-      { campo: 'fecha_suspension', etiqueta: 'Suspendido', formato: 'fecha_hora', soloEscritorio: true },
-      { campo: 'motivo_suspension', etiqueta: 'Motivo de suspensión' },
+      { campo: 'contacto_tecnico', etiqueta: 'Contacto', soloDetalle: true },
+      { campo: 'fecha_suspension', etiqueta: 'Suspendido', formato: 'fecha_hora', soloDetalle: true },
+      { campo: 'motivo_suspension', etiqueta: 'Motivo de suspensión', soloDetalle: true },
     ],
     filtros: [
       {
@@ -95,9 +95,9 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
       { campo: 'nombre_credencial', etiqueta: 'Credencial', principal: true },
       { campo: 'entorno', etiqueta: 'Entorno', formato: 'enumeracion' },
       { campo: 'activa', etiqueta: 'Activa', formato: 'booleano' },
-      { campo: 'fecha_creacion', etiqueta: 'Creada', formato: 'fecha_hora', soloEscritorio: true },
+      { campo: 'fecha_creacion', etiqueta: 'Creada', formato: 'fecha_hora', soloDetalle: true },
       { campo: 'fecha_expiracion', etiqueta: 'Expira', formato: 'fecha_hora' },
-      { campo: 'dias_para_caducar', etiqueta: 'Días', formato: 'numero', alineacion: 'derecha' },
+      { campo: 'dias_para_caducar', etiqueta: 'Días', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
     ],
     filtros: [
       {
@@ -119,11 +119,11 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
     mensajeVacio: 'No hay cambios de acceso en este período.',
     columnas: [
       { campo: 'partner', etiqueta: 'Partner' },
-      { campo: 'credencial', etiqueta: 'Credencial', soloEscritorio: true },
+      { campo: 'credencial', etiqueta: 'Credencial', soloDetalle: true },
       { campo: 'tipo_cambio', etiqueta: 'Tipo', principal: true, formato: 'enumeracion' },
-      { campo: 'estado_anterior', etiqueta: 'De', soloEscritorio: true },
+      { campo: 'estado_anterior', etiqueta: 'De', soloDetalle: true },
       { campo: 'estado_nuevo', etiqueta: 'A' },
-      { campo: 'motivo', etiqueta: 'Motivo' },
+      { campo: 'motivo', etiqueta: 'Motivo', soloDetalle: true },
       { campo: 'ejecutado_por', etiqueta: 'Ejecutor' },
       { campo: 'fecha', etiqueta: 'Fecha', formato: 'fecha_hora' },
     ],
@@ -147,9 +147,9 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
       { campo: 'servicio', etiqueta: 'Servicio' },
       { campo: 'version', etiqueta: 'Versión', principal: true },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
-      { campo: 'spec_url', etiqueta: 'Spec', soloEscritorio: true },
+      { campo: 'spec_url', etiqueta: 'Spec', soloDetalle: true },
       { campo: 'fecha_publicacion', etiqueta: 'Publicada', formato: 'fecha_hora' },
-      { campo: 'fecha_retiro', etiqueta: 'Retirada', formato: 'fecha_hora' },
+      { campo: 'fecha_retiro', etiqueta: 'Retirada', formato: 'fecha_hora', soloDetalle: true },
     ],
     filtros: [
       {
@@ -171,12 +171,12 @@ export const INFORMES_PARTNERS: Record<string, DefinicionListado> = {
       { campo: 'zonas_geograficas', etiqueta: 'Zonas', formato: 'lista' },
       { campo: 'frecuencia_reportes', etiqueta: 'Frecuencia' },
       { campo: 'formato_reportes', etiqueta: 'Formato' },
-      { campo: 'canales_notificacion', etiqueta: 'Canales', formato: 'lista', soloEscritorio: true },
+      { campo: 'canales_notificacion', etiqueta: 'Canales', formato: 'lista', soloDetalle: true },
       {
         campo: 'destinatarios_reportes',
         etiqueta: 'Destinatarios',
         formato: 'lista',
-        soloEscritorio: true,
+        soloDetalle: true,
       },
     ],
     filtros: [

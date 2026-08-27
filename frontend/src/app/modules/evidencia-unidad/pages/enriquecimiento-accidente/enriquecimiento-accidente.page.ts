@@ -5,6 +5,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ConnectivityService } from '../../../../shared/connectivity/connectivity.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
+import {
+  primerError,
+  validarCedula,
+  validarEntero,
+  validarNombre,
+  validarRequerido,
+} from '../../../../shared/validacion/campos.validacion';
 import { EnriquecimientoApiService } from '../../services/enriquecimiento-api.service';
 import { EvidenciaSyncSchedulerService } from '../../services/evidencia-sync-scheduler.service';
 import {
@@ -16,6 +23,61 @@ import {
   EstadoImplicado,
   TipoImplicado,
 } from '../../services/models/evidencia-unidad.types';
+
+/** Columnas booleanas de `Dim_Estado_Conductor`. */
+type EjeEstadoConductor =
+  | 'estadosobriedad'
+  | 'nivelatencion'
+  | 'condicionfisica'
+  | 'usoseguridad';
+
+interface EjeEstadoConductorUI {
+  campo: EjeEstadoConductor;
+  etiqueta: string;
+  /** Cómo se lee el valor `true` de la columna. */
+  siEtiqueta: string;
+  /** Cómo se lee el valor `false`. */
+  noEtiqueta: string;
+}
+
+/**
+ * Los cuatro ejes del estado del conductor, **con sus dos lados escritos**.
+ *
+ * El modelo guarda booleanos, pero un booleano solo es legible si se nombra lo
+ * que significa cada valor. La revisión (hallazgo #5) lo puso así: «en vez de
+ * sobrio se le cambia a estado de ebriedad, depende de cómo el usuario pueda
+ * percibir mejor la opción que va a seleccionar». Una casilla "Sobrio" obliga a
+ * deducir qué afirma desmarcarla; dos opciones con nombre no.
+ *
+ * ⚠️ El orden `true`/`false` de cada eje debe coincidir con la semántica de
+ * `Dim_Estado_Conductor`: `true` es siempre la condición favorable.
+ */
+const EJES_ESTADO_CONDUCTOR: EjeEstadoConductorUI[] = [
+  {
+    campo: 'estadosobriedad',
+    etiqueta: 'Estado de sobriedad',
+    siEtiqueta: 'Sobrio',
+    noEtiqueta: 'Bajo efectos de alcohol o sustancias',
+  },
+  {
+    campo: 'nivelatencion',
+    etiqueta: 'Nivel de atención',
+    siEtiqueta: 'Atento a la vía',
+    noEtiqueta: 'Distraído',
+  },
+  {
+    campo: 'condicionfisica',
+    etiqueta: 'Condición física',
+    siEtiqueta: 'Ileso',
+    noEtiqueta: 'Lesionado o impedido',
+  },
+  {
+    campo: 'usoseguridad',
+    etiqueta: 'Dispositivo de seguridad',
+    siEtiqueta: 'Lo usaba',
+    noEtiqueta: 'No lo usaba',
+  },
+];
 
 @Component({
   selector: 'app-enriquecimiento-accidente',
@@ -51,17 +113,38 @@ export class EnriquecimientoAccidentePage implements OnInit {
   identificacion = '';
   nombres = '';
   apellidos = '';
+  /**
+   * Catálogos cerrados. Deben coincidir con `GENEROS` / `ESTADOS_LICENCIA` de
+   * `EnriquecimientoConductorService`: el backend los rechaza si no.
+   */
+  readonly generos = ['Masculino', 'Femenino', 'Otro', 'No informa'];
+  readonly estadosLicencia = ['Vigente', 'Caducada', 'Suspendida', 'Sin licencia'];
+
   /** Dim_Conductor — optional */
   genero = '';
   tipolicencia = '';
   estadolicencia = '';
   ciudadresidencia = '';
   aniosexperiencia: number | null = null;
-  /** Flags UI → se resuelven a idestadoconductor por match exacto en catálogo. */
-  estadosobriedad = true;
-  nivelatencion = true;
-  condicionfisica = true;
-  usoseguridad = true;
+  /**
+   * Estado del conductor. Cada eje se resuelve a `idestadoconductor` por match
+   * exacto contra `Dim_Estado_Conductor`.
+   *
+   * ⚠️ Arranca **sin decidir** (`null`), no en `true`.
+   *
+   * Antes eran cuatro casillas marcadas por defecto, así que no tocar nada
+   * afirmaba que el conductor estaba sobrio, atento, ileso y con cinturón — la
+   * declaración que más pesa en un siniestro, hecha por omisión. Y desmarcar una
+   * casilla exigía adivinar qué significaba lo contrario (hallazgo #5).
+   */
+  estadoConductor: Record<EjeEstadoConductor, boolean | null> = {
+    estadosobriedad: null,
+    nivelatencion: null,
+    condicionfisica: null,
+    usoseguridad: null,
+  };
+
+  readonly ejesEstadoConductor = EJES_ESTADO_CONDUCTOR;
   /** Dim_Vehiculo — required */
   tipovehiculo = '';
   /** Dim_Vehiculo — optional */
@@ -184,22 +267,38 @@ export class EnriquecimientoAccidentePage implements OnInit {
     if (this.soloLectura()) {
       return;
     }
-    if (!this.identificacion.trim() || !this.nombres.trim() || !this.apellidos.trim()) {
-      this.notifications.alert(
-        'Identificación, nombres y apellidos son requeridos',
-        'Validación',
-      );
+    // RN-VAL-CAMPOS — formato, no solo presencia. Antes bastaba con que los
+    // campos no estuvieran vacíos: la cédula aceptaba letras (hallazgo #9).
+    // El espejo de estas mismas reglas está en el servicio de backend.
+    const errorCampos = primerError(
+      validarCedula(this.identificacion),
+      validarNombre(this.nombres, 'Nombres'),
+      validarNombre(this.apellidos, 'Apellidos'),
+      validarNombre(this.ciudadresidencia, 'Ciudad de residencia', { requerido: false }),
+      validarEntero(this.aniosexperiencia, 'Años de experiencia', { min: 0, max: 80 }),
+      validarEntero(this.ejes, 'Ejes', { min: 1, max: 20 }),
+      validarRequerido(this.tipovehiculo, 'Tipo de vehículo'),
+    );
+    if (errorCampos) {
+      this.notifications.alert(errorCampos, 'Validación');
       return;
     }
-    if (!this.tipovehiculo.trim()) {
-      this.notifications.alert('Tipo de vehículo es requerido', 'Validación');
+    if (!this.estadoConductorCompleto()) {
+      // Se distingue de la falla de catálogo: son dos problemas distintos y el
+      // mensaje único ("no hay estado en catálogo para esa combinación de
+      // flags") no le decía nada a la unidad en ninguno de los dos casos.
+      this.notifications.alert(
+        `Declare el estado del conductor. Falta: ${this.ejesPendientes()}.`,
+        'Validación',
+      );
       return;
     }
     const idestadoconductor = this.resolveEstadoConductorId();
     if (idestadoconductor == null) {
       this.notifications.alert(
-        'No hay un estado de conductor en catálogo para esa combinación de flags',
-        'Validación',
+        'Esa combinación de estado del conductor no existe en el catálogo. ' +
+          'Avise al administrador para que la registre.',
+        'Catálogo incompleto',
       );
       return;
     }
@@ -339,13 +438,29 @@ export class EnriquecimientoAccidentePage implements OnInit {
   }
 
   /** Resuelve idestadoconductor por match exacto de los 4 flags BOOLEAN. */
+  setEstadoConductor(campo: EjeEstadoConductor, valor: boolean): void {
+    this.estadoConductor = { ...this.estadoConductor, [campo]: valor };
+  }
+
+  estadoConductorCompleto(): boolean {
+    return EJES_ESTADO_CONDUCTOR.every((eje) => this.estadoConductor[eje.campo] !== null);
+  }
+
+  /** Nombra los ejes que faltan, para que el aviso diga qué falta y no solo que falta algo. */
+  ejesPendientes(): string {
+    return EJES_ESTADO_CONDUCTOR.filter((eje) => this.estadoConductor[eje.campo] === null)
+      .map((eje) => eje.etiqueta.toLowerCase())
+      .join(', ');
+  }
+
   resolveEstadoConductorId(): number | null {
-    const match = this.estadosConductor().find(
-      (e) =>
-        this.asBool(e['estadosobriedad']) === this.estadosobriedad &&
-        this.asBool(e['nivelatencion']) === this.nivelatencion &&
-        this.asBool(e['condicionfisica']) === this.condicionfisica &&
-        this.asBool(e['usoseguridad']) === this.usoseguridad,
+    if (!this.estadoConductorCompleto()) {
+      return null;
+    }
+    const match = this.estadosConductor().find((e) =>
+      EJES_ESTADO_CONDUCTOR.every(
+        (eje) => this.asBool(e[eje.campo]) === this.estadoConductor[eje.campo],
+      ),
     );
     if (!match) {
       return null;
@@ -372,10 +487,14 @@ export class EnriquecimientoAccidentePage implements OnInit {
     this.estadolicencia = '';
     this.ciudadresidencia = '';
     this.aniosexperiencia = null;
-    this.estadosobriedad = true;
-    this.nivelatencion = true;
-    this.condicionfisica = true;
-    this.usoseguridad = true;
+    // Vuelve a "sin decidir": el conductor siguiente es otra persona y su estado
+    // hay que declararlo de nuevo, no heredarlo del anterior.
+    this.estadoConductor = {
+      estadosobriedad: null,
+      nivelatencion: null,
+      condicionfisica: null,
+      usoseguridad: null,
+    };
     this.tipovehiculo = '';
     this.modelovehiculo = '';
     this.categoriausovehiculo = '';

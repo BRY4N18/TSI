@@ -10,6 +10,7 @@ import { DisponibilidadUnidadApiService } from '../../services/disponibilidad-un
 import {
   DisponibilidadUnidadData,
   EstadoDisponibilidadUnidadSeleccionable,
+  HistorialDespachoUnidadItem,
   HistorialEstadoUnidadItem,
 } from '../../services/models/evidencia-unidad.types';
 
@@ -50,6 +51,11 @@ export class PanelDisponibilidadPage {
   readonly historialError = signal<string | null>(null);
   readonly historialReciente = computed(() => this.historial().slice(0, HISTORIAL_RECIENTES));
 
+  /** Salidas de la unidad — a qué acudió, no solo cuándo estuvo disponible. */
+  readonly despachos = signal<HistorialDespachoUnidadItem[]>([]);
+  readonly despachosLoading = signal(false);
+  readonly despachosError = signal<string | null>(null);
+
   constructor() {
     this.cargar();
   }
@@ -67,6 +73,7 @@ export class PanelDisponibilidadPage {
           : 'Activa';
         this.loading.set(false);
         this.cargarHistorial(res.data.idunidademergencia);
+        this.cargarDespachos(res.data.idunidademergencia);
       },
       error: () => {
         this.error.set('No se pudo consultar la disponibilidad.');
@@ -88,6 +95,25 @@ export class PanelDisponibilidadPage {
         this.historialLoading.set(false);
       },
     });
+  }
+
+  cargarDespachos(idunidademergencia: number): void {
+    this.despachosLoading.set(true);
+    this.despachosError.set(null);
+    this.disponibilidadApi
+      .listarHistorialDespachos(idunidademergencia, { limit: HISTORIAL_RECIENTES })
+      .subscribe({
+        next: (res) => {
+          this.despachos.set(res.data.items);
+          this.despachosLoading.set(false);
+        },
+        error: () => {
+          // Que falle este listado no puede tumbar el panel: declarar la
+          // disponibilidad es la función crítica de esta pantalla.
+          this.despachosError.set('No se pudo cargar el historial de despachos.');
+          this.despachosLoading.set(false);
+        },
+      });
   }
 
   declararEstado(): void {

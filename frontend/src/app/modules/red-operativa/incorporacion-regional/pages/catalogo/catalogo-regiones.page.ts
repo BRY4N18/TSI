@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -31,7 +30,6 @@ const ESTADO_BADGE: Record<EstadoRegion, string> = {
   imports: [
     CommonModule,
     RouterLink,
-    TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
     ListEmptyStateComponent,

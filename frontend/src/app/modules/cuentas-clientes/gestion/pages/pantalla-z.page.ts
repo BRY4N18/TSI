@@ -9,6 +9,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
+import { LineChartComponent, LineSeries } from '../../../../shared/ui/charts/line-chart.component';
+import { MeterComponent } from '../../../../shared/ui/charts/meter.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-gestion.definiciones';
@@ -35,7 +38,14 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-cuentas',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [
+    DecimalPipe,
+    PeriodoSelectorComponent,
+    ApoyoPlegableComponent,
+    BarChartComponent,
+    LineChartComponent,
+    MeterComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -87,6 +97,62 @@ export class PantallaZPage {
   );
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /**
+   * Ocupación de plan: consumo contra un tope, no una magnitud suelta.
+   * Va como MEDIDOR — con barras, una cuenta al 120% del tope se leía igual
+   * que una holgada, porque el 100% no era una referencia visible.
+   */
+  readonly medidoresCiclo = computed(() =>
+    this.cargaVisual().data.map((f) => ({
+      cuenta: texto(f['cuenta']) || 'Cuenta #' + texto(f['idcliente']),
+      usados: num(f['usuarios_conocidos']) ?? 0,
+      tope: num(f['tope_plan']),
+      cobertura: this.pct(num(f['pct_cobertura_pertenencia'])),
+    })),
+  );
+
+  /**
+   * Embudo de incorporación: las etapas están ORDENADAS (una sucede a la
+   * otra), así que la escala es ordinal y la rampa deja ver el orden en el
+   * color. No se dibuja como cono: estrechar la figura distorsiona el área
+   * y hace parecer mayores las caídas de las etapas anchas.
+   */
+  /** Orden real del onboarding (`EtapaOnboarding`) — el API no lo garantiza. */
+  private static readonly ORDEN_ETAPA_ONBOARDING = ['cambio_password', 'perfil_corporativo', 'preferencias'];
+
+  /**
+   * Embudo de incorporación: ordinal, y por eso hace falta ordenar primero
+   * por la etapa REAL — sin esto la rampa pinta el color según el orden en
+   * que llegó la fila del API, no según a qué altura del embudo está.
+   */
+  readonly barrasIncorporacion = computed<BarDatum[]>(() =>
+    [...this.cargaVisual().data]
+      .sort(
+        (a, b) =>
+          PantallaZPage.ORDEN_ETAPA_ONBOARDING.indexOf(texto(a['etapa'])) -
+          PantallaZPage.ORDEN_ETAPA_ONBOARDING.indexOf(texto(b['etapa'])),
+      )
+      .map((f) => ({
+        etiqueta: humanizar(texto(f['etapa'])),
+        valor: num(f['clientes_que_llegaron']),
+        nota: num(f['clientes_que_llegaron']) === 0 ? '· cero' : undefined,
+      })),
+  );
+
+  /** Concurrencia por franja: es una evolución en el tiempo, va en línea. */
+  readonly etiquetasAcceso = computed(() =>
+    this.cargaVisual().data.map((f) => `${texto(f['fecha'])} ${texto(f['franja'])}`),
+  );
+
+  readonly seriesAcceso = computed<LineSeries[]>(() => [
+    {
+      nombre: 'Concurrencia máxima',
+      valores: this.cargaVisual().data.map((f) => num(f['concurrencia_maxima'])),
+    },
+  ]);
   readonly texto = texto;
   readonly humanizar = humanizar;
 
@@ -127,9 +193,6 @@ export class PantallaZPage {
     return Math.max(0, ...vals);
   }
 
-  maxBarra(filas: Record<string, unknown>[], campo: string): number {
-    return Math.max(1, this.maxDe(filas, campo));
-  }
 
   private cargaDe(informe: string | undefined): CargaInforme {
     if (!informe) {

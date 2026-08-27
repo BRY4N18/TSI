@@ -34,7 +34,6 @@
           class="tsi-btn border border-alert-warning bg-transparent text-alert-warning hover:bg-alert-warning-bg"
           (click)="reintentarGps()"
         >
-          <app-tabler-icon name="refresh" [size]="14" />
           Reintentar
         </button>
       </div>
@@ -63,7 +62,6 @@
         data-testid="link-evidencia"
         class="tsi-btn tsi-btn-secondary"
       >
-        <app-tabler-icon name="camera" [size]="16" />
         Evidencia del caso
       </a>
     </div>
@@ -76,7 +74,6 @@
           class="tsi-btn tsi-btn-primary"
           (click)="registrarLlegada()"
         >
-          <app-tabler-icon name="circle-check" [size]="16" />
           @if (registrandoLlegada()) {
             Registrando…
           } @else {
@@ -90,7 +87,6 @@
             class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
             (click)="iniciarAbortar()"
           >
-            <app-tabler-icon name="x" [size]="16" />
             Abortar misión
           </button>
         }
@@ -136,26 +132,19 @@
     } @else if (estado() === 'en_sitio') {
       <div class="flex items-center gap-2 rounded-md border border-alert-success bg-alert-success-bg p-4 text-sm text-alert-success">
         <app-tabler-icon name="circle-check" [size]="18" />
-        Ya registraste tu llegada. Adjunta la evidencia de lo que observas en
-        <a
-          [routerLink]="['/evidencia-unidad/accidentes', despacho()!.idaccidente, 'galeria']"
-          class="font-semibold underline"
-          >Evidencia del caso</a
-        >.
+        Ya registraste tu llegada al sitio del accidente.
       </div>
 
-      <!-- SRS §3.6.4: "ya en el lugar, la Unidad puede escalar la severidad del
-           caso con lo que efectivamente observa". El panel vivía en el detalle
-           del accidente, que es pantalla de Operador, y ahí el endpoint —que
-           exige el rol Unidad— respondía siempre 403. -->
-      <app-escalar-severidad-panel
-        class="mt-4 block"
-        [idaccidente]="despacho()!.idaccidente"
-      />
-
-      <!-- SRS §3.6.4: la unidad cierra su parte. El caso no puede cerrarse
-           mientras quede alguna unidad sin retirarse. -->
       <div class="mt-4 flex flex-wrap gap-3">
+        <button
+          type="button"
+          data-testid="btn-abrir-escalar"
+          class="tsi-btn tsi-btn-secondary"
+          (click)="abrirModalEscalar()"
+        >
+          Escalar severidad
+        </button>
+
         <button
           type="button"
           data-testid="btn-finalizar-atencion"
@@ -163,7 +152,6 @@
           class="tsi-btn tsi-btn-primary"
           (click)="finalizarAtencion()"
         >
-          <app-tabler-icon name="circle-check" [size]="16" />
           @if (finalizando()) {
             Finalizando…
           } @else {
@@ -171,6 +159,43 @@
           }
         </button>
       </div>
+
+      @if (modalEscalarAbierto()) {
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          data-testid="modal-escalar-backdrop"
+          (click)="cerrarModalEscalar()"
+        >
+          <div
+            class="tsi-panel--elevado relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-bg-surface p-6 shadow-2xl"
+            data-testid="modal-escalar"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="tsi-display m-0 text-lg font-bold text-text-primary">
+                Escalar severidad
+              </h2>
+              <button
+                type="button"
+                class="tsi-hit-target flex h-8 w-8 items-center justify-center rounded-sm text-text-secondary hover:bg-bg-page hover:text-text-primary"
+                (click)="cerrarModalEscalar()"
+                aria-label="Cerrar modal"
+              >
+                <app-tabler-icon name="x" [size]="18" />
+              </button>
+            </div>
+
+            <app-escalar-severidad-panel
+              [idaccidente]="despacho()!.idaccidente"
+              [severidadActual]="despacho()!.idseveridad"
+              [heridosActuales]="despacho()!.numheridos"
+              [fallecidosActuales]="despacho()!.numfallecidos"
+              (escalado)="onEscalado()"
+              (cancelar)="cerrarModalEscalar()"
+            />
+          </div>
+        </div>
+      }
     } @else {
       <div class="flex items-center gap-2 tsi-panel p-4 text-sm text-text-secondary">
         <app-tabler-icon name="info-circle" [size]="18" />

@@ -58,9 +58,12 @@ export class UserRoleAdminService {
   }
 
   assignRole(request: AssignBusinessRoleRequest): Observable<ApiEnvelope<BusinessUser>> {
+    // Backend registra `usuarios/roles/asignar` (ver `apps/cuentas_clientes/views/urls.py`),
+    // no `usuarios/{id}/roles` — ese otro shape daba 404 y el formulario de
+    // "Asignar rol" en Gestión de cuenta fallaba siempre con "No se pudo asignar el rol".
     return this.http.post<ApiEnvelope<BusinessUser>>(
-      `${this.usersUrl}/${request.idusuario}/roles`,
-      { idrol: request.idrol },
+      `${this.usersUrl}/roles/asignar`,
+      { idusuario: request.idusuario, idrol: request.idrol },
     );
   }
 }

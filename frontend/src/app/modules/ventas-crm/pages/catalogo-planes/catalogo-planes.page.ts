@@ -3,12 +3,13 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { RouterLink } from '@angular/router';
 
 import { BrandMarkComponent } from '../../../../shared/brand/brand-mark.component';
-import { ThemeService } from '../../../../shared/theme/theme.service';
 import { TablerIconComponent, TablerIconName } from '../../../../shared/ui/icon/tabler-icon.component';
 import { PlanPublico, SeveridadPlan } from '../../models/prospectos.types';
 import { PlanesApiService } from '../../services/planes-api.service';
 
 export interface LimiteItem {
+  /** Clave original del JSON de límites; sirve para buscar su explicación. */
+  clave: string;
   label: string;
   value: string;
 }
@@ -26,6 +27,49 @@ const LABELS_LIMITES: Record<string, string> = {
   api_calls_minuto: 'Llamadas API / minuto',
 };
 
+/**
+ * Qué significa cada límite, en una frase.
+ *
+ * El nombre de la métrica ("Unidades máx.") le dice al cliente **cuánto**, pero
+ * no **de qué** ni por qué le importa. La revisión del 24/08/2026 (hallazgo #2)
+ * lo señaló: «puede haber términos que un cliente nuevo no entienda, a
+ * diferencia de un cliente habitual».
+ */
+const AYUDA_LIMITES: Record<string, string> = {
+  unidades_max: 'Ambulancias, grúas o patrullas que puedes tener dadas de alta.',
+  usuarios_max: 'Personas de tu equipo con acceso a la plataforma.',
+  api_calls_mes: 'Consultas que tus propios sistemas pueden hacer al mes.',
+  api_calls_minuto: 'Ritmo máximo de esas consultas.',
+};
+
+/**
+ * Traducción del vocabulario de severidad a lo que un cliente reconoce.
+ *
+ * ⚠️ Hay **dos** vocabularios en el sistema: los planes hablan de severidad
+ * `Baja | Media | Alta` y los accidentes de `Leve | Moderado | Grave | Fatal`
+ * (`Dim_Severidad`). Que no coincidan ya era un problema conocido —lo documenta
+ * `database/seed_severidad.py`— y para quien compra es directamente ilegible.
+ * Aquí se explica cada nivel con casos reales en vez de con la etiqueta.
+ */
+const SEVERIDAD_EXPLICADA: Record<string, { titulo: string; ejemplo: string }> = {
+  Leve: {
+    titulo: 'Incidentes leves',
+    ejemplo: 'Roces y daños materiales, sin personas heridas.',
+  },
+  Moderado: {
+    titulo: 'Accidentes con heridos',
+    ejemplo: 'Colisiones con personas lesionadas que requieren atención en sitio.',
+  },
+  Grave: {
+    titulo: 'Emergencias graves',
+    ejemplo: 'Heridos de gravedad o siniestros con varios vehículos implicados.',
+  },
+  Fatal: {
+    titulo: 'Siniestros con víctimas mortales',
+    ejemplo: 'Casos con fallecidos, que exigen la respuesta más amplia.',
+  },
+};
+
 @Component({
   selector: 'app-catalogo-planes',
   standalone: true,
@@ -35,12 +79,39 @@ const LABELS_LIMITES: Record<string, string> = {
 })
 export class CatalogoPlanesPage implements OnInit {
   private readonly api = inject(PlanesApiService);
-  readonly themeService = inject(ThemeService);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly planes = signal<PlanPublico[]>([]);
   readonly year = new Date().getFullYear();
+
+  /**
+   * El ciclo en tres pasos, antes de hablar de precios.
+   *
+   * Sin esto, un visitante nuevo llega a la tabla de planes sin saber qué
+   * compra; los "límites" y las "severidades" no significan nada hasta que se
+   * entiende el flujo (hallazgo #1).
+   */
+  /** Los tres niveles, en orden ascendente de gravedad. */
+  readonly nivelesSeveridad: SeveridadPlan[] = ['Leve', 'Moderado', 'Grave', 'Fatal'];
+
+  readonly comoFunciona = [
+    {
+      titulo: 'Se reporta el accidente',
+      detalle:
+        'Tu operador registra qué pasó, dónde y con cuántos implicados. El sistema valida los datos críticos en el momento.',
+    },
+    {
+      titulo: 'Sale la unidad adecuada',
+      detalle:
+        'TSI busca entre tus unidades disponibles la más cercana que pueda atender ese tipo de emergencia, y la despacha.',
+    },
+    {
+      titulo: 'Sigues el caso hasta el cierre',
+      detalle:
+        'Ves la unidad en ruta, lo que registra en el sitio y el expediente completo cuando termina la atención.',
+    },
+  ];
 
   readonly capacidades: CapacidadItem[] = [
     {
@@ -92,25 +163,75 @@ export class CatalogoPlanesPage implements OnInit {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  /** Explicación en una frase de un límite; vacío si no la hay. */
+  ayudaLimite(clave: string): string {
+    return AYUDA_LIMITES[clave] ?? '';
+  }
+
+  explicacionSeveridad(sev: SeveridadPlan): { titulo: string; ejemplo: string } | null {
+    return SEVERIDAD_EXPLICADA[sev] ?? null;
+  }
+
+  /**
+   * Lo que el plan permite atender, en una frase entendible.
+   *
+   * "Severidades desbloqueadas: Alta, Media" no le dice a un cliente nuevo qué
+   * está comprando. Esto sí (hallazgo #2).
+   */
+  queAtiende(plan: PlanPublico): string {
+    const niveles = plan.severidades_desbloqueadas ?? [];
+    if (!niveles.length) {
+      return 'Consulta con el equipo comercial qué tipos de emergencia cubre este plan.';
+    }
+    const titulos = niveles
+      .map((s) => SEVERIDAD_EXPLICADA[s]?.titulo.toLowerCase())
+      .filter((t): t is string => !!t);
+    if (!titulos.length) {
+      return 'Consulta con el equipo comercial qué tipos de emergencia cubre este plan.';
+    }
+    const listado =
+      titulos.length === 1
+        ? titulos[0]
+        : `${titulos.slice(0, -1).join(', ')} y ${titulos[titulos.length - 1]}`;
+    return `Tu flota puede atender ${listado}.`;
+  }
+
+  /** A quién le sirve el plan, para que la elección no sea solo por precio. */
+  paraQuien(plan: PlanPublico): string {
+    switch (this.normalizarNivel(plan.nivel)) {
+      case 'basico':
+        return 'Para empezar: una flota pequeña que atiende su propia zona.';
+      case 'profesional':
+        return 'Para operar a diario: varias unidades y turnos que se cubren entre sí.';
+      case 'empresarial':
+        return 'Para redes grandes: cobertura regional e integración con tus sistemas.';
+      default:
+        return '';
+    }
+  }
+
   limitesComoLista(limites: string): LimiteItem[] {
     if (!limites?.trim()) {
-      return [{ label: 'Límites', value: 'Sin detalle' }];
+      return [{ clave: '', label: 'Límites', value: 'Sin detalle' }];
     }
     try {
       const parsed = JSON.parse(limites) as Record<string, unknown>;
       return Object.entries(parsed).map(([key, raw]) => ({
+        clave: key,
         label: LABELS_LIMITES[key] ?? this.labelDesdeClave(key),
         value: this.formatearValor(raw),
       }));
     } catch {
-      return [{ label: 'Detalle', value: limites }];
+      return [{ clave: '', label: 'Detalle', value: limites }];
     }
   }
 
   esPopular(plan: PlanPublico): boolean {
-    if (plan.destacado === true) return true;
-    // Fallback hasta que Dim_Plan/API expongan `destacado`
-    return this.normalizarNivel(plan.nivel) === 'profesional';
+    if (typeof plan.destacado === 'boolean') {
+      return plan.destacado;
+    }
+    // Fallback: solo planes comerciales activos con precio real y no demo
+    return (plan.precio ?? 0) > 0 && this.normalizarNivel(plan.nivel) === 'profesional' && !plan.nombre.toLowerCase().includes('demo');
   }
 
   slogan(plan: PlanPublico): string {
@@ -148,10 +269,15 @@ export class CatalogoPlanesPage implements OnInit {
   }
 
   badgeClass(sev: SeveridadPlan): string {
+    // ⚠️ Los casos eran 'Alta'/'Media', vocabulario que la API dejó de devolver
+    // en la migración del 2026-08-11: TODO caía al `default` y hasta un plan
+    // que cubre siniestros fatales se pintaba en verde (hallazgo #2).
     switch (sev) {
-      case 'Alta':
+      case 'Fatal':
+        return 'bg-alert-critical-bg text-alert-critical';
+      case 'Grave':
         return 'bg-alert-urgent-bg text-alert-urgent';
-      case 'Media':
+      case 'Moderado':
         return 'bg-alert-warning-bg text-alert-warning';
       default:
         return 'bg-alert-success-bg text-alert-success';

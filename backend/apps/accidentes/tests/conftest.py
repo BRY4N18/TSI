@@ -19,6 +19,10 @@ def accidente_payload():
         "idseveridad": 2,
         "descripcion": "Choque leve en intersección",
         "idcalle": 1,
+        # RN-REG-012: obligatorio y ≥ 1. Es el tope de conductores que la unidad
+        # puede enriquecer en sitio (RN-EVI-022); sin él no se podía registrar
+        # ninguno.
+        "numvehiculos": 2,
     }
 
 

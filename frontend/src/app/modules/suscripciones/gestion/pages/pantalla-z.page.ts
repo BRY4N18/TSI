@@ -9,6 +9,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
+import { MeterComponent } from '../../../../shared/ui/charts/meter.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-gestion.definiciones';
@@ -34,7 +36,13 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-suscripciones',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [
+    DecimalPipe,
+    PeriodoSelectorComponent,
+    ApoyoPlegableComponent,
+    BarChartComponent,
+    MeterComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -88,6 +96,52 @@ export class PantallaZPage {
   readonly num = num;
   readonly texto = texto;
 
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /** Ingreso por plan: categorías nominales, un solo color. */
+  readonly barrasCobro = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => {
+      const tipo = texto(f['tipo_cliente']);
+      return {
+        etiqueta: (texto(f['plan']) || 'Plan') + (tipo ? ` · ${tipo}` : ''),
+        valor: num(f['ingreso_neto']),
+        nota: texto(f['moneda']),
+      };
+    }),
+  );
+
+  /**
+   * Movimientos de plan: el delta de ingreso lleva SIGNO.
+   *
+   * ⚠️ Antes se dibujaba con `Math.abs()`, así que un downgrade de −200 y un
+   * upgrade de +200 salían con la misma barra: la única información que
+   * distingue un movimiento del contrario se perdía justo en el gráfico que
+   * existe para compararlos. En escala divergente el brazo sale del centro
+   * hacia un lado u otro, y el signo se ve antes de leer la cifra.
+   */
+  readonly barrasMovimientos = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: texto(f['tipo_movimiento']),
+      valor: num(f['delta_ingreso_total']),
+      nota: `· ${num(f['solicitudes']) ?? 0} solicitudes`,
+    })),
+  );
+
+  /**
+   * Utilización de límites: cada plan aporta DOS medidores (unidades y
+   * usuarios), porque son dos cupos independientes y uno puede estar
+   * excedido con el otro holgado.
+   */
+  readonly medidoresCatalogo = computed(() =>
+    this.cargaVisual().data.map((f) => ({
+      plan: texto(f['plan']) || 'Plan',
+      unidadesUsadas: num(f['unidades_usadas']) ?? 0,
+      unidadesLimite: num(f['unidades_limite']),
+      usuariosUsados: num(f['usuarios_usados']) ?? 0,
+      usuariosLimite: num(f['usuarios_limite']),
+    })),
+  );
+
   constructor() {
     this.route.url.pipe(takeUntilDestroyed()).subscribe((segs) => {
       const id = segs[segs.length - 1]?.path ?? this.route.snapshot.url.at(-1)?.path ?? '';
@@ -120,14 +174,7 @@ export class PantallaZPage {
     return `${(valor * 100).toFixed(1)} %`;
   }
 
-  maxDe(campo: string): number {
-    const vals = this.cargaVisual().data.map((f) => Math.abs(num(f[campo]) ?? 0));
-    return Math.max(1, ...vals);
-  }
 
-  anchoRelativo(valor: unknown, max: number): number {
-    return (Math.abs(num(valor) ?? 0) / Math.max(1, Math.abs(max))) * 100;
-  }
 
   private cargaDe(informe: string | undefined): CargaInforme {
     if (!informe) {

@@ -139,7 +139,47 @@ class UnidadEmergenciaRepository:
         next_cursor: int | None = None
         if len(filtered) > limit_i:
             next_cursor = int(page[-1]["idunidademergencia"])
+        self._adjuntar_nombres_condado(page)
         return page, next_cursor
+
+    def _adjuntar_nombres_condado(self, filas: list[dict[str, Any]]) -> None:
+        """Añade `condado` y `estado` legibles a las filas del listado, in-place.
+
+        El listado solo llevaba `idcondado`, así que la pantalla mostraba
+        "Condado #7" y la exportación a CSV no podía escribir un archivo
+        reimportable —la importación ahora trabaja con nombres (hallazgo #16)—.
+
+        Se resuelve por lote (dos consultas para toda la página, no dos por
+        fila): en Pinot no hay JOIN y este proyecto combina dimensiones en
+        Python, igual que `UbicacionCatalogoRepository.resolver_calles`.
+        """
+        ids = {int(f["idcondado"]) for f in filas if f.get("idcondado") is not None}
+        if not ids:
+            return
+        condados = self.pinot.query(
+            "SELECT idcondado, condado, idestado FROM Dim_Condado WHERE idcondado IN %(ids)s",
+            {"ids": sorted(ids)},
+        )
+        por_id = {int(c["idcondado"]): c for c in condados}
+
+        ids_estado = sorted({int(c["idestado"]) for c in condados if c.get("idestado") is not None})
+        estados_por_id: dict[int, str] = {}
+        if ids_estado:
+            estados = self.pinot.query(
+                "SELECT idestado, estado FROM Dim_Estado WHERE idestado IN %(ids)s",
+                {"ids": ids_estado},
+            )
+            estados_por_id = {int(e["idestado"]): e.get("estado") for e in estados}
+
+        for fila in filas:
+            idcondado = fila.get("idcondado")
+            condado = por_id.get(int(idcondado)) if idcondado is not None else None
+            fila["condado"] = condado.get("condado") if condado else None
+            fila["estado"] = (
+                estados_por_id.get(int(condado["idestado"]))
+                if condado and condado.get("idestado") is not None
+                else None
+            )
 
     def update(
         self,
@@ -185,6 +225,36 @@ class UnidadEmergenciaRepository:
             {"idcondado": idcondado},
         )
         return bool(rows)
+
+    def find_condados_por_nombre(self, condado: str) -> list[dict[str, Any]]:
+        """Resuelve un condado por su NOMBRE, que es lo que una persona conoce.
+
+        La importación en lote pedía `idcondado` —una clave interna que nadie
+        fuera del sistema puede saber— y por eso el CSV era inutilizable en la
+        práctica (hallazgo #16 de la revisión del 24/08/2026). Con esto el
+        archivo se escribe con "Miami-Dade" en vez de con un número.
+
+        Devuelve la lista completa porque el nombre **no es único** entre
+        estados: hay condados homónimos, y quien llama debe decidir (o exigir el
+        estado para desambiguar) en vez de tomar el primero en silencio.
+        """
+        return self.pinot.query(
+            """
+            SELECT idcondado, condado, idestado FROM Dim_Condado
+            WHERE condado = %(condado)s AND activo = true
+            """,
+            {"condado": str(condado).strip()},
+        )
+
+    def find_estados_por_nombre(self, estado: str) -> list[dict[str, Any]]:
+        """Resuelve un estado geográfico por nombre, para desambiguar condados."""
+        return self.pinot.query(
+            """
+            SELECT idestado, estado FROM Dim_Estado
+            WHERE estado = %(estado)s AND activo = true
+            """,
+            {"estado": str(estado).strip()},
+        )
 
     # Pinot INT null sentinel when enableColumnBasedNullHandling is false.
     _INT_NULL = -2147483648

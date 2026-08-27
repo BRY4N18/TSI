@@ -7,7 +7,7 @@
       class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-alert-info bg-alert-info-bg px-4 py-3 text-sm text-alert-info"
       data-testid="draft-restored"
     >
-      <p class="m-0">Se restauró un borrador guardado localmente (RNF-REG-006).</p>
+      <p class="m-0">Se restauró un borrador guardado localmente.</p>
       <button
         type="button"
         data-testid="btn-descartar-borrador"
@@ -79,7 +79,7 @@
             @if (geocodificando()) {
               <span> · Geocodificando…</span>
             } @else if (calleSugerida() !== null) {
-              <span> · Calle sugerida: <strong>{{ calleSugerida() }}</strong></span>
+              <span> · Calle sugerida: <strong>{{ calleSugeridaNombre() || ('Calle #' + calleSugerida()) }}</strong></span>
               @if (fueraCobertura()) {
                 <span class="ml-1 text-alert-warning">(fuera de cobertura operativa)</span>
               }
@@ -93,8 +93,8 @@
             [class.bg-bg-page]="!isInvalid('idcalle')"
             [class.text-text-secondary]="!isInvalid('idcalle')"
           >
-            Calle seleccionada (idcalle):
-            <strong>{{ form.controls.idcalle.value || '— ninguna aún —' }}</strong>
+            Calle seleccionada:
+            <strong>{{ calleSeleccionadaNombre() || (form.controls.idcalle.value ? ('Calle #' + form.controls.idcalle.value) : '— ninguna aún —') }}</strong>
           </div>
 
           <details class="mt-3">
@@ -323,16 +323,22 @@
           <div class="mt-4 grid grid-cols-2 gap-4">
             <div class="grid gap-1.5">
               <label for="numvehiculos" class="text-sm font-medium text-text-secondary"
-                >Vehículos involucrados</label
+                >Vehículos involucrados *</label
               >
               <input
                 id="numvehiculos"
                 type="number"
-                min="0"
+                min="1"
+                step="1"
                 class="tsi-input w-full"
                 formControlName="numvehiculos"
-          placeholder="Ej. 2"
-        />
+                placeholder="Ej. 2"
+              />
+              <!-- De este número depende cuántos conductores puede registrar la
+                   unidad al llegar al sitio (RN-EVI-022). -->
+              <p class="m-0 text-xs text-text-secondary">
+                Determina cuántos conductores podrá registrar la unidad en el sitio.
+              </p>
             </div>
             <div class="grid gap-1.5">
               <label for="numheridos" class="text-sm font-medium text-text-secondary"
@@ -355,10 +361,11 @@
                 id="numvictimas"
                 type="number"
                 min="0"
-                class="tsi-input w-full"
+                class="tsi-input w-full bg-bg-page/50 cursor-not-allowed font-semibold text-text-primary"
                 formControlName="numvictimas"
-          placeholder="Ej. 3"
-        />
+                [readOnly]="true"
+                placeholder="0"
+              />
             </div>
             <div class="grid gap-1.5">
               <label for="numfallecidos" class="text-sm font-medium text-text-secondary"

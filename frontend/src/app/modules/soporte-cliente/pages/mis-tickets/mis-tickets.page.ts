@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -14,6 +15,7 @@ import { CatalogoItem, Ticket } from '../../services/models/soporte.types';
   selector: 'app-mis-tickets',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     RouterLink,
     TablerIconComponent,
@@ -35,6 +37,9 @@ export class MisTicketsPage {
   readonly facturasDisputables = signal<Factura[]>([]);
   readonly mensaje = signal('');
   readonly cargando = signal(false);
+  readonly guardando = signal(false);
+  readonly modalAbierto = signal(false);
+
   asunto = '';
   descripcion = '';
   tipo = 'tecnico';
@@ -66,6 +71,22 @@ export class MisTicketsPage {
     if (desdeFactura) {
       this.idfactura = desdeFactura;
       this.tipo = 'operativo';
+      this.modalAbierto.set(true);
+    }
+  }
+
+  abrirModal(): void {
+    this.asunto = '';
+    this.descripcion = '';
+    this.tipo = 'tecnico';
+    this.idservicio = null;
+    this.idfactura = null;
+    this.modalAbierto.set(true);
+  }
+
+  cerrarModal(): void {
+    if (!this.guardando()) {
+      this.modalAbierto.set(false);
     }
   }
 
@@ -91,9 +112,9 @@ export class MisTicketsPage {
     if (!this.asunto || !this.descripcion) {
       return;
     }
+    this.guardando.set(true);
     this.api
       .registrar({
-        idcliente: 1,
         asunto: this.asunto,
         descripcion: this.descripcion,
         tipo: this.tipo,
@@ -107,12 +128,14 @@ export class MisTicketsPage {
           this.descripcion = '';
           this.idservicio = null;
           this.idfactura = null;
+          this.guardando.set(false);
+          this.modalAbierto.set(false);
           this.cargar();
         },
-        // El 422 de "esa factura ya tiene una disputa abierta" es informacion
-        // util, no ruido: mostrarlo tal cual evita que reintente a ciegas.
-        error: (err) =>
-          this.mensaje.set(err?.error?.detail ?? 'Error al registrar el ticket'),
+        error: (err) => {
+          this.mensaje.set(err?.error?.detail ?? 'Error al registrar el ticket');
+          this.guardando.set(false);
+        },
       });
   }
 }

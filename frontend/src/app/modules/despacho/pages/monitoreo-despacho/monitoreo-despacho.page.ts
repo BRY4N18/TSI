@@ -10,8 +10,9 @@ import { SeguimientoApiService } from '../../../seguimiento/services/seguimiento
 import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
+import { RouteTrackerComponent, RouteTrackerStep } from '../../../../shared/ui/route-tracker/route-tracker.component';
 import { estadoInfo } from '../../../accidentes/estado.constants';
-import { estadoDespachoTono } from '../../despacho-tono.constants';
+import { estadoDespachoLabel, estadoDespachoTono } from '../../despacho-tono.constants';
 import { DespachoApiService } from '../../services/despacho-api.service';
 import { DespachoSseService } from '../../services/despacho-sse.service';
 import { EstadoDespachoData, IntentoDespacho } from '../../services/models/despacho.types';
@@ -34,6 +35,7 @@ const SYNC_LABEL: Record<SyncStatus, string> = {
     TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
+    RouteTrackerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './monitoreo-despacho.page.html',
@@ -53,6 +55,7 @@ export class MonitoreoDespachoPage implements OnInit {
 
   readonly estado_ = estadoInfo;
   readonly intentoTono = estadoDespachoTono;
+  readonly intentoLabel = estadoDespachoLabel;
 
   // --- Cierre del caso (SRS §3.6.4) ---
   private readonly seguimiento = inject(SeguimientoApiService);
@@ -224,6 +227,16 @@ export class MonitoreoDespachoPage implements OnInit {
 
   ordenados(intentos: IntentoDespacho[]): IntentoDespacho[] {
     return [...intentos].sort((a, b) => b.fechahoradespacho - a.fechahoradespacho);
+  }
+
+  /** Historial de intentos como vía de nodos (design-system.md §3.1/v9). */
+  pasosIntentos(intentos: IntentoDespacho[]): RouteTrackerStep[] {
+    return intentos.map((i) => ({
+      title: i.unidademergencia,
+      status: i.estado,
+      tone: this.intentoTono(i.estado),
+      detail: i.motivo ? `${i.origen} — ${i.motivo}` : i.origen,
+    }));
   }
 
   formatTiempo(segundos: number): string {

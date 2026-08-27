@@ -63,7 +63,11 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # `templates/` del proyecto: hoy solo aloja las plantillas de correo
+        # transaccional (`templates/emails/`). Va como DIR explícito y no por
+        # APP_DIRS porque quien las usa vive en `core/`, que no es una app
+        # Django y por tanto no participa del descubrimiento automático.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -253,6 +257,11 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "").replace(" ", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@tsi.local")
+
+# Base pública de la consola. La usan los correos transaccionales para
+# enlazar al caso: un correo no puede resolver rutas relativas, necesita la
+# URL absoluta del entorno donde vive el frontend.
+CONSOLA_BASE_URL = os.environ.get("CONSOLA_BASE_URL", "http://localhost:4200").rstrip("/")
 
 # --- Azure Blob Storage (evidencia fotográfica — CU-O27 / evidencia-unidad) ---
 BLOB_STORAGE_BACKEND = os.environ.get("BLOB_STORAGE_BACKEND", "local")

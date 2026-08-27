@@ -40,7 +40,6 @@
           data-testid="link-asignacion-manual"
           class="tsi-btn tsi-btn-secondary"
         >
-          <app-tabler-icon name="radio" [size]="16" />
           Asignar unidad
         </a>
         <div class="text-right">
@@ -123,7 +122,7 @@
                 [class.bg-alert-info-bg]="intentoTono(u.estado) === 'info'"
                 [class.text-alert-info]="intentoTono(u.estado) === 'info'"
               >
-                {{ u.estado }}
+                {{ intentoLabel(u.estado) }}
               </span>
               <!-- SRS §3.6.4: "cuando un técnico olvida cerrar su parte, el
                    Operador de central puede forzar el retiro de ese despacho
@@ -200,7 +199,6 @@
               class="tsi-btn tsi-btn-primary"
               (click)="cerrarCaso()"
             >
-              <app-tabler-icon name="circle-check" [size]="16" />
               @if (cerrando()) {
                 Cerrando…
               } @else {
@@ -211,10 +209,9 @@
               type="button"
               data-testid="btn-cancelar-caso"
               [disabled]="cancelando()"
-              class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
+              class="tsi-btn tsi-btn-danger"
               (click)="cancelarCaso()"
             >
-              <app-tabler-icon name="x" [size]="16" />
               Cancelar caso (falsa alarma)
             </button>
           </div>
@@ -227,41 +224,7 @@
       @if (!e.intentos.length) {
         <p class="m-0 text-sm text-text-secondary">Todavía no se ha intentado despachar ninguna unidad.</p>
       } @else {
-        <ol class="m-0 grid gap-4 border-l-2 border-border-default pl-4">
-          @for (i of ordenados(e.intentos); track i.iddespacho) {
-            <li class="relative text-sm">
-              <span
-                class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-bg-surface"
-                [class.bg-alert-success]="intentoTono(i.estado) === 'success'"
-                [class.bg-alert-warning]="intentoTono(i.estado) === 'warning'"
-                [class.bg-alert-critical]="intentoTono(i.estado) === 'critical'"
-                [class.bg-alert-info]="intentoTono(i.estado) === 'info'"
-              ></span>
-              <div class="flex items-center justify-between gap-2">
-                <p class="m-0 font-medium text-text-primary">{{ i.unidademergencia }}</p>
-                <span
-                  class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold"
-                  [class.bg-alert-success-bg]="intentoTono(i.estado) === 'success'"
-                  [class.text-alert-success]="intentoTono(i.estado) === 'success'"
-                  [class.bg-alert-warning-bg]="intentoTono(i.estado) === 'warning'"
-                  [class.text-alert-warning]="intentoTono(i.estado) === 'warning'"
-                  [class.bg-alert-critical-bg]="intentoTono(i.estado) === 'critical'"
-                  [class.text-alert-critical]="intentoTono(i.estado) === 'critical'"
-                  [class.bg-alert-info-bg]="intentoTono(i.estado) === 'info'"
-                  [class.text-alert-info]="intentoTono(i.estado) === 'info'"
-                >
-                  {{ i.estado }}
-                </span>
-              </div>
-              <p class="m-0 mt-0.5 text-xs text-text-secondary">
-                {{ i.origen }}
-                @if (i.motivo) {
-                  — {{ i.motivo }}
-                }
-              </p>
-            </li>
-          }
-        </ol>
+        <app-route-tracker [pasos]="pasosIntentos(ordenados(e.intentos))" />
       }
     </section>
   }

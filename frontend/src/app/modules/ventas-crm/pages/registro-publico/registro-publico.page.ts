@@ -16,6 +16,9 @@ import { ProspectoApiService } from '../../services/prospecto-api.service';
 import { RegistroProspectoRequest, TipoOrganizacion } from '../../models/prospectos.types';
 
 const TELEFONO_RE = /^\+?[0-9]{7,15}$/;
+const TEXTO_LETRAS_RE = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+const CARGO_RE = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s/.-]+$/;
+const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export const FUENTES_CONOCIMIENTO = [
   'Web / catálogo de planes',
@@ -68,12 +71,12 @@ export class RegistroPublicoPage implements OnInit {
   }));
 
   readonly form = this.fb.nonNullable.group({
-    nombres: ['', [Validators.required, Validators.minLength(2)]],
-    apellidos: ['', [Validators.required, Validators.minLength(2)]],
-    gmail: ['', [Validators.required, Validators.email]],
+    nombres: ['', [Validators.required, Validators.minLength(2), Validators.pattern(TEXTO_LETRAS_RE)]],
+    apellidos: ['', [Validators.required, Validators.minLength(2), Validators.pattern(TEXTO_LETRAS_RE)]],
+    gmail: ['', [Validators.required, Validators.pattern(EMAIL_RE)]],
     empresa: ['', [Validators.required, Validators.minLength(2)]],
     tipo_organizacion: ['Privado' as TipoOrganizacion, Validators.required],
-    cargo: ['', [Validators.required, Validators.minLength(2)]],
+    cargo: ['', [Validators.required, Validators.minLength(2), Validators.pattern(CARGO_RE)]],
     telefono: ['', [Validators.required, telefonoValidator]],
     fuente: ['' as '' | FuenteConocimiento, Validators.required],
     fuente_otro: [''],
@@ -92,6 +95,45 @@ export class RegistroPublicoPage implements OnInit {
     });
   }
 
+  onTextoInput(event: Event, field: 'nombres' | 'apellidos'): void {
+    const input = event.target as HTMLInputElement;
+    const clean = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+    if (input.value !== clean) {
+      input.value = clean;
+      this.form.controls[field].setValue(clean);
+    }
+  }
+
+  onCargoInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const clean = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s/.-]/g, '');
+    if (input.value !== clean) {
+      input.value = clean;
+      this.form.controls.cargo.setValue(clean);
+    }
+  }
+
+  onEmailInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const clean = input.value.replace(/\s+/g, '').toLowerCase();
+    if (input.value !== clean) {
+      input.value = clean;
+      this.form.controls.gmail.setValue(clean);
+    }
+  }
+
+  onTelefonoInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value;
+    const hasPlus = val.startsWith('+');
+    const digitsOnly = val.replace(/[^0-9]/g, '');
+    const clean = (hasPlus ? '+' : '') + digitsOnly;
+    if (input.value !== clean) {
+      input.value = clean;
+      this.form.controls.telefono.setValue(clean);
+    }
+  }
+
   esOtro(): boolean {
     return this.form.controls.fuente.value === 'Otro';
   }
@@ -100,7 +142,15 @@ export class RegistroPublicoPage implements OnInit {
     const ctrl = this.form.controls[name];
     if (!ctrl || !(ctrl.touched || ctrl.dirty) || ctrl.valid) return null;
     if (ctrl.hasError('required')) return 'Campo obligatorio.';
-    if (ctrl.hasError('email')) return 'Correo inválido.';
+    if (ctrl.hasError('pattern') && (name === 'nombres' || name === 'apellidos')) {
+      return 'Solo letras y espacios.';
+    }
+    if (ctrl.hasError('pattern') && name === 'cargo') {
+      return 'Solo letras y caracteres de cargo válidos.';
+    }
+    if (ctrl.hasError('pattern') && name === 'gmail' || ctrl.hasError('email')) {
+      return 'Ingresa un correo válido (ej. usuario@empresa.com).';
+    }
     if (ctrl.hasError('minlength')) return 'Mínimo 2 caracteres.';
     if (ctrl.hasError('telefono')) {
       return 'Solo dígitos (opcional + al inicio), entre 7 y 15.';

@@ -3,7 +3,6 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthApiService } from '../../modules/cuentas-clientes/auth/services/auth-api.service';
 import { BrandMarkComponent } from '../brand/brand-mark.component';
-import { ThemeService } from '../theme/theme.service';
 import { TablerIconComponent } from '../ui/icon/tabler-icon.component';
 import { NAV_LINKS, NavLink } from './nav-links';
 
@@ -31,8 +30,16 @@ interface NavGroup {
            que un botón quede fuera del borde. Antes, con un correo largo, el de
            cerrar sesión desaparecía por la derecha a partir de 1024px. -->
       <header
-        class="relative flex h-16 shrink-0 items-center gap-3 border-b border-border-default bg-bg-surface px-4 sm:px-6"
+        class="relative flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border-default bg-bg-surface px-4 sm:px-6"
       >
+        <!-- Acento tricolor — v9: las tres cintas del isotipo (navy/cian/teal)
+             en vez de un borde plano. Solo aquí y en CaseCard: es la capa
+             expresiva de §3, no un color que se filtre a botones ni datos. -->
+        <div
+          class="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+          style="background: linear-gradient(to right, var(--route-navy), var(--route-cyan), var(--route-teal))"
+          aria-hidden="true"
+        ></div>
         <div class="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -53,82 +60,7 @@ interface NavGroup {
           </div>
         </div>
 
-        <!-- Buscador global: solo estructura visual, sin lógica de búsqueda todavía
-             (pendiente hasta que exista un endpoint/índice de búsqueda global). -->
-        <div class="flex min-w-0 flex-1 items-center justify-end sm:justify-center">
-          <!-- Desktop/tablet: siempre visible, centrado -->
-          <input
-            type="search"
-            class="hidden w-full max-w-sm rounded-full border border-border-default bg-bg-page px-3.5 py-2 text-sm text-text-primary placeholder:text-text-secondary disabled:cursor-not-allowed sm:block"
-            placeholder="Buscar accidentes, expedientes, unidades…"
-            disabled
-          />
-
-          <!-- Mobile: colapsa a ícono de lupa que expande el input -->
-          @if (!searchExpanded()) {
-            <button
-              type="button"
-              class="tsi-hit-target flex h-9 w-9 items-center justify-center text-text-secondary sm:hidden"
-              (click)="toggleSearch()"
-              aria-label="Buscar"
-            >
-              <app-tabler-icon name="search" [size]="18" />
-            </button>
-          } @else {
-            <div
-              class="absolute inset-x-0 top-16 border-b border-border-default bg-bg-surface p-3 sm:hidden"
-            >
-              <input
-                type="search"
-                class="w-full rounded-full border border-border-default bg-bg-page px-3.5 py-2 text-sm text-text-primary placeholder:text-text-secondary disabled:cursor-not-allowed"
-                placeholder="Buscar accidentes, expedientes, unidades…"
-                disabled
-              />
-            </div>
-          }
-        </div>
-
         <div class="ml-auto flex min-w-0 items-center gap-3 text-sm">
-          <button
-            type="button"
-            class="tsi-hit-target flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
-            (click)="themeService.toggle()"
-            [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
-            [attr.aria-pressed]="themeService.isDark()"
-          >
-            <app-tabler-icon [name]="themeService.isDark() ? 'sun' : 'moon'" [size]="20" />
-          </button>
-
-          <!-- Selector de región: única opción fija; no hay endpoint de regiones
-               disponible para el usuario autenticado todavía. -->
-          <button
-            type="button"
-            class="tsi-hit-target hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary opacity-60 disabled:cursor-not-allowed sm:flex"
-            disabled
-            title="Región: Todas las regiones"
-          >
-            <app-tabler-icon name="map-pin" [size]="20" />
-          </button>
-
-          <!-- Campana de notificaciones: sin fuente de datos todavía, sin contador. -->
-          <div class="relative shrink-0">
-            <button
-              type="button"
-              class="tsi-hit-target flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border-default text-text-secondary hover:bg-bg-page hover:text-text-primary"
-              (click)="toggleNotifications()"
-              aria-label="Notificaciones"
-            >
-              <app-tabler-icon name="bell" [size]="20" />
-            </button>
-            @if (notificationsOpen()) {
-              <div
-                class="absolute right-0 top-[calc(100%+0.5rem)] z-30 min-w-56 rounded-md border border-border-default bg-bg-surface p-3 text-xs text-text-secondary shadow-lg"
-              >
-                No hay notificaciones nuevas
-              </div>
-            }
-          </div>
-
           <!-- Identidad: se encoge y trunca según el espacio libre, sin saltos.
                El avatar y el botón de sesión no se encogen nunca; el correo
                completo y los roles quedan siempre en el title del avatar. -->
@@ -245,12 +177,9 @@ interface NavGroup {
 export class AppShellComponent {
   private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
-  readonly themeService = inject(ThemeService);
 
   readonly profile = this.authApi.getProfile();
   readonly sidebarOpen = signal(false);
-  readonly searchExpanded = signal(false);
-  readonly notificationsOpen = signal(false);
 
   private readonly availableLinks = NAV_LINKS.filter((link) =>
     link.roles.some((role) => this.authApi.hasRole(role)),
@@ -285,14 +214,6 @@ export class AppShellComponent {
 
   closeSidebar(): void {
     this.sidebarOpen.set(false);
-  }
-
-  toggleSearch(): void {
-    this.searchExpanded.update((open) => !open);
-  }
-
-  toggleNotifications(): void {
-    this.notificationsOpen.update((open) => !open);
   }
 
   logout(): void {

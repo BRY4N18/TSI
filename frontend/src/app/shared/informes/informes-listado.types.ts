@@ -121,6 +121,8 @@ export interface ColumnaListado<T = Record<string, unknown>> {
   alineacion?: 'izquierda' | 'derecha';
   /** Oculta la columna en móvil, donde las filas se pintan como tarjeta. */
   soloEscritorio?: boolean;
+  /** Oculta la columna en la tabla principal para comprimir el listado, mostrándose en el modal de detalle. */
+  soloDetalle?: boolean;
 }
 
 // ── Declaración de un filtro ─────────────────────────────────────────────────

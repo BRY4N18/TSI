@@ -102,25 +102,9 @@
           }
           @default {
             @if (idPantalla() === 'flota') {
-              @let max = maxUnidadesEstado();
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li [attr.data-testid]="texto(fila['estado']) === 'En Misión' ? 'estado-en-mision' : null">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['estado']) || 'Desconocido' }}</span>
-                      <span class="font-semibold text-text-primary">
-                        {{ cuentaEstado(fila) | number }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="(cuentaEstado(fila) / max) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="estado-en-mision">
+                <app-bar-chart [datos]="barrasFlota()" />
+              </div>
             }
             @if (idPantalla() === 'mercados') {
               <p
@@ -148,23 +132,9 @@
               </ul>
             }
             @if (idPantalla() === 'validacion') {
-              @let max = maxRechazos();
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['motivo']) }}</span>
-                      <span class="font-semibold text-text-primary">{{ num(fila['rechazos']) | number }}</span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-alert-warning"
-                        [style.width.%]="((num(fila['rechazos']) ?? 0) / max) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasValidacion()" />
+              </div>
             }
           }
         }

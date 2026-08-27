@@ -21,7 +21,9 @@ export const cuentaScopeGuard: CanActivateFn = (route) => {
   }
 
   if (!profile.roles.includes('Cliente')) {
-    return router.createUrlTree(['/cuentas-clientes']);
+    return router.createUrlTree(['/cuentas-clientes'], {
+      queryParams: { denegado: 'fuera_de_alcance' },
+    });
   }
 
   return api.getPerfil(idcliente).pipe(

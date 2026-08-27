@@ -1,6 +1,6 @@
 # Sistema de Diseño (UX/UI) — TSI
 **Ubicación de este archivo:** `docs/diseno/design-system.md`
-**Última actualización:** 2026-08-25 (v8 — §1 invierte la filosofía: la forma pasa a ser protagonista y es la del isotipo, con los dos límites que la separan del ruido; §4 pareja tipográfica Archivo Expanded / Inter con la regla de reparto y los placeholders. Ambas secciones se redactan **después** de construir la identidad, a partir de lo que se decidió en pantalla, no antes). Anterior: 2026-08-24 (v7.4 — §5 Mapa: los pines pasan al nodo hexagonal y la ruta al riel). v7.2: §3.1 Lenguaje de forma y escala de radios de tres tokens. v7: paleta Nodo Integral. v6 (2026-08-12): §11 overlays bloqueantes como diálogo.
+**Última actualización:** 2026-08-27 (v9 — el sistema pasa a **modo claro único**: se retira el tema oscuro completo (`ThemeService`, el toggle del header, los tiles oscuros del mapa) por decisión explícita, no por regresión — un segundo tema sin dueño que lo revise es peor que no tenerlo. Se suma la paleta "de ruta" (`--route-navy`/`--route-cyan`/`--route-teal`, tomada directo del logo) como capa expresiva sobre la operativa ya existente, tres componentes nuevos que traducen listas genéricas a la gramática de forma del sistema — `CaseCard`, `RouteTracker`, `ReportTile` — y la variante `.tsi-panel--placa` (doble esquina cortada) que los sostiene. Además, `.tsi-btn-danger` se promueve a clase canónica para acciones destructivas declaradas, que antes se repintaban a mano en cada pantalla. Ver §3, §3.1 y §5 para el detalle de cada pieza). Anterior: 2026-08-25 (v8 — §1 invierte la filosofía: la forma pasa a ser protagonista y es la del isotipo, con los dos límites que la separan del ruido; §4 pareja tipográfica Archivo Expanded / Inter con la regla de reparto y los placeholders. Ambas secciones se redactan **después** de construir la identidad, a partir de lo que se decidió en pantalla, no antes). 2026-08-24 (v7.4 — §5 Mapa: los pines pasan al nodo hexagonal y la ruta al riel). v7.2: §3.1 Lenguaje de forma y escala de radios de tres tokens. v7: paleta Nodo Integral. v6 (2026-08-12): §11 overlays bloqueantes como diálogo.
 
 ---
 
@@ -84,15 +84,25 @@ Paleta alineada con la identidad **Nodo Integral** (isotipo de tres vías que co
 
 **Regla de uso:** `bg-page`/`bg-surface` dominan como base estructural (~55-60% de la interfaz). `accent-primary` se usa con intención en botones primarios, navegación activa y marca — nunca como color de alerta. `accent-hover` es interacción, no un segundo color de marca para texto de cuerpo. Naranja para despacho urgente, ámbar para advertencias, verde para éxito. Nunca usar colores pastel o saturados sin propósito fuera de los tokens ya definidos. Ningún componente hardcodea el hex del acento (ni el del logo ni el del token): siempre `accent-primary` / `accent-hover`, para que el tema resuelva solo.
 
+**Paleta "de ruta" (v9) — capa expresiva, no operativa:**
+
+| Token | Hex | Uso |
+|---|---|---|
+| `--route-navy` | `#0A2A4E` | Fondo de la perforación de severidad en `CaseCard`, acento tricolor del header |
+| `--route-cyan` | `#16AEE0` | Acento tricolor del header |
+| `--route-teal` | `#3D7A93` | Acento tricolor del header |
+
+Tomada directo del logo (no ajustada por tema, porque v9 ya es un solo tema). **No sustituye** a `accent-primary`/`accent-flow`, que siguen siendo la paleta operativa de UI (botones, nav activa, foco); esta es la capa de identidad visual en superficies que ya usan la gramática de forma de §3.1 — la perforación de `CaseCard`, la franja superior de `AppShell`. Nunca colorea texto de cuerpo, badges de estado ni ningún dato.
+
 **Por qué el acento ya no comparte hex con las alertas:** en la paleta negro/rojo, el rojo de marca y el rojo crítico usaban el mismo valor, diferenciados solo por contexto (fondo+borde+ícono). Con navy/cian de marca, esa ambigüedad desaparece estructuralmente: ningún estado de alerta usa tonos azules o cian, así que no hace falta contexto adicional para diferenciarlos — es una mejora de legibilidad bajo estrés, no solo estética.
 
 **Por qué claro y oscuro no comparten el mismo hex de acento:** el logo tiene dos polos. `#002B5B` sobre `bg-surface` oscuro (`#1C1F2B`) casi no se distingue; `#00A8E8` con texto blanco no llega a 4.5:1, ni como texto sobre blanco. Cada tema privilegia el polo que contrasta con su fondo, oscurecido o elevado lo justo para que el botón primario (texto blanco) y el texto de acento sobre la página cumplan contraste. El cian crudo del isotipo no es un token de UI.
 
 **Sobre el azul de "obligación" (ISO 3864):** dado que ahora el acento primario y el hover del sistema son azul/cian (por identidad de marca/monitoreo, no por severidad), se descarta definitivamente reservar un azul adicional para "obligación" según la norma — generaría confusión entre "esto es una acción de marca" y "esto es obligatorio" usando el mismo matiz. Toda acción obligatoria del usuario sigue comunicándose mediante el nivel de severidad ya cubierto por la paleta de alertas (ej. aceptar una asignación es urgente/alto, no neutro).
 
-**Tema oscuro/claro — alcance:** ambos temas son completos e intercambiables por el usuario (no solo un sidebar oscuro sobre contenido claro como en la versión anterior). Justificación: operadores en salas de control suelen trabajar en penumbra o en turnos nocturnos, y no se conoce de antemano la edad ni sensibilidad visual de cada usuario — ofrecer ambos como opción real cubre ambos casos sin forzar una decisión única para todos los roles (operador, unidad de emergencia, técnico de campo).
+**Tema — alcance (v9, revierte v6/v7):** el sistema pasa a **modo claro único**. Hasta v8 existían dos temas completos e intercambiables, justificados por operadores en penumbra o turnos nocturnos; se retiran en v9 por una razón distinta y de mayor peso — un tema alternativo necesita mantenimiento propio (contraste, tokens, QA visual) y nadie lo estaba revisando activamente en cada cambio del sistema (el sidebar-vías y las tres primitivas de §3.1 se documentaron y verificaron solo en claro). Un segundo tema sin dueño acumula deuda silenciosa hasta que un cambio de paleta lo rompe sin que nadie lo note. Si en el futuro un rol concreto (turno nocturno de una sala de control, por ejemplo) justifica reabrir el oscuro, debe volver a entrar con el mismo nivel de revisión que v6/v7 le dieron — no como un `prefers-color-scheme` heredado sin dueño.
 
-El mapa (Leaflet) también sigue esta regla: tiles claros de OpenStreetMap en modo claro, tiles oscuros de CartoDB Dark Matter en modo oscuro, cambiando en vivo junto con el resto de la interfaz.
+El mapa (Leaflet) sigue la misma regla: solo tiles claros de OpenStreetMap; no existe variante oscura.
 
 ## 3.1 Lenguaje de forma — el nodo, el riel y la convergencia
 
@@ -107,6 +117,7 @@ Regla que gobierna las tres (extensión de §1): **se aplican solo donde ya exis
 | **Superficie de convergencia** | `.tsi-node-surface` | Degradado navy → azul luminoso | Chrome de marca: paneles de auth/registro, banda del hub | Detrás de datos operativos, cards de KPI, cualquier fondo de contenido |
 | **Esquina cortada** | `.tsi-panel` | Card con la esquina superior derecha cortada en ángulo | Cards, paneles y modales con padding de card real | Chips, badges y overlays pequeños — el corte de 20px se come la caja |
 | **Vía de navegación** | `.tsi-via` | Línea dormida que recorre un grupo de nav; el item activo enciende su tramo | Los grupos del sidebar | Cualquier otra lista: no toda lista es un camino |
+| **Placa** | `.tsi-panel--placa` | Ambas esquinas superiores cortadas — el hexágono aplanado (v9) | Filas de `CaseCard` en una lista larga; chrome de marca | Superficies de datos densos: una sola esquina (`.tsi-panel`) ya basta y la doble le resta área útil a la fila |
 
 **El riel es la marca más apropiable del sistema.** La divisoria interior de las vías del isotipo es una línea de carretera vista desde arriba: es el detalle que ningún otro producto tiene. Un borde izquierdo plano de 4px en la nav activa lo tiene cualquier framework; ese mismo borde con la divisoria corriendo por dentro se lee como TSI de inmediato. El cian (`accent-flow`) marca **activo / en curso**, nunca severidad — esa sigue siendo competencia exclusiva de los tokens de alerta; hoy su uso es la ruta del mapa. No existen variantes del riel declaradas "por si acaso": cuando aparezca el caso (spine de timeline, separador de sección) se añade entonces, que es lo que exige la regla de esta misma sección.
 
@@ -199,6 +210,110 @@ Dos excepciones, y las dos son técnicas, no estéticas:
 - Máximo 6-8 bloques de información simultáneos por vista, en cualquier módulo del sistema (despacho, analítica, administración, etc.)
 
 **Botones:** Primario `accent-primary` texto blanco, hover `accent-hover`, radio 8-10px. Secundario borde `accent-primary` texto `accent-primary` sobre fondo transparente/claro, hover con fondo `--accent-soft` y borde `accent-hover`. Crítico destructivo: color de alerta crítica (texto/ícono del token `alerta-critica`) con ícono de advertencia explícito + confirmación en 2 pasos (nunca solo el color para distinguirlo de un botón primario normal — y ahora, al no compartir hex con el acento de marca, la distinción es aún más clara). Advertencia: color de alerta media, texto sobre ese fondo. Deshabilitado opacidad 0.5. Padding 10px 20px. Área mínima de toque 44x44px (Ley de Fitts) en acciones críticas.
+
+**El botón es una placa de señalización (v9).** `.tsi-btn` deja de ser una píldora de SaaS: **ambas** esquinas superiores en ángulo (el hexágono aplanado, el mismo gesto de `.tsi-panel--placa`), tipografía de titulares en mayúsculas con `letter-spacing`, y un canto inferior "reflectante" de 3px — navy con cian en el primario, borde neutro que pasa a teal en hover en el secundario. Es la lógica de un letrero de carretera real.
+
+Dos decisiones dentro de eso:
+
+- **`font-stretch: 110%`, no el 125% de los titulares.** Una etiqueta de botón es corta y a ancho completo se desborda de su caja.
+- **⚠️ El recorte y el foco del teclado.** Hasta v8 el botón usaba `border-radius` justamente porque un `clip-path` **se come el anillo de foco**: `outline` se pinta por fuera de la caja y el recorte lo borra entero, dejando invisible por dónde va el teclado. La forma de placa vale la pena, pero no a ese precio. La salida es un **anillo `inset`**: `box-shadow` con `inset` se pinta dentro del elemento y sobrevive al recorte. Doble aro —fondo y luego acento— para que se despegue del relleno sea cual sea la variante. Verificado con `Tab` real en navegador, no asumido.
+
+**Botón solo-ícono: hexágono, no cuadrado.** El mismo recorte que `.tsi-node`, para que un botón de acción y un contenedor de ícono se lean como la misma familia de forma. Pierde el canto reflectante: en un hexágono el borde inferior es un vértice, no un lado.
+
+**Los botones de texto no llevan ícono.** Ni a la izquierda ni a la derecha. Es el gesto que delata una interfaz genérica —el mismo problema que la regla anti-íconos-de-IA de §5— y las mayúsculas de la display ya dan suficiente peso visual. Se retiraron los 34 que había repartidos por 17 pantallas. `.tsi-btn-icon` existe para el caso puramente icónico (menú, cerrar, ver, editar), y ahí el `aria-label` es obligatorio porque no hay texto que lea el lector de pantalla.
+
+**Acción destructiva declarada (`.tsi-btn-danger`, v9):** cancelar un caso, dar de baja una cuenta — una acción que el usuario elige explícitamente y que el sistema no puede deshacer solo. Antes cada pantalla repintaba `alert-critical` a mano sobre `tsi-btn-ghost`; se promueve a clase canónica porque reaparece en varios departamentos (despacho, suscripciones, soporte) y necesita verse igual en todos. Sigue exigiendo confirmación en 2 pasos igual que el crítico destructivo de arriba — la clase solo fija el estilo, no reemplaza el diálogo de confirmación.
+
+**Listas de caso como placa (`CaseCard`, v9):** reemplaza la fila de tabla genérica (que antes duplicaba plantilla desktop `<table>` y mobile "cards apiladas") por una sola plantilla responsive: `.tsi-panel--placa` con una perforación de severidad (nodo hexagonal sobre fondo `--route-navy` al 6%, borde de carril discontinuo) a la izquierda, ID/fecha, lugar y badge de estado. Aplicado en el listado de Accidentes activos; el resto de listados de caso del sistema deben migrar a este componente en vez de repetir tabla+cards.
+
+**Historial como vía (`RouteTracker`, v9):** reemplaza un historial de intentos que era una lista `<ol>` de puntos genéricos por una vía vertical con un nodo hexagonal por intento, coloreado con el tono del resultado (asignado/confirmado/rechazado) — la misma vía que ya usa el sidebar, no un timeline inventado aparte. Aplicado en "Historial de intentos" de Monitoreo de despacho.
+
+**Índice de informes como placas (`ReportTile`, v9):** los siete índices de informes (uno por departamento) usaban el mismo `<a>` con ícono `list` repetido en cada entrada. `ReportTile` lo reemplaza por un hex-shield sobre `.tsi-panel--placa`; el componente acepta un ícono por tile (`icon` input, Tabler) pero los siete índices migrados todavía pasan el valor por defecto (`list`) en todas sus entradas — asignar un ícono propio por informe queda pendiente y no cambia la interfaz del componente cuando se haga.
+
+## 5.1 Gráficos de datos (v9)
+
+Varias pantallas de gestión mostraban como **lista** cosas que eran repartos o evoluciones: «carga entrante frente a resuelta» era una lista de días, «evolución del incumplimiento» una lista de periodos, «por tipo» y «por cliente» listas de conteos. Una lista obliga a reconstruir la comparación leyendo número por número — que es justo el trabajo que un gráfico hace de un vistazo.
+
+**La forma la decide el trabajo del dato, no el gusto.** Esta es la tabla que se aplica antes de elegir nada:
+
+| Lo que el lector tiene que hacer | Forma | Componente |
+|---|---|---|
+| Comparar magnitudes entre categorías | Barras horizontales | `app-bar-chart` |
+| Ver una evolución en el tiempo | Línea | `app-line-chart` |
+| Un solo número con su meta | Anillo | `app-kpi-ring` (ya existía) |
+| Consumo contra un límite | Medidor | `app-meter` |
+| Comparar magnitudes **con signo** (delta, saldo) | Barras divergentes desde el centro | `app-bar-chart escala="divergente"` |
+| Un solo número sin meta | Cifra, **no** un gráfico de una barra | — |
+
+Tres notas sobre las formas menos obvias:
+
+- **El medidor no es una barra.** Una barra compara categorías; un medidor responde *¿cuánto de lo contratado se usa, y se pasó?*. El 100% no es el máximo del eje, es **el límite**. El relleno se topa ahí —pasarse no alarga la barra, porque eso sugeriría que el límite es mayor— y el exceso lo comunican el color de alerta, el porcentaje y la línea «excedido en N». Esto arregló un caso real: «19 de 5 unidades» se leía igual que un plan holgado.
+- **Divergente = dos polos opuestos + centro neutro.** Los polos son azul (positivo) y carmesí (negativo): frío contra cálido, que es lo que hace que se lean como contrarios; dos tonos fríos fallarían. No se usan tokens de alerta — un downgrade es la otra dirección de un movimiento normal, no una incidencia.
+- **Un embudo es una barra ordinal, no un cono.** Estrechar la figura distorsiona el área y exagera las caídas de las etapas anchas. Lo que un embudo comunica —el orden y la caída entre etapas— lo dan la rampa ordinal y la longitud.
+
+Horizontal y no columnas porque las etiquetas del sistema son largas («Pendiente de clasificacion», «Region Miami-Dade»): en vertical habría que rotarlas o truncarlas.
+
+### La paleta de gráficos es propia, y está verificada
+
+`--chart-cat-1..4` y `--chart-seq-1..5` (en `styles.css`) son **tokens aparte** de los de UI y de marca, porque codifican otra cosa: un color de serie es **identidad**, no jerarquía (`accent-*`) ni marca (`route-*`). Reusar el acento para una serie haría que un dato pareciera un botón.
+
+No se eligieron a ojo. Pasan el validador de la skill `dataviz` sobre `bg-surface`:
+
+| Check | Categórica (4 slots) | Rampa ordinal (5 pasos) |
+|---|---|---|
+| Banda de luminosidad / monotonía | PASS | PASS |
+| Cromaticidad / salto adyacente | PASS | PASS (≥ 0.06) |
+| Separación con daltonismo | PASS — peor par ΔE 10.2 (objetivo ≥ 8) | — |
+| Piso de visión normal | PASS — peor par ΔE 19.8 (piso 15) | — |
+| Contraste vs fondo | PASS (los 4 ≥ 3:1) | PASS (extremo claro 2.14:1) |
+
+**Cambiar un hex sin volver a pasar el validador rompe la garantía.** El orden de los cuatro slots es fijo y se asignan por posición, nunca ciclados: el orden *es* el mecanismo que mantiene distinguibles dos series contiguas.
+
+### Nominal contra ordinal — la decisión que se suele fallar
+
+- **Nominal** (planes, regiones, agentes, estados, tipos): el orden de las categorías no significa nada. **Todas las barras del mismo color**, ordenadas por magnitud. Teñir cada barra de un color distinto según su valor gasta el canal de identidad repitiendo lo que la longitud ya dice, e insinúa que son series distintas cuando no lo son.
+- **Ordinal** (prioridad Baja→Alta, tramos de antigüedad, etapas): el orden **sí** significa. Se ordena por rango —no por conteo— y se usa la rampa de un tono, para que la gravedad creciente se lea en el color sin recorrer las etiquetas.
+
+### Reglas de marca
+
+- Barra ≤ 24px de grosor (el sistema usa 10px), extremo del dato redondeado 4px y **recto en la línea base**, para que se vea de dónde crece.
+- Línea de 2px con uniones redondas; punto final de 8px con **anillo de 2px del color del fondo**, para que no se pierda donde dos series se cruzan. Relleno de área al 10% solo con una serie.
+- Rejilla fina, sólida y recesiva. Nunca punteada.
+- **Un solo eje Y.** Dos medidas de escalas distintas no se superponen con dos ejes: eso deja que la escala invente cruces que no existen. Si no comparten escala, van en dos gráficos.
+- **Leyenda siempre con dos o más series**; con una no lleva, porque el título ya la nombra y una caja de una muestra solo gasta sitio.
+- **El texto nunca lleva el color de la serie.** Valores, etiquetas y leyendas van en tokens de texto; la identidad la aporta la marca coloreada de al lado. Un tono claro es ilegible como texto.
+- **Rotular con criterio.** Las barras llevan su valor en la punta —por eso **no** tienen tooltip: repetiría un dato ya visible y lo dejaría fuera del alcance del teclado—. Las líneas no se pueden rotular punto a punto, así que ahí sí hay crosshair con tooltip.
+- **Ningún rótulo se recorta.** Cuántas fechas caben en el eje X se **mide** contra el ancho disponible, no se fija a un número: el mismo gráfico vive en un panel ancho y en media columna. El primero y el último se anclan al borde en vez de centrarse, porque centrados se salen del `viewBox`.
+- **El tope del eje Y se redondea a un valor par.** Los cortes están en 0, ½ y 1 del tope; con un tope impar el corte central cae en un valor fraccionario (3 → 1,5) y su etiqueta redondeada diría «2» sobre una línea que está en 1,5.
+- **`null` no es 0.** Un dato ausente corta la línea y deja la barra vacía con la palabra «sin dato»; dibujarlo como cero afirmaría algo que nadie midió.
+
+### Lo que la severidad no negocia
+
+Los tokens de alerta (`--alert-*`) **no** se usan como colores de serie, ni al revés. Un color de estado significa gravedad; si además fuera «la serie 3», un lector no podría saber cuál de las dos cosas le está diciendo. Cuando una serie *es* buena o mala (tasa de error, cumplido/incumplido) viste los tokens de alerta; cuando solo es «otra categoría», viste los de gráfico — nunca los dos en el mismo gráfico.
+
+---
+
+**Pendiente de v9 (alcance de esta pasada, no del sistema).** Los tokens globales (sin tema oscuro, radios, botones, paneles) y `AppShell` aplican a **las 52 páginas** de la app porque son CSS/shell compartido. Lo que **no** se migró todavía pieza por pieza: otras listas de caso fuera de Accidentes activos (candidatas a `CaseCard` — ej. `mi-seguimiento`, `historial-emergencias`, `cola-agente`), otros historiales fuera de Monitoreo de despacho (candidatos a `RouteTracker`), y el ícono por-informe de `ReportTile`. Migrar cada uno es una sustitución de plantilla acotada, no un rediseño: los componentes ya existen en `shared/ui/`.
+
+**De los gráficos (§5.1): cerrado.** No queda ninguna barra inline hecha a mano en el frontend — se migraron las 13 pantallas-Z de los nueve departamentos más el dashboard de Soporte. En el barrido salieron dos defectos que la lista escondía y el gráfico destapó, ambos descritos en §5.1: el delta de ingreso dibujado con `Math.abs()` y la utilización de límites sin señal de exceso de cupo.
+
+## 5.2 Correo transaccional (v9)
+
+`backend/templates/emails/alerta_critica_despacho.html` — el aviso de SRS §3.6.4 (sin unidades candidatas). Es la **única superficie del sistema donde el design system no aplica**, y conviene que quede escrito por qué:
+
+| En la app | En el correo | Motivo |
+|---|---|---|
+| Tokens CSS (`var(--…)`) | Hex escritos a mano en cada celda | Las variables CSS no existen en Outlook ni Gmail |
+| Flex / grid | Tablas anidadas con `role="presentation"` | Es lo único que compone igual en el motor Word de Outlook |
+| Archivo Expanded / Inter | Arial / Helvetica | Las fuentes web no cargan en correo |
+| Esquina cortada (`clip-path`) | Banda tricolor de las tres vías | `clip-path` no existe en correo; la banda sí sobrevive |
+
+Consecuencia práctica: **cambiar la paleta obliga a tocar ese archivo también**, porque no hay forma de enlazarlo con `styles.css`.
+
+Dos reglas que no son estéticas:
+
+- **El HTML nunca sustituye al texto plano, lo acompaña.** Se envía como `multipart/alternative`. La parte de texto es lo que leen quien tiene el HTML desactivado y lo que queda si un filtro lo elimina; un correo solo-HTML llega vacío a esos destinatarios. Hay un test que lo verifica.
+- **Maquetar es *fail-open*.** Si la plantilla fallara, la alerta sale igual en texto plano. Una alerta crítica que no se envía porque no se pudo maquetar sería el peor resultado posible.
 
 **Botones de solo ícono en barras densas:** cuando la caja visible tiene que ser menor de 44px (header de 64px, cabecera de modal, chip de archivo adjunto), el botón lleva `.tsi-hit-target`, que extiende el área de toque a 44x44 con un pseudo-elemento centrado sin ocupar espacio en el layout. Es la misma regla que ya rige la columna de acciones de las tablas — lo que debe medir 44 es el objetivo del dedo, no el dibujo. **Condición de uso:** no puede haber dos `.tsi-hit-target` con centros a menos de 44px, porque sus áreas se solaparían y la última en el DOM taparía a la anterior; en grupos densos hay que agrandar las cajas de verdad.
 
@@ -356,7 +471,7 @@ La forma debe mantenerse consistente en todos los componentes donde aparece seve
 **Estados de carga, vacío y error:** todo componente que dependa de datos asíncronos (tablas, listas, cards de KPI) debe contemplar sus 3 estados no felices, no solo el estado con datos:
 
 - **Loading:** *skeleton screens* — bloques con la silueta exacta del contenido real (filas de tabla, cards) en tono ligeramente distinto a `bg-surface` según el tema activo, con una animación sutil de opacidad. Nunca spinners centrados ni shimmer brillante (rompe la regla de "no glow" de la sección 7).
-- **Vacío:** ícono Tabler lineal (nunca ilustración o mascota genérica) + texto corto funcional describiendo la situación + acción si aplica (ej. "Registrar nuevo caso").
+- **Vacío:** ícono Tabler lineal (nunca ilustración o mascota genérica) + texto corto funcional describiendo la situación + acción si aplica (ej. "Registrar nuevo caso"). **Regla explícita añadida en v9:** nunca un ícono genérico de "IA" (cerebro, chispas/sparkles, robot) como decoración de ningún estado — TSI es un sistema de despacho de emergencias, no una demo de producto de IA, y esos íconos no traducen nada del isotipo ni de la severidad. Todo ícono nuevo sale del set outline de Tabler ya en uso (§ Iconografía).
 - **Error de carga:** ícono de alerta + mensaje claro + botón "Reintentar", usando el token `informacion` o `alerta-media` según la gravedad real del error (un fallo de red no es lo mismo que un error de permisos).
 
 El copy específico de cada estado (qué dice exactamente el mensaje vacío o de error en cada módulo) se define en el spec del caso de uso correspondiente — este documento solo fija el patrón visual, no el contenido.

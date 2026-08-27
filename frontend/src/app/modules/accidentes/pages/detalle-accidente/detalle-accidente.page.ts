@@ -23,7 +23,7 @@ import { SEVERIDAD_INFO, SeveridadInfo } from '../../severidad.constants';
 import { estadoInfo } from '../../estado.constants';
 import { EvidenciaApiService } from '../../../evidencia-unidad/services/evidencia-api.service';
 import { EvidenciaFotoItem } from '../../../evidencia-unidad/services/models/evidencia-unidad.types';
-import { estadoDespachoTono } from '../../../despacho/despacho-tono.constants';
+import { estadoDespachoLabel, estadoDespachoTono } from '../../../despacho/despacho-tono.constants';
 import { DespachoApiService } from '../../../despacho/services/despacho-api.service';
 import { IntentoDespacho } from '../../../despacho/services/models/despacho.types';
 
@@ -62,6 +62,7 @@ export class DetalleAccidentePage implements OnInit, AfterViewInit {
 
   readonly estado = estadoInfo;
   readonly despachoTono = estadoDespachoTono;
+  readonly despachoLabel = estadoDespachoLabel;
 
   ngOnInit(): void {
     const focus = this.route.snapshot.queryParamMap.get('focus');

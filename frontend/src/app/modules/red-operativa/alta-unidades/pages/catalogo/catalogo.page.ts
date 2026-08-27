@@ -40,8 +40,71 @@ import {
   UnidadEmergenciaData,
 } from '../../models/unidad-emergencia.contract';
 
-const CSV_PLANTILLA =
-  'idcondado,tipopropiedad,placa,contactoproveedor,unidademergencia,tipounidademergencia,gmail';
+/**
+ * Columnas del CSV de importación en lote.
+ *
+ * ⚠️ La primera columna era `idcondado`: una clave interna del catálogo que un
+ * proveedor de flota no tiene forma de conocer, y sin la cual el archivo entero
+ * fallaba (hallazgo #16 de la revisión del 24/08/2026). Ahora se escribe el
+ * **nombre** del condado y el backend lo resuelve; `estado` solo hace falta si
+ * hay condados homónimos.
+ *
+ * El mismo orden se usa para exportar, para que exportar → editar → reimportar
+ * sea un ciclo cerrado.
+ */
+const CSV_COLUMNAS = [
+  'condado',
+  'estado',
+  'tipopropiedad',
+  'placa',
+  'contactoproveedor',
+  'unidademergencia',
+  'tipounidademergencia',
+  'gmail',
+] as const;
+
+/** Comillas y separadores dentro de un campo romperían el archivo generado. */
+function escaparCampoCsv(valor: string): string {
+  return /[",\r\n]/.test(valor) ? `"${valor.replaceAll('"', '""')}"` : valor;
+}
+
+interface ColumnaCsv {
+  nombre: string;
+  obligatoria: string;
+  admite: string;
+}
+
+/** Documentación que se muestra junto al selector de archivo. */
+const CSV_DOCUMENTACION: ColumnaCsv[] = [
+  { nombre: 'condado', obligatoria: 'Sí', admite: 'Nombre del condado (ej. Miami-Dade)' },
+  { nombre: 'estado', obligatoria: 'Solo si el condado es ambiguo', admite: 'Nombre del estado' },
+  { nombre: 'tipopropiedad', obligatoria: 'Sí', admite: 'Propia | Externa' },
+  { nombre: 'placa', obligatoria: 'Sí', admite: '6 a 8 alfanuméricos, única' },
+  {
+    nombre: 'contactoproveedor',
+    obligatoria: 'Solo si tipopropiedad es Externa',
+    admite: 'Teléfono o contacto',
+  },
+  { nombre: 'unidademergencia', obligatoria: 'Sí', admite: 'Nombre de la unidad' },
+  {
+    nombre: 'tipounidademergencia',
+    obligatoria: 'Sí',
+    admite: 'Ambulancia | Grúa | Patrulla | Bomberos | Defensa Civil',
+  },
+  { nombre: 'gmail', obligatoria: 'Sí', admite: 'Correo del operador (recibe sus credenciales)' },
+];
+
+/** Fila de ejemplo de la plantilla: un archivo válido tal cual se descarga. */
+const CSV_EJEMPLO = [
+  'Miami-Dade',
+  'Florida',
+  'Externa',
+  'ABC-1234',
+  '5551234567',
+  'Ambulancia Norte 1',
+  'Ambulancia',
+  'operador.norte1@ejemplo.com',
+];
 
 const LIST_TIMEOUT_MS = 10_000;
 const PAGE_LIMIT = 20;
@@ -376,9 +439,54 @@ interface ReactivarDialogState {
         </button>
         @if (loteAbierto) {
           <p class="text-sm text-text-secondary">
-            Columnas:
-            <code class="rounded bg-bg-muted px-1 text-xs">{{ csvPlantilla }}</code>. Todo-o-nada.
+            La importación es <strong>todo-o-nada</strong>: si una fila falla, no se inserta
+            ninguna. Descarga la plantilla para partir de un archivo válido.
           </p>
+
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[34rem] border-collapse text-left text-xs">
+              <thead>
+                <tr class="border-b border-border-default text-text-secondary">
+                  <th class="py-2 pr-4 font-medium">Columna</th>
+                  <th class="py-2 pr-4 font-medium">¿Obligatoria?</th>
+                  <th class="py-2 font-medium">Valores admitidos</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of csvColumnas; track c.nombre) {
+                  <tr class="border-b border-border-default/50">
+                    <td class="py-2 pr-4">
+                      <code class="rounded bg-bg-muted px-1">{{ c.nombre }}</code>
+                    </td>
+                    <td class="py-2 pr-4 text-text-secondary">{{ c.obligatoria }}</td>
+                    <td class="py-2 text-text-secondary">{{ c.admite }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              (click)="descargarPlantillaCsv()"
+              data-testid="btn-plantilla-csv"
+              class="tsi-btn tsi-btn-secondary"
+            >
+              <app-tabler-icon name="download" [size]="16" />
+              Descargar plantilla
+            </button>
+            <button
+              type="button"
+              (click)="exportarCatalogoCsv()"
+              data-testid="btn-exportar-csv"
+              class="tsi-btn tsi-btn-secondary"
+            >
+              <app-tabler-icon name="download" [size]="16" />
+              Exportar catálogo
+            </button>
+          </div>
+
           <div class="flex flex-wrap items-center gap-3">
             <input
               type="file"
@@ -577,7 +685,7 @@ export class CatalogoPage implements OnInit, OnDestroy {
   private readonly load$ = new Subject<{ resetCursor: boolean }>();
   private readonly textoFiltro$ = new Subject<string>();
 
-  readonly csvPlantilla = CSV_PLANTILLA;
+  readonly csvColumnas = CSV_DOCUMENTACION;
   readonly pageLimit = PAGE_LIMIT;
   readonly listTableClass = LIST_TABLE_CLASS;
   readonly listTableThClass = LIST_TABLE_TH_CLASS;
@@ -772,6 +880,66 @@ export class CatalogoPage implements OnInit, OnDestroy {
   onArchivoSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.archivoSeleccionado = input.files?.[0] ?? null;
+  }
+
+  // ── CSV: plantilla y exportación ───────────────────────────────────────────
+
+  /**
+   * Descarga una plantilla con la cabecera y **una fila de ejemplo válida**.
+   *
+   * Una cabecera sola no basta: la importación es todo-o-nada, así que un valor
+   * mal escrito —"Grua" por "Grúa"— tumba el archivo entero. Ver un ejemplo
+   * correcto evita la mayor parte de esos viajes.
+   */
+  descargarPlantillaCsv(): void {
+    this.descargarCsv(
+      [CSV_COLUMNAS.join(','), CSV_EJEMPLO.map(escaparCampoCsv).join(',')].join('\r\n'),
+      'plantilla-unidades.csv',
+    );
+  }
+
+  /**
+   * Exporta el catálogo visible con las MISMAS columnas de la plantilla, para
+   * que sirva de base de un archivo de importación sin reordenar nada a mano.
+   *
+   * `gmail` sale en blanco a propósito: el listado no expone el correo de acceso
+   * de cada unidad —es credencial, no dato de flota— y el archivo se usa para
+   * dar de alta unidades **nuevas**, donde ese correo aún no existe. Las
+   * unidades ya registradas no se pueden reimportar de todas formas: su placa
+   * está tomada.
+   */
+  exportarCatalogoCsv(): void {
+    if (!this.unidades.length) {
+      this.notifications.alert('No hay unidades que exportar.', 'Exportar CSV');
+      return;
+    }
+    const filas = this.unidades.map((u) =>
+      [
+        u.condado ?? '',
+        u.estado ?? '',
+        u.tipopropiedad ?? '',
+        u.placa ?? '',
+        u.contactoproveedor ?? '',
+        u.unidademergencia ?? '',
+        u.tipounidademergencia ?? '',
+        '',
+      ]
+        .map((v) => escaparCampoCsv(String(v)))
+        .join(','),
+    );
+    this.descargarCsv([CSV_COLUMNAS.join(','), ...filas].join('\r\n'), 'unidades.csv');
+  }
+
+  private descargarCsv(contenido: string, nombreArchivo: string): void {
+    // BOM UTF-8: sin él Excel abre "Grúa" como "GrÃºa" y el archivo vuelve
+    // corrupto en la reimportación.
+    const blob = new Blob([`﻿${contenido}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombreArchivo;
+    enlace.click();
+    URL.revokeObjectURL(url);
   }
 
   importarLote(): void {

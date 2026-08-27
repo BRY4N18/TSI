@@ -62,6 +62,20 @@ Director Tecnológico ajusta timeout, pesos ranking, prioridades severidad→tip
 - **FR-UI-014**: Guards operador / unidad / director tecnológico en rutas lazy — RBAC backend.
 - **FR-UI-015**: Alerta UI «Sin unidades disponibles» cuando backend expone nota/estado crítico — RF-DES-006/008 (lectura; notificación Admin es backend).
 
+- **FR-UI-016**: Monitoreo: **filtros propios** de búsqueda por texto (identificador o descripción),
+  estado y severidad, con conteo «N de M casos» y CTA «Limpiar filtros». El vacío por filtro se
+  distingue del vacío por ausencia de casos: son dos situaciones distintas y el mensaje dice cuál
+  es. Se filtra en cliente sobre la página ya cargada — la lista viene acotada a los casos en
+  despacho activo, así que es instantáneo y no cuesta un viaje por tecla.
+  *(Hallazgo #3 de la revisión del 24/08/2026: «a este apartado le hace falta un filtro de
+  búsqueda, ya que actualmente solo se muestra una tabla». El aviso de truncado llegaba a remitir
+  al usuario a «los filtros de la lista de accidentes» —otra pantalla—: para acotar lo que estaba
+  viendo tenía que irse a otro sitio y volver.)*
+- **FR-UI-017**: Panel de la unidad: tabla **Historial de despachos** (caso, fecha de despacho,
+  llegada y fase), junto al historial de estado que ya existía — RN-DES-012.
+  *(Hallazgo #13: «no hay un historial de las unidades de emergencia y su despacho». El historial
+  de estado solo cuenta cambios de disponibilidad; no dice a qué acudió la unidad.)*
+
 ## Out of Scope
 
 - Cambiar algoritmo Haversine, jobs timeout O63, workers Kafka O63, hook plan Suscripciones (fail-open).

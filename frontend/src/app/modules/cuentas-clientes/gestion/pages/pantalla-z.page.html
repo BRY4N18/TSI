@@ -125,37 +125,23 @@
           }
           @default {
             @if (idPantalla() === 'ciclo') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['idcliente'])) {
-                  <li data-testid="fila-ocupacion">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <!-- El nombre lo resuelve el servicio; el identificador
-                           queda de respaldo cuando no resuelve, que es una
-                           anomalía y no debe disfrazarse de nombre. -->
-                      <span class="text-text-secondary">{{
-                        texto(fila['cuenta']) || 'Cuenta #' + texto(fila['idcliente'])
-                      }}</span>
-                      @if (num(fila['tope_plan']) === null) {
-                        <span data-testid="ocupacion-sin-dato">sin dato</span>
-                      } @else {
-                        <span class="font-semibold tabular-nums text-text-primary">
-                          {{ num(fila['usuarios_conocidos']) | number }} /
-                          {{ num(fila['tope_plan']) | number }}
-                          · cobertura {{ pct(num(fila['pct_cobertura_pertenencia'])) }}
-                        </span>
-                      }
-                    </div>
-                    @if (num(fila['tope_plan']) !== null) {
-                      <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                        <div
-                          class="h-full rounded-md bg-accent-primary"
-                          [style.width.%]="(num(fila['pct_ocupacion']) ?? 0) * 100"
-                        ></div>
-                      </div>
+              <div class="mt-4 grid gap-4" data-testid="fila-ocupacion">
+                @for (m of medidoresCiclo(); track m.cuenta) {
+                  <div class="grid gap-1">
+                    <app-meter
+                      [etiqueta]="m.cuenta"
+                      [usado]="m.usados"
+                      [limite]="m.tope"
+                      unidad="usuarios"
+                    />
+                    @if (m.tope === null) {
+                      <span class="text-xs text-text-secondary" data-testid="ocupacion-sin-dato">sin dato</span>
+                    } @else {
+                      <span class="text-xs text-text-secondary">cobertura {{ m.cobertura }}</span>
                     }
-                  </li>
+                  </div>
                 }
-              </ul>
+              </div>
               @if (notaCobertura()) {
                 <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="nota-cobertura">
                   {{ notaCobertura() }}
@@ -163,30 +149,10 @@
               }
             }
             @if (idPantalla() === 'incorporacion') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['etapa']) + texto(fila['orden'])) {
-                  <li data-testid="fila-etapa">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <!-- Las etapas son literales del catálogo declarado
-                           (cambio_password, perfil_corporativo): se humanizan
-                           como el resto de enumeraciones del sistema. -->
-                      <span class="text-text-secondary">{{ humanizar(texto(fila['etapa'])) }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ num(fila['clientes_que_llegaron']) | number }}
-                        @if (num(fila['clientes_que_llegaron']) === 0) {
-                          <span data-testid="etapa-cero"> · cero</span>
-                        }
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['clientes_que_llegaron']) ?? 0) / maxBarra(cargaVisual().data, 'clientes_que_llegaron')) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="fila-etapa">
+                <!-- Embudo: etapas ordenadas -> escala ordinal. -->
+                <app-bar-chart [datos]="barrasIncorporacion()" escala="ordinal" />
+              </div>
               @if (notaCatalogo()) {
                 <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="nota-catalogo">
                   {{ notaCatalogo() }}
@@ -194,26 +160,9 @@
               }
             }
             @if (idPantalla() === 'acceso') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['fecha']) + texto(fila['franja'])) {
-                  <li data-testid="fila-franja">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">
-                        {{ texto(fila['fecha']) }} · {{ texto(fila['franja']) }}
-                      </span>
-                      <span class="font-semibold text-text-primary">
-                        {{ num(fila['concurrencia_maxima']) | number }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['concurrencia_maxima']) ?? 0) / maxBarra(cargaVisual().data, 'concurrencia_maxima')) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="fila-franja">
+                <app-line-chart [etiquetas]="etiquetasAcceso()" [series]="seriesAcceso()" />
+              </div>
               @if (notaSolape()) {
                 <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="nota-solape">
                   {{ notaSolape() }}

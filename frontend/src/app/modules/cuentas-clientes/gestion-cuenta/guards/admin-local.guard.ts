@@ -21,7 +21,13 @@ export const adminLocalGuard: CanActivateFn = (route) => {
       if (res.data.admin_local_id === profile.idusuario) {
         return true;
       }
-      return router.createUrlTree(['/cuentas-clientes']);
+      // Antes redirigía al hub en silencio: el operador veía el ID que había
+      // escrito borrado y ningún aviso, indistinguible de un clic perdido.
+      // El query param deja que el hub explique por qué, en vez de que
+      // parezca que el botón no hizo nada.
+      return router.createUrlTree(['/cuentas-clientes'], {
+        queryParams: { denegado: 'admin_local' },
+      });
     }),
   );
 };

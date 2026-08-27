@@ -71,6 +71,7 @@ PASOS = [
 
     # --- 7. Estrategico y casos borde ----------------------------------------
     ("backend/scripts/seed_demo_director_estrategia.py", True, "tablero estrategico"),
+    ("database/siembra_roles_tacticos.py", True, "roles y usuarios de la capa tactica"),
     # Va el ultimo a proposito: los casos borde contrastan contra lo normal, asi
     # que necesitan que lo normal ya exista.
     ("database/seed_casos_borde_informes.py", False, "casos borde de informes"),

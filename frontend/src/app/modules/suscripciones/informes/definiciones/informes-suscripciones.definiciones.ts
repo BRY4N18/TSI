@@ -30,32 +30,21 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'cuenta', etiqueta: 'Cuenta', principal: true },
       { campo: 'plan', etiqueta: 'Plan' },
-      { campo: 'nivel', etiqueta: 'Nivel', soloEscritorio: true },
+      { campo: 'nivel', etiqueta: 'Nivel', soloDetalle: true },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'precio', etiqueta: 'Precio', formato: 'moneda', alineacion: 'derecha' },
-      { campo: 'periodicidad', etiqueta: 'Periodicidad', soloEscritorio: true },
+      { campo: 'periodicidad', etiqueta: 'Periodicidad', soloDetalle: true },
       { campo: 'renovacion_automatica', etiqueta: 'Renovación automática', formato: 'booleano' },
       { campo: 'fecha_inicio', etiqueta: 'Inicio', formato: 'fecha' },
-      { campo: 'fecha_fin', etiqueta: 'Fin', formato: 'fecha' },
-      // Ausentes salvo en las canceladas, y eso es correcto.
-      { campo: 'motivo_cancelacion', etiqueta: 'Motivo de cancelación', soloEscritorio: true },
-      { campo: 'fecha_cancelacion', etiqueta: 'Cancelada', formato: 'fecha', soloEscritorio: true },
-      // Objeto `{plan, se_aplica_el}`: la capa lo pinta como texto, y ausente
-      // significa que no hay cambio programado.
-      // ⚠️ **Dos columnas, porque el backend devuelve dos campos.** Hasta el
-      // 2026-08-22 devolvía un objeto `{plan, se_aplica_el}` en un solo campo, y
-      // la celda pintaba `[object Object]`: este catálogo declara campos
-      // escalares y la tabla no recorre objetos. Se aplanó en el backend.
-      //
-      // La fecha no es decorado: una reducción aprobada **no se aplica al
-      // aprobarse** sino al cerrar el período ya pagado. Sin ella, la tabla dice
-      // que hay un cambio pendiente y no dice cuándo.
-      { campo: 'cambio_programado_plan', etiqueta: 'Cambio programado', soloEscritorio: true },
+      { campo: 'fecha_fin', etiqueta: 'Fin', formato: 'fecha', soloDetalle: true },
+      { campo: 'motivo_cancelacion', etiqueta: 'Motivo de cancelación', soloDetalle: true },
+      { campo: 'fecha_cancelacion', etiqueta: 'Cancelada', formato: 'fecha', soloDetalle: true },
+      { campo: 'cambio_programado_plan', etiqueta: 'Cambio programado', soloDetalle: true },
       {
         campo: 'cambio_programado_se_aplica_el',
         etiqueta: 'Se aplica el',
         formato: 'fecha',
-        soloEscritorio: true,
+        soloDetalle: true,
       },
     ],
     filtros: [
@@ -80,15 +69,15 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'numero_factura', etiqueta: 'Factura', principal: true },
       { campo: 'cuenta', etiqueta: 'Cuenta' },
-      { campo: 'periodo', etiqueta: 'Período', soloEscritorio: true },
-      { campo: 'tipo_documento', etiqueta: 'Tipo', soloEscritorio: true },
-      { campo: 'monto_base', etiqueta: 'Base', formato: 'moneda', alineacion: 'derecha', soloEscritorio: true },
-      { campo: 'impuestos', etiqueta: 'Impuestos', formato: 'moneda', alineacion: 'derecha', soloEscritorio: true },
+      { campo: 'periodo', etiqueta: 'Período', soloDetalle: true },
+      { campo: 'tipo_documento', etiqueta: 'Tipo', soloDetalle: true },
+      { campo: 'monto_base', etiqueta: 'Base', formato: 'moneda', alineacion: 'derecha', soloDetalle: true },
+      { campo: 'impuestos', etiqueta: 'Impuestos', formato: 'moneda', alineacion: 'derecha', soloDetalle: true },
       { campo: 'monto_total', etiqueta: 'Total', formato: 'moneda', alineacion: 'derecha' },
       { campo: 'estado_pago', etiqueta: 'Estado de pago', formato: 'enumeracion' },
-      { campo: 'reintentos', etiqueta: 'Reintentos', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
+      { campo: 'reintentos', etiqueta: 'Reintentos', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
       { campo: 'fecha_emision', etiqueta: 'Emitida', formato: 'fecha' },
-      { campo: 'fecha_vencimiento', etiqueta: 'Vence', formato: 'fecha' },
+      { campo: 'fecha_vencimiento', etiqueta: 'Vence', formato: 'fecha', soloDetalle: true },
       { campo: 'dias_mora', etiqueta: 'Días de mora', formato: 'numero', alineacion: 'derecha' },
     ],
     filtros: [
@@ -113,14 +102,11 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
       { campo: 'plan_actual', etiqueta: 'Plan actual' },
       { campo: 'plan_solicitado', etiqueta: 'Plan solicitado' },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
-      { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
-      // ⚠️ Se publicaba en días y **todas** las esperas salían «0»: las
-      // solicitudes reales se resuelven en minutos. Ahora viaja en minutos y la
-      // columna lo lee según la magnitud.
+      { campo: 'motivo', etiqueta: 'Motivo', soloDetalle: true },
       { campo: 'minutos_espera', etiqueta: 'En espera', formato: 'duracion_minutos', alineacion: 'derecha' },
-      { campo: 'resuelta_por', etiqueta: 'Resuelta por', soloEscritorio: true },
-      { campo: 'motivo_rechazo', etiqueta: 'Motivo de rechazo', soloEscritorio: true },
-      { campo: 'fecha_solicitud', etiqueta: 'Solicitada', formato: 'fecha_hora' },
+      { campo: 'resuelta_por', etiqueta: 'Resuelta por', soloDetalle: true },
+      { campo: 'motivo_rechazo', etiqueta: 'Motivo de rechazo', soloDetalle: true },
+      { campo: 'fecha_solicitud', etiqueta: 'Solicitada', formato: 'fecha_hora', soloDetalle: true },
       { campo: 'fecha_resolucion', etiqueta: 'Resuelta', formato: 'fecha_hora' },
     ],
     filtros: [
@@ -141,11 +127,9 @@ export const INFORMES_SUSCRIPCIONES: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'cuenta', etiqueta: 'Cuenta', principal: true },
       { campo: 'tipo', etiqueta: 'Tipo' },
-      // ⛔ Solo los últimos dígitos. El token y el número completo no salen del
-      // backend: es dato de cobro, del mismo orden que el secreto de un partner.
       { campo: 'ultimos_digitos', etiqueta: 'Últimos dígitos' },
       { campo: 'fecha_expiracion', etiqueta: 'Expira', formato: 'fecha' },
-      { campo: 'dias_para_caducar', etiqueta: 'Días para caducar', formato: 'numero', alineacion: 'derecha' },
+      { campo: 'dias_para_caducar', etiqueta: 'Días para caducar', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
     ],
     filtros: [
       { nombre: 'caduca_en_dias', etiqueta: 'Caduca en (días)', tipo: 'numero' },

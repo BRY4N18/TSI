@@ -5,17 +5,14 @@ import {
   ElementRef,
   Input,
   OnChanges,
-  Injector,
   OnDestroy,
   SimpleChanges,
   ViewChild,
-  effect,
   inject,
 } from '@angular/core';
 import * as L from 'leaflet';
 
 import { RutaService } from '../../services/ruta.service';
-import { ThemeService } from '../../theme/theme.service';
 import { TablerIconName } from '../icon/tabler-icon.component';
 import { capasDeRuta, nodoPin, unidadPin } from './map-pins';
 import { crearTileLayer } from './map-tile';
@@ -58,8 +55,6 @@ export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDe
   @ViewChild('mapContainer', { static: true }) private readonly mapContainer!: ElementRef<HTMLDivElement>;
 
   private readonly rutaService = inject(RutaService);
-  private readonly themeService = inject(ThemeService);
-  private readonly injector = inject(Injector);
   private map: L.Map | null = null;
   private ruta?: L.LayerGroup;
   private tileLayer: L.TileLayer | null = null;
@@ -69,20 +64,8 @@ export class ReadOnlyRouteMapComponent implements AfterViewInit, OnChanges, OnDe
       [this.destinoLat, this.destinoLng],
       14,
     );
-    this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
+    this.tileLayer = crearTileLayer().addTo(this.map);
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
-
-    effect(
-      () => {
-        const isDark = this.themeService.isDark();
-        if (!this.map) {
-          return;
-        }
-        this.tileLayer?.remove();
-        this.tileLayer = crearTileLayer(isDark).addTo(this.map);
-      },
-      { injector: this.injector },
-    );
 
     this.pintar();
   }

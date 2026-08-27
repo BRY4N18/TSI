@@ -22,6 +22,21 @@ from apps.soporte_cliente.domain_constants import (
 ROLES_REPORTADORES = frozenset({ROL_CLIENTE, ROL_PARTNER_INTEGRACION})
 
 
+# ⚠️ **`Administrador` NO atiende tickets** (revisión 24/08/2026, hallazgo #18).
+#
+# Hasta 2026-08-26 todos los permisos de este módulo incluían `ROL_ADMINISTRADOR`,
+# así que la gestión de tickets —tomar, comentar, escalar, resolver, y la cola
+# entera con sus notas internas— quedaba abierta a quien administra la
+# plataforma. La revisora lo señaló al revés de como suele aparecer un bug de
+# permisos: no es que a alguien le falte acceso, es que le sobra.
+#
+# Administrar la plataforma y atender a un cliente son dos trabajos distintos.
+# El Administrador conserva lo que sí es suyo —configurar el SLA
+# (`IsAdministradorSLA`, CU-O97)—; la cola es del equipo de soporte.
+ROLES_AGENTE = frozenset({ROL_SOPORTE})
+ROLES_NIVEL_ESCALADO = frozenset({ROL_DESARROLLADOR_APIS, ROL_DIRECTOR_TECNOLOGICO})
+
+
 class IsClienteSoporte(BasePermission):
     """Reportador del ticket (Cliente o PartnerIntegracion) — registra, comenta,
     confirma cierre, reabre. La pertenencia del ticket la sigue filtrando cada
@@ -42,7 +57,7 @@ class IsSoporteAgente(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return ROL_SOPORTE in roles or ROL_ADMINISTRADOR in roles
+        return bool(ROLES_AGENTE & roles)
 
 
 class IsNivelEscaladoSoporte(BasePermission):
@@ -53,11 +68,7 @@ class IsNivelEscaladoSoporte(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return (
-            ROL_DESARROLLADOR_APIS in roles
-            or ROL_DIRECTOR_TECNOLOGICO in roles
-            or ROL_ADMINISTRADOR in roles
-        )
+        return bool(ROLES_NIVEL_ESCALADO & roles)
 
 
 class IsSoporteAgenteOrNivelEscalado(BasePermission):
@@ -69,10 +80,7 @@ class IsSoporteAgenteOrNivelEscalado(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return bool(
-            roles
-            & {ROL_SOPORTE, ROL_ADMINISTRADOR, ROL_DESARROLLADOR_APIS, ROL_DIRECTOR_TECNOLOGICO}
-        )
+        return bool(roles & (ROLES_AGENTE | ROLES_NIVEL_ESCALADO))
 
 
 class IsAdministradorSLA(BasePermission):
@@ -93,18 +101,7 @@ class IsSoporteAgenteOrCliente(BasePermission):
         if not user or not getattr(user, "is_authenticated", False):
             return False
         roles = set(getattr(user, "roles", []))
-        return bool(
-            roles
-            & (
-                ROLES_REPORTADORES
-                | {
-                    ROL_SOPORTE,
-                    ROL_ADMINISTRADOR,
-                    ROL_DESARROLLADOR_APIS,
-                    ROL_DIRECTOR_TECNOLOGICO,
-                }
-            )
-        )
+        return bool(roles & (ROLES_REPORTADORES | ROLES_AGENTE | ROLES_NIVEL_ESCALADO))
 
 
 def es_solo_reportador(roles) -> bool:
@@ -132,14 +129,11 @@ from core.auth.roles_tacticos import ROL_GERENTE_EXITO_CLIENTE  # noqa: E402
 #: `GerenteExitoCliente` es la autoridad del departamento (acceso-tactico §5).
 #: **No es `SupervisorSoporte`**: ese es el destinatario operativo de un escalado
 #: automático, no la autoridad. Conviven y sus permisos son independientes.
+#: `Administrador` tampoco está aquí: ver la nota de `ROLES_AGENTE`. Los informes
+#: de soporte son la lectura del trabajo de este equipo, no un tablero de
+#: administración de la plataforma.
 ROLES_ATENCION = frozenset(
-    {
-        ROL_SOPORTE,
-        ROL_ADMINISTRADOR,
-        ROL_DESARROLLADOR_APIS,
-        ROL_DIRECTOR_TECNOLOGICO,
-        ROL_GERENTE_EXITO_CLIENTE,
-    }
+    ROLES_AGENTE | ROLES_NIVEL_ESCALADO | {ROL_GERENTE_EXITO_CLIENTE}
 )
 
 #: Tickets: atienden y reportan. Escalados: **solo atienden** (FR-008).

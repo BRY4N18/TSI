@@ -34,7 +34,6 @@
         [queryParams]="soloLectura() ? { mode: 'view' } : {}"
         class="tsi-btn tsi-btn-secondary"
       >
-        <app-tabler-icon name="camera" [size]="16" />
         Galería
       </a>
       <button
@@ -42,7 +41,6 @@
         (click)="recargar()"
         class="tsi-btn tsi-btn-secondary"
       >
-        <app-tabler-icon name="refresh" [size]="16" />
         Recargar
       </button>
     </div>
@@ -180,13 +178,19 @@
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
                 Identificación *
+                <!-- 10 dígitos exactos: el campo aceptaba letras (hallazgo #9).
+                     `inputmode` saca el teclado numérico en la tablet de la
+                     unidad, que es donde se captura esto. -->
                 <input
                   class="tsi-input mt-1 w-full"
                   [(ngModel)]="identificacion"
                   name="identificacion"
                   autocomplete="off"
-          placeholder="Documento de identidad"
-        />
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="\d{10}"
+                  placeholder="10 dígitos"
+                />
               </label>
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Nombres *
@@ -208,12 +212,15 @@
               </label>
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Género
-                <input
-                  class="tsi-input mt-1 w-full"
-                  [(ngModel)]="genero"
-                  name="genero"
-          placeholder="Ej. Femenino"
-        />
+                <!-- Catálogo cerrado, no texto libre: "M", "Masc." y
+                     "masculino" acababan siendo tres géneros distintos en el
+                     modelo analítico. -->
+                <select class="tsi-select mt-1 w-full" [(ngModel)]="genero" name="genero">
+                  <option value="">— Sin especificar —</option>
+                  @for (g of generos; track g) {
+                    <option [value]="g">{{ g }}</option>
+                  }
+                </select>
               </label>
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Ciudad de residencia
@@ -235,68 +242,85 @@
               </label>
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
                 Estado de licencia
-                <input
-                  class="tsi-input mt-1 w-full"
+                <select
+                  class="tsi-select mt-1 w-full"
                   [(ngModel)]="estadolicencia"
                   name="estadolicencia"
-          placeholder="Ej. Vigente"
-        />
+                >
+                  <option value="">— Sin especificar —</option>
+                  @for (e of estadosLicencia; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
               </label>
               <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary sm:col-span-2">
                 Años de experiencia
                 <input
                   type="number"
                   min="0"
+                  max="80"
+                  step="1"
                   class="tsi-input mt-1 w-full"
                   [(ngModel)]="aniosexperiencia"
                   name="aniosexperiencia"
-          placeholder="Ej. 5"
-        />
+                  placeholder="Ej. 5"
+                />
               </label>
             </div>
 
+            <!--
+              Estado del conductor: elección explícita de dos opciones, no un
+              check que hay que interpretar (hallazgo #5).
+
+              Eran cuatro casillas marcadas por defecto —"Sobrio", "Atento",
+              "Ileso", "Con seguridad"— y la unidad tenía que deducir qué
+              significaba desmarcarlas. Peor: al venir marcadas, no tocar nada
+              afirmaba que el conductor estaba en perfectas condiciones, que es
+              precisamente la declaración que más pesa en un siniestro.
+
+              Ahora cada eje nombra sus DOS estados y ninguno viene elegido: hay
+              que decidir, y lo que se decide está escrito.
+            -->
             <fieldset class="mt-4 border-0 p-0">
-              <legend class="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                Estado del conductor *
+              <legend class="mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                Estado del conductor en el momento del siniestro *
               </legend>
-              <div class="flex flex-wrap gap-x-4 gap-y-2">
-                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border-default"
-                    [(ngModel)]="estadosobriedad"
-                    name="estadosobriedad"
-                  />
-                  Sobrio
-                </label>
-                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border-default"
-                    [(ngModel)]="nivelatencion"
-                    name="nivelatencion"
-                  />
-                  Atento
-                </label>
-                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border-default"
-                    [(ngModel)]="condicionfisica"
-                    name="condicionfisica"
-                  />
-                  Ileso
-                </label>
-                <label class="inline-flex items-center gap-2 text-sm text-text-primary">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-border-default"
-                    [(ngModel)]="usoseguridad"
-                    name="usoseguridad"
-                  />
-                  Con seguridad
-                </label>
+
+              <div class="grid gap-4">
+                @for (eje of ejesEstadoConductor; track eje.campo) {
+                  <div class="grid gap-1.5">
+                    <span class="text-xs font-medium text-text-secondary">{{ eje.etiqueta }}</span>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2">
+                      <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                        <input
+                          type="radio"
+                          class="h-4 w-4 border-border-default"
+                          [name]="eje.campo"
+                          [checked]="estadoConductor[eje.campo] === true"
+                          (change)="setEstadoConductor(eje.campo, true)"
+                        />
+                        {{ eje.siEtiqueta }}
+                      </label>
+                      <label class="inline-flex items-center gap-2 text-sm text-text-primary">
+                        <input
+                          type="radio"
+                          class="h-4 w-4 border-border-default"
+                          [name]="eje.campo"
+                          [checked]="estadoConductor[eje.campo] === false"
+                          (change)="setEstadoConductor(eje.campo, false)"
+                        />
+                        {{ eje.noEtiqueta }}
+                      </label>
+                    </div>
+                  </div>
+                }
               </div>
+
+              @if (!estadoConductorCompleto()) {
+                <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="estado-conductor-pendiente">
+                  Falta declarar: {{ ejesPendientes() }}.
+                </p>
+              }
             </fieldset>
           </div>
 
@@ -463,12 +487,15 @@
             </label>
             <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
               Género
-              <input
-                class="tsi-input mt-1 w-full"
+              <select
+                class="tsi-select mt-1 w-full"
                 [(ngModel)]="implicadoGenero"
                 name="implicadoGenero"
-          placeholder="Ej. Femenino"
-        />
+              >
+                <option value="">— Seleccionar —</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
             </label>
             <label class="block text-xs font-medium uppercase tracking-wide text-text-secondary">
               Edad

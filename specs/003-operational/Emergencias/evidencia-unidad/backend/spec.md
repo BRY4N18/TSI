@@ -230,6 +230,85 @@ El Técnico de campo o Unidad debe poder documentar personas involucradas que **
 - **RN-EVI-021:** Tras sync exitosa de un ítem conductor, el cliente DEBE eliminar el borrador local correspondiente (minimización de datos).
 - **RN-EVI-022:** El número de vínculos activos conductor/vehículo (`Fact_Conductor_Accidente` con `activo=true`) DEBE ser ≤ `Fact_Accidente.numvehiculos`. Si `numvehiculos` es nulo o &lt; 1, rechazar altas con error de negocio hasta que el caso declare el número. El intento que excede el tope se rechaza (HTTP 422).
 
+### RN-EVI-023 — Formato de los campos de identidad del conductor (RN-VAL-CAMPOS)
+
+El alta de conductor valida **formato**, no solo presencia. Reglas, aplicadas en
+`EnriquecimientoConductorService` con espejo en el formulario:
+
+| Campo | Regla |
+|---|---|
+| `identificacion` | Exactamente 10 dígitos (cédula EC). Sin letras ni símbolos. Obligatorio. |
+| `nombres`, `apellidos` | Letras (con acentos y ñ), espacios, apóstrofo y guion; 2 a 50 caracteres. Obligatorios. No pueden ser solo espacios. |
+| `ciudadresidencia` | Mismo patrón que nombre. Opcional. |
+| `genero` | Catálogo cerrado: `Masculino \| Femenino \| Otro \| No informa`. Opcional. |
+| `estadolicencia` | Catálogo cerrado: `Vigente \| Caducada \| Suspendida \| Sin licencia`. Opcional. |
+| `aniosexperiencia` | Entero 0–80. Opcional. |
+| `vehiculo.ejes` | Entero 1–20. Opcional. |
+
+El error nombra el **campo culpable** (`"conductor.identificacion: debe tener exactamente 10
+dígitos…"`), no un genérico "son requeridos".
+
+Definición única: `core/validacion/campos.py` (garantía) y
+`frontend/src/app/shared/validacion/campos.validacion.ts` (conveniencia). El navegador se salta
+llamando al endpoint directamente, así que la regla del backend es la que manda; si cambia una,
+cambian las dos.
+
+Los catálogos cerrados importan más de lo que parece aquí: `genero` y `estadolicencia` eran texto
+libre, y "M", "Masc." y "masculino" acababan siendo tres géneros distintos en el modelo analítico.
+Y como el conductor se reutiliza por `identificacion` (RN-EVI-019), una cédula mal capturada no
+ensucia un registro: **parte la identidad en dos**.
+
+Origen (revisión de calidad 24/08/2026, hallazgo #9): "varios campos no están validados, se pueden
+ingresar espacios en blanco, caracteres especiales o letras en donde no debería, como por ejemplo
+el campo cédula del apartado de enriquecimiento del sitio acepta letras".
+
+### RN-EVI-025 — El estado del conductor se declara, no se deduce de casillas
+
+Los cuatro ejes de `Dim_Estado_Conductor` se capturan como **elección explícita de
+dos opciones**, con ambos lados nombrados, y **sin valor por defecto**:
+
+| Columna | `true` se lee como | `false` se lee como |
+|---|---|---|
+| `estadosobriedad` | Sobrio | Bajo efectos de alcohol o sustancias |
+| `nivelatencion` | Atento a la vía | Distraído |
+| `condicionfisica` | Ileso | Lesionado o impedido |
+| `usoseguridad` | Lo usaba | No lo usaba |
+
+Mientras falte declarar algún eje, el alta se rechaza nombrando **cuáles** faltan.
+
+Origen (revisión 24/08/2026, hallazgo #5): eran cuatro casillas —"Sobrio",
+"Atento", "Ileso", "Con seguridad"— **marcadas por defecto**. Dos problemas
+distintos:
+
+1. Desmarcar exigía adivinar qué afirmaba lo contrario. La revisora lo planteó
+   así: «en vez de sobrio se le cambia a estado de ebriedad, depende de cómo el
+   usuario pueda percibir mejor la opción que va a seleccionar».
+2. Al venir marcadas, **no tocar nada afirmaba** que el conductor estaba sobrio,
+   atento, ileso y con cinturón — la declaración que más pesa en un siniestro,
+   hecha por omisión.
+
+⚠️ **Pendiente, no resuelto aquí:** los hallazgos #6 y #7 piden más opciones (bajo
+efectos de qué) y detalle libre (qué sustancia). `Dim_Estado_Conductor` solo tiene
+cuatro booleanos y no hay dónde guardar eso, así que requiere cambio de esquema.
+Ver la decisión #54 en `decisiones-pendientes.md`.
+
+### RN-EVI-024 — La captura de evidencia se guarda en una sola acción
+
+El cuadro de diálogo de captura guarda **todo su contenido de una vez**: la fotografía y la nota de
+campo, con un único botón.
+
+- Si falla una de las dos, se conserva en el formulario **solo la que falló**, para que la unidad
+  reintente sin volver a escribir lo que ya se guardó.
+- El modo de transporte no lo elige la unidad: sin conexión va a la cola local, y una subida que
+  falla por red **cae a la cola** en vez de perderse.
+- El archivo seleccionado se muestra como miniatura antes de guardar.
+
+Origen (hallazgos #10 y #11, con la aclaración de la revisión): el modal tenía **cuatro** botones
+—"Subir en línea"/"Guardar offline" para la foto y "Registrar en línea"/"Guardar offline" para la
+nota—, cada par enviando solo su mitad. Quien adjuntaba la foto y escribía la nota perdía la nota:
+"se sube solo uno a la vez". Además obligaba a la unidad a decidir el modo de transporte, algo que
+el sistema ya sabe por sí mismo (`ConnectivityService`), y no mostraba vista previa del archivo.
+
 ## 7. Entradas
 
 - `idaccidente` (STRING, requerido para adjuntar evidencia/nota/enriquecimiento) — debe existir y estar activo en `Fact_Accidente`.

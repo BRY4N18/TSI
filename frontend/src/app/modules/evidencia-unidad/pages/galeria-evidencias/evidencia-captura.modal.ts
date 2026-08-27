@@ -106,16 +106,22 @@ const FOCUSABLE_SELECTOR =
               </label>
             } @else {
               <div class="flex items-center gap-3 rounded-md border border-border-default bg-bg-page p-3">
-                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-bg-surface text-text-secondary">
-                  <app-tabler-icon name="camera" [size]="16" />
-                </span>
+                <!-- Miniatura real del archivo elegido: el ícono genérico no
+                     dejaba comprobar que la foto seleccionada era la correcta
+                     (hallazgo #11). -->
+                <img
+                  [src]="previewFoto()"
+                  alt="Vista previa de la evidencia seleccionada"
+                  data-testid="preview-foto"
+                  class="h-14 w-14 shrink-0 rounded-md border border-border-default object-cover"
+                />
                 <div class="grid min-w-0 flex-1">
                   <span class="truncate text-sm font-medium text-text-primary">{{ archivoFoto.name }}</span>
                   <span class="text-xs text-text-secondary">{{ formatearTamano(archivoFoto.size) }}</span>
                 </div>
                 <button
                   type="button"
-                  (click)="archivoFoto = null"
+                  (click)="quitarFoto()"
                   aria-label="Quitar foto"
                   class="tsi-hit-target inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-bg-surface"
                 >
@@ -123,30 +129,6 @@ const FOCUSABLE_SELECTOR =
                 </button>
               </div>
             }
-
-            <div class="flex flex-wrap gap-3">
-              <button
-                type="button"
-                (click)="subirFoto()"
-                [disabled]="!archivoFoto || cargando()"
-                class="tsi-btn tsi-btn-primary"
-              >
-                @if (cargando()) {
-                  <app-tabler-icon name="refresh" [size]="14" />
-                  Sincronizando…
-                } @else {
-                  Subir en línea
-                }
-              </button>
-              <button
-                type="button"
-                (click)="guardarFotoOffline()"
-                [disabled]="!archivoFoto || cargando()"
-                class="tsi-btn tsi-btn-secondary"
-              >
-                Guardar offline
-              </button>
-            </div>
           </div>
 
           <div class="grid gap-2">
@@ -154,7 +136,7 @@ const FOCUSABLE_SELECTOR =
               Nota de campo
             </span>
 
-            <form (ngSubmit)="registrarNota()" class="grid gap-3">
+            <div class="grid gap-3">
               <div class="grid gap-1.5">
                 <label for="tipoNota" class="text-sm font-medium text-text-secondary">Tipo</label>
                 <select
@@ -177,46 +159,56 @@ const FOCUSABLE_SELECTOR =
                   name="nota"
                   rows="3"
                   [(ngModel)]="textoNota"
-                  required
                   class="tsi-textarea w-full"
-          placeholder="Escribe el detalle"
-        ></textarea>
+                  placeholder="Escribe el detalle"
+                ></textarea>
               </div>
-
-              <div class="flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  [disabled]="cargando()"
-                  class="tsi-btn tsi-btn-primary"
-                >
-                  @if (cargando()) {
-                    <app-tabler-icon name="refresh" [size]="14" />
-                    Sincronizando…
-                  } @else {
-                    Registrar en línea
-                  }
-                </button>
-                <button
-                  type="button"
-                  (click)="guardarNotaOffline()"
-                  [disabled]="cargando()"
-                  class="tsi-btn tsi-btn-secondary"
-                >
-                  Guardar offline
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 border-t border-border-default px-6 py-4">
-          <button
-            type="button"
-            (click)="cerrar.emit()"
-            class="tsi-btn tsi-btn-secondary"
-          >
-            Cerrar
-          </button>
+        <!--
+          Un solo botón para todo el cuadro de diálogo.
+
+          Antes había cuatro: "Subir en línea"/"Guardar offline" para la foto y
+          "Registrar en línea"/"Guardar offline" para la nota, cada par enviando
+          solo su mitad. Quien adjuntaba la foto y escribía la nota perdía la
+          nota (hallazgos #10 y, en su forma real, la aclaración de la revisión:
+          "se sube solo uno a la vez"). Además obligaba a la unidad a decidir el
+          modo de transporte, algo que el sistema ya sabe por sí mismo.
+        -->
+        <div class="grid gap-3 border-t border-border-default px-6 py-4">
+          @if (hayAlgoQueGuardar()) {
+            <p class="m-0 text-xs text-text-secondary" data-testid="resumen-envio">
+              Se guardará: {{ resumenPendiente() }}.
+            </p>
+          }
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              (click)="cerrar.emit()"
+              [disabled]="cargando()"
+              class="tsi-btn tsi-btn-secondary"
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              data-testid="btn-guardar-evidencia"
+              (click)="guardarTodo()"
+              [disabled]="!hayAlgoQueGuardar() || cargando()"
+              class="tsi-btn tsi-btn-primary"
+            >
+              @if (cargando()) {
+                <app-tabler-icon name="refresh" [size]="14" />
+                Guardando…
+              } @else if (!connectivity.online()) {
+                Guardar para sincronizar
+              } @else {
+                Guardar evidencia
+              }
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -238,6 +230,8 @@ export class EvidenciaCapturaModal implements AfterViewInit, OnInit, OnDestroy {
   readonly error = signal('');
   readonly cargando = signal(false);
   readonly arrastrando = signal(false);
+  /** objectURL de la miniatura; se revoca al reemplazarla y al destruir. */
+  readonly previewFoto = signal('');
 
   archivoFoto: File | null = null;
   textoNota = '';
@@ -258,6 +252,10 @@ export class EvidenciaCapturaModal implements AfterViewInit, OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    const preview = this.previewFoto();
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
     this.elementoConFocoPrevio?.focus();
   }
 
@@ -326,91 +324,162 @@ export class EvidenciaCapturaModal implements AfterViewInit, OnInit, OnDestroy {
     }
     this.error.set('');
     this.archivoFoto = archivo;
+    this.regenerarPreview(archivo);
   }
 
-  subirFoto(): void {
-    if (!this.archivoFoto) {
+  // ── Miniatura ──────────────────────────────────────────────────────────────
+
+  private regenerarPreview(archivo: File | null): void {
+    // Cada objectURL reservado hay que devolverlo: sin el revoke, elegir varias
+    // fotos seguidas iba dejando blobs colgados en memoria.
+    const anterior = this.previewFoto();
+    if (anterior) {
+      URL.revokeObjectURL(anterior);
+    }
+    this.previewFoto.set(archivo ? URL.createObjectURL(archivo) : '');
+  }
+
+  quitarFoto(): void {
+    this.archivoFoto = null;
+    this.regenerarPreview(null);
+  }
+
+  // ── Envío único ────────────────────────────────────────────────────────────
+
+  hayAlgoQueGuardar(): boolean {
+    return this.archivoFoto !== null || this.textoNota.trim().length > 0;
+  }
+
+  resumenPendiente(): string {
+    const partes: string[] = [];
+    if (this.archivoFoto) {
+      partes.push('1 fotografía');
+    }
+    if (this.textoNota.trim()) {
+      partes.push(`nota de campo (${this.tipoNota})`);
+    }
+    return partes.join(' y ');
+  }
+
+  /**
+   * Guarda **todo** lo que haya en el cuadro de diálogo: la foto y la nota, en
+   * una sola acción.
+   *
+   * Foto y nota son dos endpoints distintos y siguen siéndolo; lo que cambia es
+   * que ya no dependen de dos botones separados. Si falla una de las dos, se
+   * conserva **solo la que falló** para que la unidad reintente sin volver a
+   * escribir lo que ya se guardó.
+   *
+   * El modo de transporte no lo elige la unidad: sin conexión va a la cola
+   * local, y una subida que falla por red también cae a la cola en vez de
+   * perderse.
+   */
+  async guardarTodo(): Promise<void> {
+    if (!this.hayAlgoQueGuardar()) {
       return;
     }
     this.error.set('');
     this.cargando.set(true);
-    this.evidenciaApi.subirFoto(this.idaccidente(), this.archivoFoto).subscribe({
-      next: () => {
-        this.notifications.toast('Foto subida correctamente', 'success');
-        this.archivoFoto = null;
-        this.cargando.set(false);
-        this.guardado.emit();
-      },
-      error: () => {
-        this.error.set('No se pudo subir la foto');
-        this.notifications.alert('No se pudo subir la foto.', 'Error al subir evidencia');
-        this.cargando.set(false);
-      },
-    });
+
+    const fallos: string[] = [];
+    const guardados: string[] = [];
+    let quedaOffline = false;
+
+    if (this.archivoFoto) {
+      const resultado = await this.persistirFoto(this.archivoFoto);
+      if (resultado === 'error') {
+        fallos.push('la fotografía');
+      } else {
+        guardados.push('fotografía');
+        quedaOffline ||= resultado === 'offline';
+        this.quitarFoto();
+      }
+    }
+
+    if (this.textoNota.trim()) {
+      const resultado = await this.persistirNota(this.textoNota.trim(), this.tipoNota);
+      if (resultado === 'error') {
+        fallos.push('la nota de campo');
+      } else {
+        guardados.push('nota de campo');
+        quedaOffline ||= resultado === 'offline';
+        this.textoNota = '';
+      }
+    }
+
+    this.cargando.set(false);
+
+    if (fallos.length) {
+      const detalle = `No se pudo guardar ${fallos.join(' ni ')}. Vuelve a intentarlo.`;
+      this.error.set(detalle);
+      this.notifications.alert(detalle, 'Error al guardar evidencia');
+    }
+    if (guardados.length) {
+      this.notifications.toast(
+        quedaOffline
+          ? `Guardado localmente (${guardados.join(' y ')}); se sincronizará al reconectar`
+          : `Evidencia guardada (${guardados.join(' y ')})`,
+        'success',
+      );
+      this.guardado.emit();
+    }
   }
 
-  async guardarFotoOffline(): Promise<void> {
-    if (!this.archivoFoto) {
-      return;
+  private async persistirFoto(archivo: File): Promise<'online' | 'offline' | 'error'> {
+    if (this.connectivity.online()) {
+      const subido = await this.intentarSubirFoto(archivo);
+      if (subido) {
+        return 'online';
+      }
+      // Falló la red con el navegador creyéndose en línea: no se pierde, se
+      // encola.
     }
-    this.error.set('');
-    this.cargando.set(true);
     try {
       await this.offlineStore.guardarFotoPendiente(
         this.idaccidente(),
-        this.archivoFoto,
-        this.archivoFoto.type,
+        archivo,
+        archivo.type,
         Date.now(),
       );
-      this.notifications.toast('Foto guardada localmente para sincronización', 'success');
-      this.archivoFoto = null;
-      this.guardado.emit();
+      return 'offline';
     } catch {
-      this.error.set('No se pudo guardar la foto offline');
-      this.notifications.alert('No se pudo guardar la foto offline.', 'Error al guardar');
-    } finally {
-      this.cargando.set(false);
+      return 'error';
     }
   }
 
-  registrarNota(): void {
-    this.error.set('');
-    this.cargando.set(true);
-    this.evidenciaApi
-      .registrarNota(this.idaccidente(), { nota: this.textoNota, tipo: this.tipoNota })
-      .subscribe({
-        next: () => {
-          this.notifications.toast('Nota registrada', 'success');
-          this.textoNota = '';
-          this.cargando.set(false);
-          this.guardado.emit();
-        },
-        error: () => {
-          this.error.set('No se pudo registrar la nota');
-          this.notifications.alert('No se pudo registrar la nota.', 'Error al registrar');
-          this.cargando.set(false);
-        },
+  private intentarSubirFoto(archivo: File): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.evidenciaApi.subirFoto(this.idaccidente(), archivo).subscribe({
+        next: () => resolve(true),
+        error: () => resolve(false),
       });
+    });
   }
 
-  async guardarNotaOffline(): Promise<void> {
-    this.error.set('');
-    this.cargando.set(true);
-    try {
-      await this.offlineStore.guardarNotaPendiente(
-        this.idaccidente(),
-        this.textoNota,
-        this.tipoNota,
-        Date.now(),
-      );
-      this.notifications.toast('Nota guardada localmente', 'success');
-      this.textoNota = '';
-      this.guardado.emit();
-    } catch {
-      this.error.set('No se pudo guardar la nota offline');
-      this.notifications.alert('No se pudo guardar la nota offline.', 'Error al guardar');
-    } finally {
-      this.cargando.set(false);
+  private async persistirNota(
+    nota: string,
+    tipo: TipoNotaCampo,
+  ): Promise<'online' | 'offline' | 'error'> {
+    if (this.connectivity.online()) {
+      const registrada = await this.intentarRegistrarNota(nota, tipo);
+      if (registrada) {
+        return 'online';
+      }
     }
+    try {
+      await this.offlineStore.guardarNotaPendiente(this.idaccidente(), nota, tipo, Date.now());
+      return 'offline';
+    } catch {
+      return 'error';
+    }
+  }
+
+  private intentarRegistrarNota(nota: string, tipo: TipoNotaCampo): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.evidenciaApi.registrarNota(this.idaccidente(), { nota, tipo }).subscribe({
+        next: () => resolve(true),
+        error: () => resolve(false),
+      });
+    });
   }
 }

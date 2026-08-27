@@ -20,13 +20,20 @@ describe('TicketApiService', () => {
   afterEach(() => http.verify());
 
   it('registrar_when_ok_returns_ticket', () => {
-    service
-      .registrar({ idcliente: 1, asunto: 'a', descripcion: 'b', tipo: 'tecnico' })
-      .subscribe((res) => {
-        expect(res.data.id_reclamo).toBe(1);
-      });
+    service.registrar({ asunto: 'a', descripcion: 'b', tipo: 'tecnico' }).subscribe((res) => {
+      expect(res.data.id_reclamo).toBe(1);
+    });
     const req = http.expectOne('/api/v1/soporte/tickets');
     expect(req.request.method).toBe('POST');
+    req.flush({ data: { id_reclamo: 1, estado: 'Abierto' }, meta: {} });
+  });
+
+  it('registrar_no_envia_idcliente_lo_resuelve_la_sesion', () => {
+    // RN-TIC-012 — mandar `idcliente: 1` fijo hacía que el ticket se guardara
+    // bajo la cuenta 1 y el cliente nunca volviera a verlo (hallazgo #17).
+    service.registrar({ asunto: 'a', descripcion: 'b', tipo: 'tecnico' }).subscribe();
+    const req = http.expectOne('/api/v1/soporte/tickets');
+    expect(req.request.body.idcliente).toBeUndefined();
     req.flush({ data: { id_reclamo: 1, estado: 'Abierto' }, meta: {} });
   });
 

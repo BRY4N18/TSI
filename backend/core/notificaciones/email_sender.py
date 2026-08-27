@@ -18,7 +18,25 @@ class EmailSendError(Exception):
 
 
 class EmailNotificationSender:
-    def send(self, *, event: str, cliente_id: int, gmail: str, subject: str, body: str) -> None:
+    def send(
+        self,
+        *,
+        event: str,
+        cliente_id: int,
+        gmail: str,
+        subject: str,
+        body: str,
+        html_body: str | None = None,
+    ) -> None:
+        """Envía el aviso. Con `html_body` sale como multipart/alternative.
+
+        `body` (texto plano) **nunca es opcional**, ni siquiera cuando hay
+        HTML: es la parte que leen los clientes que no renderizan HTML y los
+        lectores de pantalla que prefieren texto, y es lo que queda si el
+        HTML se filtra. Un correo HTML sin su parte de texto llega vacío a
+        esos destinatarios, así que el parámetro se mantiene obligatorio a
+        propósito.
+        """
         if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
             logger.warning(
                 "smtp_skipped_not_configured",
@@ -33,6 +51,7 @@ class EmailNotificationSender:
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[gmail],
                 fail_silently=False,
+                html_message=html_body,
             )
             logger.info(
                 "smtp_send",

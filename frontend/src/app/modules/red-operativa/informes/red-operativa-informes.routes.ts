@@ -14,6 +14,7 @@ import { Routes } from '@angular/router';
 
 import {
   informesFlotaGuard,
+  informesIndiceGuard,
   informesRegionesGuard,
   informesValidacionesGuard,
 } from './guards/informes-red-operativa.guard';
@@ -21,7 +22,7 @@ import {
 export const RED_OPERATIVA_INFORMES_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [informesFlotaGuard],
+    canActivate: [informesIndiceGuard],
     loadComponent: () =>
       import('./pages/indice/indice-informes.page').then((m) => m.IndiceInformesRedOperativaPage),
   },

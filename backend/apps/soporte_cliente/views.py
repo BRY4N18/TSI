@@ -70,14 +70,29 @@ class TicketsView(APIView):
         )
 
     def post(self, request: Request) -> Response:
-        idcliente = request.data.get("idcliente")
+        # ⚠️ `idcliente` se resuelve de la SESIÓN, nunca del cuerpo del request.
+        #
+        # Hasta 2026-08-26 esta vista confiaba en el `idcliente` que enviara el
+        # cliente, y el frontend mandaba `1` fijo: todo ticket se guardaba bajo
+        # la cuenta 1 mientras el GET filtraba por la cuenta real de la sesión,
+        # así que el cliente nunca veía lo que acababa de crear (hallazgo #17 de
+        # la revisión del 24/08/2026). Era además un IDOR: bastaba cambiar el
+        # número para abrir tickets a nombre de otra empresa.
+        idcliente = ClienteLookupService().resolve_idcliente(request.user.idusuario)
+        if idcliente is None:
+            return error_response(
+                "forbidden",
+                "El usuario autenticado no está vinculado a ninguna cuenta cliente",
+                "403",
+                status_code=403,
+            )
         asunto = request.data.get("asunto")
         descripcion = request.data.get("descripcion")
         tipo = request.data.get("tipo")
-        if not all([idcliente, asunto, descripcion, tipo]):
+        if not all([asunto, descripcion, tipo]):
             return error_response(
                 "bad_request",
-                "idcliente, asunto, descripcion y tipo son requeridos",
+                "asunto, descripcion y tipo son requeridos",
                 "400",
                 status_code=400,
             )
@@ -186,7 +201,11 @@ class ClasificarTicketManualView(APIView):
 
 
 class DashboardSoporteView(APIView):
-    permission_classes = [IsAuthenticated401, IsSoporteAgente]
+    """Métricas de tickets y SLA: agente y nivel de escalado (`nav-links.ts` los
+    expone a ambos; sin `IsSoporteAgenteOrNivelEscalado` el enlace de
+    `DirectorTecnologico`/`DesarrolladorAPIs` en el menú llevaba a un 403."""
+
+    permission_classes = [IsAuthenticated401, IsSoporteAgenteOrNivelEscalado]
 
     def get(self, request: Request) -> Response:
         return success_response(DashboardSoporteService().metricas())

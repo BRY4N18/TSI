@@ -75,18 +75,19 @@ Los clientes de TSI (aseguradoras, municipios, Smart Cities) dependen de la plat
 
 ### RF-TIC-001: Registro de ticket con clasificación automática y SLA (CU-O83)
 
-1. El actor completa el formulario: `idcliente`, `asunto`, `descripcion`, `tipo`, `idaccidente` (opcional — referencia a un caso de emergencia activo, ver nota de implementación), `idservicio` (opcional — FK a `Dim_Servicio` cuando la incidencia afecta un servicio/API concreto), `idfactura` (STRING, opcional — RF-O83.2, vincula una única factura en disputa; STRING porque `Fact_Factura.id_factura` es un UUID, corregido 2026-08-08; el sistema rechaza el registro con `422` si esa factura ya tiene otro ticket con disputa abierta, es decir `Fact_Reclamo.estado != 'Cerrado'`), adjuntos (opcional).
+1. El actor completa el formulario: `asunto`, `descripcion`, `tipo`, `idaccidente` (opcional — referencia a un caso de emergencia activo, ver nota de implementación), `idservicio` (opcional — FK a `Dim_Servicio` cuando la incidencia afecta un servicio/API concreto), `idfactura` (STRING, opcional — RF-O83.2, vincula una única factura en disputa; STRING porque `Fact_Factura.id_factura` es un UUID, corregido 2026-08-08; el sistema rechaza el registro con `422` si esa factura ya tiene otro ticket con disputa abierta, es decir `Fact_Reclamo.estado != 'Cerrado'`), adjuntos (opcional).
 2. El sistema ejecuta clasificación automática para determinar `tipo_incidencia` y `prioridad`:
    - Tickets vinculados a una emergencia activa → `prioridad='crítico'`.
    - Clasificación por reglas predefinidas según `tipo`, plan del cliente y contexto.
 
 **Nota de implementación (resuelta durante `/speckit-analyze`, sin sesión de clarify formal):** el spec original no definía cómo el sistema determina que un ticket está "vinculado a una emergencia activa". Se adopta el mecanismo más simple y verificable: el formulario acepta un `idaccidente` opcional; si se envía y referencia un `Fact_Accidente` con estado distinto de Cerrado/Descartado (`Fact_AccidenteTipoEstadoAccidente`), se clasifica como `prioridad='crítico'`. Si no se envía `idaccidente`, la clasificación cae al resto de reglas por palabra clave (`research.md` Decision 4). Esta es una decisión técnica documentada, no una decisión de negocio — si en producción existe otro mecanismo (p. ej. vínculo automático por `idcliente` sin que el cliente indique el accidente), debe revisarse antes de implementar RF-TIC-001.
-3. `Fact_Reclamo` — INSERT con estado inicial (`idestadosoporte`, y su reflejo denormalizado en `estado`) y, si se enviaron, `idservicio` / `idfactura`.
+3. `Fact_Reclamo` — INSERT con estado inicial (`idestadosoporte`, y su reflejo denormalizado en `estado`), el `idcliente` **resuelto de la sesión** (RN-TIC-012) y, si se enviaron, `idservicio` / `idfactura`.
 4. **Asignación de SLA:** `SELECT` en `Dim_SLAConfig` la fila vigente que coincida con `tipo_incidencia`, `prioridad` e `idplan` del cliente.
    - Si se encuentra coincidencia → `Fact_Reclamo` — UPDATE: `idslaconfig`, `sla_primera_respuesta`, `sla_resolucion`, `sla_status='en curso'`.
    - Si no se puede clasificar automáticamente → estado `Pendiente_de_clasificacion`, `idslaconfig=NULL`, el SLA timer **no** arranca. Cuando un agente clasifique manualmente, recién se ejecuta el bloque de asignación de SLA.
 5. `Fact_ArchivosAdjuntosReclamos` — INSERT por cada archivo adjunto.
 6. `Fact_Historial_Ticket` — INSERT con `tipo_accion='creacion'`.
+7. **Aviso al equipo de soporte** (RN-TIC-013): notificación por correo a los roles de atención. Fail-open.
 
 ### RF-TIC-002: Ciclo de vida completo del ticket (CU-O84-O87)
 
@@ -247,6 +248,62 @@ había escalado él.
 
 La UI lo refleja marcando esas entradas como **«Sistema»**: en pantalla, un autor vacío se lee
 como dato que falta, no como acción automática.
+
+### RN-TIC-012 — La cuenta dueña del ticket se resuelve de la sesión, nunca del request
+
+`Fact_Reclamo.idcliente` lo determina el backend a partir del usuario autenticado
+(`ClienteLookupService.resolve_idcliente`), **no** un `idcliente` enviado en el cuerpo del POST.
+Si el usuario autenticado no está vinculado a ninguna cuenta cliente, el registro responde `403`
+en vez de escribir en una cuenta arbitraria.
+
+Origen (revisión de calidad 24/08/2026, hallazgo #17): la vista aceptaba el `idcliente` del
+cuerpo y el formulario del cliente enviaba `1` fijo. Todo ticket se guardaba bajo la cuenta 1,
+mientras el listado filtraba por la cuenta real de la sesión — de ahí el síntoma reportado, "no
+muestra tickets". El mismo defecto permitía abrir tickets a nombre de otra empresa cambiando el
+número (IDOR).
+
+Consecuencia de contrato: `idcliente` **deja de ser** un campo de entrada de RF-TIC-001. Los
+campos obligatorios del alta pasan a ser `asunto`, `descripcion` y `tipo`.
+
+### RN-TIC-013 — Un ticket nuevo avisa al equipo de soporte
+
+Al crearse un ticket, el sistema notifica por correo a los usuarios con rol `Soporte` o
+`SupervisorSoporte` activos y con correo registrado.
+
+El envío es **fail-open**: un fallo de SMTP o de resolución de destinatarios se registra en el log
+(`soporte_notificacion_sin_destinatarios`, `soporte_notificacion_smtp_failed`) pero no interrumpe
+el alta. El cliente ya reportó su incidencia; perder el aviso interno es un problema de operación,
+no una razón para devolverle un error.
+
+Origen (hallazgo #17, aclaración de la revisión): registrar un ticket no avisaba a nadie. El
+agente podía verlo si abría la cola por su cuenta, pero nada se lo decía, de modo que en la
+práctica el ticket "no le llegaba al de soporte".
+
+### RN-TIC-014 — `Administrador` no atiende tickets
+
+La gestión de tickets —cola, detalle, notas internas, tomar, comentar, escalar, resolver— pertenece
+a los roles de atención (`Soporte`, y `DesarrolladorAPIs` / `DirectorTecnologico` como nivel de
+escalado). El rol `Administrador` queda **fuera**.
+
+El Administrador conserva lo que sí es suyo en este módulo: configurar `Dim_SLAConfig`
+(`IsAdministradorSLA`, RF-TIC-003 / CU-O97).
+
+Origen (hallazgo #18): todos los permisos del módulo incluían `Administrador`, así que la gestión
+de tickets se le mostraba a quien administra la plataforma. Es un defecto de permisos al revés de
+como suelen aparecer: no es que a alguien le falte acceso, es que le sobra.
+
+`PartnerIntegracion`, en cambio, **sí** entra como reportador (ya estaba en `ROLES_REPORTADORES`
+por RF-O83.2) y ahora tiene la entrada de menú correspondiente: tenía el permiso de disputar su
+factura y no tenía por dónde ejercerlo.
+
+Esa entrada vive **dentro del grupo "Partners y API"**, no en el grupo "Soporte". FR-UI-033 exige
+que cada rol vea su sidebar íntegro sin descubrir la existencia de otro departamento; darle la
+entrada del grupo de Soporte le abriría uno ajeno. Es la misma pantalla
+(`/soporte-cliente/mis-tickets`), alcanzada desde su propio portal.
+
+El guard de esa pantalla (`clienteSoporteGuard`) se alineó con `ROLES_REPORTADORES`: admitía además
+a `Soporte` y `Administrador`, que no tienen tickets propios y por tanto llegaban a una pantalla
+que el API les respondía `403`.
 
 ## 7. Entradas
 

@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import {
@@ -41,7 +42,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-red',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -92,6 +93,28 @@ export class PantallaZPage {
   );
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /** Estados de flota: nominales, un solo color. */
+  readonly barrasFlota = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: texto(f['estado']) || 'Desconocido',
+      valor: this.cuentaEstado(f),
+    })),
+  );
+
+  /**
+   * Motivos de rechazo: todos son el mismo tipo de hecho (un rechazo), así
+   * que no se tiñe cada barra de un tono distinto. El que la pantalla trate
+   * de rechazos ya lo dice el título, no hace falta repetirlo en el color.
+   */
+  readonly barrasValidacion = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: texto(f['motivo']),
+      valor: num(f['rechazos']),
+    })),
+  );
   readonly texto = texto;
   readonly esVerdadero = esVerdadero;
 
@@ -127,19 +150,11 @@ export class PantallaZPage {
     return `${(valor * 100).toFixed(1)} %`;
   }
 
-  maxUnidadesEstado(): number {
-    const vals = this.cargaVisual().data.map((f) => this.cuentaEstado(f));
-    return Math.max(1, ...vals);
-  }
 
   cuentaEstado(fila: Record<string, unknown>): number {
     return num(fila['unidades']) ?? num(fila['transiciones']) ?? 0;
   }
 
-  maxRechazos(): number {
-    const vals = this.cargaVisual().data.map((f) => num(f['rechazos']) ?? 0);
-    return Math.max(1, ...vals);
-  }
 
   private cargaDe(informe: string | undefined): CargaInforme {
     if (!informe) {

@@ -8,6 +8,7 @@ import {
   DisponibilidadUnidadData,
   EstadoDisponibilidadUnidad,
   HistorialEstadoUnidadData,
+  HistorialDespachoUnidadItem,
   HistorialEstadoUnidadItem,
   UnidadEmergenciaResumen,
 } from './models/evidencia-unidad.types';
@@ -78,6 +79,24 @@ export class DisponibilidadUnidadApiService {
     }
     return this.http.get<ApiEnvelope<{ items: HistorialEstadoUnidadItem[] }>>(
       `${this.unidadesBase}/${idunidademergencia}/historial-estado`,
+      { params: httpParams },
+    );
+  }
+
+  /** Historial de salidas de la unidad (hallazgo #13). */
+  listarHistorialDespachos(
+    idunidademergencia: number,
+    params?: { cursor?: number; limit?: number },
+  ): Observable<ApiEnvelope<{ items: HistorialDespachoUnidadItem[] }>> {
+    let httpParams = new HttpParams();
+    if (params?.cursor != null) {
+      httpParams = httpParams.set('cursor', String(params.cursor));
+    }
+    if (params?.limit != null) {
+      httpParams = httpParams.set('limit', String(params.limit));
+    }
+    return this.http.get<ApiEnvelope<{ items: HistorialDespachoUnidadItem[] }>>(
+      `${this.unidadesBase}/${idunidademergencia}/historial-despachos`,
       { params: httpParams },
     );
   }

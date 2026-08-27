@@ -2,6 +2,16 @@ import { EstadoDespacho, EstadoNotificacion } from './services/models/despacho.t
 
 export type Tono = 'success' | 'warning' | 'urgent' | 'critical' | 'info';
 
+export const ESTADO_DESPACHO_LABEL: Record<EstadoDespacho, string> = {
+  Pendiente: 'Pendiente',
+  Confirmado: 'Confirmado',
+  Rechazado: 'Rechazado',
+  Timeout: 'Tiempo agotado',
+  Abortado: 'Abortado',
+  En_sitio: 'En sitio',
+  Retirado: 'Retirado',
+};
+
 export const ESTADO_DESPACHO_TONO: Record<EstadoDespacho, Tono> = {
   Pendiente: 'warning',
   Confirmado: 'success',
@@ -22,6 +32,11 @@ export const ESTADO_NOTIFICACION_TONO: Record<EstadoNotificacion, Tono> = {
 
 export function estadoDespachoTono(estado: EstadoDespacho): Tono {
   return ESTADO_DESPACHO_TONO[estado] ?? 'info';
+}
+
+export function estadoDespachoLabel(estado: EstadoDespacho | string | null | undefined): string {
+  if (!estado) return '—';
+  return (ESTADO_DESPACHO_LABEL as Record<string, string>)[estado] ?? estado.replace(/_/g, ' ');
 }
 
 export function estadoNotificacionTono(estado: EstadoNotificacion): Tono {

@@ -99,35 +99,77 @@
           Reintentar cobro
         </button>
       }
+      @if (detalle()!.estado !== 'Cancelada') {
+        <button
+          type="button"
+          class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
+          [disabled]="busy()"
+          (click)="abrirModalCancelacion()"
+        >
+          Cancelar suscripción
+        </button>
+      }
     </div>
 
-    @if (detalle()!.estado !== 'Cancelada') {
-      <section class="tsi-panel tsi-panel--elevado p-5" aria-labelledby="cancel-title">
-        <h3 id="cancel-title" class="tsi-display m-0 text-lg font-semibold">Cancelar suscripción</h3>
-        <p class="mt-2 m-0 max-w-xl text-[0.9375rem] leading-normal text-text-secondary">
-          Mantendrás acceso hasta la fecha de fin del ciclo. La renovación automática se desactiva.
-        </p>
-        <div class="mt-4 grid gap-1.5">
-          <label for="motivo" class="text-[0.8125rem] font-medium text-text-secondary">Motivo</label>
-          <textarea
-            id="motivo"
-            class="tsi-textarea"
-            [(ngModel)]="motivoCancelacion"
-            rows="3"
-          placeholder="Motivo, en una frase"
-        ></textarea>
+    @if (modalCancelarAbierto()) {
+      <div
+        class="fixed inset-0 z-[2000] grid place-items-center bg-black/50 p-4"
+        (keydown.escape)="cerrarModalCancelacion()"
+        (click)="cerrarModalCancelacion()"
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-modal-title"
+          class="w-full max-w-lg tsi-panel tsi-panel--elevado p-6 shadow-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          <h3 id="cancel-modal-title" class="tsi-display m-0 text-xl font-bold text-text-primary">
+            Cancelar suscripción
+          </h3>
+          <p class="mt-2 m-0 text-sm leading-relaxed text-text-secondary">
+            Mantendrás acceso hasta la fecha de fin del ciclo
+            @if (detalle()?.fecha_fin) {
+              (<strong>{{ detalle()!.fecha_fin | date: 'mediumDate' }}</strong>).
+            } @else {
+              .
+            }
+            La renovación automática se desactivará.
+          </p>
+
+          <div class="mt-4 grid gap-1.5">
+            <label for="motivo-modal" class="text-[0.8125rem] font-medium text-text-secondary">
+              Motivo de cancelación <span class="text-alert-critical">*</span>
+            </label>
+            <textarea
+              id="motivo-modal"
+              class="tsi-textarea"
+              [(ngModel)]="motivoCancelacion"
+              rows="3"
+              placeholder="Indica el motivo de la cancelación…"
+            ></textarea>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+            <button
+              type="button"
+              class="tsi-btn tsi-btn-ghost"
+              [disabled]="busy()"
+              (click)="cerrarModalCancelacion()"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              class="tsi-btn border border-alert-critical bg-alert-critical text-white hover:bg-alert-critical/90"
+              [disabled]="busy() || !motivoCancelacion.trim()"
+              (click)="cancelar()"
+            >
+              {{ busy() ? 'Cancelando…' : 'Confirmar cancelación' }}
+            </button>
+          </div>
         </div>
-        <div class="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
-            [disabled]="busy()"
-            (click)="cancelar()"
-          >
-            Confirmar cancelación
-          </button>
-        </div>
-      </section>
+      </div>
     }
   } @else {
     <section class="grid justify-items-start gap-2 tsi-panel tsi-panel--elevado p-5">

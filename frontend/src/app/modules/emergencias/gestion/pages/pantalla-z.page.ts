@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../services/models/informes-tacticos.types';
 import {
@@ -40,7 +41,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -84,6 +85,31 @@ export class PantallaZPage {
 
   readonly esSinCapacidad = esSinCapacidad;
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+  //
+  // Estas dos llevan TONO SEMÁNTICO y no la paleta de gráficos, porque aquí
+  // la categoría sí significa bien o mal por sí misma: «incompletos» y «sin
+  // evidencia» son el hallazgo que la pantalla existe para enseñar. Pintarlas
+  // del mismo azul que el resto las escondería entre las demás.
+
+  readonly barrasCalidad = computed<BarDatum[]>(() => {
+    const c = this.completitud();
+    return [
+      { etiqueta: 'Completos', valor: c.completos, tono: 'success' },
+      { etiqueta: 'Incompletos', valor: c.incompletos, tono: 'warning' },
+    ];
+  });
+
+  readonly barrasCierre = computed<BarDatum[]>(() => {
+    const cob = this.cobertura();
+    return [
+      { etiqueta: 'Solo foto', valor: cob.soloFoto, tono: 'info' },
+      { etiqueta: 'Solo nota', valor: cob.soloNota, tono: 'info' },
+      { etiqueta: 'Foto y nota', valor: cob.fotoYNota, tono: 'success' },
+      { etiqueta: 'Sin evidencia', valor: cob.sinEvidencia, tono: 'warning' },
+    ];
+  });
   readonly texto = texto;
   readonly etiquetaConPeriodo = etiquetaConPeriodo;
 

@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthApiService } from '../../../cuentas-clientes/auth/services/auth-api.service';
-import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -40,7 +39,6 @@ const TIMEOUT_ACCION_MS = 15_000;
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    TablerIconComponent,
     ListEmptyStateComponent,
     ListErrorStateComponent,
     ListLoadingSkeletonComponent,

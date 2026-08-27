@@ -4,21 +4,17 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  Injector,
   Input,
   OnDestroy,
   OnChanges,
   Output,
   SimpleChanges,
   ViewChild,
-  effect,
-  inject,
 } from '@angular/core';
 import * as L from 'leaflet';
 
 import { nodoPinSimple } from './map-pins';
 
-import { ThemeService } from '../../theme/theme.service';
 import { crearTileLayer } from './map-tile';
 
 export interface LatLng {
@@ -57,8 +53,6 @@ export class LocationPickerMapComponent implements AfterViewInit, OnChanges, OnD
 
   @ViewChild('mapContainer', { static: true }) private readonly mapContainer!: ElementRef<HTMLDivElement>;
 
-  private readonly themeService = inject(ThemeService);
-  private readonly injector = inject(Injector);
   private map: L.Map | null = null;
   private tileLayer: L.TileLayer | null = null;
   private marker: L.Marker | null = null;
@@ -68,19 +62,7 @@ export class LocationPickerMapComponent implements AfterViewInit, OnChanges, OnD
 
     this.map = L.map(this.mapContainer.nativeElement).setView([start.lat, start.lng], 13);
 
-    this.tileLayer = crearTileLayer(this.themeService.isDark()).addTo(this.map);
-
-    effect(
-      () => {
-        const isDark = this.themeService.isDark();
-        if (!this.map) {
-          return;
-        }
-        this.tileLayer?.remove();
-        this.tileLayer = crearTileLayer(isDark).addTo(this.map);
-      },
-      { injector: this.injector },
-    );
+    this.tileLayer = crearTileLayer().addTo(this.map);
 
     // `alt` y `title` no son decorativos aqui: Leaflet renderiza el marcador
     // como un elemento focusable e interactivo, y sin nombre accesible un lector

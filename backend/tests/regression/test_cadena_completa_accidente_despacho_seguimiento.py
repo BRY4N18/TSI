@@ -48,6 +48,9 @@ class TestCadenaCompletaAccidenteDespachoSeguimiento:
             "idseveridad": 2,
             "descripcion": "Choque múltiple cadena regresión E2E",
             "idcalle": 1,
+            # RN-REG-012: obligatorio y >= 1. Es el tope de conductores que la
+            # unidad puede enriquecer en sitio (RN-EVI-022).
+            "numvehiculos": 2,
         }
         registro = api_client.post(
             "/api/v1/accidentes",

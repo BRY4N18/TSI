@@ -86,7 +86,7 @@
       >
         <option [ngValue]="null">Todos</option>
         @for (e of estados; track e) {
-          <option [ngValue]="e">{{ e }}</option>
+          <option [ngValue]="e">{{ estadoInfo(e).label }}</option>
         }
       </select>
     </div>
@@ -98,7 +98,6 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaDesde"
-          placeholder="Buscar por ID o nombre"
         />
     </div>
 
@@ -109,14 +108,11 @@
         type="date"
         class="tsi-input w-full"
         formControlName="fechaHasta"
-          placeholder="Buscar por ID o nombre"
         />
     </div>
 
     <div class="flex items-end gap-2 pb-2.5">
-      <input id="filtroActivo" type="checkbox" formControlName="activo"
-          placeholder="Buscar por ID o nombre"
-        />
+      <input id="filtroActivo" type="checkbox" formControlName="activo" />
       <label for="filtroActivo" class="text-sm text-text-primary">Solo activos</label>
     </div>
     </div>
@@ -140,7 +136,6 @@
         class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
         (click)="cargar()"
       >
-        <app-tabler-icon name="refresh" [size]="16" />
         Reintentar
       </button>
     </div>
@@ -159,170 +154,43 @@
       </a>
     </div>
   } @else {
-    <!-- Desktop/tablet: tabla -->
-    <table class="hidden w-full border-collapse overflow-hidden rounded-md border border-border-default md:table">
-      <thead>
-        <tr class="bg-bg-surface">
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
-            ID
-          </th>
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
-            Fecha/Hora
-          </th>
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
-            Severidad
-          </th>
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
-            Ubicación
-          </th>
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-left text-xs uppercase tracking-widest text-text-primary">
-            Estado
-          </th>
-          <th class="tsi-display border-b-2 border-accent-primary px-4 py-3 text-right text-xs uppercase tracking-widest text-text-primary">
-            Acciones
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (a of accidentes(); track a.idaccidente) {
-          <tr
-            [class]="filaSeleccionadaClass(a.idaccidente)"
-            [attr.data-testid]="esSeleccionado(a.idaccidente) ? 'row-selected' : null"
-          >
-            <td class="px-4 py-3 text-sm">
-              <span class="font-semibold text-text-primary">{{ a.idaccidente }}</span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm text-text-secondary">
-              {{ a.fechahoraaccidente | date: 'dd/MM/yyyy — HH:mm:ss' }}
-            </td>
-            <td class="px-4 py-3">
-              <span
-                class="inline-flex items-center gap-2 text-sm font-medium"
-                [class.text-alert-success]="severidadInfo(a.idseveridad).tone === 'success'"
-                [class.text-alert-warning]="severidadInfo(a.idseveridad).tone === 'warning'"
-                [class.text-alert-urgent]="severidadInfo(a.idseveridad).tone === 'urgent'"
-                [class.text-alert-critical]="severidadInfo(a.idseveridad).tone === 'critical'"
-              >
-                <!-- El nodo del isotipo como portador de la severidad: aparece
-                     en cada fila, no solo en estados vacios. -->
-                <span
-                  class="tsi-node h-6 w-5 shrink-0 text-bg-surface"
-                  [class.bg-alert-success]="severidadInfo(a.idseveridad).tone === 'success'"
-                  [class.bg-alert-warning]="severidadInfo(a.idseveridad).tone === 'warning'"
-                  [class.bg-alert-urgent]="severidadInfo(a.idseveridad).tone === 'urgent'"
-                  [class.bg-alert-critical]="severidadInfo(a.idseveridad).tone === 'critical'"
-                  aria-hidden="true"
-                >
-                  <app-tabler-icon [name]="severidadInfo(a.idseveridad).icon" [size]="12" />
-                </span>
-                {{ severidadInfo(a.idseveridad).label }}
-              </span>
-            </td>
-            <td class="max-w-[16rem] truncate px-4 py-3 text-sm text-text-secondary">
-              {{ ubicacionLabel(a.ubicacion) }}
-            </td>
-            <td class="px-4 py-3">
-              <span
-                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold"
-                [class.bg-alert-success-bg]="estadoInfo(a.estado_actual).tone === 'success'"
-                [class.text-alert-success]="estadoInfo(a.estado_actual).tone === 'success'"
-                [class.bg-alert-warning-bg]="estadoInfo(a.estado_actual).tone === 'warning'"
-                [class.text-alert-warning]="estadoInfo(a.estado_actual).tone === 'warning'"
-                [class.bg-alert-urgent-bg]="estadoInfo(a.estado_actual).tone === 'urgent'"
-                [class.text-alert-urgent]="estadoInfo(a.estado_actual).tone === 'urgent'"
-                [class.bg-alert-info-bg]="estadoInfo(a.estado_actual).tone === 'info'"
-                [class.text-alert-info]="estadoInfo(a.estado_actual).tone === 'info'"
-              >
-                {{ estadoInfo(a.estado_actual).label }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right">
-              <div class="inline-flex items-center justify-end gap-1">
-                <button
-                  type="button"
-                  class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                  aria-label="Ver detalles"
-                  title="Ver detalles"
-                  (click)="abrirCaso(a.idaccidente, 'view')"
-                >
-                  <app-tabler-icon name="eye" [size]="18" />
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                  aria-label="Editar caso"
-                  title="Editar caso"
-                  data-testid="btn-edit"
-                  (click)="abrirCaso(a.idaccidente, 'edit')"
-                >
-                  <app-tabler-icon name="pencil" [size]="18" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-
-    <div class="hidden items-center justify-between px-1 py-3 text-sm text-text-secondary md:flex">
+    <div class="flex items-center justify-between px-1 pb-2 text-sm text-text-secondary">
       <span>Mostrando {{ accidentes().length }} resultado(s)</span>
     </div>
 
-    <!-- Mobile: cards apiladas -->
-    <div class="grid gap-3 md:hidden">
-      @for (a of accidentes(); track a.idaccidente) {
-        <div
-          [class]="cardSeleccionadaClass(a.idaccidente)"
-          [attr.data-testid]="esSeleccionado(a.idaccidente) ? 'card-selected' : null"
+    @for (a of accidentes(); track a.idaccidente) {
+      <app-case-card
+        [id]="a.idaccidente"
+        [fecha]="(a.fechahoraaccidente | date: 'dd/MM/yyyy HH:mm') ?? '—'"
+        [lugar]="ubicacionLabel(a.ubicacion)"
+        [severidadLabel]="severidadInfo(a.idseveridad).label"
+        [severidadIcon]="severidadInfo(a.idseveridad).icon"
+        [severidadTone]="severidadInfo(a.idseveridad).tone"
+        [estadoLabel]="estadoInfo(a.estado_actual).label"
+        [estadoTone]="estadoInfo(a.estado_actual).tone"
+        [selected]="esSeleccionado(a.idaccidente)"
+      >
+        <button
+          type="button"
+          class="tsi-hit-target inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-secondary hover:bg-bg-page hover:text-text-primary"
+          aria-label="Ver detalles"
+          title="Ver detalles"
+          (click)="abrirCaso(a.idaccidente, 'view')"
         >
-          <div class="mb-2 flex items-center justify-between gap-2">
-            <span class="text-sm font-semibold text-text-primary">{{ a.idaccidente }}</span>
-            <div class="inline-flex items-center gap-1">
-              <button
-                type="button"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                aria-label="Ver detalles"
-                title="Ver detalles"
-                (click)="abrirCaso(a.idaccidente, 'view')"
-              >
-                <app-tabler-icon name="eye" [size]="18" />
-              </button>
-              <button
-                type="button"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-bg-page hover:text-text-primary"
-                aria-label="Editar caso"
-                title="Editar caso"
-                (click)="abrirCaso(a.idaccidente, 'edit')"
-              >
-                <app-tabler-icon name="pencil" [size]="18" />
-              </button>
-            </div>
-          </div>
-          <dl class="grid gap-1 text-sm">
-            <div class="flex justify-between gap-2">
-              <dt class="text-text-secondary">Fecha/Hora</dt>
-              <dd class="font-medium text-text-primary">{{ a.fechahoraaccidente | date: 'dd/MM/yyyy HH:mm' }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt class="text-text-secondary">Severidad</dt>
-              <dd class="font-medium text-text-primary">{{ severidadInfo(a.idseveridad).label }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt class="text-text-secondary">Ubicación</dt>
-              <dd class="truncate font-medium text-text-primary">{{ ubicacionLabel(a.ubicacion) }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt class="text-text-secondary">Estado</dt>
-              <dd class="font-medium text-text-primary">{{ estadoInfo(a.estado_actual).label }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt class="text-text-secondary">Descripción</dt>
-              <dd class="truncate font-medium text-text-primary">{{ a.descripcion }}</dd>
-            </div>
-          </dl>
-        </div>
-      }
-    </div>
+          <app-tabler-icon name="eye" [size]="18" />
+        </button>
+        <button
+          type="button"
+          class="tsi-hit-target inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-secondary hover:bg-bg-page hover:text-text-primary"
+          aria-label="Editar caso"
+          title="Editar caso"
+          data-testid="btn-edit"
+          (click)="abrirCaso(a.idaccidente, 'edit')"
+        >
+          <app-tabler-icon name="pencil" [size]="18" />
+        </button>
+      </app-case-card>
+    }
 
     <div
       class="flex flex-wrap items-center justify-between gap-3 border-t border-border-default px-4 py-3"

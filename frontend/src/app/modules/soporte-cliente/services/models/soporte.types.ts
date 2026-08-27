@@ -69,8 +69,13 @@ export interface CatalogoItem {
   nombre: string;
 }
 
+/**
+ * ⚠️ Sin `idcliente`: la cuenta dueña del ticket la resuelve el backend desde la
+ * sesión. Enviarla desde aquí era el hallazgo #17 —el formulario mandaba `1`
+ * fijo y el cliente nunca volvía a ver su propio ticket— y además dejaba abrir
+ * tickets a nombre de otra empresa.
+ */
 export interface RegistrarTicketRequest {
-  idcliente: number;
   asunto: string;
   descripcion: string;
   tipo: string;

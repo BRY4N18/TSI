@@ -177,46 +177,14 @@
               }
             }
             @if (idPantalla() === 'cartera') {
-              @let maxMrr = maxDe(cargaVisual().data, 'mrr');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['plan'])) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['plan']) }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ num(fila['mrr']) | number: '1.0-2' }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['mrr']) ?? 0) / maxMrr) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasCartera()" [decimales]="2" />
+              </div>
             }
             @if (idPantalla() === 'captacion') {
-              @let maxT = maxDe(cargaVisual().data, 'transiciones');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['etapa'])) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['etapa']) }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ num(fila['transiciones']) | number }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['transiciones']) ?? 0) / maxT) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasCaptacion()" escala="ordinal" />
+              </div>
             }
             @if (idPantalla() === 'ciclo') {
               <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">

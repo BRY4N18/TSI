@@ -7,6 +7,497 @@ fuera del flujo normal Spec-Driven. Cada entrada debe quedar reflejada también 
 
 ---
 
+## 2026-08-27 — QA de sistema completo vía UI: regresión de botón sin icono y ordinales sin ordenar en gráficos
+
+**Causa:** Barrido de todas las pantallas en navegador, por rol, verificando visibilidad cruzada de datos entre actores (tickets, evidencia, expedientes).
+
+**Bugs encontrados y corregidos sin preguntar (según instrucción del usuario), documentados aquí:**
+
+1. **Botón "Enviar respuesta" vacío en Cola de soporte** (`frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.html`): el barrido previo de iconos decorativos (design-system v9, §botones) eliminó por error el icono de este botón `tsi-btn-icon`, que es icon-only (sin texto, solo `aria-label`). Quedó como botón vacío e inutilizable visualmente. Restaurado con `<app-tabler-icon name="chevron-right" [size]="16" />` (el primer intento usó `name="send"`, que no existe en `TablerIconName` — rompía la compilación de TODA la app con `NG2: Type '"send"' is not assignable to type 'TablerIconName'`, detectado al revisar los logs del dev server tras otro bug que parecía no solucionarse). Verificado extremo a extremo: agente responde ticket #3 → cliente ve el mensaje en su detalle de ticket.
+2. **Orden ordinal en gráficos de barra** (ya corregido en sesión anterior, verificado de nuevo en este barrido): `ventas-crm`, `cuentas-clientes` y `estrategico/oe1` ordenan sus embudos por la etapa real antes de pintarlos — confirmado sin regresión.
+
+**Verificación cruzada de actores (tickets):** Cliente (`ana.torres.cliente@demo.tsi.com`) crea ticket #9 → visible de inmediato para agente de soporte (`lucia.vera.soporte@demo.tsi.com`) en Cola de soporte. Agente responde ticket #3 → respuesta visible para el cliente en Mis tickets. Sin brechas de visibilidad detectadas.
+
+**Confirmado como comportamiento correcto (no bug):** acceso denegado (403) a `DirectorTecnologico` en informe "Dinero de la API" (OE2) — la autoridad está repartida por informe (`AUTORIDAD_OE2_DINERO` vs `AUTORIDAD_OE2_CONSUMO` en `backend/apps/informes_estrategicos/permissions.py`); `DirectorFinanciero`/`DirectorExpansion` sí acceden, verificado.
+
+**Archivos:**
+- `frontend/src/app/modules/soporte-cliente/pages/cola-agente/cola-agente.page.html`
+
+---
+
+## 2026-08-27 — `DashboardSoporteView` en 403 para roles de nivel de escalado (QA continuada)
+
+**Causa:** El menú (`frontend/src/app/shared/layout/nav-links.ts`) expone "Dashboard de soporte" a `Soporte`, `DesarrolladorAPIs` y `DirectorTecnologico`, pero el backend (`backend/apps/soporte_cliente/views.py`, `DashboardSoporteView`) solo permitía `IsSoporteAgente` (rol `Soporte`). Verificado en navegador con `director.tecnologico@demo.tsi.com`: clic en el enlace del menú → 403.
+
+**Efecto:** cambiado a `IsSoporteAgenteOrNivelEscalado` (ya usada para resolver tickets escalados), consistente con `ROLES_ATENCION` de `backend/apps/soporte_cliente/permissions.py`. Verificado tras redeploy: `DirectorTecnologico` ve el dashboard con sus métricas (9 tickets, 1 SLA vencido, etc.).
+
+**Archivos:**
+- `backend/apps/soporte_cliente/views.py`
+
+---
+
+## 2026-08-27 — Índice de "Informes de Red Operativa" en 403 para `DirectorTecnologico` (QA continuada)
+
+**Causa:** `frontend/src/app/modules/red-operativa/informes/red-operativa-informes.routes.ts` guardaba la ruta índice (`''`) con `informesFlotaGuard`, que solo admite `Administrador`, `DirectorExpansion`, `Cliente` y `Proveedor` (`AMPLIOS_FLOTA` + `ROLES_ACOTADOS` en `guards/informes-red-operativa.guard.ts`). `DirectorTecnologico` está en `AMPLIOS_REGION` y `AMPLIOS_VALIDACION` — puede abrir `/regiones` y `/validaciones-region` directo — pero no en `AMPLIOS_FLOTA`, así que el enlace del menú (`nav-links.ts`, que sí lo lista) llevaba al índice y éste lo rechazaba con "Acceso denegado".
+
+**Efecto:** nuevo guard `informesIndiceGuard` (unión de los tres grupos) para la ruta índice; el índice sigue sin mostrar datos —solo enlaces— y cada informe interno conserva su propio guard estricto. Verificado: `DirectorTecnologico` ahora ve el índice con exactamente "Regiones operativas" y "Validaciones de región" (sin "Flota", correcto — no está en ese grupo).
+
+**Archivos:**
+- `frontend/src/app/modules/red-operativa/informes/guards/informes-red-operativa.guard.ts`
+- `frontend/src/app/modules/red-operativa/informes/red-operativa-informes.routes.ts`
+
+---
+
+## 2026-08-27 — Placeholder copiado por error en filtros de fecha/checkbox de "Lista de accidentes"
+
+**Causa:** `frontend/src/app/modules/accidentes/pages/lista-accidentes/lista-accidentes.page.html` tenía `placeholder="Buscar por ID o nombre"` copiado sobre los inputs `type="date"` (Desde/Hasta) y el checkbox "Solo activos" — sin efecto visual pero código muerto/confuso heredado de un copy-paste. Encontrado inspeccionando el árbol de accesibilidad (`read_page`) durante la prueba end-to-end como `Operador`.
+
+**Efecto:** placeholders eliminados de los 3 inputs (no aplican a `date` ni a `checkbox`). Verificado: filtros siguen funcionando, sin errores de consola.
+
+**Archivos:**
+- `frontend/src/app/modules/accidentes/pages/lista-accidentes/lista-accidentes.page.html`
+
+---
+
+## 2026-08-27 — "Historial de emergencias" en 400 para TODO request tras la carga de 2M accidentes de US_Accidents
+
+**Causa:** `HistorialEmergenciasView` (`GET /api/v1/emergencias/historial`) devolvía 400 "Parámetros de filtro inválidos" incluso sin ningún filtro aplicado — probado como `Operador`, pantalla completamente inutilizable. La vista atrapa cualquier `ValueError` bajo ese mensaje genérico, lo cual ocultaba la causa real. Reproducido en el shell del contenedor: `HistorialEmergenciasService().listar(limit=20)` lanzaba `ValueError: invalid literal for int() with base 10: '2023-03-31 23:25:30'` en `historial_emergencias_service.py:128`.
+
+El campo `horainicio` se asume epoch-ms en todo el resto del código, pero el lote de 2 millones de accidentes cargado desde US_Accidents (commit `64e6a53`, "Limpieza total de la base y carga de 2M de accidentes") lo escribió como texto de fecha (`'YYYY-MM-DD HH:MM:SS'`), no como entero. Con esos ~2M registros dominando el dataset, la primera página del historial siempre tropieza con uno.
+
+**Efecto:** nuevo método `HistorialEmergenciasService._epoch_ms()` que intenta `int()` primero (camino normal) y cae a `datetime.fromisoformat(...).timestamp() * 1000` para el formato de texto: mismo epoch-ms de salida sin importar cuál de las dos fuentes lo escribió. No se tocó el pipeline de carga (`dags/`) — el consumidor ahora tolera ambos formatos en vez de asumir que la ETL nunca cambiará de forma. Verificado: `HistorialEmergenciasService().listar(limit=20)` ya no lanza excepción, y la pantalla carga su tabla en el navegador.
+
+⚠️ **Posible causa raíz más amplia sin confirmar todavía:** si `horainicio` llegó como texto desde el DAG de carga, es razonable sospechar que OTROS campos de fecha del mismo lote (p. ej. algún timestamp en `Fact_Despacho` derivado de las mismas filas) tengan el mismo problema de formato. No se auditó el resto de consumidores de este dataset en esta pasada — queda para una revisión posterior si aparecen más 400/500 al navegar reportes que toquen el lote de 2M accidentes.
+
+**Archivos:**
+- `backend/apps/seguimiento/services/historial_emergencias_service.py`
+
+---
+
+## 2026-08-27 — "Gestión de cuenta" mostraba "Sin rol" para TODOS los usuarios, incluido el propio Administrador
+
+**Causa:** `UserManagementService.list_users()` (`backend/apps/cuentas_clientes/services/user_management_service.py`) devolvía las filas de `UserRepository.list_users()` sin adjuntarles `roles` — a diferencia de `get_user()` (detalle de un usuario), que sí llama a `role_repo.get_user_roles()`. El listado que alimenta la tabla de `GestionCuentaHubPage` (`GET /api/v1/usuarios`) nunca traía el campo, así que el template (`hub.page.html`) caía siempre en su rama `@empty` → "Sin rol" para cada fila, sin importar los roles reales del usuario. Encontrado navegando la pantalla como `Administrador` y viendo que ni su propia cuenta mostraba "Administrador".
+
+**Efecto:** `list_users()` ahora enriquece cada usuario con `role_repo.get_user_roles(idusuario)`, igual que ya hacía `get_user()`. Verificado en shell y en navegador: la tabla ahora muestra los roles reales (`Cliente, Proveedor` / `Administrador, SupervisorSoporte` / etc.) para cada fila.
+
+**Archivos:**
+- `backend/apps/cuentas_clientes/services/user_management_service.py`
+
+---
+
+## 2026-08-27 — "Asignar rol" en Gestión de cuenta fallaba SIEMPRE con 404
+
+**Causa:** `UserRoleAdminService.assignRole()` (`frontend/src/app/modules/cuentas-clientes/auth/services/user-role-admin.service.ts`) llamaba a `POST /api/v1/usuarios/{id}/roles`, pero el backend nunca registró esa ruta — solo existe `POST /api/v1/usuarios/roles/asignar` (`backend/apps/cuentas_clientes/views/urls.py:131`, `UserRoleAssignView`). Cualquier intento de asignar un rol desde el formulario de "Gestión de cuenta" devolvía 404 y el mensaje "No se pudo asignar el rol." — la única forma de administrar roles en todo el sistema estaba completamente inoperante. Encontrado al intentar asignar temporalmente el rol `Gerente` a una cuenta de prueba para poder verificar las pantallas de OE6.
+
+**Efecto:** `assignRole()` corregido para apuntar a `POST /api/v1/usuarios/roles/asignar` con `{idusuario, idrol}` en el body, igual que espera `UserRoleAssignView`. Verificado: la asignación ahora devuelve 200 y la tabla de usuarios refleja el rol nuevo de inmediato.
+
+**Archivos:**
+- `frontend/src/app/modules/cuentas-clientes/auth/services/user-role-admin.service.ts`
+
+---
+
+## 2026-08-27 — Validación estricta y filtrado en tiempo real en Registro de Prospecto (`RegistroPublicoPage` y `RegistroProspectoService`)
+
+**Causa:** Petición de usuario para asegurar que en el formulario público de registro de prospectos solo se permita el ingreso del tipo de dato correcto en cada campo (solo letras en nombres y apellidos, formato telefónico válido sin letras, correo sin espacios, cargos válidos).
+
+**Efecto verificado:**
+- En `RegistroPublicoPage` (`frontend/src/app/modules/ventas-crm/pages/registro-publico/registro-publico.page.ts` y `.html`):
+  - `nombres` y `apellidos`: Restricción y filtrado en tiempo real para admitir solo letras, tildes y espacios (`onTextoInput`), con patrón estricto `Validators.pattern(TEXTO_LETRAS_RE)`.
+  - `gmail`: Filtrado automático de espacios y conversión a minúsculas (`onEmailInput`), con patrón de correo formal.
+  - `cargo`: Filtrado en tiempo real (`onCargoInput`) y validación de texto.
+  - `telefono`: Filtrado en tiempo real para admitir solo prefijo `+` y dígitos numéricos (`onTelefonoInput`), con validador de longitud de 7 a 15 dígitos.
+  - Mensajes de error contextualizados y específicos por tipo de error (patrón, obligatoriedad, longitud).
+- En `RegistroProspectoService` (`backend/apps/ventas_crm/services/registro_prospecto_service.py`), se reforzaron las validaciones de caracteres válidos en el backend.
+
+**Archivos:**
+- `frontend/src/app/modules/ventas-crm/pages/registro-publico/registro-publico.page.ts`
+- `frontend/src/app/modules/ventas-crm/pages/registro-publico/registro-publico.page.html`
+- `backend/apps/ventas_crm/services/registro_prospecto_service.py`
+
+---
+
+## 2026-08-27 — Cálculo dinámico y consulta real de planes más usados/populares (`ConsultaPlanesPublicosService` y `CatalogoPlanesPage`)
+
+**Causa:** Petición de usuario para asegurar que la insignia "POPULAR" en el catálogo de planes no se asigne de forma fija o aleatoria (ni a planes de prueba/demo como $0), sino que provenga de una consulta analítica real que determine los planes con mayor cantidad de suscripciones activas y vigentes en el período.
+
+**Efecto verificado:**
+- En `ConsultaPlanesPublicosService` (`backend/apps/ventas_crm/services/consulta_planes_publicos_service.py`), se incorporó la consulta a `Fact_Suscripcion` en Pinot (`SELECT idplan, count(*) AS total FROM Fact_Suscripcion WHERE estado = 'Activa' GROUP BY idplan`) para calcular el plan comercial con mayor adopción y retornar `destacado: true` únicamente para el plan líder real con precio comercial.
+- En `CatalogoPlanesPage` (`frontend/src/app/modules/ventas-crm/pages/catalogo-planes/catalogo-planes.page.ts`), se actualizó `esPopular(plan)` para respetar el valor booleano `destacado` provisto por el backend y filtrar cualquier plan demo o sin tarifa ($0).
+
+**Archivos:**
+- `backend/apps/ventas_crm/services/consulta_planes_publicos_service.py`
+- `frontend/src/app/modules/ventas-crm/pages/catalogo-planes/catalogo-planes.page.ts`
+
+---
+
+## 2026-08-27 — Combobox de Género, Selector amigable de Cliente, Nombres legibles en Planes SLA y Rediseño de Entrada Directa
+
+**Causa:** Petición de usuario para:
+1. Reemplazar el input de texto libre de Género en implicados de accidente por un combobox select con solo 2 opciones (`Masculino` o `Femenino`).
+2. Eliminar el input numérico crudo de "ID cliente" en Gestión de cuenta (`hub.page`), permitiendo una selección y gestión clara de las acciones corporativas (Perfil, Preferencias, Transferencia y Baja de Cuenta).
+3. Mostrar el nombre legible del plan (ej. *Básico*, *Estándar*, *Empresarial*, *Premium*) en la columna "Plan" de la tabla de políticas SLA en lugar del ID numérico crudo.
+4. Rediseñar y estructurar en tarjetas de dos columnas la pantalla de Entrada Directa de clientes (`EntradaDirectaPage`).
+
+**Efecto verificado:**
+- En `EnriquecimientoAccidentePage` (`frontend/src/app/modules/evidencia-unidad/pages/enriquecimiento-accidente/enriquecimiento-accidente.page.html`), se sustituyó el `<input>` de género por un `<select>` con opciones *Masculino* y *Femenino*.
+- En `GestionCuentaHubPage` (`frontend/src/app/modules/cuentas-clientes/gestion-cuenta/pages/hub/`), se rediseñó el panel de cuenta corporativa con selector amigable y tarjetas de acción dedicadas para Perfil, Preferencias, Transferencia y Baja.
+- En `ConfiguracionSlaPage` (`frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/`), se integró `PlanApiService` con helper `nombrePlan(idplan)` para renderizar el nombre oficial del plan en la tabla y en el formulario.
+- En `EntradaDirectaPage` (`frontend/src/app/modules/ventas-crm/pages/entrada-directa/`), se rediseñó la vista en tarjetas de 2 columnas ("1. Datos de la organización" y "2. Administrador local principal") con botones y validaciones mejoradas.
+
+**Archivos:**
+- `frontend/src/app/modules/evidencia-unidad/pages/enriquecimiento-accidente/enriquecimiento-accidente.page.html`
+- `frontend/src/app/modules/cuentas-clientes/gestion-cuenta/pages/hub/hub.page.ts`
+- `frontend/src/app/modules/cuentas-clientes/gestion-cuenta/pages/hub/hub.page.html`
+- `frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/configuracion-sla.page.ts`
+- `frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/configuracion-sla.page.html`
+- `frontend/src/app/modules/ventas-crm/pages/entrada-directa/entrada-directa.page.ts`
+
+---
+
+## 2026-08-27 — Mejoras de espaciado en Pipeline, rediseño de Parámetros del Algoritmo y Modal de Tickets de Soporte
+
+**Causa:** Petición de usuario para:
+1. Corregir el espaciado y márgenes laterales del tablero Pipeline (`PipelineBoardPage`), que se mostraba pegado a los bordes de la pantalla.
+2. Rediseñar profesionalmente la interfaz de "Parámetros del algoritmo" (`ParametrosAlgoritmoPage`) para el Administrador según el sistema de diseño.
+3. Mejorar la interfaz del cliente en "Mis tickets de soporte" (`MisTicketsPage`) añadiendo un botón destacado "Registrar ticket" que despliega un diálogo modal limpio en lugar del formulario expandido.
+
+**Efecto verificado:**
+- En `PipelineBoardPage` (`frontend/src/app/modules/ventas-crm/pages/pipeline-board/pipeline-board.page.ts`), se incorporó contenedor centrado con márgenes y padding responsive (`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6`), tarjetas con sombras suaves, badges de recuento y separación armónica.
+- En `ParametrosAlgoritmoPage` (`frontend/src/app/modules/despacho/pages/parametros-algoritmo/parametros-algoritmo.page.ts`), se estructuró un panel elevado con tipografía del sistema, input numérico estilizado con sufijo de unidad ("seg"), badge de rango (30 s a 300 s), feedback de estado y botón con estado de carga.
+- En `MisTicketsPage` (`frontend/src/app/modules/soporte-cliente/pages/mis-tickets/mis-tickets.page.ts` y `.html`), se sustituyó el bloque `<details>` estático por un botón de acción en cabecera y un diálogo modal interactivo con backdrop desenfocado, manteniendo el listado de tickets limpio y despejado.
+
+**Archivos:**
+- `frontend/src/app/modules/ventas-crm/pages/pipeline-board/pipeline-board.page.ts`
+- `frontend/src/app/modules/despacho/pages/parametros-algoritmo/parametros-algoritmo.page.ts`
+- `frontend/src/app/modules/soporte-cliente/pages/mis-tickets/mis-tickets.page.ts`
+- `frontend/src/app/modules/soporte-cliente/pages/mis-tickets/mis-tickets.page.html`
+
+---
+
+## 2026-08-27 — Modal de registro de método de pago exclusivo para tarjeta con validaciones estrictas (`MetodosPagoPage`)
+
+**Causa:** Petición de usuario para unificar el registro de métodos de pago exclusivamente mediante Tarjeta (removiendo opciones heterogéneas como transferencia y paypal), activándolo a través de un botón de acción "Agregar método de pago" en la cabecera que despliega un diálogo modal centrado con validaciones especializadas para número de tarjeta (solo números con espaciado de 4 en 4), fecha de expiración (MM/AA) y código de seguridad CVV/CVC (3 o 4 dígitos numéricos).
+
+**Efecto verificado:**
+- En `MetodosPagoPage` (`frontend/src/app/modules/suscripciones/pages/metodos-pago/metodos-pago.page.ts` y `.html`), se sustituyó el formulario estático inferior por un botón "Agregar método de pago" y un diálogo modal interactivo con backdrop desenfocado.
+- Se implementó sanitización y validación estricta de entradas numéricas en tiempo real para el PAN (13 a 19 dígitos), expiración MM/AA (mes 01 a 12) y CVV (3 a 4 dígitos).
+- Se protegió la acción de guardado habilitando el botón únicamente si todos los campos requeridos son válidos.
+
+**Archivos:**
+- `frontend/src/app/modules/suscripciones/pages/metodos-pago/metodos-pago.page.ts`
+- `frontend/src/app/modules/suscripciones/pages/metodos-pago/metodos-pago.page.html`
+
+---
+
+## 2026-08-27 — Botón de ojito, tablas comprimidas y diálogo modal en todos los Informes Tácticos Simples
+
+**Causa:** Petición de usuario para comprimir las tablas de los informes simples de todos los módulos del sistema (Emergencias, Cuentas y Clientes, Partners, Red Operativa, Soporte y Suscripciones/Facturación, Ventas/CRM) mostrando solo las columnas prioritarias y desplegando en un diálogo modal con botón de ojito (`eye`) la totalidad de los datos estructurados del registro seleccionado.
+
+**Efecto verificado:**
+- En `ColumnaListado` (`informes-listado.types.ts`), se introdujo el atributo `soloDetalle?: boolean` para aislar campos secundarios del renderizado de la tabla y reservarlos para el modal.
+- En `InformesListadoComponent` (`informes-listado.component.ts`), la tabla y tarjetas móviles computan `columnasTabla` excluyendo `soloDetalle`, e incorporan la columna de acción con botón de ojo interactivo (`eye`). Al hacer clic, se abre un diálogo modal centrado con backdrop desenfocado mostrando todos los campos (`columnas`) con formato legible.
+- En las definiciones de informes tácticos de todos los módulos (`informes-emergencias.definiciones.ts`, `informes-cuentas.definiciones.ts`, `informes-partners.definiciones.ts`, `informes-red-operativa.definiciones.ts`, `informes-soporte.definiciones.ts`, `informes-suscripciones.definiciones.ts`, `informes-ventas.definiciones.ts`), se marcaron con `soloDetalle: true` las columnas secundarias o extensas para asegurar tablas limpias y compactas en toda la plataforma.
+
+**Archivos:**
+- `frontend/src/app/shared/informes/informes-listado.types.ts`
+- `frontend/src/app/shared/informes/informes-listado.component.ts`
+- `frontend/src/app/modules/emergencias/informes/definiciones/informes-emergencias.definiciones.ts`
+- `frontend/src/app/modules/cuentas-clientes/informes/definiciones/informes-cuentas.definiciones.ts`
+- `frontend/src/app/modules/partners/informes/definiciones/informes-partners.definiciones.ts`
+- `frontend/src/app/modules/red-operativa/informes/definiciones/informes-red-operativa.definiciones.ts`
+- `frontend/src/app/modules/soporte-cliente/informes/definiciones/informes-soporte.definiciones.ts`
+- `frontend/src/app/modules/suscripciones/informes/definiciones/informes-suscripciones.definiciones.ts`
+- `frontend/src/app/modules/ventas-crm/informes/definiciones/informes-ventas.definiciones.ts`
+
+---
+
+## 2026-08-27 — Ajuste de opciones de navegación del Administrador en el Sidebar (`nav-links.ts`)
+
+**Causa:** Petición de usuario para retirar del menú lateral del Administrador los accesos a Prospectos, Pipeline, Informes comerciales, Regiones operativas, Validación de región e Informes de red, conservando Entrada directa y Parámetros del algoritmo.
+
+**Efecto verificado:**
+- En `frontend/src/app/shared/layout/nav-links.ts`, se eliminó el rol `Administrador` de `Prospectos`, `Pipeline`, `Informes comerciales`, `Regiones operativas`, `Validación de región` e `Informes de red`.
+- Se mantuvieron `Entrada directa` y `Parámetros del algoritmo` para el rol `Administrador`.
+
+**Archivos:** `frontend/src/app/shared/layout/nav-links.ts`.
+
+---
+
+## 2026-08-27 — Selector legible de regiones en `ValidacionPage` y eliminación de códigos técnicos (CU/RF/RN) en la UI
+
+**Causa:** Petición de usuario para mostrar únicamente los nombres legibles de las regiones operativas en la validación (reemplazando la caja numérica de `idregionoperativa`) y eliminar todos los códigos técnicos de casos de uso o requerimientos (ej. `CU-O55`, `CU-O61`, `CU-O26`, `CU-O97`, `CU-O40`, `CU-O30`, `RF-TIC-007`, `RNF-REG-006`) visibles en la interfaz.
+
+**Efecto verificado:**
+- En `ValidacionPage`, se reemplazó el campo numérico por un `<select>` que lista las regiones operativas por nombre (`nombreregion`), permitiendo también el alta de nueva región con un selector de estados geográficos.
+- Se retiraron prefijos y referencias como `CU-O55`, `CU-O61`, `CU-O26`, `CU-O97`, `CU-O40`, `CU-O30`, `RF-TIC-007`, `RNF-REG-006` en subtítulos, textos de ayuda y descripciones en todas las vistas afectadas.
+
+**Archivos:** `frontend/src/app/modules/red-operativa/incorporacion-regional/pages/validacion/validacion.page.ts`, `frontend/src/app/modules/red-operativa/incorporacion-regional/pages/reevaluacion/reevaluacion.page.ts`, `frontend/src/app/modules/partners/pages/excepciones-facturacion/excepciones-facturacion.page.ts`, `frontend/src/app/modules/soporte-cliente/pages/configuracion-sla/configuracion-sla.page.html`, `frontend/src/app/modules/soporte-cliente/pages/dashboard-soporte/dashboard-soporte.page.html`, `frontend/src/app/modules/suscripciones/pages/plan-form/plan-form.page.html`, `frontend/src/app/modules/accidentes/pages/registro-accidente/registro-accidente.page.html`, `frontend/src/app/modules/cuentas-clientes/home/home.page.html`.
+
+---
+
+## 2026-08-27 — Formato legible de etiquetas de estado de accidente y despacho (`ESTADO_INFO`, `ESTADO_DESPACHO_LABEL`)
+
+**Causa:** Petición de usuario para mostrar los estados del caso en formato legible ("En atención", "Buscando unidad", "Asignado", "En sitio", etc.) en lugar de enums técnicos en mayúsculas/snake_case (`EN_ATENCIÓN`, `BUSCANDO_UNIDAD`, `En_sitio`).
+
+**Efecto verificado:**
+- Se actualizaron las etiquetas en `ESTADO_INFO` (`frontend/src/app/modules/accidentes/estado.constants.ts`) a Title Case legible en español (`Borrador`, `Reportado`, `Buscando unidad`, `Asignado`, `En atención`, `Cerrado`, `Descartado`, `Fusionado`).
+- Se formateó la visualización del historial de estados en `DetalleAccidentePage` y los selectores de filtro en `ListaAccidentesPage`.
+- Se añadió `estadoDespachoLabel` en `despacho-tono.constants.ts` para transformar `En_sitio` -> `En sitio`, `Timeout` -> `Tiempo agotado`, etc., aplicándolo en `DetalleAccidentePage` y `MonitoreoDespachoPage`.
+
+**Archivos:** `frontend/src/app/modules/accidentes/estado.constants.ts`, `frontend/src/app/modules/despacho/despacho-tono.constants.ts`, `frontend/src/app/modules/accidentes/pages/detalle-accidente/detalle-accidente.page.html`, `frontend/src/app/modules/accidentes/pages/detalle-accidente/detalle-accidente.page.ts`, `frontend/src/app/modules/accidentes/pages/lista-accidentes/lista-accidentes.page.html`, `frontend/src/app/modules/despacho/pages/monitoreo-despacho/monitoreo-despacho.page.ts`, `frontend/src/app/modules/despacho/pages/monitoreo-despacho/monitoreo-despacho.page.html`.
+
+---
+
+## 2026-08-27 — Modal de escalar severidad y simplificación de aviso de llegada en `MiSeguimientoPage`
+
+**Causa:** Petición de usuario para mostrar el formulario de escalar severidad dentro de un cuadro de diálogo modal únicamente al presionar el botón "Escalar severidad", y remover el enlace redundante a "Evidencia del caso" dentro del aviso verde de llegada.
+
+**Efecto verificado:**
+- En `MiSeguimientoPage`, se transformó el panel embebido de `EscalarSeveridadPanel` en un modal dialog con backdrop accesible (`modalEscalarAbierto`, botón de cierre y botón de cancelación).
+- Se agregó el botón "Escalar severidad" en la barra de acciones de la vista en sitio.
+- Se simplificó el texto del banner verde a `Ya registraste tu llegada al sitio del accidente.`, evitando la duplicación con el botón superior de "Evidencia del caso".
+
+**Archivos:** `frontend/src/app/modules/seguimiento/pages/mi-seguimiento/mi-seguimiento.page.html`, `frontend/src/app/modules/seguimiento/pages/mi-seguimiento/mi-seguimiento.page.ts`, `frontend/src/app/modules/accidentes/pages/detalle-accidente/escalar-severidad.panel.ts`.
+
+---
+
+## 2026-08-27 — Eliminación de buscador global, selector de región y campana en `AppShellComponent`
+
+**Causa:** Petición de usuario para limpiar la cabecera superior y retirar controles decorativos/no implementados (caja de búsqueda global "Buscar accidentes, expedientes, unidades...", botón de ubicación/región con ícono `map-pin` y botón de notificaciones con ícono `bell`).
+
+**Efecto verificado:**
+- Se eliminó el bloque del buscador (tanto para escritorio como el colapsable móvil).
+- Se eliminó el botón de región (`map-pin`).
+- Se eliminó el botón y desplegable de notificaciones (`bell`).
+- La cabecera conserva el menú hamburguesa, el logotipo con nombre del producto, el avatar con iniciales/correo/roles y el botón de cierre de sesión.
+
+**Archivos:** `frontend/src/app/shared/layout/app-shell.component.ts`.
+
+---
+
+## 2026-08-27 — Paginación estándar en `ListaMonitoreoPage` y limpieza de texto en `RegistroAccidentePage`
+
+**Causa:** Reemplazo del aviso de advertencia de truncado (`Mostrando los 100 accidentes activos más recientes...`) en `ListaMonitoreoPage` por la barra de paginación estándar del sistema (con botones Anterior / Siguiente y control por cursor/páginas), y remoción del texto de ayuda bajo el input de Víctimas (total) en `RegistroAccidentePage`.
+
+**Efecto verificado:**
+- En `ListaMonitoreoPage`, se eliminó el banner de advertencia y se implementó paginación con `pageLimit = 20` mediante cursores (`nextCursor`, `cursorStack`, botones Anterior/Siguiente).
+- En `RegistroAccidentePage`, se eliminó el texto inferior explicativo del campo Víctimas (total), manteniendo el campo como de solo lectura con cálculo reactivo.
+
+**Archivos:** `frontend/src/app/modules/despacho/pages/lista-monitoreo/lista-monitoreo.page.ts`, `frontend/src/app/modules/accidentes/pages/registro-accidente/registro-accidente.page.html`.
+
+---
+
+## 2026-08-27 — Nombre legible de calle y cálculo automático de víctimas totales en `RegistroAccidentePage`
+
+**Causa:** Mejora de UX en el formulario de registro de accidentes para evitar mostrar IDs numéricos en crudo (`idcalle: 1`) al operador y automatizar la suma de `numvictimas = numheridos + numfallecidos`.
+
+**Efecto verificado:**
+- La calle sugerida por geocodificación inversa y la calle seleccionada (vía mapa o cascada manual) muestran ahora su nombre legible y ciudad (`calle, ciudad` o `nombre`), manteniendo el `idcalle` internamente para el envío del payload.
+- El campo `Víctimas (total)` se convirtió en un campo de solo lectura calculado reactivamente a partir de los valores de `Heridos` y `Fallecidos`.
+
+**Archivos:** `frontend/src/app/modules/accidentes/pages/registro-accidente/registro-accidente.page.ts`, `frontend/src/app/modules/accidentes/pages/registro-accidente/registro-accidente.page.html`.
+
+---
+
+## 2026-08-27 — design-system v9 (cierre): gráficos en los nueve departamentos y el botón como placa
+
+**Efecto verificado:**
+- **Barrido completo de gráficos.** Ya no queda **ninguna** barra inline hecha a
+  mano en el frontend: 13 pantallas-Z (Cuentas, Emergencias, Partners, Red Operativa,
+  Suscripciones, Ventas y CRM, Soporte, OE1, OE2) más el dashboard de Soporte. Se
+  retiraron de paso 9 helpers muertos (`maxDe`, `maxBarra`, `anchoRelativo`,
+  `maxUnidadesEstado`, `maxRechazos`) y un `@let` sin uso.
+- **`MeterComponent` nuevo** para consumo contra límite, y **escala divergente** y
+  **tono semántico** añadidos a `BarChartComponent`.
+- **`.tsi-btn` pasa a placa de señalización**: ambas esquinas superiores en ángulo,
+  display en mayúsculas con tracking, canto inferior reflectante de 3px, y botón
+  solo-ícono hexagonal.
+
+**Dos defectos de datos que la lista escondía y el gráfico destapó:**
+1. **El signo del delta se borraba.** `anchoRelativo()` en Suscripciones aplicaba
+   `Math.abs()`, así que un downgrade de −200 y un upgrade de +200 dibujaban la misma
+   barra: la única información que distingue un movimiento del contrario se perdía
+   justo en el gráfico que existe para compararlos. Ahora es divergente desde el
+   centro — verificado en pantalla con datos reales (+400 a la derecha en azul, −200 a
+   la izquierda en carmesí y de la mitad de largo).
+2. **El exceso de cupo era invisible.** «Utilización de límites» era texto plano:
+   «19 de 5 unidades» se leía igual que «1 de 25». Con medidor sale al 380% en rojo con
+   «Excedido en 14 unidades».
+
+**Un conflicto con el sistema importado, resuelto en vez de obedecido.** Su
+`components.css` pone `clip-path` en `.tsi-btn`, pero el CSS de TSI documentaba por qué
+lo había evitado: **un recorte se come el anillo de foco del teclado**, porque `outline`
+se pinta fuera de la caja. El sistema importado es una vista estática y nunca se
+enfrentó a eso. Se adopta la forma de placa y se resuelve el foco con un anillo
+`inset` —`box-shadow: inset` se pinta dentro y sobrevive al recorte—, comprobado
+tabulando de verdad en el navegador. Ni se ignoró el diseño ni se perdió la
+accesibilidad.
+
+**Regla de botón aplicada:** los botones de texto no llevan ícono. Se retiraron los 34
+repartidos por 17 pantallas; es el mismo criterio que la regla anti-íconos-de-IA de §5.
+Tres imports de `TablerIconComponent` quedaron sin uso por ello y se limpiaron.
+
+**Archivos:** `frontend/src/styles.css`,
+`frontend/src/app/shared/ui/charts/{bar-chart,line-chart,meter}.component.ts`,
+las 13 `*/pages/pantalla-z.page.{ts,html}`, `dashboard-soporte/*`, y 17 plantillas con
+botones. `.specify/docs/design/design-system.md`.
+
+---
+
+## 2026-08-27 — design-system v9 (cont.): gráficos de datos y correo transaccional maquetado
+
+**Causa.** Varias pantallas de gestión mostraban como lista cosas que eran repartos o
+evoluciones. El caso más claro: en Tendencias, «carga entrante **frente a** resuelta»
+dibujaba una barra solo para `creados` y dejaba `resueltos` como texto al lado — es
+decir, la comparación que el título promete era la única que no se podía hacer de un
+vistazo. En Cola en curso la evolución temporal era texto puro, sin ninguna
+representación.
+
+**Efecto verificado:**
+- Dos componentes nuevos en `shared/ui/charts/`: `BarChartComponent` (barras
+  horizontales, escalas nominal y ordinal) y `LineChartComponent` (serie temporal en
+  SVG, responsivo por `ResizeObserver`, leyenda, crosshair con tooltip).
+- Paleta de gráficos propia (`--chart-cat-1..4`, `--chart-seq-1..5`, `--chart-grid`),
+  separada de la de UI y la de marca porque codifica identidad y no jerarquía.
+  **Verificada con el validador de la skill `dataviz`**, no elegida a ojo: separación
+  con daltonismo ΔE 10.2 (objetivo ≥ 8), piso de visión normal 19.8 (piso 15),
+  contraste ≥ 3:1 los cuatro; la rampa ordinal pasa monotonía, salto adyacente y
+  extremo claro 2.14:1.
+- Aplicado en las 4 pantallas de Soporte: dashboard (4 distribuciones), cumplimiento
+  por plan, evolución del incumplimiento y carga entrante frente a resuelta.
+- Correo transaccional maquetado: `backend/templates/emails/alerta_critica_despacho.html`
+  (tablas + inline, bulletproof), `EmailNotificationSender` gana `html_body` opcional
+  → `multipart/alternative`, y `AlertaAdminService` lo renderiza con *fail-open* (si la
+  plantilla falla, la alerta sale igual en texto plano). Nuevo `CONSOLA_BASE_URL`.
+
+**Tres defectos reales encontrados al verificar en navegador, no al escribir:**
+1. `new DecimalPipe('es-EC')` lanzaba `NG0701` (locale no registrado) y se comía **en
+   silencio** el valor y el ancho de todas las barras. Se pasa a `inject(LOCALE_ID)`,
+   que es la pauta que ya seguía `informes-listado.component.ts`.
+2. Los `{# … #}` multilínea de la plantilla de correo **no son comentarios** en Django
+   (solo valen de una línea), así que el bloque entero de documentación se estaba
+   renderizando dentro del correo. Lo cazó el test nuevo, no la vista. Pasan a
+   `{% comment %}`.
+3. El eje Y rotulaba «2» sobre una rejilla situada en 1,5 (tope impar, cortes en ½).
+   El tope se redondea ahora a par. Además, rótulos del eje X medidos contra el ancho
+   real y anclados al borde en los extremos, en vez de un número fijo de etiquetas.
+
+**Pendiente declarado:** 9 pantallas-Z conservan barras inline hechas a mano; ver
+«Pendiente de v9» en `design-system.md` §5.
+
+**Archivos:** `frontend/src/styles.css`,
+`frontend/src/app/shared/ui/charts/{bar-chart,line-chart}.component.ts` (nuevos),
+`frontend/src/app/modules/soporte-cliente/gestion/pages/pantalla-z.page.{ts,html}`,
+`frontend/src/app/modules/soporte-cliente/pages/dashboard-soporte/*`,
+`backend/templates/emails/alerta_critica_despacho.html` (nuevo),
+`backend/core/notificaciones/email_sender.py`,
+`backend/apps/despacho/services/alerta_admin_service.py`,
+`backend/apps/despacho/tests/services/test_reasignacion_alerta_admin.py`,
+`backend/config/settings.py`, `.specify/docs/design/design-system.md`.
+
+---
+
+## 2026-08-27 — design-system v9: modo claro único, paleta de ruta y tres componentes nuevos (`CaseCard`, `RouteTracker`, `ReportTile`)
+
+**Origen.** Importación del proyecto de Claude Design "TSI — Nodo Integral Design System"
+(reinterpretación del sistema existente, no un espejo 1:1 — su propio `readme.md` lo dice
+explícitamente). Se adoptaron las piezas que suman sin contradecir decisiones ya
+verificadas del sistema, y se dejó fuera lo que el propio import marcaba como
+reinterpretación libre (motivo de carretera literal en el sidebar, placas de doble corte
+en superficies de datos densos, retirar buscador/campana del header).
+
+**Modo oscuro retirado (revierte v6/v7).** El import proponía light-only por decisión de
+su autor; tras confirmarlo con el propietario del sistema, se retira `ThemeService`
+completo, el toggle del header, los tiles oscuros de Leaflet (CartoDB Dark Matter) y el
+script inline de `index.html` que fijaba `data-theme` antes del primer paint. Motivo
+documentado en §3 de `design-system.md`: un segundo tema necesita mantenimiento propio y
+nadie lo estaba revisando en cada cambio del sistema.
+
+**Piezas nuevas:**
+- Paleta "de ruta" (`--route-navy`/`--route-cyan`/`--route-teal`) — capa expresiva sobre
+  la paleta operativa ya existente; acento tricolor del header, perforación de `CaseCard`.
+- `.tsi-panel--placa` — variante de doble esquina cortada.
+- `.tsi-btn-danger` — acción destructiva declarada, promovida de clase ad-hoc a canónica.
+- `CaseCardComponent`, `RouteTrackerComponent`, `ReportTileComponent` (`shared/ui/`) —
+  reemplazan fila de tabla genérica, timeline de puntos e ícono-de-lista repetido,
+  respectivamente, por la gramática de forma ya definida en §3.1.
+- Regla explícita: sin íconos genéricos de "IA" (cerebro, sparkles, robot) como decoración.
+
+**Aplicado en esta pasada:** listado de Accidentes activos (`CaseCard`), Historial de
+intentos de Monitoreo de despacho (`RouteTracker`), los siete índices de informes
+departamentales (`ReportTile`). El resto de listas/historiales del sistema hereda los
+tokens globales (sin tema oscuro, botones, paneles) automáticamente por ser CSS
+compartido, pero no se migró pieza por pieza a los tres componentes nuevos — ver
+"Pendiente de v9" en `design-system.md` §5.
+
+**Archivos:** `frontend/src/styles.css`, `frontend/src/index.html`,
+`frontend/src/app/shared/theme/theme.service.ts` (eliminado, con su spec),
+`frontend/src/app/shared/layout/app-shell.component.ts`,
+`frontend/src/app/shared/ui/map/{map-tile,location-picker-map.component,read-only-route-map.component}.ts`,
+`frontend/src/app/shared/ui/icon/tabler-icon.component.ts`,
+`frontend/src/app/modules/ventas-crm/pages/catalogo-planes/*`,
+`frontend/src/app/modules/seguimiento/pages/mapa-seguimiento/mapa-seguimiento.page.ts`,
+`frontend/src/app/shared/ui/{case-card,route-tracker,report-tile}/*` (nuevos),
+`frontend/src/app/modules/accidentes/pages/lista-accidentes/*`,
+`frontend/src/app/modules/despacho/pages/monitoreo-despacho/*`,
+los siete `*/informes/pages/indice/indice-informes.page.ts`,
+`.specify/docs/design/design-system.md`.
+
+---
+
+## 2026-08-27 — [B27] Generación y sincronización de credenciales activas para actores tácticos y estratégicos
+
+**Causa:** El script `database/siembra_roles_tacticos.py` asociaba roles a usuarios existentes en `Dim_Usuarios` pero omitía generar sus registros correspondientes en `Dim_Credencial`. Al intentar autenticarse en el login (`/api/v1/auth/login`), el servicio `AuthService` devolvía error `401 Unauthorized` al no encontrar credenciales activas registradas para dichos usuarios.
+
+**Efecto verificado:**
+- Se actualizó `database/siembra_roles_tacticos.py` para asegurar que todo actor táctico y el rol transversal `Gerente` tengan su credencial activa generada y sincronizada en `Dim_Credencial`.
+- Se configuró la clave demo estándar (`password123`).
+- Se integró el paso de siembra en `database/regenera_todo.py`.
+- Verificado exitosamente con respuesta `200 OK` y emisión de tokens JWT para los usuarios tácticos y estratégicos (`director.operaciones@demo.tsi.com`, `gerente@demo.tsi.com`, etc.).
+
+**Archivos:** `database/siembra_roles_tacticos.py`, `database/regenera_todo.py`.
+
+---
+
+## 2026-08-26 — Modal de confirmación para cancelación de suscripción en `MiSuscripcionPage`
+
+**Causa:** Requerimiento de UX para simplificar la vista principal de la suscripción, transformando el formulario estático de cancelación en un botón de acción destructiva que abre un diálogo modal accesible con confirmación y captura de motivo.
+
+**Efecto verificado:**
+- Se integró el botón "Cancelar suscripción" (`tsi-btn border-alert-critical`) en la barra de acciones de la suscripción.
+- Se implementó el modal accesible (`role="dialog"`, `aria-modal="true"`, cierre con `Escape` y backdrop) alineado a la paleta y clases canónicas (`.tsi-panel--elevado`, `.tsi-textarea`, `.tsi-btn-ghost`, botón crítico).
+- Se cierra y recarga la vista al completar la cancelación.
+
+**Archivos:** `frontend/src/app/modules/suscripciones/pages/mi-suscripcion/mi-suscripcion.page.ts`, `frontend/src/app/modules/suscripciones/pages/mi-suscripcion/mi-suscripcion.page.html`.
+
+---
+
+## 2026-08-26 — Corrección de solapamiento visual en `.tsi-panel--elevado` (texto y controles tapados)
+
+**Causa:** El pseudo-elemento `::after` de `.tsi-panel--elevado` (usado para pintar el fondo recortado `--bg-surface` bajo `drop-shadow`) se posicionaba en el mismo nivel de apilamiento pero posterior en el árbol que los hijos directos del panel, tapando todo el contenido interno (títulos, valores, badges, botones y formularios) con una caja blanca sólida que parecía un estado de carga indefinido.
+
+**Efecto verificado:**
+- Se configuró `.tsi-panel > *` con `position: relative; z-index: 1;` para garantizar que todo el contenido renderice por encima de `::before` y `::after`.
+- Se añadió `pointer-events: none;` a los pseudo-elementos decorativos de borde y superficie de `.tsi-panel` y `.tsi-panel--elevado`.
+- Las tarjetas de *Mi suscripción* y demás pantallas que usan `.tsi-panel--elevado` vuelven a mostrar sus datos, badges y acciones interactivas con total claridad.
+
+**Archivos:** `frontend/src/styles.css`.
+
+---
+
+## 2026-08-26 — Eliminación de barra de pestañas (sub-nav) en Suscripciones y Facturación
+
+**Causa:** Petición de unificación de la experiencia de navegación del usuario para eliminar la barra superior de sub-navegación por pestañas ("Mi suscripción", "Métodos de pago", "Facturas", "Cambio de plan", "Catálogo") en `BillingShellPage`, consolidando toda la navegación de estas secciones exclusivamente en el menú lateral (sidebar).
+
+**Efecto verificado:**
+- Se eliminó el bloque `<nav>` de pestañas en `billing-shell.page.html`.
+- Se limpió el componente `BillingShellPage` en `billing-shell.page.ts` de la lógica de tabs y enlaces duplicados.
+- Se aseguró que todas las secciones del módulo (incluyendo "Cambio de plan") cuenten con su enlace correspondiente en `NAV_LINKS` (`nav-links.ts`) para los roles autorizados.
+
+**Archivos:** `frontend/src/app/modules/suscripciones/pages/billing-shell/billing-shell.page.html`, `frontend/src/app/modules/suscripciones/pages/billing-shell/billing-shell.page.ts`, `frontend/src/app/shared/layout/nav-links.ts`.
+
+---
+
 ## 2026-08-25 — design-system v8: §1 invierte la filosofía y §4 estrena pareja tipográfica
 
 **Se redacta al final a propósito.** Estas dos secciones se reescriben *después* de

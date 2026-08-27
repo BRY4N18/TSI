@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -24,7 +23,6 @@ import { UserRoleAdminService } from '../../../auth/services/user-role-admin.ser
   imports: [
     FormsModule,
     RouterLink,
-    TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
     ListEmptyStateComponent,
@@ -51,10 +49,15 @@ export class GestionCuentaHubPage implements OnInit {
   readonly listMobileCardClass = LIST_MOBILE_CARD_CLASS;
 
   idclienteDestino = 1;
+  cuentasDisponibles = signal<{ id: number; label: string }[]>([]);
   assignUserId: number | null = null;
   assignRoleId: number | null = null;
 
   ngOnInit(): void {
+    const cuenta = this.auth.getCuenta();
+    if (cuenta?.idcliente) {
+      this.idclienteDestino = cuenta.idcliente;
+    }
     this.cargar();
   }
 

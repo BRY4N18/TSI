@@ -12,6 +12,9 @@ from apps.soporte_cliente.services.clasificacion_automatica_service import (
     ClasificacionAutomaticaService,
 )
 from apps.soporte_cliente.services.disputa_factura_service import DisputaFacturaService
+from apps.soporte_cliente.services.soporte_notificacion_service import (
+    SoporteNotificacionService,
+)
 from core.repositories.soporte.archivo_adjunto_reclamo_repository import (
     ArchivoAdjuntoReclamoRepository,
 )
@@ -35,6 +38,7 @@ class RegistrarTicketService:
         asignacion_sla_service: AsignacionSLAService | None = None,
         blob_storage: BlobStorageService | None = None,
         disputa_service: DisputaFacturaService | None = None,
+        notificacion_service: SoporteNotificacionService | None = None,
     ):
         self.reclamo_repo = reclamo_repo or ReclamoRepository()
         self.historial_repo = historial_repo or HistorialTicketRepository()
@@ -43,6 +47,7 @@ class RegistrarTicketService:
         self.asignacion_sla_service = asignacion_sla_service or AsignacionSLAService()
         self.blob_storage = blob_storage or BlobStorageService()
         self.disputa_service = disputa_service or DisputaFacturaService()
+        self.notificacion_service = notificacion_service or SoporteNotificacionService()
 
     def _subir_adjuntos(self, id_reclamo: int, archivos: list[tuple[bytes, str]]) -> None:
         for content, content_type in archivos:
@@ -144,6 +149,11 @@ class RegistrarTicketService:
         # reclamo que la respalde.
         if idfactura is not None:
             self.disputa_service.marcar_en_disputa(str(idfactura))
+
+        # El ticket ya existe y está clasificado: recién ahora tiene sentido
+        # avisarle al equipo. Fail-open dentro del propio servicio — que el
+        # correo no salga no invalida el ticket.
+        self.notificacion_service.notificar_ticket_nuevo(reclamo)
         return reclamo
 
     def clasificar_manual(

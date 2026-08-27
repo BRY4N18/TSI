@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from apps.accidentes import severidad_coherencia
 from apps.accidentes.domain_constants import (
     DUPLICATE_WINDOW_MS,
     RETROSPECTIVE_WINDOW_MS,
@@ -77,6 +78,42 @@ class ValidacionAccidenteService:
         if fechahora is None:
             result.blocking_errors.append(
                 {"code": "campos_obligatorios", "detail": "Fecha y hora del accidente requerida"})
+
+        # RN-REG-012 — un accidente de tránsito involucra al menos un vehículo.
+        #
+        # `numvehiculos` era opcional y llegaba en 0, pero es el tope de
+        # conductores/vehículos que la unidad puede enriquecer en sitio
+        # (RN-EVI-022): con 0 no se podía registrar **ni un solo** conductor, y
+        # con 1 solo cabía uno aunque el siniestro tuviera varios implicados.
+        # Ese era el hallazgo #8 de la revisión del 24/08/2026.
+        numvehiculos = data.get("numvehiculos")
+        try:
+            numvehiculos_int = int(numvehiculos) if numvehiculos not in (None, "") else 0
+        except (TypeError, ValueError):
+            numvehiculos_int = 0
+        if numvehiculos_int < 1:
+            result.blocking_errors.append(
+                {
+                    "code": "numvehiculos_requerido",
+                    "detail": (
+                        "Indique cuántos vehículos están involucrados (al menos 1). "
+                        "De ese número depende cuántos conductores puede registrar "
+                        "la unidad en el sitio."
+                    ),
+                }
+            )
+
+        # RN-SEV-COHERENCIA — la severidad declarada tiene que sostenerse con las
+        # víctimas registradas. Se evalúa antes del corte por `is_blocked` para
+        # que el operador reciba el problema de severidad junto con los demás y
+        # no en una segunda ronda de correcciones.
+        sev_bloqueantes, sev_advertencias = severidad_coherencia.evaluar(
+            idseveridad=data.get("idseveridad"),
+            numheridos=data.get("numheridos"),
+            numfallecidos=data.get("numfallecidos"),
+        )
+        result.blocking_errors.extend(sev_bloqueantes)
+        result.advertencias.extend(sev_advertencias)
 
         if result.is_blocked:
             return result

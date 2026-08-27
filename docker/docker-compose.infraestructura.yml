@@ -113,9 +113,20 @@ services:
     ports:
       - "8098:8098"
     environment:
-      JAVA_OPTS: "-Xms2G -Xmx2G -XX:MaxDirectMemorySize=1G"
-    mem_limit: 4g
-    mem_reservation: 2g
+      # Dimensionado para `Fact_Accidente` con 2 000 013 filas. Con -Xmx2G en
+      # 4g, el servidor se caia en mitad de la carga del hecho de accidentes:
+      # cada pagina recorre y ordena los 2M para devolver su trozo, y la
+      # presion se acumula entre paginas. Reducir el tamano de pagina no bastó
+      # -tambien murio con 50 000-, asi que el que se quedaba corto era él.
+      #
+      # ⚠️ El sintoma engaña: el broker responde `Connection refused` y parece
+      # un problema de red del contenedor, no falta de memoria.
+      #
+      # `MaxDirectMemorySize` va aparte del heap: los segmentos se mapean fuera
+      # de el, asi que 3G + 2G + margen del JVM es lo que sostiene el limite.
+      JAVA_OPTS: "-Xms2G -Xmx3G -XX:MaxDirectMemorySize=2G"
+    mem_limit: 6g
+    mem_reservation: 3g
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8097/health || exit 1"]
       interval: 5s

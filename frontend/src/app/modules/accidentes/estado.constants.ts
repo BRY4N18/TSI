@@ -6,14 +6,14 @@ export interface EstadoInfo {
 }
 
 export const ESTADO_INFO: Record<EstadoAccidente, EstadoInfo> = {
-  BORRADOR: { label: 'BORRADOR', tone: 'info' },
-  REPORTADO: { label: 'REPORTADO', tone: 'info' },
-  BUSCANDO_UNIDAD: { label: 'BUSCANDO_UNIDAD', tone: 'warning' },
-  ASIGNADO: { label: 'ASIGNADO', tone: 'warning' },
-  EN_ATENCIÓN: { label: 'EN_ATENCIÓN', tone: 'urgent' },
-  CERRADO: { label: 'CERRADO', tone: 'success' },
-  DESCARTADO: { label: 'DESCARTADO', tone: 'info' },
-  FUSIONADO: { label: 'FUSIONADO', tone: 'info' },
+  BORRADOR: { label: 'Borrador', tone: 'info' },
+  REPORTADO: { label: 'Reportado', tone: 'info' },
+  BUSCANDO_UNIDAD: { label: 'Buscando unidad', tone: 'warning' },
+  ASIGNADO: { label: 'Asignado', tone: 'warning' },
+  EN_ATENCIÓN: { label: 'En atención', tone: 'urgent' },
+  CERRADO: { label: 'Cerrado', tone: 'success' },
+  DESCARTADO: { label: 'Descartado', tone: 'info' },
+  FUSIONADO: { label: 'Fusionado', tone: 'info' },
 };
 
 export const ESTADOS: EstadoAccidente[] = [

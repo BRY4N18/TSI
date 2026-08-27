@@ -69,6 +69,41 @@ class DespachoRepository:
     def has_active_for_unidad(self, idunidademergencia: int) -> bool:
         return bool(self.list_activos_by_unidad(idunidademergencia))
 
+    def list_historial_by_unidad(
+        self,
+        idunidademergencia: int,
+        *,
+        limit: int = 20,
+        cursor: int | None = None,
+    ) -> tuple[list[dict[str, Any]], int | None]:
+        """Despachos de una unidad, **activos e históricos**, del más reciente atrás.
+
+        `list_activos_by_unidad` solo devuelve los vigentes porque sirve para
+        resolver la misión en curso. Aquí hace falta lo contrario: el rastro de
+        todo lo que la unidad atendió, que es lo que la revisión del 24/08/2026
+        echó en falta (hallazgo #13, "no hay un historial de las unidades de
+        emergencia y su despacho").
+
+        Paginación por cursor descendente sobre `iddespacho`, igual que el
+        historial de estado de la unidad.
+        """
+        rows = self.pinot.query(
+            """
+            SELECT * FROM Fact_Despacho
+            WHERE idunidademergencia = %(idunidademergencia)s
+            LIMIT 10000
+            """,
+            {"idunidademergencia": idunidademergencia},
+        )
+        rows.sort(key=lambda r: int(r.get("iddespacho") or 0), reverse=True)
+        if cursor is not None:
+            rows = [r for r in rows if int(r.get("iddespacho") or 0) < cursor]
+        pagina = rows[:limit]
+        siguiente = (
+            int(pagina[-1]["iddespacho"]) if len(rows) > limit and pagina else None
+        )
+        return pagina, siguiente
+
     def list_all_active(self) -> list[dict[str, Any]]:
         # LIMIT explícito: es la consulta que recorre el ciclo de vencimientos.
         # Sin él, Pinot recorta a 10 despachos activos de todo el sistema y el

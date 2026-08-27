@@ -4,7 +4,7 @@
           <h1 class="tsi-display m-0 text-3xl font-extrabold text-text-primary">Dashboard de soporte</h1>
 <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
           <p class="m-0 mt-1 text-sm text-text-secondary">
-            Métricas de tickets, cumplimiento de SLA y reaperturas (RF-TIC-007).
+            Métricas de tickets, cumplimiento de SLA y reaperturas.
           </p>
         </div>
         <button
@@ -13,7 +13,6 @@
           [disabled]="cargando()"
           (click)="cargar()"
         >
-          <app-tabler-icon name="refresh" [size]="16" />
           Actualizar
         </button>
       </header>
@@ -98,22 +97,7 @@
             @if (!porEstado().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
-              <ul class="m-0 flex list-none flex-col gap-3 p-0">
-                @for (row of porEstado(); track row.key) {
-                  <li>
-                    <div class="mb-1 flex items-center justify-between gap-2 text-sm">
-                      <span class="tsi-badge" [ngClass]="estadoBadge(row.key)">{{ row.label }}</span>
-                      <span class="font-semibold text-text-primary">{{ row.count }}</span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary transition-[width]"
-                        [style.width.%]="row.pct"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <app-bar-chart [datos]="barrasEstado()" />
             }
           </article>
 
@@ -125,22 +109,8 @@
             @if (!porPrioridad().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
-              <ul class="m-0 flex list-none flex-col gap-3 p-0">
-                @for (row of porPrioridad(); track row.key) {
-                  <li>
-                    <div class="mb-1 flex items-center justify-between gap-2 text-sm">
-                      <span class="tsi-badge" [ngClass]="prioridadBadge(row.key)">{{ row.label }}</span>
-                      <span class="font-semibold text-text-primary">{{ row.count }}</span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary/80 transition-[width]"
-                        [style.width.%]="row.pct"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <!-- Ordinal: la rampa deja ver la gravedad creciente. -->
+              <app-bar-chart [datos]="barrasPrioridad()" escala="ordinal" />
             }
           </article>
         </section>
@@ -156,16 +126,7 @@
             @if (!porTipo().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
-              <ul class="m-0 flex list-none flex-col gap-2 p-0">
-                @for (row of porTipo(); track row.key) {
-                  <li
-                    class="flex items-center justify-between gap-3 rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm"
-                  >
-                    <span class="text-text-primary">{{ row.label }}</span>
-                    <span class="font-semibold text-text-primary">{{ row.count }}</span>
-                  </li>
-                }
-              </ul>
+              <app-bar-chart [datos]="barrasTipo()" />
             }
           </article>
 
@@ -177,16 +138,7 @@
             @if (!porCliente().length) {
               <p class="m-0 text-sm text-text-secondary">Sin datos.</p>
             } @else {
-              <ul class="m-0 flex list-none flex-col gap-2 p-0">
-                @for (row of porCliente(); track row.key) {
-                  <li
-                    class="flex items-center justify-between gap-3 rounded-md border border-border-default bg-bg-page px-3 py-2 text-sm"
-                  >
-                    <span class="text-text-primary">Cliente #{{ row.key }}</span>
-                    <span class="font-semibold text-text-primary">{{ row.count }}</span>
-                  </li>
-                }
-              </ul>
+              <app-bar-chart [datos]="barrasCliente()" />
             }
           </article>
         </section>

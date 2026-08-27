@@ -1,7 +1,7 @@
+import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -13,6 +13,7 @@ import {
   LIST_TABLE_TD_PRIMARY_CLASS,
   LIST_TABLE_TH_CLASS,
 } from '../../../../shared/ui/list-states/list-table.styles';
+import { PlanApiService } from '../../../suscripciones/services/plan-api.service';
 import { SlaConfigApiService } from '../../services/sla-config-api.service';
 import { SLAConfig } from '../../services/models/soporte.types';
 
@@ -20,8 +21,8 @@ import { SLAConfig } from '../../services/models/soporte.types';
   selector: 'app-configuracion-sla',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
-    TablerIconComponent,
     ListLoadingSkeletonComponent,
     ListErrorStateComponent,
     ListEmptyStateComponent,
@@ -31,8 +32,10 @@ import { SLAConfig } from '../../services/models/soporte.types';
 })
 export class ConfiguracionSlaPage {
   private readonly api = inject(SlaConfigApiService);
+  private readonly planApi = inject(PlanApiService);
 
   readonly reglas = signal<SLAConfig[]>([]);
+  readonly planes = signal<{ idplan: number; nombre: string }[]>([]);
   readonly mensaje = signal('');
   readonly error = signal('');
   readonly cargando = signal(false);
@@ -51,6 +54,33 @@ export class ConfiguracionSlaPage {
 
   constructor() {
     this.cargar();
+    this.planApi.listar({ limit: 100 }).subscribe({
+      next: (res) => {
+        this.planes.set(
+          (res?.data ?? []).map((p) => ({
+            idplan: p.idplan ?? 1,
+            nombre: p.nombre ?? `Plan #${p.idplan}`,
+          })),
+        );
+      },
+      error: () => {
+        // Fallback manejado por nombrePlan
+      },
+    });
+  }
+
+  nombrePlan(idplan: number): string {
+    const p = this.planes().find((item) => item.idplan === idplan);
+    if (p && p.nombre) {
+      return p.nombre;
+    }
+    const NOMBRES: Record<number, string> = {
+      1: 'Básico',
+      2: 'Estándar',
+      3: 'Empresarial',
+      4: 'Premium',
+    };
+    return NOMBRES[idplan] ?? `Plan #${idplan}`;
   }
 
   cargar(): void {

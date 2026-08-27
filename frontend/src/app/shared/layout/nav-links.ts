@@ -20,7 +20,7 @@ export const NAV_LINKS: NavLink[] = [
     label: 'Prospectos',
     description: 'Listado y workpanel del pipeline comercial',
     path: '/ventas-crm/prospectos',
-    roles: ['GerenteVentas', 'GerenteCuentasPublicas', 'Administrador'],
+    roles: ['GerenteVentas', 'GerenteCuentasPublicas'],
     icon: 'list',
     group: 'Ventas CRM',
   },
@@ -28,7 +28,7 @@ export const NAV_LINKS: NavLink[] = [
     label: 'Pipeline',
     description: 'Tablero por etapa del funnel comercial',
     path: '/ventas-crm/pipeline',
-    roles: ['GerenteVentas', 'GerenteCuentasPublicas', 'Administrador'],
+    roles: ['GerenteVentas', 'GerenteCuentasPublicas'],
     icon: 'dashboard',
     group: 'Ventas CRM',
   },
@@ -164,7 +164,7 @@ export const NAV_LINKS: NavLink[] = [
     label: 'Regiones operativas',
     description: 'Catálogo, validación y reevaluación de regiones',
     path: '/red-operativa/incorporacion-regional/catalogo',
-    roles: ['Administrador', 'DirectorTecnologico'],
+    roles: ['DirectorTecnologico'],
     icon: 'map',
     group: 'Red operativa',
   },
@@ -172,7 +172,7 @@ export const NAV_LINKS: NavLink[] = [
     label: 'Validación de región',
     description: 'Protocolo de onboarding y remediación de regiones',
     path: '/red-operativa/incorporacion-regional/validacion',
-    roles: ['Administrador', 'DirectorTecnologico'],
+    roles: ['DirectorTecnologico'],
     icon: 'map-pin',
     group: 'Red operativa',
   },
@@ -224,7 +224,7 @@ export const NAV_LINKS: NavLink[] = [
     // Los gerentes entran y el backend los acota a su cartera; `reasignaciones`
     // lo cierra su propio guard y el índice ni se lo ofrece.
     path: '/ventas-crm/informes',
-    roles: ['Administrador', 'DirectorMarketing', 'GerenteVentas', 'GerenteCuentasPublicas'],
+    roles: ['DirectorMarketing', 'GerenteVentas', 'GerenteCuentasPublicas'],
     icon: 'chart-bar',
     group: 'Ventas CRM',
   },
@@ -297,7 +297,6 @@ export const NAV_LINKS: NavLink[] = [
     description: 'Flota, bajas, regiones y validaciones',
     path: '/red-operativa/informes',
     roles: [
-      'Administrador',
       'DirectorExpansion',
       'DirectorTecnologico',
       'Cliente',
@@ -458,6 +457,14 @@ export const NAV_LINKS: NavLink[] = [
     path: '/suscripciones/historial-facturas',
     roles: ['Cliente', 'Proveedor'],
     icon: 'list',
+    group: 'Suscripciones',
+  },
+  {
+    label: 'Cambio de plan',
+    description: 'Solicitar upgrade o downgrade de suscripción',
+    path: '/suscripciones/cambio-plan',
+    roles: ['Cliente', 'Proveedor'],
+    icon: 'refresh',
     group: 'Suscripciones',
   },
   {
@@ -778,6 +785,22 @@ export const NAV_LINKS: NavLink[] = [
     path: '/partners/portal/contrato',
     roles: ['PartnerIntegracion'],
     icon: 'license',
+    group: 'Partners y API',
+  },
+  {
+    // Misma pantalla que "Mis tickets" del Cliente, pero **dentro del portal del
+    // partner**: el backend lo reconoce como reportador (`ROLES_REPORTADORES`,
+    // RF-O83.2) y podía disputar su factura, pero no tenía por dónde entrar
+    // (hallazgo #18 de la revisión del 24/08/2026).
+    //
+    // No se añade `PartnerIntegracion` a la entrada del grupo "Soporte": FR-UI-033
+    // exige que cada rol vea su sidebar íntegro sin descubrir la existencia de
+    // otro departamento, y eso le habría abierto un grupo ajeno.
+    label: 'Mis tickets',
+    description: 'Reportar incidencias y disputar cargos de tu integración',
+    path: '/soporte-cliente/mis-tickets',
+    roles: ['PartnerIntegracion'],
+    icon: 'list',
     group: 'Partners y API',
   },
 ];

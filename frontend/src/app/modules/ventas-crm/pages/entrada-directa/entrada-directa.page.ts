@@ -20,117 +20,168 @@ import { TipoCliente } from '../../models/prospectos.types';
   imports: [CommonModule, ReactiveFormsModule, RouterLink, TablerIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mx-auto max-w-6xl p-8">
+    <div class="mx-auto max-w-4xl px-4 py-8 text-text-primary">
       <a
         routerLink="/ventas-crm/prospectos"
-        class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary no-underline hover:text-text-primary"
+        class="mb-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-secondary no-underline transition-colors hover:text-accent-primary"
       >
         <app-tabler-icon name="arrow-left" [size]="16" />
-        Volver a la lista
+        Volver a prospectos
       </a>
 
-      <div class="mb-6">
-        <p class="m-0 text-sm font-medium text-text-secondary">Administración</p>
-        <h1 class="tsi-display m-0 mt-1 text-3xl font-extrabold text-text-primary">Entrada directa</h1>
-<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
+      <header class="mb-6 border-b border-border-default pb-4">
+        <p class="m-0 text-xs font-semibold uppercase tracking-wider text-text-secondary">Administración CRM</p>
+        <h1 class="tsi-display m-0 text-2xl font-bold tracking-tight text-text-primary">Entrada directa de cliente</h1>
         <p class="m-0 mt-1 text-sm text-text-secondary">
-          Crear cliente sin prospecto previo (solo Administrador)
+          Alta directa de cliente y asignación de su primer administrador local sin pasar por el flujo de prospección.
         </p>
-      </div>
+      </header>
 
       @if (success()) {
         <section
-          class="grid place-items-center gap-3 rounded-md border border-alert-success bg-alert-success-bg p-10 text-center"
+          class="grid place-items-center gap-4 rounded-xl border border-alert-success/40 bg-alert-success/10 p-12 text-center shadow-sm"
           data-testid="entrada-directa-ok"
         >
-          <app-tabler-icon name="circle-check" [size]="32" />
-          <p class="m-0 text-sm text-alert-success">Cliente creado correctamente.</p>
-          <button
-            type="button"
-            class="tsi-btn tsi-btn-primary"
-            (click)="reset()"
-          >
-            Crear otro
-          </button>
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-alert-success/20 text-alert-success">
+            <app-tabler-icon name="circle-check" [size]="36" />
+          </div>
+          <div>
+            <h2 class="tsi-display m-0 text-xl font-bold text-text-primary">¡Cliente creado exitosamente!</h2>
+            <p class="m-0 mt-1 text-sm text-text-secondary">Se han generado las credenciales y el perfil corporativo del cliente.</p>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <button
+              type="button"
+              class="tsi-btn tsi-btn-primary inline-flex items-center gap-2"
+              (click)="reset()"
+            >
+              <app-tabler-icon name="plus" [size]="16" />
+              Crear otro cliente
+            </button>
+            <a
+              routerLink="/ventas-crm/prospectos"
+              class="tsi-btn tsi-btn-secondary no-underline"
+            >
+              Ver lista de prospectos
+            </a>
+          </div>
         </section>
       } @else {
         <form
-          class="grid max-w-xl gap-4 tsi-panel p-6"
+          class="grid gap-6"
           [formGroup]="form"
           (ngSubmit)="enviar()"
         >
-          <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">Datos del cliente</h2>
+          <div class="tsi-panel tsi-panel--elevado rounded-xl border border-border-default bg-bg-surface p-6 shadow-sm">
+            <div class="mb-4 flex items-center gap-2 border-b border-border-default/60 pb-3">
+              <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">1. Datos de la organización</h2>
+            </div>
 
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Nombre
-            <input
-              formControlName="nombre"
-              class="tsi-input w-full"
-          placeholder="Ej. Flota Centro"
-        />
-          </label>
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Razón social
-            <input
-              formControlName="razon_social"
-              class="tsi-input w-full"
-          placeholder="Ej. Transportes del Norte S.A. de C.V."
-        />
-          </label>
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Tipo
-            <select
-              formControlName="tipo"
-              class="tsi-select w-full min-w-0"
-            >
-              <option value="Municipio">Municipio</option>
-              <option value="Aseguradora">Aseguradora</option>
-              <option value="Proveedor">Proveedor</option>
-              <option value="Smart City">Smart City</option>
-            </select>
-          </label>
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            NIT
-            <input
-              formControlName="nit_identificacion"
-              class="tsi-input w-full"
-          placeholder="RFC o identificación fiscal"
-        />
-          </label>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="grid gap-1.5">
+                <label for="org-nombre" class="text-xs font-semibold text-text-secondary">
+                  Nombre comercial <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="org-nombre"
+                  formControlName="nombre"
+                  class="tsi-input w-full"
+                  placeholder="Ej. Flota Centro"
+                />
+              </div>
 
-          <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">
-            Administrador local (primer usuario de la cuenta)
-          </h2>
+              <div class="grid gap-1.5">
+                <label for="org-razon" class="text-xs font-semibold text-text-secondary">
+                  Razón social <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="org-razon"
+                  formControlName="razon_social"
+                  class="tsi-input w-full"
+                  placeholder="Ej. Transportes del Norte S.A. de C.V."
+                />
+              </div>
 
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Nombres
-            <input
-              formControlName="admin_nombres"
-              class="tsi-input w-full"
-          placeholder="Ej. María"
-        />
-          </label>
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Apellidos
-            <input
-              formControlName="admin_apellidos"
-              class="tsi-input w-full"
-          placeholder="Ej. Salazar"
-        />
-          </label>
-          <label class="grid gap-1.5 text-sm font-medium text-text-secondary">
-            Correo electrónico
-            <input
-              type="email"
-              formControlName="admin_gmail"
-              class="tsi-input w-full"
-          placeholder="nombre@empresa.com"
-        />
-          </label>
+              <div class="grid gap-1.5">
+                <label for="org-tipo" class="text-xs font-semibold text-text-secondary">
+                  Tipo de cliente <span class="text-alert-danger">*</span>
+                </label>
+                <select
+                  id="org-tipo"
+                  formControlName="tipo"
+                  class="tsi-select w-full"
+                >
+                  <option value="Municipio">Municipio</option>
+                  <option value="Aseguradora">Aseguradora</option>
+                  <option value="Proveedor">Proveedor</option>
+                  <option value="Smart City">Smart City</option>
+                </select>
+              </div>
+
+              <div class="grid gap-1.5">
+                <label for="org-nit" class="text-xs font-semibold text-text-secondary">
+                  NIT / Identificación fiscal <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="org-nit"
+                  formControlName="nit_identificacion"
+                  class="tsi-input w-full font-mono"
+                  placeholder="RFC, NIT o RUT"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="tsi-panel tsi-panel--elevado rounded-xl border border-border-default bg-bg-surface p-6 shadow-sm">
+            <div class="mb-4 flex items-center gap-2 border-b border-border-default/60 pb-3">
+              <h2 class="tsi-display m-0 text-base font-semibold text-text-primary">
+                2. Administrador local principal (primer usuario)
+              </h2>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="grid gap-1.5">
+                <label for="admin-nombres" class="text-xs font-semibold text-text-secondary">
+                  Nombres <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="admin-nombres"
+                  formControlName="admin_nombres"
+                  class="tsi-input w-full"
+                  placeholder="Ej. María"
+                />
+              </div>
+
+              <div class="grid gap-1.5">
+                <label for="admin-apellidos" class="text-xs font-semibold text-text-secondary">
+                  Apellidos <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="admin-apellidos"
+                  formControlName="admin_apellidos"
+                  class="tsi-input w-full"
+                  placeholder="Ej. Salazar"
+                />
+              </div>
+
+              <div class="grid gap-1.5 md:col-span-2">
+                <label for="admin-email" class="text-xs font-semibold text-text-secondary">
+                  Correo electrónico institucional <span class="text-alert-danger">*</span>
+                </label>
+                <input
+                  id="admin-email"
+                  type="email"
+                  formControlName="admin_gmail"
+                  class="tsi-input w-full"
+                  placeholder="nombre@empresa.com"
+                />
+              </div>
+            </div>
+          </div>
 
           @if (error()) {
             <div
-              class="flex items-center gap-2 rounded-md border border-alert-critical bg-alert-critical-bg px-4 py-3 text-sm text-alert-critical"
+              class="flex items-center gap-2.5 rounded-lg border border-alert-critical/40 bg-alert-critical-bg p-4 text-sm text-alert-critical"
               role="alert"
             >
               <app-tabler-icon name="alert-triangle" [size]="18" />
@@ -138,22 +189,28 @@ import { TipoCliente } from '../../models/prospectos.types';
             </div>
           }
 
-          <button
-            type="submit"
-            data-testid="btn-crear-cliente-directo"
-            class="tsi-btn tsi-btn-primary w-fit"
-            [disabled]="loading() || form.invalid"
-          >
-            @if (loading()) {
-              <span
-                class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                aria-hidden="true"
-              ></span>
-              Creando…
-            } @else {
-              Crear cliente
-            }
-          </button>
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <a
+              routerLink="/ventas-crm/prospectos"
+              class="tsi-btn tsi-btn-ghost no-underline"
+            >
+              Cancelar
+            </a>
+            <button
+              type="submit"
+              data-testid="btn-crear-cliente-directo"
+              class="tsi-btn tsi-btn-primary inline-flex items-center gap-2"
+              [disabled]="loading() || form.invalid"
+            >
+              @if (loading()) {
+                <app-tabler-icon name="refresh" [size]="16" class="animate-spin" />
+                Creando cliente...
+              } @else {
+                <app-tabler-icon name="circle-check" [size]="16" />
+                Crear cliente
+              }
+            </button>
+          </div>
         </form>
       }
     </div>

@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
-/* TSI design tokens — modo claro (default). Modo oscuro: ver bloque html[data-theme='dark'] abajo */
+/* TSI design tokens — modo claro, único modo soportado desde v9 (design-system.md
+   §3: "Nodo Integral" retira el tema oscuro por decisión explícita, en vez de
+   mantener un segundo tema sin dueño que lo revise). */
 :root {
   --bg-page: #f5f7fb;
   --bg-surface: #ffffff;
@@ -18,6 +20,56 @@
   --accent-ring: color-mix(in srgb, var(--accent-primary) 15%, transparent);
   --accent-soft: color-mix(in srgb, var(--accent-primary) 8%, transparent);
   --rail-groove: var(--bg-surface);
+
+  /* Paleta "de ruta" — v9. Las tres cintas del isotipo (navy, cian, teal-pizarra)
+     en su hex de logo puro, sin ajustar por tema (ya no hace falta: un solo
+     modo). Es la capa EXPRESIVA del sistema — motivo de carretera, acento
+     tricolor del header, perforación de CaseCard — nunca sustituye a
+     accent-primary/accent-flow, que siguen siendo la UI operativa. */
+  --route-navy: #0a2a4e;
+  --route-cyan: #16aee0;
+  --route-teal: #3d7a93;
+
+  /* ---------------------------------------------------------------------
+     Paleta de GRAFICOS — v9. Separada a proposito de la paleta de UI y de
+     la de marca: un color de serie codifica IDENTIDAD, no jerarquia ni
+     estado, asi que no puede salir de `accent-*` (que ya significa "accion
+     primaria") ni de `route-*` (que ya significa "marca").
+
+     Los cuatro slots categoricos van en ORDEN FIJO y se asignan por
+     posicion, nunca ciclados: el orden es el mecanismo que garantiza que
+     dos series contiguas sigan distinguiendose con daltonismo.
+
+     Verificada con el validador de la skill `dataviz` sobre fondo
+     `bg-surface` (#ffffff), modo claro — el unico modo desde v9:
+       banda de luminosidad  PASS   cromaticidad minima  PASS
+       separacion CVD        PASS (peor par 10.2, objetivo >= 8)
+       piso de vision normal PASS (peor par 19.8, piso 15)
+       contraste vs fondo    PASS (los 4 >= 3:1)
+     Cambiar un hex sin volver a pasar el validador rompe la garantia. */
+  --chart-cat-1: #1d63b8;
+  --chart-cat-2: #c0407a;
+  --chart-cat-3: #6b4bc4;
+  --chart-cat-4: #12a0a8;
+
+  /* Rampa ORDINAL/secuencial — un solo tono, claro -> oscuro. Se usa cuando
+     el orden de las categorias SIGNIFICA algo (etapas de un embudo, niveles
+     de prioridad, tramos de antiguedad): ahi el color debe dejar ver el
+     orden. Para categorias nominales (planes, regiones, agentes) NO se usa
+     esta rampa: todas las barras van en `--chart-cat-1`, porque la longitud
+     de la barra ya codifica la magnitud y teñirlas ademas gasta el canal de
+     identidad en repetir lo mismo.
+
+     Validada con `--ordinal`: monotona PASS · salto adjacente >= 0.06 PASS
+     · extremo claro 2.14:1 sobre fondo PASS · un solo tono (2 grados) PASS. */
+  --chart-seq-1: #8fb4e4;
+  --chart-seq-2: #6396d5;
+  --chart-seq-3: #3f74ba;
+  --chart-seq-4: #255698;
+  --chart-seq-5: #133d6e;
+
+  /* Rejilla y ejes: un paso por encima del fondo, finos y recesivos. */
+  --chart-grid: #e8ecf4;
 
   /* PILOTO DE IDENTIDAD — pendiente de consolidar en design-system.md §1/§4.
      Titulares en Archivo **Expanded** (eje wdth 125). La version normal se
@@ -45,33 +97,6 @@
   --alert-info-bg: #eef2f8;
 }
 
-/* TSI design tokens — modo oscuro, design-system.md §3 */
-html[data-theme='dark'] {
-  --bg-page: #14161f;
-  --bg-surface: #1c1f2b;
-  --border-default: #2a2d3a;
-  --text-primary: #e8e9ef;
-  --text-secondary: #8a8da0;
-  --accent-primary: #007aaf;
-  --accent-hover: #006a98;
-
-  /* En oscuro el cian crudo del isotipo si es legible como trazo (6.1:1 sobre
-     bg-surface), asi que el riel usa el hex de marca sin oscurecer. */
-  --accent-flow: #00a8e8;
-  --gradient-node: linear-gradient(140deg, #0a0f1c 0%, #002b5b 60%, #00558f 100%);
-
-  --alert-critical: #f09595;
-  --alert-critical-bg: #4a1b0c;
-  --alert-urgent: #fac775;
-  --alert-urgent-bg: #412402;
-  --alert-warning: #f0d889;
-  --alert-warning-bg: #3b2e05;
-  --alert-success: #97c459;
-  --alert-success-bg: #173404;
-  --alert-info: #9db1cc;
-  --alert-info-bg: #1c2430;
-}
-
 @theme {
   --color-bg-page: var(--bg-page);
   --color-bg-surface: var(--bg-surface);
@@ -92,6 +117,10 @@ html[data-theme='dark'] {
   --color-alert-success-bg: var(--alert-success-bg);
   --color-alert-info: var(--alert-info);
   --color-alert-info-bg: var(--alert-info-bg);
+
+  --color-route-navy: var(--route-navy);
+  --color-route-cyan: var(--route-cyan);
+  --color-route-teal: var(--route-teal);
 
   /* Escala de radios — design-system.md §5. Tres pasos, sin solapamiento:
      sm = botones/inputs/badges, md = cards/modales/tablas, lg = paneles grandes. */
@@ -219,10 +248,6 @@ html[data-theme='dark'] {
     transition: border-color 150ms ease, box-shadow 150ms ease;
   }
 
-  html[data-theme='dark'] .tsi-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238a8da0' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
-  }
-
   .tsi-select:focus {
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px var(--accent-ring);
@@ -233,26 +258,57 @@ html[data-theme='dark'] {
     opacity: 0.5;
   }
 
+  /* Boton = placa de senalizacion, no pildora de SaaS (v9).
+     Las dos esquinas superiores en angulo —el hexagono aplanado, el mismo
+     gesto de `.tsi-panel--placa`—, tipografia de titulares en mayusculas
+     con tracking, y un canto inferior "reflectante" de 3px, como el de un
+     letrero de carretera real. */
   .tsi-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     min-height: 2.75rem;
-    /* La esquina superior derecha en angulo recto, igual que el corte de
-       `.tsi-panel`. Es el mismo gesto a otra escala: el sistema se reconoce
-       tanto en un panel de 800px como en un boton de 100.
-
-       Se hace con `border-radius` y no con `clip-path` a proposito — un
-       recorte se comeria el anillo de foco del teclado, y eso es
-       accesibilidad, no estetica. */
-    border-radius: 0.5rem 0 0.5rem 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    /* 110 y no el 125 de los titulares: una etiqueta de boton es corta y a
+       ancho completo se desborda de su caja en los idiomas largos. */
+    font-stretch: 110%;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%, 0 8px);
     padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.8125rem;
     line-height: 1.25rem;
+    cursor: pointer;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
-      opacity 150ms ease;
+      opacity 150ms ease, transform 100ms ease;
+  }
+
+  /* ⚠️ El recorte y el foco del teclado: el problema que obligo a que esto
+     no fuera `border-radius`.
+
+     Hasta v8 el boton usaba `border-radius` justamente porque un `clip-path`
+     **se come el anillo de foco**: `outline` se pinta por fuera de la caja y
+     el recorte lo elimina entero, dejando invisible por donde va el teclado.
+     La forma de placa vale la pena, pero no a ese precio.
+
+     La salida es un anillo INSET: `box-shadow` con `inset` se pinta DENTRO
+     del elemento, asi que sobrevive al recorte. Doble aro —primero el color
+     del fondo, luego el acento— para que se despegue del relleno del boton
+     sea cual sea la variante. Sustituye al canto reflectante mientras dura
+     el foco, y eso es correcto: el estado de foco manda sobre el adorno. */
+  .tsi-btn:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 2px var(--bg-surface),
+      inset 0 0 0 4px var(--accent-primary);
+  }
+
+  .tsi-btn:active:not(:disabled) {
+    transform: translateY(1px);
   }
 
   .tsi-btn:disabled {
@@ -262,8 +318,9 @@ html[data-theme='dark'] {
 
   .tsi-btn-primary {
     border: 1px solid transparent;
-    background: var(--accent-primary);
+    background: var(--route-navy);
     color: #fff;
+    box-shadow: inset 0 -3px 0 var(--route-cyan);
   }
 
   .tsi-btn-primary:hover:not(:disabled) {
@@ -274,10 +331,12 @@ html[data-theme='dark'] {
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
     color: var(--text-primary);
+    box-shadow: inset 0 -3px 0 var(--border-default);
   }
 
   .tsi-btn-secondary:hover:not(:disabled) {
     background: var(--bg-page);
+    box-shadow: inset 0 -3px 0 var(--route-teal);
   }
 
   .tsi-btn-ghost {
@@ -290,10 +349,33 @@ html[data-theme='dark'] {
     background: var(--accent-soft);
   }
 
+  /* Accion destructiva declarada (cancelar caso, dar de baja) — v9. Antes estas
+     acciones repintaban alert-critical a mano sobre tsi-btn-ghost en cada
+     pantalla que las necesitaba; se promueve a clase canonica porque "cancelar
+     un caso" no es una variante visual improvisada, es una accion que vuelve a
+     aparecer (despacho, suscripciones, soporte) y necesita verse igual en
+     todas. La severidad sigue siendo la de los tokens de alerta, no un rojo de
+     marca. */
+  .tsi-btn-danger {
+    border: 1px solid var(--alert-critical);
+    background: transparent;
+    color: var(--alert-critical);
+  }
+
+  .tsi-btn-danger:hover:not(:disabled) {
+    background: var(--alert-critical-bg);
+  }
+
+  /* Boton solo-icono: hexagono, no cuadrado — el mismo recorte que
+     `.tsi-node`, para que un boton de accion y un contenedor de icono se
+     lean como la misma familia de forma. Pierde el canto reflectante: en un
+     hexagono el borde inferior es un vertice, no un lado. */
   .tsi-btn-icon {
     width: 2.75rem;
     min-height: 2.75rem;
     padding: 0;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    box-shadow: none;
   }
 
   /* Extiende el area de toque a 44x44 sin tocar la caja visible.
@@ -452,6 +534,7 @@ html[data-theme='dark'] {
     position: absolute;
     inset: 1px;
     background: var(--bg-surface);
+    pointer-events: none;
     clip-path: polygon(
       0 0,
       calc(100% - var(--corte-nodo)) 0,
@@ -461,9 +544,10 @@ html[data-theme='dark'] {
     );
   }
 
-  /* El contenido tiene que ir por encima del ::before. */
+  /* El contenido tiene que ir por encima del ::before y del ::after. */
   .tsi-panel > * {
     position: relative;
+    z-index: 1;
   }
 
   /* Panel elevado — la esquina cortada TAMBIEN en modales.
@@ -483,6 +567,7 @@ html[data-theme='dark'] {
   .tsi-panel--elevado::before {
     inset: 0;
     background: var(--border-default);
+    pointer-events: none;
   }
 
   .tsi-panel--elevado::after {
@@ -490,12 +575,41 @@ html[data-theme='dark'] {
     position: absolute;
     inset: 1px;
     background: var(--bg-surface);
+    pointer-events: none;
     clip-path: polygon(
       0 0,
       calc(100% - var(--corte-nodo)) 0,
       100% var(--corte-nodo),
       100% 100%,
       0 100%
+    );
+  }
+
+  /* Placa — ambas esquinas superiores en angulo, el hexagono aplanado. v9.
+     `.tsi-panel` corta una sola esquina (la firma de card/modal/formulario);
+     esta variante corta las dos, que es la lectura de senalizacion/placa vial
+     y no de card de SaaS. Uso exclusivo: filas de caso (CaseCard) y chrome de
+     marca — nunca en superficies de datos densos, donde una sola esquina ya
+     basta para leerse como TSI sin robarle area util a la fila. */
+  .tsi-panel--placa {
+    clip-path: polygon(
+      var(--corte-nodo) 0,
+      calc(100% - var(--corte-nodo)) 0,
+      100% var(--corte-nodo),
+      100% 100%,
+      0 100%,
+      0 var(--corte-nodo)
+    );
+  }
+
+  .tsi-panel--placa::before {
+    clip-path: polygon(
+      var(--corte-nodo) 0,
+      calc(100% - var(--corte-nodo)) 0,
+      100% var(--corte-nodo),
+      100% 100%,
+      0 100%,
+      0 var(--corte-nodo)
     );
   }
 

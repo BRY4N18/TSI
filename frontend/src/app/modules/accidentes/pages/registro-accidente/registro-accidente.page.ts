@@ -16,7 +16,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, finalize, map, switchMap } from 'rxjs';
+import { combineLatest, debounceTime, finalize, map, startWith, switchMap } from 'rxjs';
 
 import { ConfirmDialogService } from '../../../../shared/notifications/confirm-dialog.service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
@@ -84,6 +84,8 @@ export class RegistroAccidentePage {
   readonly geocodificando = signal(false);
   readonly advertencias = signal<AdvertenciaValidacion[]>([]);
   readonly calleSugerida = signal<number | null>(null);
+  readonly calleSugeridaNombre = signal<string | null>(null);
+  readonly calleSeleccionadaNombre = signal<string | null>(null);
   readonly fueraCobertura = signal(false);
   readonly duplicadoConflicto = signal<DuplicadoConflictData | null>(null);
 
@@ -121,7 +123,10 @@ export class RegistroAccidentePage {
       descripcion: ['', [Validators.required]],
       idcalle: [0, [Validators.required, Validators.min(1)]],
       codigopostal: [''],
-      numvehiculos: [0],
+      // RN-REG-012 — obligatorio y >= 1: de este número sale el tope de
+      // conductores que la unidad puede enriquecer en sitio (RN-EVI-022). En 0
+      // no se podía registrar ninguno (hallazgo #8).
+      numvehiculos: [1, [Validators.required, Validators.min(1)]],
       numheridos: [0],
       numvictimas: [0],
       numfallecidos: [0],
@@ -144,6 +149,21 @@ export class RegistroAccidentePage {
       error: () => this.referenciasEstacion.set([]),
     });
     this.restaurarBorrador();
+
+    // Cálculo automático reactivo: Víctimas (total) = Heridos + Fallecidos
+    combineLatest([
+      this.form.controls.numheridos.valueChanges.pipe(startWith(this.form.controls.numheridos.value)),
+      this.form.controls.numfallecidos.valueChanges.pipe(startWith(this.form.controls.numfallecidos.value)),
+    ])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(([heridos, fallecidos]) => {
+        const h = Number(heridos) || 0;
+        const f = Number(fallecidos) || 0;
+        const total = Math.max(0, h + f);
+        if (this.form.controls.numvictimas.value !== total) {
+          this.form.controls.numvictimas.setValue(total, { emitEvent: false });
+        }
+      });
 
     this.form.valueChanges
       .pipe(debounceTime(DRAFT_DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef))
@@ -209,7 +229,7 @@ export class RegistroAccidentePage {
       descripcion: '',
       idcalle: 0,
       codigopostal: '',
-      numvehiculos: 0,
+      numvehiculos: 1,
       numheridos: 0,
       numvictimas: 0,
       numfallecidos: 0,
@@ -226,6 +246,9 @@ export class RegistroAccidentePage {
     this.cascadaCondados.set([]);
     this.cascadaCiudades.set([]);
     this.cascadaCalles.set([]);
+    this.calleSugerida.set(null);
+    this.calleSugeridaNombre.set(null);
+    this.calleSeleccionadaNombre.set(null);
     this.limpiarBorrador();
     queueMicrotask(() => {
       this.skipDraftSave = false;
@@ -246,6 +269,7 @@ export class RegistroAccidentePage {
     this.cascadaCondados.set([]);
     this.cascadaCiudades.set([]);
     this.cascadaCalles.set([]);
+    this.calleSeleccionadaNombre.set(null);
     if (idpais) {
       this.ubicacionCatalogo.listarEstados(idpais).subscribe((e) => this.cascadaEstados.set(e));
     }
@@ -258,6 +282,7 @@ export class RegistroAccidentePage {
     this.cascadaCondados.set([]);
     this.cascadaCiudades.set([]);
     this.cascadaCalles.set([]);
+    this.calleSeleccionadaNombre.set(null);
     if (idestado) {
       this.ubicacionCatalogo.listarCondados(idestado).subscribe((c) => this.cascadaCondados.set(c));
     }
@@ -268,6 +293,7 @@ export class RegistroAccidentePage {
     this.cascadaCiudad.set(null);
     this.cascadaCiudades.set([]);
     this.cascadaCalles.set([]);
+    this.calleSeleccionadaNombre.set(null);
     if (idcondado) {
       this.ubicacionCatalogo.listarCiudades(idcondado).subscribe((c) => this.cascadaCiudades.set(c));
     }
@@ -276,6 +302,7 @@ export class RegistroAccidentePage {
   onCascadaCiudadChange(idciudad: number | null): void {
     this.cascadaCiudad.set(idciudad);
     this.cascadaCalles.set([]);
+    this.calleSeleccionadaNombre.set(null);
     if (idciudad) {
       this.ubicacionCatalogo.listarCalles(idciudad).subscribe((c) => this.cascadaCalles.set(c));
     }
@@ -285,6 +312,11 @@ export class RegistroAccidentePage {
     if (idcalle) {
       this.form.controls.idcalle.setValue(idcalle);
       this.form.controls.idcalle.markAsTouched();
+      const item = this.cascadaCalles().find((c) => c.id === idcalle);
+      this.calleSeleccionadaNombre.set(item ? item.nombre : `Calle #${idcalle}`);
+    } else {
+      this.form.controls.idcalle.setValue(0);
+      this.calleSeleccionadaNombre.set(null);
     }
   }
 
@@ -311,8 +343,20 @@ export class RegistroAccidentePage {
         next: (res) => {
           this.calleSugerida.set(res.data.idcalle);
           this.fueraCobertura.set(!res.data.en_cobertura_operativa);
+          const ubicacion = res.data.ubicacion as Record<string, unknown> | undefined;
+          const calle = (ubicacion?.['calle'] as string | undefined)?.trim();
+          const ciudad = (ubicacion?.['ciudad'] as string | undefined)?.trim();
+          const nombreCompleto = calle
+            ? ciudad
+              ? `${calle}, ${ciudad}`
+              : calle
+            : res.data.idcalle
+              ? `Calle #${res.data.idcalle}`
+              : null;
+          this.calleSugeridaNombre.set(nombreCompleto);
           if (res.data.idcalle) {
             this.form.controls.idcalle.setValue(res.data.idcalle);
+            this.calleSeleccionadaNombre.set(nombreCompleto ?? `Calle #${res.data.idcalle}`);
           }
         },
       });
@@ -382,7 +426,7 @@ export class RegistroAccidentePage {
       descripcion: raw.descripcion,
       idcalle: raw.idcalle,
       codigopostal: raw.codigopostal || undefined,
-      numvehiculos: raw.numvehiculos || undefined,
+      numvehiculos: raw.numvehiculos,
       numheridos: raw.numheridos || undefined,
       numvictimas: raw.numvictimas || undefined,
       numfallecidos: raw.numfallecidos || undefined,

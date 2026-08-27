@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-oe2.definiciones';
@@ -37,7 +38,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-oe2',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, FormsModule, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -78,6 +79,17 @@ export class PantallaZPage {
   );
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /** Llamadas por clase HTTP: categorías nominales, un solo color. */
+  readonly barrasUso = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: texto(f['clase_http']),
+      valor: num(f['llamadas']),
+      nota: `· ${this.pct(num(f['pct']))}`,
+    })),
+  );
   readonly texto = texto;
 
   constructor() {
@@ -118,10 +130,6 @@ export class PantallaZPage {
     return `${(valor * 100).toFixed(1)} %`;
   }
 
-  maxDe(filas: Record<string, unknown>[], campo: string): number {
-    const vals = filas.map((f) => num(f[campo]) ?? 0);
-    return Math.max(1, ...vals);
-  }
 
   private emitirVista(desde: string, hasta: string): void {
     const vista: PeriodoVista = {

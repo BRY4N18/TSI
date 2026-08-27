@@ -89,6 +89,7 @@ class ImportacionLoteUnidadService:
                 payload["idcliente"] = idcliente
                 if not payload.get("tipopropiedad"):
                     payload["tipopropiedad"] = "Externa"
+                self._resolver_condado(payload)
                 gmail = str(payload.get("gmail", "")).strip().lower()
                 if not gmail or not EMAIL_RE.match(gmail):
                     raise KeyError("gmail invalido o faltante")
@@ -159,6 +160,59 @@ class ImportacionLoteUnidadService:
 
         n = len(preparadas)
         return {"insertadas": n, "usuarios_creados": n, "fallidas": []}
+
+    def _resolver_condado(self, payload: dict[str, Any]) -> None:
+        """Convierte `condado` (nombre) en `idcondado`, in-place.
+
+        El CSV pedía `idcondado`: una clave interna que el proveedor de flota no
+        tiene forma de conocer, y sin la cual el archivo entero era inservible
+        (hallazgo #16). Ahora la columna del archivo es `condado`, con `estado`
+        opcional para desambiguar los homónimos.
+
+        Se conserva la compatibilidad con archivos viejos que traigan `idcondado`
+        directamente: si ya viene, se respeta.
+        """
+        if payload.get("idcondado") not in (None, ""):
+            # Puede venir como string desde el CSV.
+            try:
+                payload["idcondado"] = int(payload["idcondado"])
+            except (TypeError, ValueError):
+                raise KeyError("idcondado debe ser un número entero") from None
+            payload.pop("condado", None)
+            payload.pop("estado", None)
+            return
+
+        nombre_condado = str(payload.pop("condado", "") or "").strip()
+        nombre_estado = str(payload.pop("estado", "") or "").strip()
+        if not nombre_condado:
+            raise KeyError("condado es requerido (nombre del condado, p. ej. 'Miami-Dade')")
+
+        repo = self.registro_service.unidad_repo
+        candidatos = repo.find_condados_por_nombre(nombre_condado)
+        if not candidatos:
+            raise LookupError(f"El condado '{nombre_condado}' no existe en el catálogo")
+
+        if len(candidatos) > 1:
+            if not nombre_estado:
+                raise ValueError(
+                    f"Hay más de un condado llamado '{nombre_condado}'. "
+                    "Añada la columna 'estado' para indicar cuál."
+                )
+            estados = repo.find_estados_por_nombre(nombre_estado)
+            if not estados:
+                raise LookupError(f"El estado '{nombre_estado}' no existe en el catálogo")
+            ids_estado = {int(e["idestado"]) for e in estados}
+            candidatos = [c for c in candidatos if int(c["idestado"]) in ids_estado]
+            if not candidatos:
+                raise LookupError(
+                    f"No hay un condado '{nombre_condado}' dentro del estado '{nombre_estado}'"
+                )
+            if len(candidatos) > 1:
+                raise ValueError(
+                    f"'{nombre_condado}' sigue siendo ambiguo dentro de '{nombre_estado}'"
+                )
+
+        payload["idcondado"] = int(candidatos[0]["idcondado"])
 
     def _crear_o_reactivar_usuario(self, gmail: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Reusa usuario inactivo (p. ej. compensación de lote fallido) para no bloquear gmail."""

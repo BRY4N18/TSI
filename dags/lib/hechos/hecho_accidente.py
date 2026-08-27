@@ -45,9 +45,18 @@ from lib.hechos.comun import (
     indexar_por,
     texto_fecha,
 )
-from lib.pinot_http_client import query_pinot
+from lib.pinot_http_client import query_pinot, query_pinot_paginado
 
 LIMITE = 500_000
+#: `Fact_Accidente` tiene su propio tope, muy por encima de `LIMITE`.
+#:
+#: `LIMITE` sirve para las fuentes de apoyo -estados, notas, clima-, que son de
+#: decenas de filas. La tabla de accidentes no: la carga del CSV la dejo en
+#: 2 000 013, asi que con `LIMITE` se habria quedado en 500 000 y el hecho
+#: habria salido con la cuarta parte de los casos **sin que nada fallara**, que
+#: es la forma mas cara de equivocarse. El margen sobre 2M absorbe altas nuevas
+#: sin volver a tocar esto.
+LIMITE_ACCIDENTES = 3_000_000
 
 #: Estados del proceso, según `Dim_TipoEstadoAccidente` del origen.
 ESTADO_REPORTADO = 2
@@ -61,7 +70,6 @@ CONSULTA_ACCIDENTES = f"""
            fechahoraaccidente, duracionminutos, numvehiculos, numvictimas,
            numheridos, numfallecidos, distanciamillas
     FROM Fact_Accidente
-    LIMIT {LIMITE}
 """
 
 CONSULTA_ESTADOS = f"""
@@ -149,9 +157,16 @@ CONSULTA_DIM_GEOGRAFIA = "SELECT idcalle, ciudad, condado FROM dim_geografia FIN
 def extraer(
     consultar_origen: Callable[[str], list[dict]] = query_pinot,
     consultar_modelo: Callable[[str], list[dict]] = query_clickhouse,
+    consultar_origen_paginado: Callable[..., list[dict]] = query_pinot_paginado,
 ) -> dict[str, list[dict]]:
     return {
-        "accidentes": consultar_origen(CONSULTA_ACCIDENTES),
+        # la unica fuente que se lee por trozos: las demas son de decenas de
+        # filas y no justifican dar varias vueltas.
+        "accidentes": consultar_origen_paginado(
+            CONSULTA_ACCIDENTES,
+            clave_orden="idaccidente",
+            limite_total=LIMITE_ACCIDENTES,
+        ),
         "estados": consultar_origen(CONSULTA_ESTADOS),
         "despachos": consultar_origen(CONSULTA_DESPACHOS),
         "tipos": consultar_origen(CONSULTA_TIPOS),

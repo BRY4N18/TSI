@@ -22,6 +22,7 @@ import {
   computed,
   inject,
   input,
+  signal,
 } from '@angular/core';
 
 import { advertenciaDeContenido, avisoDeAlcance } from './informes-alcance';
@@ -105,34 +106,51 @@ export const AUSENTE = '—';
     } @else if (filas().length === 0) {
       <app-list-empty-state [message]="mensajeVacioEfectivo()" />
     } @else {
-      <table [class]="tablaClass" data-testid="tabla-informe">
-        <thead>
-          <tr>
-            @for (columna of columnas(); track columna.campo) {
-              <th
-                scope="col"
-                [class]="columna.alineacion === 'derecha' ? thDerechaClass : thClass"
-              >
-                {{ columna.etiqueta }}
-              </th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (fila of filas(); track $index) {
-            <tr [class]="filaClass" data-testid="fila-informe">
-              @for (columna of columnas(); track columna.campo) {
-                <td [class]="claseDeCelda(columna)">{{ celda(fila, columna) }}</td>
+      <div class="overflow-x-auto rounded-md border border-border-default">
+        <table [class]="tablaClass" data-testid="tabla-informe">
+          <thead>
+            <tr>
+              @for (columna of columnasTabla(); track columna.campo) {
+                <th
+                  scope="col"
+                  [class]="columna.alineacion === 'derecha' ? thDerechaClass : thClass"
+                >
+                  {{ columna.etiqueta }}
+                </th>
               }
+              <th scope="col" [class]="thClass" class="w-14 text-center">
+                Ver
+              </th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (fila of filas(); track $index) {
+              <tr [class]="filaClass" data-testid="fila-informe">
+                @for (columna of columnasTabla(); track columna.campo) {
+                  <td [class]="claseDeCelda(columna)">{{ celda(fila, columna) }}</td>
+                }
+                <td class="px-3 py-2.5 text-center">
+                  <button
+                    type="button"
+                    data-testid="btn-ver-detalle"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded text-text-secondary transition-colors hover:bg-accent-primary/10 hover:text-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                    title="Ver información completa"
+                    aria-label="Ver información completa"
+                    (click)="abrirDetalle(fila)"
+                  >
+                    <app-tabler-icon name="eye" [size]="18" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <div class="grid gap-3 md:hidden" data-testid="tarjetas-informe">
         @for (fila of filas(); track $index) {
           <div [class]="tarjetaClass">
-            @for (columna of columnas(); track columna.campo) {
+            @for (columna of columnasTabla(); track columna.campo) {
               @if (!columna.soloEscritorio) {
                 <p class="m-0 flex justify-between gap-4 py-1 text-sm">
                   <span class="text-text-secondary">{{ columna.etiqueta }}</span>
@@ -140,6 +158,16 @@ export const AUSENTE = '—';
                 </p>
               }
             }
+            <div class="mt-3 flex justify-end border-t border-border-default pt-2">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium text-accent-primary transition-colors hover:bg-accent-primary/10"
+                (click)="abrirDetalle(fila)"
+              >
+                <app-tabler-icon name="eye" [size]="15" />
+                Ver detalle completo
+              </button>
+            </div>
           </div>
         }
       </div>
@@ -160,11 +188,6 @@ export const AUSENTE = '—';
           Anterior
         </button>
 
-        <!--
-          Sin números de página ni total: el cursor es opaco y no hay recuento.
-          Inventarlo obligaría a contar filas, que es lo que la paginación
-          keyset evita para no repetir ni perder registros.
-        -->
         <span class="text-sm text-text-secondary" data-testid="pagina-actual">
           Página {{ pagina() }}
         </span>
@@ -181,10 +204,72 @@ export const AUSENTE = '—';
         </button>
       </nav>
     }
+
+    @if (filaSeleccionada(); as seleccionada) {
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        (click)="cerrarDetalle()"
+      >
+        <div
+          class="tsi-panel relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-default bg-bg-surface p-6 shadow-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="mb-5 flex items-center justify-between border-b border-border-default pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-primary/15 text-accent-primary">
+                <app-tabler-icon name="eye" [size]="20" />
+              </span>
+              <div>
+                <h2 class="tsi-display m-0 text-lg font-bold text-text-primary">
+                  Detalle del registro
+                </h2>
+                <p class="m-0 text-xs text-text-secondary">
+                  Información completa del caso
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-page hover:text-text-primary"
+              (click)="cerrarDetalle()"
+              aria-label="Cerrar modal"
+            >
+              <app-tabler-icon name="x" [size]="18" />
+            </button>
+          </header>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            @for (columna of columnas(); track columna.campo) {
+              <div class="rounded-lg border border-border-default/70 bg-bg-page/60 p-3">
+                <span class="block text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  {{ columna.etiqueta }}
+                </span>
+                <span class="mt-1 block text-sm font-medium text-text-primary break-words">
+                  {{ celda(seleccionada, columna) }}
+                </span>
+              </div>
+            }
+          </div>
+
+          <div class="mt-6 flex justify-end border-t border-border-default pt-4">
+            <button
+              type="button"
+              class="tsi-btn tsi-btn-primary"
+              (click)="cerrarDetalle()"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class InformesListadoComponent<T extends Record<string, unknown>> {
   readonly columnas = input.required<ColumnaListado<T>[]>();
+  readonly columnasTabla = computed(() => this.columnas().filter((c) => !c.soloDetalle));
   readonly filas = input.required<T[]>();
   readonly cargando = input(false);
   readonly error = input<ErrorListado | null>(null);
@@ -199,6 +284,8 @@ export class InformesListadoComponent<T extends Record<string, unknown>> {
   @Input() onSiguiente: () => void = () => {};
   @Input() onAnterior: () => void = () => {};
   @Input() onReintentar: () => void = () => {};
+
+  readonly filaSeleccionada = signal<T | null>(null);
 
   readonly tablaClass = LIST_TABLE_CLASS;
   readonly thClass = LIST_TABLE_TH_CLASS;
@@ -282,6 +369,14 @@ export class InformesListadoComponent<T extends Record<string, unknown>> {
       default:
         return String(valor);
     }
+  }
+
+  abrirDetalle(fila: T): void {
+    this.filaSeleccionada.set(fila);
+  }
+
+  cerrarDetalle(): void {
+    this.filaSeleccionada.set(null);
   }
 
   siguiente(): void {

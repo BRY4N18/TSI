@@ -5,7 +5,9 @@ import { Observable } from 'rxjs';
 import {
   ApiEnvelope,
   AsignacionManualRequest,
+  AsignacionProspecto,
   Prospecto,
+  ProspectoDetalle,
   ProspectoListQuery,
   RegistroProspectoRequest,
 } from '../models/prospectos.types';
@@ -35,15 +37,18 @@ export class ProspectoApiService {
     return this.http.get<ApiEnvelope<Prospecto[]>>(this.base, { params: httpParams });
   }
 
-  obtener(idprospecto: number): Observable<ApiEnvelope<Prospecto>> {
-    return this.http.get<ApiEnvelope<Prospecto>>(`${this.base}/${idprospecto}`);
+  /** Devuelve el prospecto **con sus dos historiales** (RF-CPP-008). */
+  obtener(idprospecto: number): Observable<ApiEnvelope<ProspectoDetalle>> {
+    return this.http.get<ApiEnvelope<ProspectoDetalle>>(`${this.base}/${idprospecto}`);
   }
 
   asignar(
     idprospecto: number,
     body: AsignacionManualRequest,
-  ): Observable<ApiEnvelope<{ prospecto: Prospecto }>> {
-    return this.http.patch<ApiEnvelope<{ prospecto: Prospecto }>>(
+  ): Observable<ApiEnvelope<{ prospecto: Prospecto; asignacion: AsignacionProspecto }>> {
+    return this.http.patch<
+      ApiEnvelope<{ prospecto: Prospecto; asignacion: AsignacionProspecto }>
+    >(
       `${this.base}/${idprospecto}/asignacion`,
       body,
     );

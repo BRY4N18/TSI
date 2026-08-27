@@ -121,14 +121,17 @@ describe('UserRoleAdminService', () => {
     req.flush({ data: { idrol: 2, rol: 'Supervisor', descripcion: 'desc', activo: false }, meta: {} });
   });
 
-  it('assignRole_posts_idrol_to_user_roles_endpoint', () => {
+  it('assignRole_posts_idusuario_and_idrol_to_roles_asignar_endpoint', () => {
+    // Backend registra `usuarios/roles/asignar` (`UserRoleAssignView`), no
+    // `usuarios/{id}/roles` — ese shape daba 404 en producción y esta prueba,
+    // al aserir el endpoint equivocado, no lo detectó.
     // Act
     service.assignRole({ idusuario: 3, idrol: 7 }).subscribe();
 
     // Assert
-    const req = httpMock.expectOne('/api/v1/usuarios/3/roles');
+    const req = httpMock.expectOne('/api/v1/usuarios/roles/asignar');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ idrol: 7 });
+    expect(req.request.body).toEqual({ idusuario: 3, idrol: 7 });
     req.flush({ data: { idusuario: 3, roles: ['x'] }, meta: {} });
   });
 });

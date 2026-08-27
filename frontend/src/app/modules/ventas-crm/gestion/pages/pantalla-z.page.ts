@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-gestion.definiciones';
@@ -36,7 +37,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-ventas',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -110,6 +111,45 @@ export class PantallaZPage {
   });
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+
+  /** Orden real del pipeline (pipeline-board.page.ts) — el API no lo garantiza. */
+  private static readonly ORDEN_ETAPA = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación'];
+
+  /**
+   * Embudo comercial: las etapas van en orden, así que escala ordinal — pero
+   * la rampa ordinal solo dice la verdad si las filas YA están en ese orden;
+   * el API las devuelve en el orden que le resulta cómodo (aquí, alfabético),
+   * no en el del pipeline. Sin este `sort` la rampa pintaría "Nuevo" con el
+   * tono más oscuro y "Propuesta" con el más claro — el color contando lo
+   * contrario del progreso real.
+   *
+   * Ojo con lo que mide la barra — no son prospectos, es la MEDIANA DE
+   * TIEMPO en cada etapa; el conteo de abiertos y medidos va como nota.
+   */
+  readonly barrasEmbudo = computed<BarDatum[]>(() =>
+    [...this.cargaVisual().data]
+      .sort(
+        (a, b) =>
+          PantallaZPage.ORDEN_ETAPA.indexOf(texto(a['etapa'])) -
+          PantallaZPage.ORDEN_ETAPA.indexOf(texto(b['etapa'])),
+      )
+      .map((f) => ({
+        etiqueta: texto(f['etapa']),
+        valor: num(f['segundos_mediana']),
+        valorTexto: this.formatSegundos(num(f['segundos_mediana'])),
+        nota: `· ${num(f['abiertos']) ?? 0} abiertos de ${num(f['prospectos_medidos']) ?? 0}`,
+      })),
+  );
+
+  /** Secciones visitadas: nominales. */
+  readonly barrasSecciones = computed<BarDatum[]>(() =>
+    this.cargaVisualSecundaria().data.map((f) => ({
+      etiqueta: texto(f['seccion']),
+      valor: num(f['visitas']),
+    })),
+  );
   readonly texto = texto;
 
   constructor() {
@@ -154,10 +194,6 @@ export class PantallaZPage {
     return grupo;
   }
 
-  maxDe(filas: Record<string, unknown>[], campo: string): number {
-    const vals = filas.map((f) => num(f[campo]) ?? 0);
-    return Math.max(1, ...vals);
-  }
 
   formatSegundos(valor: number | null): string {
     if (valor === null) {

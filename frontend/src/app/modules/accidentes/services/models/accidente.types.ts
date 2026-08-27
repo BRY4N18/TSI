@@ -163,7 +163,8 @@ export interface DeshacerFusionData {
 }
 
 export interface EscalarSeveridadRequest {
-  idseveridad: 1 | 2 | 3 | 4;
+  /** Id de `Dim_Severidad` (1 Leve … 4 Fatal); el backend valida el rango. */
+  idseveridad: number;
   numheridos?: number;
   numfallecidos?: number;
   descripcion?: string;

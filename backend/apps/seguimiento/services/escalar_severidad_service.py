@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.accidentes import severidad_coherencia
 from apps.accidentes.domain_constants import ESTADO_ASIGNADO, ESTADO_EN_ATENCION
 from apps.accidentes.services.audit_accidente_service import AuditAccidenteService
 from apps.accidentes.services.confirmar_reporte_service import ConflictError
@@ -67,13 +68,49 @@ class EscalarSeveridadService:
             raise LookupError("Accidente no encontrado")
 
         idseveridad_anterior = current.get("idseveridad")
-        updates: dict[str, Any] = {"idseveridad": data["idseveridad"]}
+
+        # `idseveridad` llega del cliente y puede venir como string ("3"). Sin el
+        # int() explícito la comparación de coherencia y el historial trabajaban
+        # sobre tipos mezclados.
+        try:
+            idseveridad_nueva = int(data["idseveridad"])
+        except (TypeError, ValueError):
+            raise ValueError("idseveridad debe ser un entero entre 1 y 4") from None
+
+        updates: dict[str, Any] = {"idseveridad": idseveridad_nueva}
+
+        # Los conteos también llegan crudos del request. Antes se comparaban tal
+        # cual contra el entero almacenado: un "3" en vez de un 3 no daba un 422,
+        # reventaba con TypeError y salía como 500.
+        conteos: dict[str, int] = {}
         for field in ("numheridos", "numfallecidos"):
             if field in data and data[field] is not None:
-                old = current.get(field) or 0
-                if data[field] < old:
-                    raise ValueError(f"{field} solo puede incrementarse")
-                updates[field] = data[field]
+                try:
+                    nuevo = int(data[field])
+                except (TypeError, ValueError):
+                    raise ValueError(f"{field} debe ser un entero") from None
+                if nuevo < 0:
+                    raise ValueError(f"{field} no puede ser negativo")
+                old = int(current.get(field) or 0)
+                if nuevo < old:
+                    raise ValueError(
+                        f"{field} solo puede incrementarse (actual: {old}, recibido: {nuevo})"
+                    )
+                updates[field] = nuevo
+                conteos[field] = nuevo
+
+        # RN-SEV-COHERENCIA — escalar es el momento en que la unidad corrige lo
+        # que se declaró a ciegas desde la central, así que la severidad nueva
+        # tiene que sostenerse con lo que efectivamente observa. Los conteos que
+        # no se envían son los que ya están guardados.
+        bloqueantes, _ = severidad_coherencia.evaluar(
+            idseveridad=idseveridad_nueva,
+            numheridos=conteos.get("numheridos", current.get("numheridos")),
+            numfallecidos=conteos.get("numfallecidos", current.get("numfallecidos")),
+        )
+        if bloqueantes:
+            raise ValueError(bloqueantes[0]["detail"])
+
         if data.get("descripcion"):
             updates["descripcion"] = data["descripcion"]
 
@@ -86,11 +123,11 @@ class EscalarSeveridadService:
         # RF-O73.2: conservar la severidad inicial junto a la escalada, sin
         # sobrescribirla — Fact_Accidente.idseveridad solo guarda el valor
         # vigente; el histórico completo vive aquí.
-        if idseveridad_anterior is not None and idseveridad_anterior != data["idseveridad"]:
+        if idseveridad_anterior is not None and int(idseveridad_anterior) != idseveridad_nueva:
             self.historial_severidad.registrar_escalada(
                 idaccidente=idaccidente,
                 idseveridadanterior=int(idseveridad_anterior),
-                idseveridadnueva=int(data["idseveridad"]),
+                idseveridadnueva=idseveridad_nueva,
                 idusuario=idusuario,
                 motivo=data.get("nota"),
             )
@@ -99,7 +136,7 @@ class EscalarSeveridadService:
         result: dict[str, Any] = {
             "message": "Severidad escalada exitosamente",
             "idaccidente": idaccidente,
-            "idseveridad": data["idseveridad"],
+            "idseveridad": idseveridad_nueva,
             "estado": estado,
             "despacho_adicional": None,
         }

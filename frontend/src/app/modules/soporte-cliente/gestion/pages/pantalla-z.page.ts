@@ -28,6 +28,8 @@ import { ApoyoPlegableComponent, BloqueApoyo } from './apoyo-plegable.component'
 import { mensajeVacio } from '../../../../shared/informes/mensaje-vacio';
 import { humanizar } from '../../../../shared/informes/informes-opciones';
 import { KpiRingComponent } from '../../../../shared/ui/kpi-ring/kpi-ring.component';
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
+import { LineChartComponent, LineSeries } from '../../../../shared/ui/charts/line-chart.component';
 
 const VACIA: CargaInforme = {
   estado: 'carga',
@@ -42,7 +44,14 @@ const AGRUPAR: AgruparCola[] = ['estado', 'prioridad', 'tipo', 'agente'];
 @Component({
   selector: 'app-pantalla-z-soporte',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, KpiRingComponent],
+  imports: [
+    DecimalPipe,
+    PeriodoSelectorComponent,
+    ApoyoPlegableComponent,
+    KpiRingComponent,
+    BarChartComponent,
+    LineChartComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -101,6 +110,51 @@ export class PantallaZPage {
   readonly texto = texto;
   readonly humanizar = humanizar;
 
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+  //
+  // La forma la decide el trabajo del dato, no el gusto: `cumplimiento`
+  // compara magnitudes entre planes (barras) y las otras dos son una
+  // evolución en el tiempo (líneas). Antes las tres eran listas de filas,
+  // y en las dos temporales eso obligaba a reconstruir la tendencia
+  // leyendo número por número.
+
+  /** Cumplimiento por plan: categorías nominales, así que un solo color. */
+  readonly barrasCumplimiento = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((fila) => ({
+      etiqueta: texto(fila['plan']) || 'sin plan',
+      valor: num(fila['pct_cumplimiento']),
+      nota: `· ${this.pct(num(fila['pct_sin_compromiso']))} sin compromiso`,
+    })),
+  );
+
+  /** Evolución del incumplimiento: dos series sobre el mismo eje de tiempo. */
+  readonly etiquetasCola = computed(() =>
+    this.cargaVisual().data.map((fila) => texto(fila['periodo'])),
+  );
+
+  readonly seriesCola = computed<LineSeries[]>(() => [
+    { nombre: 'Tickets', valores: this.cargaVisual().data.map((f) => num(f['tickets'])) },
+    { nombre: 'Incumplidos', valores: this.cargaVisual().data.map((f) => num(f['incumplidos'])) },
+  ]);
+
+  /**
+   * Carga entrante frente a resuelta.
+   *
+   * ⚠️ Aquí la lista anterior solo dibujaba `creados`: `resueltos` estaba
+   * como texto al lado, sin representación. Es decir, la comparación que
+   * el título promete —entrante *frente a* resuelta— era la única que no
+   * se podía hacer de un vistazo. Con dos líneas sobre el mismo eje, el
+   * cruce entre ambas *es* la respuesta.
+   */
+  readonly etiquetasTendencias = computed(() =>
+    this.cargaVisual().data.map((fila) => texto(fila['dia'])),
+  );
+
+  readonly seriesTendencias = computed<LineSeries[]>(() => [
+    { nombre: 'Creados', valores: this.cargaVisual().data.map((f) => num(f['creados'])) },
+    { nombre: 'Resueltos', valores: this.cargaVisual().data.map((f) => num(f['resueltos'])) },
+  ]);
+
   constructor() {
     this.route.url.pipe(takeUntilDestroyed()).subscribe((segs) => {
       const id = segs[segs.length - 1]?.path ?? this.route.snapshot.url.at(-1)?.path ?? '';
@@ -158,11 +212,6 @@ export class PantallaZPage {
       return null;
     }
     return creados - resueltos;
-  }
-
-  maxDe(filas: Record<string, unknown>[], campo: string): number {
-    const vals = filas.map((f) => num(f[campo]) ?? 0);
-    return Math.max(1, ...vals);
   }
 
   formatSegundos(valor: number | null): string {

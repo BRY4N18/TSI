@@ -24,6 +24,14 @@ export interface DespachoActualData {
   idaccidente: string;
   idunidademergencia: number;
   estado_despacho: 'Confirmado' | 'En_sitio';
+  /**
+   * Severidad y víctimas VIGENTES del caso. El panel de escalar severidad se
+   * precarga con esto: arrancar en cero hacía que el backend rechazara el envío
+   * ("solo puede incrementarse") en todo caso con víctimas ya registradas.
+   */
+  idseveridad: number | null;
+  numheridos: number;
+  numfallecidos: number;
 }
 
 export interface MiSeguimientoActualData {

@@ -95,6 +95,11 @@ describe('AppShellComponent', () => {
     const etiquetas = grupos[0].links.map((l) => l.label);
     expect(etiquetas).toContain('Mi integración');
     expect(etiquetas).toContain('Contrato de integración');
+    // El partner reporta y disputa como cualquier reportador
+    // (`ROLES_REPORTADORES`), pero su acceso vive DENTRO de su portal: darle la
+    // entrada del grupo "Soporte" le abriría un departamento ajeno y rompería
+    // FR-UI-033.
+    expect(etiquetas).toContain('Mis tickets');
   });
 
   it('navGroups_when_role_partner_integracion_no_ve_la_consola', () => {

@@ -284,6 +284,59 @@ En el cierre de caso O80, los retiros auto-generados de despachos pendientes reg
 ### RN-SEG-013
 Tras 90 dias del cierre del caso, el job de depuracion GPS elimina registros intermedios de `Dim_HistorialUbicacionUnidadEmergencia` y conserva exactamente tres puntos por `iddespacho` segun RNF-SEG-004 (origen, llegada, cierre vinculados a tiempos de `Fact_Despacho`).
 
+### RN-SEG-014 — Escalar severidad parte de los valores vigentes del caso
+
+El endpoint de escalamiento (`POST /accidentes/{id}/escalar-severidad`) trabaja sobre el estado
+actual del caso, no sobre un formulario en blanco:
+
+1. `GET /mi-seguimiento/actual` devuelve `idseveridad`, `numheridos` y `numfallecidos` **vigentes**
+   junto con el despacho, para que la pantalla precargue el panel.
+2. `numheridos` y `numfallecidos` solo pueden **incrementarse** (regla preexistente), y ahora el
+   servicio los normaliza con `int()` antes de comparar.
+3. La severidad nueva no puede ser inferior a la vigente —escalar es subir— y debe cumplir
+   RN-SEV-COHERENCIA con los conteos resultantes.
+4. Los rechazos responden `422` con el motivo concreto (`"numheridos solo puede incrementarse
+   (actual: 3, recibido: 0)"`), no un error genérico.
+
+Origen (revisión de calidad 24/08/2026, hallazgo #12, "el apartado de escalar severidad se cae").
+Eran tres defectos que se manifestaban igual:
+
+- El panel arrancaba con `numheridos = 0` fijo y lo enviaba siempre, así que el backend rechazaba
+  con `422` **todo** caso que ya tuviera víctimas registradas — es decir, cualquier caso real.
+- El frontend traducía cualquier error a un `alert()` fijo, descartando el motivo que el backend
+  sí enviaba, de modo que la unidad reintentaba a ciegas.
+- La comparación `data[field] < old` se hacía contra el valor crudo del request: un `"3"` en vez
+  de un `3` producía `TypeError` y salía como `500`, no como `422`.
+
+### RN-SEG-015 — El PDF del expediente tiene que abrirse y leerse
+
+`GET /cliente/expedientes/{idaccidente}/pdf` produce un PDF 1.4 **válido y
+paginado**. Invariantes que el generador debe cumplir, cada una con su prueba:
+
+- Los desplazamientos de la tabla `xref` son **absolutos desde el inicio del
+  archivo** (incluyen los 9 bytes de la cabecera `%PDF-1.4`), y `startxref`
+  apunta a la posición real de la tabla.
+- Cada línea ocupa su propio renglón (`TL` + `T*`). Un `
+` dentro de un string
+  PDF **no** salta de renglón.
+- Las líneas más largas que el ancho útil se envuelven; el texto que excede la
+  página continúa en una hoja nueva.
+- Paréntesis y barras invertidas se escapan.
+
+Origen (revisión 24/08/2026, hallazgo #21, "hay informes que al momento de abrir
+el PDF sale una página en blanco o se recorta"). Eran los dos defectos a la vez:
+los offsets quedaban 9 bytes cortos —lectores estrictos no encontraban los
+objetos y mostraban la **página en blanco**— y las siete líneas del expediente se
+emitían en un único `Tj`, así que se pintaban encima del mismo renglón y lo que
+sobraba se salía por el borde derecho (**se recorta**).
+
+El test que existía solo comprobaba `startswith(b"%PDF")`, y por eso un PDF roto
+pasaba sin que nadie se enterara. Las pruebas ahora **abren** el documento.
+
+**Contenido:** el expediente pasó de siete renglones de conteos ("Despachos: 2")
+a resumen, descripción, unidades despachadas con su fase, notas de campo y
+recuento de evidencia.
+
 ## 7. Entradas
 
 ### Para rastreo (CU-O68)

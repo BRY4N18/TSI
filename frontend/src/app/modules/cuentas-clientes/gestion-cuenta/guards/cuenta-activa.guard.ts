@@ -14,7 +14,9 @@ export const cuentaActivaGuard: CanActivateFn = (route) => {
       if (res.data.estado === 'Activo') {
         return true;
       }
-      return router.createUrlTree(['/cuentas-clientes']);
+      return router.createUrlTree(['/cuentas-clientes'], {
+        queryParams: { denegado: 'cuenta_inactiva' },
+      });
     }),
   );
 };

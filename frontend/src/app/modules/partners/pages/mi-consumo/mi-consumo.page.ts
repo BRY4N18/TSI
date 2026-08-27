@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 
-import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.component';
 import { ListEmptyStateComponent } from '../../../../shared/ui/list-states/list-empty-state.component';
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
@@ -44,7 +43,6 @@ import type { PartnerDetalle } from '../../services/models/partner.types';
   selector: 'app-mi-consumo',
   standalone: true,
   imports: [
-    TablerIconComponent,
     ListEmptyStateComponent,
     ListErrorStateComponent,
     ListLoadingSkeletonComponent,

@@ -55,7 +55,13 @@ class UserManagementService:
 
     def list_users(self, *, admin_roles: list[str], cursor: str | None = None, limit: int = 20) -> list[dict]:
         self._require_admin(admin_roles)
-        return self.user_repo.list_users(cursor=cursor, limit=limit)
+        users = self.user_repo.list_users(cursor=cursor, limit=limit)
+        # `get_user` ya adjunta `roles`; el listado no lo hacía y la pantalla de
+        # gestión de cuenta (asignar/ver roles) mostraba "Sin rol" para TODOS
+        # los usuarios, incluido el propio Administrador.
+        for user in users:
+            user["roles"] = self.role_repo.get_user_roles(user["idusuario"])
+        return users
 
     def get_user(self, user_id: int, *, admin_roles: list[str]) -> dict:
         self._require_admin(admin_roles)

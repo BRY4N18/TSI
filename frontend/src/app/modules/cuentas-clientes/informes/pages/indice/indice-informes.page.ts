@@ -7,20 +7,19 @@
  */
 
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import {
   INFORMES_CUENTAS,
   INFORME_ACCESOS_TECNICOS,
 } from '../../definiciones/informes-cuentas.definiciones';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
-import { TablerIconComponent } from '../../../../../shared/ui/icon/tabler-icon.component';
+import { ReportTileComponent } from '../../../../../shared/ui/report-tile/report-tile.component';
 import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list-table.styles';
 
 @Component({
   selector: 'app-indice-informes-cuentas',
   standalone: true,
-  imports: [RouterLink, TablerIconComponent],
+  imports: [ReportTileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="shellClass">
@@ -35,14 +34,11 @@ import { LIST_PAGE_SHELL_CLASS } from '../../../../../shared/ui/list-states/list
       <ul class="grid gap-3 md:grid-cols-2" data-testid="indice-informes">
         @for (informe of visibles(); track informe.id) {
           <li>
-            <a
-              [routerLink]="['/cuentas-clientes/informes', informe.id]"
-              [attr.data-testid]="'enlace-' + informe.id"
-              class="flex items-center gap-3 tsi-panel p-4 text-text-primary hover:border-accent-primary"
-            >
-              <app-tabler-icon name="list" [size]="20" />
-              <span class="text-sm font-medium">{{ informe.titulo }}</span>
-            </a>
+            <app-report-tile
+              [link]="['/cuentas-clientes/informes', informe.id]"
+              [testId]="'enlace-' + informe.id"
+              [titulo]="informe.titulo"
+            />
           </li>
         }
       </ul>

@@ -30,6 +30,8 @@ class TestDuplicadoDetection:
             "fechahoraaccidente": now + 60_000,
             "descripcion": "dup",
             "idcalle": 1,
+            # RN-REG-012 — obligatorio y >= 1.
+            "numvehiculos": 1,
         }
 
         # Act

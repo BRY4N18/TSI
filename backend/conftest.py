@@ -2014,6 +2014,24 @@ def _pinot_query_impl(sql: str, params: dict | None = None) -> list[dict]:
     """Route SQL queries to in-memory store."""
     params = params or {}
     sql_upper = sql.upper().replace("\n", " ").strip()
+    # Resolución por NOMBRE — la importación en lote dejó de pedir `idcondado`
+    # (hallazgo #16): el CSV trae "condado" y opcionalmente "estado".
+    if "FROM DIM_CONDADO" in sql_upper and "WHERE CONDADO =" in sql_upper:
+        nombre = params.get("condado")
+        return [
+            {"idcondado": c["idcondado"], "condado": c["condado"], "idestado": c["idestado"]}
+            for c in PINOT_STORE["Dim_Condado"]
+            if c.get("condado") == nombre and c.get("activo", True)
+        ]
+
+    if "FROM DIM_ESTADO" in sql_upper and "WHERE ESTADO =" in sql_upper:
+        nombre = params.get("estado")
+        return [
+            {"idestado": e["idestado"], "estado": e["estado"]}
+            for e in PINOT_STORE["Dim_Estado"]
+            if e.get("estado") == nombre and e.get("activo", True)
+        ]
+
 
     # --- Listados tácticos: deben preceder a las ramas genéricas por tabla ---
     for _resolver_informe in (

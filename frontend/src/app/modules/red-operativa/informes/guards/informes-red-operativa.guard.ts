@@ -55,6 +55,23 @@ export const informesRegionesGuard: CanActivateFn = guardDeRoles(AMPLIOS_REGION)
 
 export const informesValidacionesGuard: CanActivateFn = guardDeRoles(AMPLIOS_VALIDACION);
 
+/**
+ * Guard del índice: la unión de los tres grupos, no solo el de flota.
+ *
+ * El índice no muestra datos, solo enlaces a lo que cada rol puede abrir —
+ * pero `DirectorTecnologico` no está en `AMPLIOS_FLOTA` (solo en región y
+ * validación), así que reusar `informesFlotaGuard` aquí lo dejaba fuera del
+ * índice aunque sí pudiera entrar directo a `/regiones` y
+ * `/validaciones-region`: el enlace del menú (`nav-links.ts`) apuntaba a un
+ * índice que él no podía abrir.
+ */
+export const informesIndiceGuard: CanActivateFn = guardDeRoles([
+  ...AMPLIOS_FLOTA,
+  ...ROLES_ACOTADOS,
+  ...AMPLIOS_REGION,
+  ...AMPLIOS_VALIDACION,
+]);
+
 export function listadosVisiblesPara(tieneRol: (rol: string) => boolean): string[] {
   const visibles: string[] = [];
   if ([...AMPLIOS_FLOTA, ...ROLES_ACOTADOS].some(tieneRol)) {

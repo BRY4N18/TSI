@@ -25,8 +25,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.seguridad]
 #: cobertura de aislamiento — **no** relajar el número para que la prueba pase.
 #: 235 desde el 2026-08-23: se anadio `GET /api/v1/salud` (PG-RES-004). Esta
 #: prueba lo detecto sola, que es exactamente para lo que existe.
-RUTAS_API_REFERENCIA = 235
-RUTAS_CON_ID_REFERENCIA = 92
+#:
+#: 236 desde el 2026-08-26: se anadio
+#: `GET /api/v1/unidades-emergencia/<id>/historial-despachos` (RN-DES-012,
+#: hallazgo #13 de la revision del 24/08/2026). Lleva identificador, asi que
+#: sube tambien el segundo contador. Cobertura de aislamiento verificada: la
+#: suite `test_aislamiento_tenant` se parametriza sobre `rutas_con_identificador()`
+#: y la recorre con los tres actores, en GET, en escritura y en la comprobacion
+#: de indistinguibilidad.
+RUTAS_API_REFERENCIA = 236
+RUTAS_CON_ID_REFERENCIA = 93
 
 
 def test_el_inventario_no_esta_vacio():

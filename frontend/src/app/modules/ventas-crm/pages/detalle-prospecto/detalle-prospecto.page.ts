@@ -16,7 +16,13 @@ import { TablerIconComponent } from '../../../../shared/ui/icon/tabler-icon.comp
 import { ListErrorStateComponent } from '../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { crmBadge } from '../../crm-ui';
-import { EtapaPipeline, Prospecto, TipoCliente } from '../../models/prospectos.types';
+import {
+  AsignacionProspecto,
+  EtapaPipeline,
+  Prospecto,
+  TipoCliente,
+  TransicionPipeline,
+} from '../../models/prospectos.types';
 import { ConversionApiService } from '../../services/conversion-api.service';
 import { PipelineApiService } from '../../services/pipeline-api.service';
 import { ProspectoApiService } from '../../services/prospecto-api.service';
@@ -262,6 +268,66 @@ const NEXT: Partial<Record<EtapaPipeline, Exclude<EtapaPipeline, 'Nuevo' | 'Gana
                 }
               </dl>
             </section>
+
+            <!--
+              Rastro del prospecto. El detalle ya devolvía ambos historiales
+              (RF-CPP-008) y la pantalla los descartaba, así que no había forma
+              de ver quién lo tuvo ni por qué etapas pasó — y cada acción parecía
+              no dejar huella (hallazgo #14).
+            -->
+            <section class="rounded-md border border-border-default bg-bg-surface p-6">
+              <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">Historial de etapas</h2>
+              @if (historialPipeline().length) {
+                <ol class="m-0 grid list-none gap-3 p-0" data-testid="historial-pipeline">
+                  @for (t of historialPipelineReciente(); track t.id_transicion) {
+                    <li class="border-l-2 border-border-default pl-3">
+                      <p class="m-0 text-sm font-medium text-text-primary">
+                        {{ t.etapa_anterior ?? '—' }} → {{ t.etapa_nueva }}
+                      </p>
+                      @if (t.fecha_transicion) {
+                        <p class="m-0 text-xs text-text-secondary">
+                          {{ t.fecha_transicion | date: 'dd/MM/yyyy HH:mm' }}
+                        </p>
+                      }
+                      @if (t.motivo_perdida) {
+                        <p class="m-0 text-xs text-text-secondary">Motivo: {{ t.motivo_perdida }}</p>
+                      }
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="m-0 text-sm text-text-secondary">Sin cambios de etapa registrados.</p>
+              }
+            </section>
+
+            <section class="rounded-md border border-border-default bg-bg-surface p-6">
+              <h2 class="m-0 mb-3 text-base font-semibold text-text-primary">
+                Historial de asignación
+              </h2>
+              @if (historialAsignacion().length) {
+                <ol class="m-0 grid list-none gap-3 p-0" data-testid="historial-asignacion">
+                  @for (a of historialAsignacionReciente(); track a.idasignacion) {
+                    <li class="border-l-2 border-border-default pl-3">
+                      <p class="m-0 text-sm font-medium text-text-primary">
+                        {{ a.idusuariogerenteanterior ?? 'Sin dueño' }} →
+                        {{ a.idusuariogerenteactual }}
+                        <span class="text-text-secondary">({{ a.tipoasignacion }})</span>
+                      </p>
+                      @if (a.fechahoraasignacion) {
+                        <p class="m-0 text-xs text-text-secondary">
+                          {{ a.fechahoraasignacion | date: 'dd/MM/yyyy HH:mm' }}
+                        </p>
+                      }
+                      @if (a.motivo) {
+                        <p class="m-0 text-xs text-text-secondary">Motivo: {{ a.motivo }}</p>
+                      }
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="m-0 text-sm text-text-secondary">Sin reasignaciones registradas.</p>
+              }
+            </section>
           </div>
         </div>
       }
@@ -327,6 +393,18 @@ export class DetalleProspectoPage implements OnInit {
   readonly error = signal<string | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly prospecto = signal<Prospecto | null>(null);
+  /**
+   * Rastro del prospecto. Se guarda aparte de `prospecto` a propósito: las
+   * respuestas de las acciones (transición, asignación) devuelven el prospecto
+   * actualizado **sin** los historiales, así que meterlos en la misma señal los
+   * borraría en cuanto se ejecutara cualquier acción.
+   *
+   * En vez de recargar del servidor —Pinot tiene retraso de lectura tras
+   * escritura y devolvería el estado anterior— se **añade** la fila que la
+   * propia acción acaba de devolver.
+   */
+  readonly historialPipeline = signal<TransicionPipeline[]>([]);
+  readonly historialAsignacion = signal<AsignacionProspecto[]>([]);
   readonly esAdmin = signal(false);
   readonly mostrarPerdido = signal(false);
 
@@ -360,6 +438,35 @@ export class DetalleProspectoPage implements OnInit {
     return this.gerenteGmail || 'tu usuario';
   }
 
+  /** Más recientes arriba: el rastro se lee de lo último hacia atrás. */
+  historialPipelineReciente(): TransicionPipeline[] {
+    return [...this.historialPipeline()].reverse();
+  }
+
+  historialAsignacionReciente(): AsignacionProspecto[] {
+    return [...this.historialAsignacion()].reverse();
+  }
+
+  /**
+   * Añade al rastro la fila que la propia acción acaba de devolver.
+   *
+   * No se recarga del servidor a propósito: `Fact_Pipeline` y `Fact_Asignacion`
+   * se escriben por Kafka y Pinot tarda en ingerirlas, así que un `GET`
+   * inmediato devolvería el historial **sin** la fila recién creada — que es
+   * justo la que el usuario acaba de provocar y espera ver.
+   */
+  private registrarTransicionLocal(transicion: TransicionPipeline | undefined): void {
+    if (transicion) {
+      this.historialPipeline.update((h) => [...h, transicion]);
+    }
+  }
+
+  private registrarAsignacionLocal(asignacion: AsignacionProspecto | undefined): void {
+    if (asignacion) {
+      this.historialAsignacion.update((h) => [...h, asignacion]);
+    }
+  }
+
   nextEtapa(): string | null {
     const p = this.prospecto();
     if (!p) return null;
@@ -373,6 +480,8 @@ export class DetalleProspectoPage implements OnInit {
     this.prospectoApi.obtener(this.id).subscribe({
       next: (res) => {
         this.prospecto.set(res.data);
+        this.historialPipeline.set(res.data.historial_pipeline ?? []);
+        this.historialAsignacion.set(res.data.historial_asignacion ?? []);
         this.loading.set(false);
         this.cdr.markForCheck();
       },
@@ -403,6 +512,7 @@ export class DetalleProspectoPage implements OnInit {
       .subscribe({
         next: (res) => {
           this.prospecto.set(res.data.prospecto);
+          this.registrarTransicionLocal(res.data.transicion);
           this.busy.set(false);
           this.notifications.toast('Etapa actualizada.', 'success');
           this.cdr.markForCheck();
@@ -433,6 +543,7 @@ export class DetalleProspectoPage implements OnInit {
       .subscribe({
         next: (res) => {
           this.prospecto.set(res.data.prospecto);
+          this.registrarTransicionLocal(res.data.transicion);
           this.busy.set(false);
           this.mostrarPerdido.set(false);
           this.notifications.toast('Prospecto marcado como perdido.', 'success');
@@ -450,10 +561,16 @@ export class DetalleProspectoPage implements OnInit {
       .asignar(p.idprospecto, {
         idusuariogerenteactual: this.gerenteId,
         motivo: this.asigForm.controls.motivo.value,
+        // Dueño vigente según lo que esta pantalla tiene cargado. Sin él el
+        // backend comparaba `undefined` contra el dueño real y devolvía 409
+        // "Asignación desactualizada" en todo prospecto ya asignado, así que la
+        // reasignación no se aplicaba nunca (hallazgo #14).
+        idusuario_esperado: p.idusuario ?? null,
       })
       .subscribe({
         next: (res) => {
           this.prospecto.set(res.data.prospecto);
+          this.registrarAsignacionLocal(res.data.asignacion);
           this.busy.set(false);
           this.notifications.toast('Asignación aplicada.', 'success');
           this.cdr.markForCheck();

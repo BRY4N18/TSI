@@ -17,6 +17,18 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+    # ⚠️ Sin esto, `modelo_hecho_accidente` no puede terminar nunca.
+    #
+    # El scheduler mata como «zombie» toda tarea que pase 300 s sin latir. Su
+    # `extract` recorre 2 000 013 filas por 12 columnas -unos 24 millones de
+    # conversiones en Python- en un bucle que acapara el interprete y no deja
+    # pasar el latido, asi que lo mataba a los ~10 min **estando sano**: 443 MB
+    # de memoria y avanzando. El sintoma enganna, porque «zombie» se lee como
+    # proceso muerto y aqui significa proceso ocupado.
+    #
+    # 45 min cubren la corrida completa con margen. El precio es que una tarea
+    # de verdad colgada tarda ese mismo rato en detectarse.
+    AIRFLOW__SCHEDULER__SCHEDULER_ZOMBIE_TASK_THRESHOLD: "2700"
     ETL_ROOT: /opt/airflow/ETL
   volumes:
     - ../dags:/opt/airflow/dags

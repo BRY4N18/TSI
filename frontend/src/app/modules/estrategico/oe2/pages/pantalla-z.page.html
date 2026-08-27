@@ -136,25 +136,9 @@
           }
           @default {
             @if (idPantalla() === 'uso') {
-              @let maxLlam = maxDe(cargaVisual().data, 'llamadas');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['clase_http'])) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['clase_http']) }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ num(fila['llamadas']) | number }} · {{ pct(num(fila['pct'])) }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['llamadas']) ?? 0) / maxLlam) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasUso()" />
+              </div>
             }
             @if (idPantalla() === 'dinero') {
               <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">

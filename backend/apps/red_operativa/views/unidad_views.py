@@ -202,11 +202,14 @@ class UnidadImportacionLoteView(APIView):
         if not archivo:
             return error_response("bad_request", "archivo es requerido", "400", status_code=400)
 
-        contenido = io.StringIO(archivo.read().decode("utf-8"))
+        # `utf-8-sig` porque Excel guarda el CSV con BOM y sin esto la primera
+        # cabecera llegaba como "﻿condado": el archivo exportado desde el
+        # propio sistema no se podía reimportar.
+        contenido = io.StringIO(archivo.read().decode("utf-8-sig"))
         filas = list(csv.DictReader(contenido))
         for fila in filas:
-            if fila.get("idcondado"):
-                fila["idcondado"] = int(fila["idcondado"])
+            # La resolución de condado (por nombre) vive en el servicio: es una
+            # regla de negocio y necesita reportar la fila que falla.
             fila.pop("idcliente", None)
             fila["activo"] = True
 

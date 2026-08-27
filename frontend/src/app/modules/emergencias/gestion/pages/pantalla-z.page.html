@@ -104,34 +104,9 @@
           }
           @default {
             @if (idPantalla() === 'calidad') {
-              @let c = completitud();
-              @let max = c.casos || 1;
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                <li>
-                  <div class="mb-1 flex justify-between text-sm">
-                    <span class="text-text-secondary">Completos</span>
-                    <span class="font-semibold text-text-primary">{{ c.completos | number }}</span>
-                  </div>
-                  <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                    <div
-                      class="h-full rounded-md bg-alert-success"
-                      [style.width.%]="(c.completos / max) * 100"
-                    ></div>
-                  </div>
-                </li>
-                <li data-testid="incompletos">
-                  <div class="mb-1 flex justify-between text-sm">
-                    <span class="text-text-secondary">Incompletos</span>
-                    <span class="font-semibold text-alert-warning">{{ c.incompletos | number }}</span>
-                  </div>
-                  <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                    <div
-                      class="h-full rounded-md bg-alert-warning"
-                      [style.width.%]="(c.incompletos / max) * 100"
-                    ></div>
-                  </div>
-                </li>
-              </ul>
+              <div class="mt-4" data-testid="incompletos">
+                <app-bar-chart [datos]="barrasCalidad()" [maximo]="completitud().casos" />
+              </div>
             }
             @if (idPantalla() === 'despacho') {
               <p
@@ -156,35 +131,9 @@
               </ul>
             }
             @if (idPantalla() === 'cierre') {
-              @let cob = cobertura();
-              @let max = cob.casos || 1;
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (
-                  row of [
-                    { k: 'Solo foto', n: cob.soloFoto, tone: 'info' },
-                    { k: 'Solo nota', n: cob.soloNota, tone: 'info' },
-                    { k: 'Foto y nota', n: cob.fotoYNota, tone: 'success' },
-                    { k: 'Sin evidencia', n: cob.sinEvidencia, tone: 'warning' },
-                  ];
-                  track row.k
-                ) {
-                  <li [attr.data-testid]="row.k === 'Sin evidencia' ? 'sin-evidencia' : null">
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ row.k }}</span>
-                      <span class="font-semibold text-text-primary">{{ row.n | number }}</span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md"
-                        [class.bg-alert-info]="row.tone === 'info'"
-                        [class.bg-alert-success]="row.tone === 'success'"
-                        [class.bg-alert-warning]="row.tone === 'warning'"
-                        [style.width.%]="(row.n / max) * 100"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="sin-evidencia">
+                <app-bar-chart [datos]="barrasCierre()" [maximo]="cobertura().casos" />
+              </div>
             }
           }
         }

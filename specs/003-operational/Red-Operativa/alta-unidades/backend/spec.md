@@ -81,7 +81,7 @@ El **Proveedor** autenticado registra una unidad. El sistema:
 
 El **Proveedor** importa CSV:
 0. **Gate de plan (RF-O40.6, corrección 2026-08-08):** solo procede si `Fact_Suscripcion.carga_lote_habilitada` (congelado desde `Dim_Plan.carga_lote_habilitada` al alta/cambio de plan — no se lee `Dim_Plan` en vivo, ver `SuscripcionActivaReadRepository`) es `true` para la suscripción activa del Proveedor. Si no hay suscripción activa o el campo es `false`/ausente → `403`, sin leer ni validar el archivo.
-1. Cada fila incluye las columnas de O54 **más `gmail`** (correo del usuario-unidad).
+1. Cada fila incluye las columnas de O54 **más `gmail`** (correo del usuario-unidad), con `condado` (nombre) en lugar de `idcondado` — ver RN-CAM-009.
 2. Validar **todas** las filas: reglas de unidad **y** viabilidad de credencial (gmail válido, gmail no duplicado en `Dim_Usuarios`, etc.).
 3. Si **cualquier** fila falla (unidad o login), **no se inserta ninguna** unidad ni ningún usuario (`insertadas: 0`, reporte fila a fila).
 4. Si todo pasa: por cada fila, INSERT unidad (`idcliente` del Proveedor) + crear `Dim_Usuarios` + `Dim_Credencial` (temp password, `estadocredencial='Cambio contraseña'`) + rol "Unidad de Emergencia" (o nombre canónico del rol semilla) en `Dim_Usuario_Rol` + envío de invitación por correo (mismo mecanismo que CU-O08).
@@ -147,13 +147,45 @@ O56 es atómico: fallo de credencial = fallo de lote completo.
 ### RN-CAM-008
 Solo cuentas `Dim_Cliente.estado='Activo'` pueden gestionar unidades.
 
+### RN-CAM-009 — El CSV se escribe con nombres, no con claves internas
+
+La columna geográfica del archivo de importación es **`condado`** (el nombre, p. ej. `Miami-Dade`),
+con **`estado`** opcional para desambiguar. El backend resuelve el `idcondado` contra `Dim_Condado`
+y reporta la fila que falla:
+
+- Condado inexistente → `"El condado 'X' no existe en el catálogo"`.
+- Nombre ambiguo sin `estado` → `"Hay más de un condado llamado 'X'. Añada la columna 'estado'."`
+- Ambos casos entran en el todo-o-nada de RN-CAM-007: no se inserta ninguna fila.
+
+Se mantiene compatibilidad con archivos anteriores que traigan `idcondado` directamente.
+
+La pantalla acompaña el archivo con **plantilla descargable** (cabecera + una fila de ejemplo
+válida) y una **tabla de columnas** con obligatoriedad y valores admitidos, además de **exportar el
+catálogo** con las mismas columnas. Ambos archivos llevan BOM UTF-8 y la importación lee con
+`utf-8-sig`: sin eso, Excel abría `Grúa` como `GrÃºa` y el archivo exportado desde el propio
+sistema no se podía reimportar.
+
+La documentación de columnas no es cosmética: como la importación es todo-o-nada, un solo valor mal
+escrito —`Grua` por `Grúa`— tumba el archivo entero.
+
+Origen (revisión de calidad 24/08/2026, hallazgo #16): el CSV pedía `idcondado`, una clave interna
+del catálogo que un proveedor de flota no tiene forma de conocer; en la práctica el archivo era
+inservible. La segunda mitad del hallazgo —"ver qué tan útil sería poder descargar un CSV con la
+información que se presenta"— se resuelve con la exportación, que cierra el ciclo exportar → editar
+→ reimportar.
+
+**Nota sobre `gmail` en la exportación:** sale en blanco a propósito. El listado no expone el correo
+de acceso de cada unidad —es credencial, no dato de flota— y el archivo sirve para dar de alta
+unidades **nuevas**, donde ese correo aún no existe; las ya registradas no se pueden reimportar de
+todos modos porque su placa está tomada (RN-CAM-002).
+
 ## 7. Entradas
 
 ### CU-O54
 `tipopropiedad`, `placa`, `idcondado`, `capacidad`, `contactoproveedor`, `unidademergencia`, `tipounidademergencia`, `activo` (opcional). **No** `idcliente` en body (o se ignora a favor del token).
 
 ### CU-O56
-Archivo CSV: columnas O54 + `gmail` por fila.
+Archivo CSV: `condado`, `estado` (opcional), `tipopropiedad`, `placa`, `contactoproveedor`, `unidademergencia`, `tipounidademergencia`, `gmail` — ver RN-CAM-009.
 
 ### CU-O57
 `idunidademergencia` + campos editables.

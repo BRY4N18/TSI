@@ -117,74 +117,36 @@
           }
           @default {
             @if (idPantalla() === 'cobro') {
-              @let max = maxDe('ingreso_neto');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">
-                        {{ texto(fila['plan']) || 'Plan' }}
-                        @if (texto(fila['tipo_cliente'])) {
-                          · {{ texto(fila['tipo_cliente']) }}
-                        }
-                      </span>
-                      <span class="font-semibold text-text-primary">
-                        {{ num(fila['ingreso_neto']) | number: '1.2-2' }}
-                        {{ texto(fila['moneda']) }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['ingreso_neto']) ?? 0) / max) * 100"
-                      ></div>
-                    </div>
-                    <p class="m-0 mt-1 text-xs text-text-secondary" data-testid="notas-credito">
-                      facturado {{ num(fila['facturado']) | number: '1.2-2' }} · notas de crédito
-                      {{ num(fila['notas_credito']) | number: '1.2-2' }}
-                    </p>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4">
+                <app-bar-chart [datos]="barrasCobro()" [decimales]="2" />
+              </div>
             }
             @if (idPantalla() === 'movimientos') {
-              @let max = maxDe('delta_ingreso_total');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary" data-testid="tipo-movimiento">
-                        {{ texto(fila['tipo_movimiento']) }}
-                      </span>
-                      <span class="font-semibold text-text-primary">
-                        {{ num(fila['solicitudes']) | number }} · delta
-                        {{ num(fila['delta_ingreso_total']) | number: '1.2-2' }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="anchoRelativo(fila['delta_ingreso_total'], max)"
-                      ></div>
-                    </div>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="tipo-movimiento">
+                <!-- Divergente: el signo del delta es el dato. -->
+                <app-bar-chart [datos]="barrasMovimientos()" escala="divergente" [decimales]="2" />
+              </div>
             }
             @if (idPantalla() === 'catalogo') {
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track $index) {
-                  <li class="text-sm">
-                    <span class="font-semibold text-text-primary">{{ texto(fila['plan']) || 'Plan' }}</span>
-                    <span class="ml-2 text-text-secondary" data-testid="utilizado-contratado">
-                      {{ num(fila['unidades_usadas']) | number }} de
-                      {{ num(fila['unidades_limite']) | number }} unidades ·
-                      {{ num(fila['usuarios_usados']) | number }} de
-                      {{ num(fila['usuarios_limite']) | number }} usuarios
-                    </span>
-                  </li>
+              <div class="mt-4 grid gap-5" data-testid="utilizado-contratado">
+                @for (m of medidoresCatalogo(); track m.plan) {
+                  <div class="grid gap-2">
+                    <span class="text-sm font-semibold text-text-primary">{{ m.plan }}</span>
+                    <app-meter
+                      etiqueta="Unidades"
+                      [usado]="m.unidadesUsadas"
+                      [limite]="m.unidadesLimite"
+                      unidad="unidades"
+                    />
+                    <app-meter
+                      etiqueta="Usuarios"
+                      [usado]="m.usuariosUsados"
+                      [limite]="m.usuariosLimite"
+                      unidad="usuarios"
+                    />
+                  </div>
                 }
-              </ul>
+              </div>
               @if (notaDimension()) {
                 <p class="m-0 mt-3 text-xs text-text-secondary" data-testid="nota-dimension-pendiente">
                   {{ notaDimension() }}

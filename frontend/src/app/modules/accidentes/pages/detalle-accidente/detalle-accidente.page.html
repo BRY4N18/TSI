@@ -25,7 +25,6 @@
         class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
         (click)="cargar()"
       >
-        <app-tabler-icon name="refresh" [size]="16" />
         Reintentar
       </button>
     </div>
@@ -267,7 +266,7 @@
                   <span
                     class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-bg-surface bg-accent-primary"
                   ></span>
-                  <p class="m-0 font-medium text-text-primary">{{ h.estado }}</p>
+                  <p class="m-0 font-medium text-text-primary">{{ estado(h.estado).label }}</p>
                   <p class="m-0 text-xs text-text-secondary">
                     {{ h.fechahoramodificado | date: 'dd/MM/yyyy HH:mm' }}
                   </p>
@@ -305,7 +304,7 @@
                     [class.bg-alert-info-bg]="despachoTono(u.estado) === 'info'"
                     [class.text-alert-info]="despachoTono(u.estado) === 'info'"
                   >
-                    {{ u.estado }}
+                    {{ despachoLabel(u.estado) }}
                   </span>
                 </li>
               }

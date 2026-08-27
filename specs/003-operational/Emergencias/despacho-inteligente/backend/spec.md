@@ -335,6 +335,35 @@ La posición efectiva de una unidad para despacho se resuelve así: `Dim_UnidadE
 
 Si push y SMS fallan tras un reintento en O60, el despacho no permanece en espera de timeout: se marca `No_entregada`, se desactiva el `Fact_Despacho` (`activo=false`) y se ejecuta O63 de inmediato. El fallo de entrega **no** excluye a la unidad de futuros despachos para el mismo accidente (a diferencia de un rechazo explícito en RN-DES-006).
 
+### RN-DES-012 — Toda unidad tiene su rastro de salidas consultable
+
+`GET /unidades-emergencia/{id}/historial-despachos` devuelve los despachos de una
+unidad —**activos e históricos**—, del más reciente hacia atrás, con paginación
+por cursor descendente sobre `iddespacho`.
+
+Cada fila trae una **fase** derivada en el servidor a partir de los sellos de
+tiempo del propio despacho, para que la lista y cualquier informe futuro cuenten
+la misma historia:
+
+| Condición | Fase |
+|---|---|
+| `fechahoraretiro` con `retiro_forzado` | Retiro forzado |
+| `fechahoraretiro` | Retirada |
+| `fechahorallegada` | En sitio |
+| `activo` sin llegada | En camino |
+| resto | Sin llegada registrada |
+
+Acceso: la propia unidad y los roles con visibilidad (Administrador / Despacho),
+igual que el historial de estado. Es lectura pura — un despacho no se declara
+desde aquí.
+
+Origen (revisión 24/08/2026, hallazgo #13, "no hay un historial de las unidades
+de emergencia y su despacho"). Existía `historial-estado`, pero solo cuenta
+cambios de disponibilidad (Activa / En misión / Fuera de servicio): saber **cuándo**
+una unidad estuvo disponible no dice **a qué acudió**. `list_activos_by_unidad`
+tampoco servía, porque omite a propósito los despachos ya cerrados —resuelve la
+misión en curso—, que son justo los que forman el historial.
+
 ## 7. Entradas
 
 ### Disparador automático (CU-O59, CU-O60)

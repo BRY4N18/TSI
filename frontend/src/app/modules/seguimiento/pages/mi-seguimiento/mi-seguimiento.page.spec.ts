@@ -12,6 +12,11 @@ const DESPACHO_CONFIRMADO = {
   idaccidente: 'ACC-1',
   idunidademergencia: 1,
   estado_despacho: 'Confirmado' as const,
+  // El endpoint acompaña el despacho con la severidad y las víctimas VIGENTES
+  // del caso: es lo que precarga el panel de escalar severidad (RN-SEG-014).
+  idseveridad: 2,
+  numheridos: 3,
+  numfallecidos: 0,
 };
 
 describe('MiSeguimientoPage', () => {

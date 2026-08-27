@@ -103,8 +103,8 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
       { campo: 'razon_social', etiqueta: 'Cuenta', principal: true },
       { campo: 'tipo', etiqueta: 'Tipo', formato: 'enumeracion' },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
-      { campo: 'estado_onboarding', etiqueta: 'Onboarding', soloEscritorio: true },
-      { campo: 'fecha_inicio_contrato', etiqueta: 'Inicio de contrato', formato: 'fecha' },
+      { campo: 'estado_onboarding', etiqueta: 'Onboarding', soloDetalle: true },
+      { campo: 'fecha_inicio_contrato', etiqueta: 'Inicio de contrato', formato: 'fecha', soloDetalle: true },
       { campo: 'propietario', etiqueta: 'Responsable' },
     ],
     filtros: [
@@ -187,7 +187,7 @@ export const INFORMES_CUENTAS: Record<string, DefinicionListado> = {
       { campo: 'usuario', etiqueta: 'Usuario', principal: true },
       { campo: 'usuario_servidor', etiqueta: 'Usuario de servidor' },
       { campo: 'roles_servidor', etiqueta: 'Roles de servidor', formato: 'lista' },
-      { campo: 'roles_negocio', etiqueta: 'Roles de negocio', formato: 'lista' },
+      { campo: 'roles_negocio', etiqueta: 'Roles de negocio', formato: 'lista', soloDetalle: true },
     ],
   },
 };

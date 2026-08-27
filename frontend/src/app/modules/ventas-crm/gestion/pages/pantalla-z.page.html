@@ -142,29 +142,10 @@
           }
           @default {
             @if (idPantalla() === 'embudo') {
-              @let max = maxDe(cargaVisual().data, 'segundos_mediana');
-              <ul class="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-                @for (fila of cargaVisual().data; track texto(fila['etapa'])) {
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="text-text-secondary">{{ texto(fila['etapa']) }}</span>
-                      <span class="font-semibold tabular-nums text-text-primary">
-                        {{ formatSegundos(num(fila['segundos_mediana'])) }}
-                      </span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                      <div
-                        class="h-full rounded-md bg-accent-primary"
-                        [style.width.%]="((num(fila['segundos_mediana']) ?? 0) / max) * 100"
-                      ></div>
-                    </div>
-                    <p class="m-0 mt-1 text-xs text-text-secondary" data-testid="abiertos">
-                      {{ num(fila['abiertos']) | number }} abiertos ·
-                      {{ num(fila['prospectos_medidos']) | number }} medidos
-                    </p>
-                  </li>
-                }
-              </ul>
+              <div class="mt-4" data-testid="abiertos">
+                <!-- Embudo: etapas ordenadas -> escala ordinal. -->
+                <app-bar-chart [datos]="barrasEmbudo()" escala="ordinal" />
+              </div>
             }
             @if (idPantalla() === 'captacion') {
               <ul class="m-0 mt-4 flex list-none flex-col gap-2 p-0">
@@ -211,28 +192,12 @@
                   <p class="m-0 mt-4 text-sm text-alert-critical">{{ cargaVisualSecundaria().error }}</p>
                 }
                 @default {
-                  @let maxSec = maxDe(cargaVisualSecundaria().data, 'visitas');
                   <p class="m-0 mt-4 text-xs font-medium uppercase tracking-wide text-text-secondary">
                     Secciones visitadas
                   </p>
-                  <ul class="m-0 mt-2 flex list-none flex-col gap-3 p-0">
-                    @for (fila of cargaVisualSecundaria().data; track $index) {
-                      <li>
-                        <div class="mb-1 flex justify-between text-sm">
-                          <span class="text-text-secondary">{{ texto(fila['seccion']) }}</span>
-                          <span class="font-semibold text-text-primary">
-                            {{ num(fila['visitas']) | number }}
-                          </span>
-                        </div>
-                        <div class="h-2 overflow-hidden rounded-md bg-bg-page">
-                          <div
-                            class="h-full rounded-md bg-accent-primary"
-                            [style.width.%]="((num(fila['visitas']) ?? 0) / maxSec) * 100"
-                          ></div>
-                        </div>
-                      </li>
-                    }
-                  </ul>
+                  <div class="mt-2">
+                    <app-bar-chart [datos]="barrasSecciones()" />
+                  </div>
                 }
               }
             }

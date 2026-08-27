@@ -108,12 +108,75 @@ class TestEnriquecimientoConductorService:
         # Arrange
         service = EnriquecimientoConductorService()
 
-        # Act / Assert
-        with pytest.raises(ValueError, match="requeridos"):
+        # Act / Assert — el error nombra el campo culpable (RN-VAL-CAMPOS), en
+        # vez del genérico "son requeridos" que no decía cuál faltaba.
+        with pytest.raises(ValueError, match="conductor.identificacion"):
             service.registrar(
                 idaccidente=accidente_activo,
                 idusuario=7,
-                conductor={"identificacion": "", "nombres": "A", "apellidos": "B"},
+                conductor={"identificacion": "", "nombres": "Ana", "apellidos": "Salazar"},
+                idestadoconductor=1,
+                vehiculo={"tipovehiculo": "Auto"},
+            )
+
+    def test_registrar_rechaza_cedula_con_letras(
+        self, mock_pinot, mock_kafka, accidente_activo
+    ):
+        """RN-VAL-CAMPOS — hallazgo #9: la cédula aceptaba letras."""
+        # Arrange
+        service = EnriquecimientoConductorService()
+
+        # Act / Assert
+        with pytest.raises(ValueError, match="10 dígitos"):
+            service.registrar(
+                idaccidente=accidente_activo,
+                idusuario=7,
+                conductor={
+                    "identificacion": "ABC1234567",
+                    "nombres": "Ana",
+                    "apellidos": "Salazar",
+                },
+                idestadoconductor=1,
+                vehiculo={"tipovehiculo": "Auto"},
+            )
+
+    def test_registrar_rechaza_nombre_con_digitos(
+        self, mock_pinot, mock_kafka, accidente_activo
+    ):
+        # Arrange
+        service = EnriquecimientoConductorService()
+
+        # Act / Assert
+        with pytest.raises(ValueError, match="conductor.nombres"):
+            service.registrar(
+                idaccidente=accidente_activo,
+                idusuario=7,
+                conductor={
+                    "identificacion": "0102030405",
+                    "nombres": "Ana99",
+                    "apellidos": "Salazar",
+                },
+                idestadoconductor=1,
+                vehiculo={"tipovehiculo": "Auto"},
+            )
+
+    def test_registrar_rechaza_solo_espacios_en_apellidos(
+        self, mock_pinot, mock_kafka, accidente_activo
+    ):
+        """Hallazgo #9: "se pueden ingresar espacios en blanco"."""
+        # Arrange
+        service = EnriquecimientoConductorService()
+
+        # Act / Assert
+        with pytest.raises(ValueError, match="conductor.apellidos"):
+            service.registrar(
+                idaccidente=accidente_activo,
+                idusuario=7,
+                conductor={
+                    "identificacion": "0102030405",
+                    "nombres": "Ana",
+                    "apellidos": "   ",
+                },
                 idestadoconductor=1,
                 vehiculo={"tipovehiculo": "Auto"},
             )

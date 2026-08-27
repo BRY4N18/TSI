@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from apps.accidentes.domain_constants import ESTADO_CERRADO
@@ -125,7 +126,7 @@ class HistorialEmergenciasService:
             items.append(
                 {
                     "idaccidente": idaccidente,
-                    "fecha": int(acc.get("horainicio") or acc.get("fechahoraaccidente", 0)),
+                    "fecha": self._epoch_ms(acc.get("horainicio")) or acc.get("fechahoraaccidente", 0),
                     "estado": est,
                     "severidad": acc.get("idseveridad", 1),
                     "ubicacion": ubicacion,
@@ -226,6 +227,24 @@ class HistorialEmergenciasService:
         if not con_fecha:
             return None
         return min(con_fecha, key=lambda d: d["fechahoradespacho"])
+
+    @staticmethod
+    def _epoch_ms(valor: Any) -> int | None:
+        """`horainicio` viaja como epoch ms en el flujo normal, pero el lote de
+        2M accidentes de US_Accidents lo escribió como texto de fecha
+        (`'2023-03-31 23:25:30'`) — sin esto, `int()` reventaba con
+        `ValueError` y el historial completo devolvía 400 aunque el request no
+        tuviera ningún filtro inválido."""
+        if valor is None or valor == "":
+            return None
+        try:
+            return int(valor)
+        except (TypeError, ValueError):
+            pass
+        try:
+            return int(datetime.fromisoformat(str(valor)).timestamp() * 1000)
+        except (TypeError, ValueError):
+            return None
 
     def _unidad_principal(self, despachos: list[dict[str, Any]]) -> str | None:
         principal = self._despacho_principal(despachos)

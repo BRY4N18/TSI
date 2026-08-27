@@ -43,16 +43,14 @@ export const INFORMES_VENTAS: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'empresa', etiqueta: 'Empresa', principal: true },
       { campo: 'nombre_contacto', etiqueta: 'Contacto' },
-      { campo: 'cargo', etiqueta: 'Cargo', soloEscritorio: true },
+      { campo: 'cargo', etiqueta: 'Cargo', soloDetalle: true },
       { campo: 'tipo_organizacion', etiqueta: 'Tipo', formato: 'enumeracion' },
-      { campo: 'canal_origen', etiqueta: 'Canal', soloEscritorio: true },
+      { campo: 'canal_origen', etiqueta: 'Canal', soloDetalle: true },
       { campo: 'etapa_actual', etiqueta: 'Etapa', formato: 'enumeracion' },
       { campo: 'ejecutivo', etiqueta: 'Ejecutivo' },
       { campo: 'estado', etiqueta: 'Estado', formato: 'enumeracion' },
-      // Ausente salvo en los perdidos, y eso es correcto: un prospecto activo no
-      // tiene motivo de pérdida que mostrar.
-      { campo: 'motivo_perdida', etiqueta: 'Motivo de pérdida', soloEscritorio: true },
-      { campo: 'valor_estimado', etiqueta: 'Valor estimado', formato: 'moneda', alineacion: 'derecha' },
+      { campo: 'motivo_perdida', etiqueta: 'Motivo de pérdida', soloDetalle: true },
+      { campo: 'valor_estimado', etiqueta: 'Valor estimado', formato: 'moneda', alineacion: 'derecha', soloDetalle: true },
       { campo: 'fecha_registro', etiqueta: 'Registrado', formato: 'fecha_hora' },
     ],
     filtros: [
@@ -98,7 +96,7 @@ export const INFORMES_VENTAS: Record<string, DefinicionListado> = {
       { campo: 'ejecutivo_anterior', etiqueta: 'Ejecutivo anterior' },
       { campo: 'ejecutivo_nuevo', etiqueta: 'Ejecutivo nuevo' },
       { campo: 'tipo_asignacion', etiqueta: 'Tipo', formato: 'enumeracion' },
-      { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
+      { campo: 'motivo', etiqueta: 'Motivo', soloDetalle: true },
       { campo: 'fecha', etiqueta: 'Fecha', formato: 'fecha_hora' },
     ],
     filtros: [
@@ -121,7 +119,7 @@ export const INFORMES_VENTAS: Record<string, DefinicionListado> = {
       { campo: 'nombre_contacto', etiqueta: 'Contacto' },
       { campo: 'ejecutivo', etiqueta: 'Ejecutivo' },
       { campo: 'expiracion', etiqueta: 'Expira', formato: 'fecha_hora' },
-      { campo: 'dias_restantes', etiqueta: 'Días restantes', formato: 'numero', alineacion: 'derecha' },
+      { campo: 'dias_restantes', etiqueta: 'Días restantes', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
     ],
     filtros: [{ nombre: 'ejecutivo', etiqueta: 'Ejecutivo', tipo: 'catalogo', catalogo: 'ejecutivo' }],
   },

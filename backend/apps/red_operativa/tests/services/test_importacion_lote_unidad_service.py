@@ -42,6 +42,52 @@ class TestImportacionLoteUnidadService:
             if str(u.get("placa", "")).startswith("LOTE-"):
                 assert u.get("idusuario") is not None
 
+    def test_importar_acepta_condado_por_nombre(self, mock_pinot, mock_kafka, pinot_store):
+        """Hallazgo #16 — el CSV pedía `idcondado`, que el usuario no puede conocer."""
+        # Arrange
+        service = ImportacionLoteUnidadService()
+        fila = self._fila_valida(placa="LOTE-NOM", gmail="lotenom@test.com")
+        fila.pop("idcondado")
+        fila["condado"] = "Cuauhtémoc"
+
+        # Act
+        result = service.importar([fila], **PROVEEDOR)
+
+        # Assert
+        assert result["fallidas"] == []
+        assert result["insertadas"] == 1
+        creada = next(
+            u for u in pinot_store["Dim_UnidadEmergencia"] if u.get("placa") == "LOTE-NOM"
+        )
+        assert creada["idcondado"] == 1
+
+    def test_importar_reporta_condado_inexistente_sin_insertar(self, mock_pinot, mock_kafka):
+        # Arrange
+        service = ImportacionLoteUnidadService()
+        fila = self._fila_valida(placa="LOTE-BAD", gmail="lotebad@test.com")
+        fila.pop("idcondado")
+        fila["condado"] = "Condado Que No Existe"
+
+        # Act
+        result = service.importar([fila], **PROVEEDOR)
+
+        # Assert — todo-o-nada: se reporta la fila, no se inserta nada.
+        assert result["insertadas"] == 0
+        assert "no existe en el catálogo" in result["fallidas"][0]["motivo"]
+
+    def test_importar_sin_condado_reporta_campo_requerido(self, mock_pinot, mock_kafka):
+        # Arrange
+        service = ImportacionLoteUnidadService()
+        fila = self._fila_valida(placa="LOTE-SIN", gmail="lotesin@test.com")
+        fila.pop("idcondado")
+
+        # Act
+        result = service.importar([fila], **PROVEEDOR)
+
+        # Assert
+        assert result["insertadas"] == 0
+        assert "condado es requerido" in result["fallidas"][0]["motivo"]
+
     def test_importar_when_plan_no_habilita_lote_raises_permission_error(
         self, mock_pinot, mock_kafka, pinot_store
     ):

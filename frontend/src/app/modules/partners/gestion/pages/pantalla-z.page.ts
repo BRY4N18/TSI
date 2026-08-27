@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
+import { BarChartComponent, BarDatum } from '../../../../shared/ui/charts/bar-chart.component';
 import { PeriodoSelectorComponent } from '../../../emergencias/pages/shared/periodo-selector.component';
 import { PeriodoParams } from '../../../emergencias/services/models/informes-tacticos.types';
 import { definicionDe, informesDe } from '../definiciones/pantallas-gestion.definiciones';
@@ -34,7 +35,7 @@ const VACIA: CargaInforme = {
 @Component({
   selector: 'app-pantalla-z-partners',
   standalone: true,
-  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent],
+  imports: [DecimalPipe, PeriodoSelectorComponent, ApoyoPlegableComponent, BarChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pantalla-z.page.html',
 })
@@ -81,6 +82,25 @@ export class PantallaZPage {
   readonly filaIntegracion = computed(() => this.cargaHeroe().data[0]);
 
   readonly num = num;
+
+  // ── Adaptadores a gráficos (design-system.md §5.1) ────────────────────
+  // Clases de resultado, canales: categorías nominales -> un solo color,
+  // porque ordenarlas de otra forma no cambiaría lo que significan.
+
+  readonly barrasConsumo = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: `${texto(f['clase_resultado'])} · ${texto(f['codigo_http'])}`,
+      valor: num(f['pct']) === null ? null : (num(f['pct']) as number) * 100,
+      nota: `· ${num(f['llamadas']) ?? 0} llamadas`,
+    })),
+  );
+
+  readonly barrasEntrega = computed<BarDatum[]>(() =>
+    this.cargaVisual().data.map((f) => ({
+      etiqueta: this.etiquetaCanal(f),
+      valor: num(f['expedientes']),
+    })),
+  );
   readonly texto = texto;
 
   /**
@@ -139,10 +159,6 @@ export class PantallaZPage {
     return `${(valor * 100).toFixed(1)} %`;
   }
 
-  maxDe(filas: Record<string, unknown>[], campo: string): number {
-    const vals = filas.map((f) => num(f[campo]) ?? 0);
-    return Math.max(1, ...vals);
-  }
 
   noFiable(fila: Record<string, unknown>): boolean {
     return num(fila['percentil_fiable']) === 0;

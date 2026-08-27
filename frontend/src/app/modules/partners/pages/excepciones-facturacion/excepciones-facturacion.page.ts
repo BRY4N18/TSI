@@ -12,7 +12,7 @@ import type { ExcepcionFacturacion, TipoExcepcion } from '../../services/models/
 const ACCION_SUGERIDA: Record<TipoExcepcion, string> = {
   reintentos_agotados: 'Emitir la factura manualmente.',
   no_tarificable:
-    'Configurar el precio de excedente del plan (CU-O26) y volver a ejecutar el corte.',
+    'Configurar el precio de excedente del plan y volver a ejecutar el corte.',
 };
 
 const ETIQUETA_TIPO: Record<TipoExcepcion, string> = {

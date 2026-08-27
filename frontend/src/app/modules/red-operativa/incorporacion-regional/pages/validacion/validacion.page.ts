@@ -8,9 +8,12 @@ import { ListEmptyStateComponent } from '../../../../../shared/ui/list-states/li
 import { ListErrorStateComponent } from '../../../../../shared/ui/list-states/list-error-state.component';
 import { ListLoadingSkeletonComponent } from '../../../../../shared/ui/list-states/list-loading-skeleton.component';
 import { AuthApiService } from '../../../../cuentas-clientes/auth/services/auth-api.service';
+import { CatalogoItem } from '../../../../accidentes/services/models/accidente.types';
+import { UbicacionCatalogoApiService } from '../../../../accidentes/services/ubicacion-catalogo-api.service';
 import { RegionOperativaFacadeService } from '../../services/region-operativa-facade.service';
 import {
   EstadoRegion,
+  RegionOperativaData,
   ResultadoValidacion,
   ValidacionHistorialItem,
 } from '../../models/region-operativa.contract';
@@ -37,8 +40,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
     <div class="mx-auto max-w-2xl space-y-8 p-6">
       <header>
         <h1 class="tsi-display text-[28px] font-extrabold text-text-primary">Validación de operatividad de región</h1>
-<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
-        <p class="mt-1 text-sm text-text-secondary">CU-O55 — Ejecutar protocolo de validación.</p>
+        <div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
+        <p class="mt-1 text-sm text-text-secondary">Ejecutar protocolo de validación de la región operativa.</p>
       </header>
 
       <section class="space-y-5 tsi-panel p-6">
@@ -47,38 +50,45 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
             <legend class="px-1 text-sm font-semibold text-text-primary">Región</legend>
             <label class="block">
               <span class="mb-1 block text-sm font-medium text-text-secondary">
-                idregionoperativa (dejar vacío si es alta de región nueva)
+                Región operativa
               </span>
-              <input
+              <select
                 [(ngModel)]="idregionoperativa"
                 name="idregionoperativa"
-                type="number"
-                class="tsi-input w-full"
-          placeholder="Ej. 0"
-        />
+                (ngModelChange)="onRegionChange($event)"
+                class="tsi-select w-full min-w-0"
+              >
+                <option [ngValue]="null">— Nueva región operativa —</option>
+                @for (r of regiones; track r.idregionoperativa) {
+                  <option [ngValue]="r.idregionoperativa">{{ r.nombreregion }}</option>
+                }
+              </select>
             </label>
             @if (!idregionoperativa) {
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label class="block">
-                  <span class="mb-1 block text-sm font-medium text-text-secondary">idestado</span>
-                  <input
-                    [(ngModel)]="idestado"
-                    name="idestado"
-                    type="number"
-                    required
-                    class="tsi-input w-full"
-          placeholder="Ej. 0"
-        />
-                </label>
-                <label class="block">
-                  <span class="mb-1 block text-sm font-medium text-text-secondary">nombreregion</span>
+                  <span class="mb-1 block text-sm font-medium text-text-secondary">Nombre de la región</span>
                   <input
                     [(ngModel)]="nombreregion"
                     name="nombreregion"
                     required
                     class="tsi-input w-full"
-          placeholder="Ej. Flota Centro"
-        />
+                    placeholder="Ej. Región Centro"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-sm font-medium text-text-secondary">Estado / Región geográfica</span>
+                  <select
+                    [(ngModel)]="idestado"
+                    name="idestado"
+                    required
+                    class="tsi-select w-full min-w-0"
+                  >
+                    <option [ngValue]="null">— Selecciona un estado —</option>
+                    @for (e of estadosGeograficos; track e.id) {
+                      <option [ngValue]="e.id">{{ e.nombre }}</option>
+                    }
+                  </select>
                 </label>
               </div>
             }
@@ -104,8 +114,8 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
                   name="motivo"
                   required
                   class="tsi-input w-full"
-          placeholder="Motivo, en una frase"
-        />
+                  placeholder="Motivo, en una frase"
+                />
               </label>
             }
           </fieldset>
@@ -226,13 +236,15 @@ const ESTADO_BADGE_CLASSES: Record<EstadoRegion, string> = {
 })
 export class ValidacionPage implements OnInit {
   private readonly facade = inject(RegionOperativaFacadeService);
+  private readonly ubicacionCatalogo = inject(UbicacionCatalogoApiService);
   private readonly authApi = inject(AuthApiService);
   private readonly route = inject(ActivatedRoute);
-  // El shell de la aplicación es OnPush: sin marcar la vista, nada de lo que
-  // llega por HTTP se repinta. Ver §9 del design-system.
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly esAdministrador = this.authApi.hasRole('Administrador');
+
+  regiones: RegionOperativaData[] = [];
+  estadosGeograficos: CatalogoItem[] = [];
 
   idregionoperativa: number | null = null;
   idestado: number | null = null;
@@ -244,9 +256,6 @@ export class ValidacionPage implements OnInit {
   mensajeRechazo: string | null = null;
   estadoregionActual: EstadoRegion | null = null;
   historial: ValidacionHistorialItem[] = [];
-  // Los tres estados asíncronos del listado (design-system §5). `historialCargado`
-  // separa "todavía no se pidió" de "se pidió y vino vacío": antes la tabla
-  // simplemente no se dibujaba y ambas situaciones se veían igual.
   historialCargado = false;
   historialLoading = false;
   historialError: string | null = null;
@@ -255,7 +264,63 @@ export class ValidacionPage implements OnInit {
     const id = Number(this.route.snapshot.queryParamMap.get('id'));
     if (Number.isFinite(id) && id > 0) {
       this.idregionoperativa = id;
+    }
+    this.cargarRegiones();
+    this.cargarEstadosGeograficos();
+  }
+
+  cargarRegiones(): void {
+    this.facade.listar().subscribe((result) => {
+      this.cdr.markForCheck();
+      if (result.ok && result.data) {
+        this.regiones = result.data;
+        if (this.idregionoperativa) {
+          const seleccionada = this.regiones.find(
+            (r) => r.idregionoperativa === this.idregionoperativa,
+          );
+          if (seleccionada) {
+            this.estadoregionActual = seleccionada.estadoregion;
+            this.cargarHistorial();
+          }
+        }
+      }
+    });
+  }
+
+  cargarEstadosGeograficos(): void {
+    this.ubicacionCatalogo.listarPaises().subscribe({
+      next: (paises) => {
+        if (paises.length > 0) {
+          const idPais = paises[0].id;
+          this.ubicacionCatalogo.listarEstados(idPais).subscribe({
+            next: (estados) => {
+              this.estadosGeograficos = estados;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.estadosGeograficos = [];
+            },
+          });
+        }
+      },
+      error: () => {
+        this.estadosGeograficos = [];
+      },
+    });
+  }
+
+  onRegionChange(nuevoId: number | null): void {
+    this.idregionoperativa = nuevoId;
+    this.mensaje = null;
+    this.mensajeEsError = false;
+    if (nuevoId) {
+      const seleccionada = this.regiones.find((r) => r.idregionoperativa === nuevoId);
+      this.estadoregionActual = seleccionada?.estadoregion ?? null;
       this.cargarHistorial();
+    } else {
+      this.estadoregionActual = null;
+      this.historial = [];
+      this.historialCargado = false;
     }
   }
 
@@ -280,6 +345,8 @@ export class ValidacionPage implements OnInit {
           this.mensaje = 'Validación registrada correctamente.';
           this.estadoregionActual = result.data.estadoregion_actual;
           this.idregionoperativa = result.data.idregionoperativa;
+          this.cargarRegiones();
+          this.cargarHistorial();
         } else {
           this.mensaje = result.error ?? 'Error al ejecutar la validación';
           this.mensajeEsError = true;

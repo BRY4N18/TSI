@@ -11,6 +11,15 @@ export interface UnidadEmergenciaData {
   idunidademergencia: number;
   idcliente: number;
   idcondado: number;
+  /**
+   * Nombre legible del condado y su estado, resueltos por el backend.
+   *
+   * Sin ellos la pantalla mostraba "Condado #7" y la exportación a CSV no podía
+   * producir un archivo reimportable, porque la importación trabaja con nombres
+   * (hallazgo #16). Pueden venir `null` si el catálogo no resuelve el id.
+   */
+  condado?: string | null;
+  estado?: string | null;
   tipopropiedad: TipoPropiedad;
   placa: string;
   capacidad: string | null;

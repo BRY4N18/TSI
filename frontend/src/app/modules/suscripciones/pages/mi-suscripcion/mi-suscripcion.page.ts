@@ -25,12 +25,25 @@ export class MiSuscripcionPage implements OnInit {
   readonly planes = signal<Plan[]>([]);
   readonly message = signal<string | null>(null);
   readonly busy = signal(false);
+  readonly modalCancelarAbierto = signal(false);
 
   selectedPlanId: number | null = null;
   motivoCancelacion = '';
 
   ngOnInit(): void {
     this.cargar();
+  }
+
+  abrirModalCancelacion(): void {
+    this.motivoCancelacion = '';
+    this.message.set(null);
+    this.modalCancelarAbierto.set(true);
+  }
+
+  cerrarModalCancelacion(): void {
+    if (!this.busy()) {
+      this.modalCancelarAbierto.set(false);
+    }
   }
 
   cargar(): void {
@@ -111,6 +124,7 @@ export class MiSuscripcionPage implements OnInit {
       .subscribe({
         next: () => {
           this.message.set('Suscripción cancelada. Conservarás acceso hasta la fecha de fin.');
+          this.modalCancelarAbierto.set(false);
           this.busy.set(false);
           this.cargar();
         },

@@ -91,6 +91,34 @@ class UnidadDisponibilidadView(APIView):
         return success_response(data)
 
 
+class UnidadHistorialDespachosView(APIView):
+    """Rastro de salidas de una unidad (hallazgo #13).
+
+    Lectura pura: la ve la propia unidad y los roles con visibilidad
+    (Admin/Despacho), igual que el historial de estado — sin POST, porque un
+    despacho no se declara desde aquí.
+    """
+
+    permission_classes = [IsAuthenticated401, IsUnidadEmergenciaSelfOrAdmin]
+
+    def get(self, request: Request, idunidademergencia: int) -> Response:
+        limit = min(int(request.query_params.get("limit", 20)), 100)
+        cursor = request.query_params.get("cursor")
+        cursor_int = int(cursor) if cursor else None
+        try:
+            items, next_cursor = DisponibilidadUnidadService().listar_historial_despachos(
+                idunidademergencia,
+                limit=limit,
+                cursor=cursor_int,
+            )
+        except LookupError:
+            return error_response("not_found", "Unidad no encontrada", "404", status_code=404)
+        return success_response(
+            {"items": items},
+            meta={"pagination": {"next_cursor": next_cursor, "limit": limit}},
+        )
+
+
 class UnidadHistorialEstadoView(APIView):
     parser_classes = [JSONParser]
 

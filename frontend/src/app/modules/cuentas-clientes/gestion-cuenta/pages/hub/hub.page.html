@@ -9,7 +9,6 @@
       </p>
     </div>
     <button type="button" class="tsi-btn tsi-btn-secondary" [disabled]="cargando()" (click)="cargar()">
-      <app-tabler-icon name="refresh" [size]="16" />
       Actualizar
     </button>
   </header>
@@ -21,36 +20,90 @@
     <p class="m-0 text-sm text-alert-critical" data-testid="error">{{ error() }}</p>
   }
 
-  <section class="tsi-panel p-4">
-    <h2 class="tsi-display m-0 mb-3 text-base font-semibold text-text-primary">Cuenta de cliente</h2>
-    <p class="m-0 mb-3 text-sm text-text-secondary">
-      Indica el ID del cliente y abre perfil, preferencias, transferencia o baja.
-    </p>
-    <div class="flex flex-wrap items-end gap-3">
-      <label class="grid gap-1 text-sm font-medium text-text-secondary">
-        ID cliente
-        <input
-          class="tsi-input w-32"
-          type="number"
-          min="1"
-          name="idcliente"
-          [(ngModel)]="idclienteDestino"
-          placeholder="ID numérico del cliente"
-        />
-      </label>
-      <button type="button" class="tsi-btn tsi-btn-primary" (click)="abrirCuenta('perfil')">
-        Perfil
-      </button>
-      <button type="button" class="tsi-btn tsi-btn-secondary" (click)="abrirCuenta('preferencias')">
-        Preferencias
-      </button>
-      <button type="button" class="tsi-btn tsi-btn-secondary" (click)="abrirCuenta('transferencia')">
-        Transferencia
-      </button>
-      @if (esAdmin()) {
-        <button type="button" class="tsi-btn tsi-btn-ghost" (click)="abrirCuenta('baja')">
-          Baja
+  <section class="tsi-panel tsi-panel--elevado rounded-xl border border-border-default bg-bg-surface p-6 shadow-sm">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-border-default/60 pb-4">
+      <div>
+        <h2 class="tsi-display m-0 text-lg font-semibold text-text-primary">Administración de cuenta corporativa</h2>
+        <p class="m-0 mt-1 text-xs text-text-secondary">
+          Selecciona la cuenta de cliente para gestionar su perfil, preferencias, transferencia de titularidad o baja.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <label for="select-cliente" class="text-xs font-semibold text-text-secondary">
+          Cliente:
+        </label>
+        @if (cuentasDisponibles().length > 0) {
+          <select
+            id="select-cliente"
+            class="tsi-select min-w-[14rem]"
+            [(ngModel)]="idclienteDestino"
+          >
+            @for (c of cuentasDisponibles(); track c.id) {
+              <option [ngValue]="c.id">{{ c.label }}</option>
+            }
+          </select>
+        } @else {
+          <div class="flex items-center gap-2">
+            <input
+              id="select-cliente"
+              class="tsi-input w-28 text-center font-mono"
+              type="number"
+              min="1"
+              name="idcliente"
+              [(ngModel)]="idclienteDestino"
+              placeholder="ID cliente"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex flex-col justify-between rounded-lg border border-border-default bg-bg-page p-4 transition-all hover:border-accent-primary/50">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Datos generales</span>
+          <h3 class="tsi-display m-0 mt-1 text-sm font-semibold text-text-primary">Perfil Corporativo</h3>
+          <p class="m-0 mt-1 text-xs text-text-secondary">Razón social, nombre comercial y logo institucional.</p>
+        </div>
+        <button type="button" class="tsi-btn tsi-btn-primary mt-4 w-full text-xs" (click)="abrirCuenta('perfil')">
+          Abrir Perfil
         </button>
+      </div>
+
+      <div class="flex flex-col justify-between rounded-lg border border-border-default bg-bg-page p-4 transition-all hover:border-accent-primary/50">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Notificaciones</span>
+          <h3 class="tsi-display m-0 mt-1 text-sm font-semibold text-text-primary">Preferencias</h3>
+          <p class="m-0 mt-1 text-xs text-text-secondary">Canales de contacto y alertas operativas.</p>
+        </div>
+        <button type="button" class="tsi-btn tsi-btn-secondary mt-4 w-full text-xs" (click)="abrirCuenta('preferencias')">
+          Abrir Preferencias
+        </button>
+      </div>
+
+      <div class="flex flex-col justify-between rounded-lg border border-border-default bg-bg-page p-4 transition-all hover:border-accent-primary/50">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Titularidad</span>
+          <h3 class="tsi-display m-0 mt-1 text-sm font-semibold text-text-primary">Transferencia</h3>
+          <p class="m-0 mt-1 text-xs text-text-secondary">Ceder administración a otro usuario elegible.</p>
+        </div>
+        <button type="button" class="tsi-btn tsi-btn-secondary mt-4 w-full text-xs" (click)="abrirCuenta('transferencia')">
+          Transferir Propiedad
+        </button>
+      </div>
+
+      @if (esAdmin()) {
+        <div class="flex flex-col justify-between rounded-lg border border-alert-critical/30 bg-alert-critical-bg/10 p-4 transition-all hover:border-alert-critical">
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-alert-critical">Zona de peligro</span>
+            <h3 class="tsi-display m-0 mt-1 text-sm font-semibold text-text-primary">Baja de Cuenta</h3>
+            <p class="m-0 mt-1 text-xs text-text-secondary">Desactivación formal de la cuenta cliente.</p>
+          </div>
+          <button type="button" class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg mt-4 w-full text-xs" (click)="abrirCuenta('baja')">
+            Gestionar Baja
+          </button>
+        </div>
       }
     </div>
   </section>

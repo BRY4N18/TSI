@@ -44,11 +44,10 @@ const BOARD_LIMIT = 100;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="grid gap-6 pb-8 text-text-primary">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+    <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid gap-6 text-text-primary">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border-default pb-4">
         <div>
-          <h1 class="tsi-display m-0 text-xl font-semibold">Pipeline</h1>
-<div class="tsi-rail-h mt-2 w-24" aria-hidden="true"></div>
+          <h1 class="tsi-display m-0 text-2xl font-bold tracking-tight text-text-primary">Pipeline de Ventas</h1>
           <p class="m-0 mt-1 text-sm text-text-secondary">
             Avance adyacente con botones · sin arrastrar tarjetas
           </p>
@@ -56,9 +55,10 @@ const BOARD_LIMIT = 100;
         <button
           type="button"
           data-testid="btn-actualizar-board"
-          class="tsi-btn tsi-btn-secondary"
+          class="tsi-btn tsi-btn-secondary inline-flex items-center gap-2"
           (click)="cargar()"
         >
+          <app-tabler-icon name="refresh" [size]="16" />
           Actualizar
         </button>
       </div>
@@ -71,38 +71,45 @@ const BOARD_LIMIT = 100;
         <app-list-empty-state message="Sin prospectos activos en el tablero." icon="list" />
       } @else {
         <div
-          class="grid gap-3 overflow-x-auto md:grid-cols-5"
+          class="grid gap-4 overflow-x-auto pb-4 md:grid-cols-5"
           data-testid="pipeline-board-columns"
         >
           @for (col of columnas; track col) {
-            <div class="min-w-[12rem] rounded-md border border-border-default bg-bg-surface p-3">
-              <h2 class="tsi-display m-0 mb-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
-                {{ col }}
-              </h2>
-              <div class="grid gap-2">
+            <div class="min-w-[14rem] rounded-xl border border-border-default bg-bg-surface/80 p-4 shadow-sm">
+              <div class="mb-3 flex items-center justify-between">
+                <h2 class="tsi-display m-0 text-xs font-bold uppercase tracking-wider text-text-secondary">
+                  {{ col }}
+                </h2>
+                <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-bg-page px-1.5 text-xs font-semibold text-text-secondary">
+                  {{ byEtapa(col).length }}
+                </span>
+              </div>
+              <div class="grid gap-3">
                 @for (p of byEtapa(col); track p.idprospecto) {
                   <article
-                    class="grid gap-2 rounded-md border border-border-default bg-bg-page p-3"
+                    class="grid gap-2.5 rounded-lg border border-border-default/80 bg-bg-page p-3.5 shadow-sm transition-all hover:border-accent-primary/50"
                     data-testid="pipeline-card"
                   >
-                    <p class="m-0 text-sm font-medium text-text-primary">{{ p.empresa }}</p>
-                    <p class="m-0 text-xs text-text-secondary">
-                      {{ p.nombres }} {{ p.apellidos }}
-                    </p>
-                    <div class="flex flex-wrap items-center gap-1">
+                    <div>
+                      <p class="m-0 text-sm font-semibold text-text-primary">{{ p.empresa }}</p>
+                      <p class="m-0 mt-0.5 text-xs text-text-secondary">
+                        {{ p.nombres }} {{ p.apellidos }}
+                      </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 border-t border-border-default/50 pt-2">
                       <a
                         [routerLink]="['/ventas-crm/prospectos', p.idprospecto]"
                         data-testid="btn-ver-prospecto-board"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary no-underline hover:bg-bg-surface"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
                         aria-label="Ver detalles"
                         title="Ver detalles"
                       >
-                        <app-tabler-icon name="eye" [size]="18" />
+                        <app-tabler-icon name="eye" [size]="17" />
                       </a>
                       @if (nextOf(p)) {
                         <button
                           type="button"
-                          class="tsi-btn tsi-btn-primary"
+                          class="tsi-btn tsi-btn-primary flex-1 py-1 text-xs"
                           [disabled]="busyId() === p.idprospecto"
                           (click)="avanzar(p)"
                         >
@@ -111,7 +118,7 @@ const BOARD_LIMIT = 100;
                       }
                       <button
                         type="button"
-                        class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-alert-critical hover:bg-alert-critical-bg disabled:opacity-40"
+                        class="inline-flex h-8 items-center rounded-md px-2 text-xs font-medium text-alert-critical transition-colors hover:bg-alert-critical-bg disabled:opacity-40"
                         [disabled]="busyId() === p.idprospecto"
                         (click)="pedirPerdido(p)"
                       >
@@ -146,29 +153,34 @@ const BOARD_LIMIT = 100;
 
     @if (perdidoTarget(); as target) {
       <div
-        class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+        class="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in"
         role="dialog"
         aria-modal="true"
       >
-        <div class="w-full max-w-md tsi-panel p-6">
-          <h2 class="tsi-display m-0 mb-2 text-lg font-semibold">Marcar perdido — {{ target.empresa }}</h2>
-          <form [formGroup]="perdidaForm" (ngSubmit)="confirmarPerdido()" class="grid gap-3">
-            <input
-              formControlName="motivo_perdida"
-              placeholder="Motivo obligatorio"
-              class="tsi-input"
-            />
-            <div class="flex justify-end gap-2">
+        <div class="w-full max-w-md rounded-xl border border-border-default bg-bg-surface p-6 shadow-2xl animate-in zoom-in-95">
+          <h2 class="tsi-display m-0 mb-1 text-lg font-semibold text-text-primary">Marcar como perdido</h2>
+          <p class="m-0 mb-4 text-xs text-text-secondary">Empresa: <strong class="text-text-primary">{{ target.empresa }}</strong></p>
+          <form [formGroup]="perdidaForm" (ngSubmit)="confirmarPerdido()" class="grid gap-4">
+            <div class="grid gap-1.5">
+              <label for="motivo_perdida" class="text-xs font-semibold text-text-secondary">Motivo de pérdida *</label>
+              <input
+                id="motivo_perdida"
+                formControlName="motivo_perdida"
+                placeholder="Describe la razón..."
+                class="tsi-input w-full"
+              />
+            </div>
+            <div class="flex justify-end gap-2 border-t border-border-default pt-4">
               <button
                 type="button"
-                class="tsi-btn tsi-btn-primary"
+                class="tsi-btn tsi-btn-ghost"
                 (click)="perdidoTarget.set(null)"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                class="tsi-btn border border-alert-critical bg-transparent text-alert-critical hover:bg-alert-critical-bg"
+                class="tsi-btn border border-alert-critical bg-alert-critical text-white hover:bg-alert-critical/90"
                 [disabled]="perdidaForm.invalid || busyId() != null"
               >
                 Confirmar

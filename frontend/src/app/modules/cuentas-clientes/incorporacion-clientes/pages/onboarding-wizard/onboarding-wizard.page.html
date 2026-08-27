@@ -13,7 +13,6 @@
       (click)="reenviarInvitacion()"
       [disabled]="reenviando"
     >
-      <app-tabler-icon name="refresh" [size]="18" [class.animate-spin]="reenviando" />
       {{ reenviando ? 'Reenviando…' : 'Reenviar invitación' }}
     </button>
   </div>
@@ -102,7 +101,6 @@
               type="submit"
               class="tsi-btn tsi-btn-primary w-fit"
             >
-              <app-tabler-icon name="circle-check" [size]="18" />
               Guardar perfil
             </button>
           </form>

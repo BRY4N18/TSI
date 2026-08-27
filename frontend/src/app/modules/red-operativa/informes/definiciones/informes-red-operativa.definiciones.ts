@@ -50,22 +50,12 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
       { campo: 'placa', etiqueta: 'Placa', principal: true },
       { campo: 'nombre_unidad', etiqueta: 'Unidad' },
       { campo: 'tipo_unidad', etiqueta: 'Tipo' },
-      { campo: 'capacidad', etiqueta: 'Capacidad', formato: 'numero', alineacion: 'derecha', soloEscritorio: true },
+      { campo: 'capacidad', etiqueta: 'Capacidad', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
       { campo: 'proveedor', etiqueta: 'Proveedor' },
       { campo: 'condado', etiqueta: 'Condado' },
-      // ⚠️ «Estado geográfico», no «Estado». El backend nombra el campo
-      // `estado_geografico` justamente para desambiguarlo, y recortarlo a
-      // «Estado» tiraba esa aclaración en el peor sitio: en un listado de flota
-      // «estado» se lee como el estado **de la unidad**, y el aviso de arriba
-      // dice que la disponibilidad no está aquí. Además el listado de regiones
-      // usa «Estado» para el estado del ciclo de vida: la misma cabecera
-      // significaba dos cosas en el mismo departamento.
-      { campo: 'estado_geografico', etiqueta: 'Estado geográfico', soloEscritorio: true },
-      { campo: 'zona_cobertura', etiqueta: 'Zona de cobertura', soloEscritorio: true },
-      { campo: 'tipo_propiedad', etiqueta: 'Propiedad', soloEscritorio: true },
-      // ⚠️ **`dado_de_alta` significa que la unidad EXISTE**, no que esté
-      // disponible. La advertencia de `meta.alcance` lo dice en pantalla; la
-      // etiqueta se elige para no invitar a la lectura equivocada.
+      { campo: 'estado_geografico', etiqueta: 'Estado geográfico', soloDetalle: true },
+      { campo: 'zona_cobertura', etiqueta: 'Zona de cobertura', soloDetalle: true },
+      { campo: 'tipo_propiedad', etiqueta: 'Propiedad', soloDetalle: true },
       { campo: 'dado_de_alta', etiqueta: 'Dada de alta', formato: 'booleano' },
     ],
     filtros: [
@@ -90,8 +80,8 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
       { campo: 'placa', etiqueta: 'Placa', principal: true },
       { campo: 'proveedor', etiqueta: 'Proveedor' },
       { campo: 'tipo_baja', etiqueta: 'Tipo de baja', formato: 'enumeracion' },
-      { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
-      { campo: 'ejecutada_por', etiqueta: 'Ejecutada por', soloEscritorio: true },
+      { campo: 'motivo', etiqueta: 'Motivo', soloDetalle: true },
+      { campo: 'ejecutada_por', etiqueta: 'Ejecutada por', soloDetalle: true },
       // Ausente en las normales, y eso es correcto: solo una baja forzada tiene
       // un caso afectado.
       { campo: 'caso_afectado', etiqueta: 'Caso afectado' },
@@ -117,7 +107,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
       { campo: 'nombre_region', etiqueta: 'Región', principal: true },
       { campo: 'estado_region', etiqueta: 'Estado', formato: 'enumeracion' },
       { campo: 'estado_geografico', etiqueta: 'Estado geográfico' },
-      { campo: 'dias_sin_cambio', etiqueta: 'Días sin cambio', formato: 'numero', alineacion: 'derecha' },
+      { campo: 'dias_sin_cambio', etiqueta: 'Días sin cambio', formato: 'numero', alineacion: 'derecha', soloDetalle: true },
       { campo: 'fecha_actualizacion', etiqueta: 'Último cambio', formato: 'fecha_hora' },
     ],
     filtros: [
@@ -140,7 +130,7 @@ export const INFORMES_RED_OPERATIVA: Record<string, DefinicionListado> = {
     columnas: [
       { campo: 'region', etiqueta: 'Región', principal: true },
       { campo: 'resultado', etiqueta: 'Resultado' },
-      { campo: 'motivo', etiqueta: 'Motivo', soloEscritorio: true },
+      { campo: 'motivo', etiqueta: 'Motivo', soloDetalle: true },
       { campo: 'ejecutada_por', etiqueta: 'Ejecutada por' },
       { campo: 'fecha', etiqueta: 'Fecha', formato: 'fecha_hora' },
     ],
